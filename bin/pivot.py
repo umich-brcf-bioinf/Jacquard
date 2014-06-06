@@ -9,7 +9,8 @@ from pandas import *
 import random
 import re
 import sys 
-
+# from openpyxl import load_workbook
+# from openpyxl.style import Color, Fill, Font
 
 class PivotError(Exception):
     """Base class for exceptions in this module."""
@@ -28,6 +29,7 @@ class VariantPivoter():
         self._pivot_values = pivot_values
         self._transform = transform
         self._combined_df = pd.DataFrame()
+        self._annot_df = pd.DataFrame()
 
     def pivot(self):
         pivoted_df = pd.pivot_table(
@@ -40,79 +42,119 @@ class VariantPivoter():
             pass
 
         return pivoted_df
+ 
+    def add_file(self, path, reader, header_index):
+        initial_df  = create_initial_df(path, reader, header_index)
         
-    def add_file(self, path, reader):
-        initial_df  = create_initial_df(path, reader)
+        if "#CHROM" in initial_df.columns:
+            initial_df.rename(columns={"#CHROM": "CHROM"}, inplace=True)
+        
+        self._annot_df = append_to_annot_df(initial_df, self._annot_df)
+        
         unpivoted_df = self._is_compatible(initial_df)
+
         self._combined_df = merge_samples(unpivoted_df, self._combined_df)
         
-    def join_dataframes(self, pivot_df, annot_df):
-        output = merge(annot_df, pivot_df, left_on=self._rows, right_index=True, how='outer', sort=False)
-        output = output.fillna('.')
+    def validate_annotations(self):
+        grouped_df = self._annot_df.groupby(self._rows)
+        self._annot_df = grouped_df.last()
+        self._annot_df.reset_index(inplace=True)
+        
+    def validate_sample_data(self):
+        grouped_df = self._combined_df.groupby(self._rows + ["SAMPLE_NAME"])
+        group = grouped_df.groups
+        for key, val in group.items():
+            if len(val) != 1:
+                raise PivotError("Uh oh")
 
-        return output, annot_df
+    def join_dataframes(self, pivot_df):
+        output = merge(self._annot_df, pivot_df, left_on=self._rows, right_index=True, how='outer', sort=False)
+        output = output.fillna("")
+
+        return output
     
     def sort_rows(self, df):
         df.reset_index(inplace=True)
             
-        try:
-            df["CHROM"] = df["CHROM"].apply(lambda x: x.replace("chr", ""))
-        except:
-            pass
+        # try:
+            # df["POS"]   = df["POS"].apply(lambda x: int(x))
+            # df["CHROM"] = df["CHROM"].apply(lambda x: x.replace("chr", ""))
+            # df["CHROM"] = df["CHROM"].apply(lambda x: int(x))
+        # except:
+            # pass
         
-        df["CHROM"] = df["CHROM"].apply(lambda x: int(x))
         sorted_df = df.sort(self._rows)
-        sorted_df = insert_mult_alt(sorted_df)
-        
-        grouped = sorted_df.groupby(self._rows)
-        sorted_df.set_index(self._rows, inplace=True)
-        sorted_df = self.label_mult_alts(grouped, sorted_df)
 
         return sorted_df
-     
-    def label_mult_alts(self, grouped, sorted_df):
-        multalt_dict = {}
-        for k, gp in grouped:
-            key = str(k[0]) + "_" + str(k[1]) + "_" + str(k[2]) + "_" + str(k[4])
-            val = str(k[3])
-            if key in multalt_dict:
-                multalt_dict[key].append(val)
-            else:
-                multalt_dict[key] = [val]
+    
+    def insert_mult_alt(self, df):
+        df.insert(0, "Mult_Alt", "")
+        if "SnpEff_WARNING/ERROR" in df.columns.values:
+            df.rename(columns={"SnpEff_WARNING/ERROR": "WARNING/ERROR"}, inplace=True)
+        if "WARNING/ERROR" in df.columns.values:
+            cols_to_group = self._rows + ["WARNING/ERROR"]
+        else:
+            cols_to_group = self._rows
         
+        grouped = df.groupby(cols_to_group)
+        
+        df.set_index(cols_to_group, inplace=True)
+
+        self.label_mult_alts(grouped, df)
+        
+        df.reset_index(inplace=True)
+     
+    def label_mult_alts(self, grouped, df):
+        preliminary_dict = {}
+        multalt_dict     = {}
+        for k, gp in grouped:
+            k_list = []
+            for item in k:
+                k_list.append(item)
+            
+            val = str(k_list[3]) ##CHROM,POS,REF,GENE_SYMBOL,[WARNING/ERROR]
+            del k_list[3]
+            key = "_".join(k_list) ##ANNOTATED_ALLELE
+           
+            if key in preliminary_dict:
+                if key in multalt_dict:
+                    multalt_dict[key].append(val)
+                else:
+                    multalt_dict[key] = [preliminary_dict[key], val]
+            else:
+                preliminary_dict[key] = val
+
         for key, vals in multalt_dict.iteritems():
-            if len(vals) != 1:
-                split_key = key.split("_")
-                chrom = int(split_key[0])
-                pos = int(float(split_key[1]))
-                ref = split_key[2]
-                
-                for val in vals:
-                    for i, j in sorted_df.T.iteritems():
-                        if chrom == i[0] and pos == i[1] and ref == i[2] and val == i[3]:
-                            sorted_df.loc[i, "Mult_Alt"] = "True"
-                            
-        return sorted_df
+            split_key = key.split("_")
+            chrom = split_key[0]
+            pos = split_key[1]
+            ref = split_key[2]
+            gene_symbol = split_key[3]
+            warn_err = split_key[4]
+            
+            for val in vals:
+                df.loc[(str(chrom), str(pos), str(ref), str(val), str(gene_symbol), str(warn_err)), "Mult_Alt"] = "True"
     
     def _check_required_columns_present(self, dataframe):
         required_columns = set(self._rows + self._cols)
-
         if not required_columns.issubset(dataframe.columns.values):
+            print "columns absent"
             raise PivotError("Missing required columns; contact sysadmin.")
          
-    def _check_pivot_is_unique(self, dataframe):
+    def _check_pivot_is_unique(self, dataframe):   
         group = self._rows + self._cols
         grouped_df = dataframe.groupby(group)
-        
+
         if len(grouped_df.groups) != len(dataframe):
+            print "not unique"
             raise PivotError("Duplicate keys would result in an invalid pivot; contact sysadmin.")
      
-    def _is_compatible(self, dataframe):     
+    def _is_compatible(self, dataframe):      
         unpivoted_df = self._transform(dataframe)
         
         self._check_required_columns_present(unpivoted_df)
         self._check_pivot_is_unique(unpivoted_df)
-        
+
         return unpivoted_df
         
         
@@ -123,20 +165,23 @@ class EpeeVariantPivoter():
     @staticmethod
     def _exclude_errors_and_warnings(df):
         try:
-            # filtered_df = df.loc[df['WARNING/ERROR']=='.', ]
-            # filtered_df = df[df['WARNING/ERROR']=='.']
-            filtered_df = df[df["WARNING/ERROR"].isin(["."])]
+            filtered_df = df[df['WARNING/ERROR']=='.']
             return filtered_df
         except KeyError as e:
-            raise PivotError("File is missing WARNING/ERROR column; review input files")
+            raise PivotError("File is missing SnpEff_WARNING/ERROR column; review input files")
         else:
             raise
             
     @staticmethod
     def _build_transform_method(rows, columns, pivot_values):
         def transform(df):
+            if "SnpEff_WARNING/ERROR" in df.columns.values:
+                df.rename(columns={"SnpEff_WARNING/ERROR": "WARNING/ERROR"}, inplace=True)
+
             filtered_df = EpeeVariantPivoter._exclude_errors_and_warnings(df)
-            expanded_df = expand_format(filtered_df, "FORMAT", "Sample1", pivot_values)
+
+            expanded_df = expand_format(filtered_df, pivot_values, rows)
+        
             return project_prepivot(expanded_df, pivot_values, rows, columns)
         return transform
             
@@ -150,8 +195,8 @@ class EpeeVariantPivoter():
     def pivot(self):
         return self._pivoter.pivot()
         
-    def add_file(self, path, reader):
-        return self._pivoter.add_file(path, reader)
+    def add_file(self, path, reader, header_index):
+        return self._pivoter.add_file(path, reader, header_index)
         
     def is_compatible(self, initial_df):
         try:
@@ -163,17 +208,27 @@ class EpeeVariantPivoter():
 class VcfVariantPivoter():
     ROWS = ["CHROM", "POS", "REF", "ALT"]
     COLUMNS = ["SAMPLE_NAME"]
-    
+   
+    @staticmethod
+    def _build_transform_method(rows, columns, pivot_values):
+        def transform(df):
+            expanded_df = expand_format(df, pivot_values, rows)
+
+            return project_prepivot(expanded_df, pivot_values, rows, columns)
+        return transform
+        
     def __init__(self, pivot_values):
-        self._pivoter = VariantPivoter(VcfVariantPivoter.ROWS, VcfVariantPivoter.COLUMNS, pivot_values)
-        self._rows = VcfVariantPivoter.ROWS
-        self._cols = VcfVariantPivoter.COLUMNS
+        self._pivoter = VariantPivoter(
+        VcfVariantPivoter.ROWS, 
+        VcfVariantPivoter.COLUMNS, 
+        pivot_values,
+        VcfVariantPivoter._build_transform_method(VcfVariantPivoter.ROWS, VcfVariantPivoter.COLUMNS, pivot_values))
         
     def pivot(self):
         return self._pivoter.pivot()
-
-    def add_file(self, path, reader):
-        self._pivoter.add_file(path, reader)
+    
+    def add_file(self, path, reader, header_index):
+        self._pivoter.add_file(path, reader, header_index)
 
     def is_compatible(self, initial_df):
         try:
@@ -183,42 +238,112 @@ class VcfVariantPivoter():
             return False
 
 
-def build_pivoter(path, reader, pivot_values):
+def build_pivoter(path, reader, pivot_values, header_index):
     pivoters = [EpeeVariantPivoter(pivot_values), VcfVariantPivoter(pivot_values)]
-    initial_df  = create_initial_df(path, reader)
-    
+    initial_df  = create_initial_df(path, reader, header_index)
+
     for pivoter in pivoters:
         if pivoter.is_compatible(initial_df):
             return pivoter
 
     raise PivotError("Input file is not compatible with defined pivoters; review input file or contact system admin.")
 
-        
-def create_initial_df(path, reader):
-    # initial_df = pd.read_csv(reader, sep="\t", header=False, dtype='str') ##for testing
-    initial_df = pd.read_csv(reader, sep="\t", header=1, dtype='str') ##for actual epee data
-    
-    sample_name = os.path.basename(path)
-    if "SAMPLE_NAME" not in initial_df:
-        initial_df['SAMPLE_NAME'] = sample_name
-    
-    return initial_df
+def create_initial_df(path, reader, header_index):
+    initial_df = pd.read_csv(reader, sep="\t", header=header_index, dtype='str')
 
-def expand_format(df, format_column_name, value_column_name, formats_to_expand):
-    for row, col in df.T.iteritems():
-        format_lst = col[format_column_name].split(":")
-        sample_lst = col[value_column_name].split(":")
+    return initial_df
+  
+def append_to_annot_df(initial_df, annot_df):  
+    format_index = initial_df.columns.get_loc("FORMAT")
+    last_column = initial_df.shape[1]
     
-        format_dict = dict(zip(format_lst, sample_lst))
-        for item in formats_to_expand:
-            if item in format_dict:
-                df.loc[row, item] = str(format_dict[item])
-                
-    return df
+    annotation_columns = []
+    annotation_columns.extend(initial_df.columns)
+    
+    ##remove column if it is format column or any column to the right of format
+    for i in range(format_index, last_column):
+        annotation_columns.remove(initial_df.columns[i])
+
+    temp_df = pd.DataFrame()
+    for col in initial_df.columns:
+        temp_df[col] = initial_df[col]
+        if col not in annotation_columns:
+            del temp_df[col]
+            
+    if annot_df.empty:
+        annot_df = temp_df
+    else:
+        annot_df = annot_df.append(temp_df, ignore_index=True)
+    return annot_df
+  
+def melt_samples(df): 
+    first_sample_column_index = df.columns.get_loc("FORMAT") + 1
+    first_sample_column = df.ix[:, first_sample_column_index]
+    last_column = df.shape[1]
+    
+    first_sample_name = df.columns[first_sample_column_index].split("_")
+
+    ##find sample names -- a bit naive because it just looks to see if subsequent fields are structured the same as first sample field. this will likely break if sample name is not structured like "Sample_1"
+    sample_names = []
+    for i in range(first_sample_column_index, last_column):
+        field_name = df.columns[i]
+        split_field_name = field_name.split("_")
+        
+        if len(first_sample_name) == len(split_field_name):
+            sample_names.append(field_name)
+
+    column_list = []
+    column_list.extend(df.columns)
+
+    for col in sample_names:
+        if col in column_list: 
+            column_list.remove(col)
+    
+    melted_df = melt(df, id_vars=column_list, var_name='SAMPLE_NAME', value_name='SAMPLE_DATA')
+    
+    return melted_df
+    
+def expand_format(df, formats_to_expand, rows):     
+    df = melt_samples(df)
+
+    df["aggregate_format_sample"] = df["FORMAT"] + "=" + df['SAMPLE_DATA']
+    df["aggregate_format_sample"] = df["aggregate_format_sample"].map(combine_format_values)
+   
+    s = df["aggregate_format_sample"].apply(pd.Series, 1).stack()
+    s.index = s.index.droplevel(-1)
+    s.name = "format_sample"
+
+    unpivoted_format_value_df = s.apply(lambda x: pd.Series(x))
+    unpivoted_format_value_df.columns = ["FORMAT2", "VALUE2"]
+    
+    joined_df = df.join(unpivoted_format_value_df)
+    del joined_df["aggregate_format_sample"]
+    
+    if "#CHROM" in joined_df.columns:
+        joined_df.rename(columns={"#CHROM": "CHROM"}, inplace=True)
+            
+    pivoted_df = pd.pivot_table(joined_df, rows=rows+["SAMPLE_NAME"], cols="FORMAT2", values="VALUE2", aggfunc=lambda x: x)
+    
+    try:
+        pivoted_df = pd.pivot_table(joined_df, rows=rows+["SAMPLE_NAME"], cols="FORMAT2", values="VALUE2", aggfunc=lambda x: x)
+    except:
+        raise PivotError("Cannot pivot data.")
+
+    for tag in formats_to_expand:
+        if tag not in pivoted_df.columns:
+            raise PivotError("Error: specified format tag {0} was not found in the file\n".format(tag))
+
+    pivoted_df.reset_index(inplace=True)
+
+    return pivoted_df
+
+def combine_format_values(aggregate_col):
+    pairs = aggregate_col.split("=")
+    return zip(pairs[0].split(":"), pairs[1].split(":"))
     
 def project_prepivot(df, pivot_values, rows, columns):
-    
     required_columns = set(pivot_values + rows + columns)
+
     for col in df.columns:
         if col not in required_columns:
             del df[col]
@@ -236,7 +361,7 @@ def merge_samples(reduced_df, combined_df):
 
     return combined_df    
     
-def rearrange_columns(output, sheet):
+def rearrange_columns(output, pivot_values):
     ##change tuples to strings:
     lst = []
     for i in list(output.columns.values):
@@ -246,456 +371,178 @@ def rearrange_columns(output, sheet):
     output.columns = lst 
     
     ##change order of columns:
-    lst = change_order(lst, sheet)    
+    lst = change_order(lst, pivot_values)    
     output = output.ix[:,lst]
 
     return output
     
-def change_order(lst, sheet):
-    if sheet == "variant":
-        meta_lst = []
-        freq_lst = []
-        dp_lst = []
-        annot_lst = []
+def change_order(lst, pivot_values):
+    all_pivot_values_lst = []
+    for pivot_value in pivot_values:
+        pivot_value_lst = []
         for i, header in enumerate(lst):    
-            if re.search("CHROM|POS|REF|ANNOTATED_ALLELE|GENE_SYMBOL", header):
-                meta_lst.append(header)
-
-            elif re.search("FREQ", header):
-                freq_lst.append(header)
-            elif re.search("COVERAGE", header):
-                dp_lst.append(header)
-            else:
-                annot_lst.append(header)    
+            if re.search(pivot_value, header):
+                pivot_value_lst.append(header)
         
-        lst = meta_lst + freq_lst + dp_lst + annot_lst
-        
-    elif sheet == "gene":
-        gene_lst = []
-        level_lst = []
-        impact_lst = []
-        rank_lst = []
-        for i, header in enumerate(lst):    
-            if re.search("GENE_SYMBOL", header):
-                gene_lst.append(header)
-            elif re.search("IMPACT", header):
-                level_lst.append(header)
-            elif re.search("Impact_Damaging", header):
-                impact_lst.append(header)
-            elif re.search("Combined", header):
-                rank_lst.append(header)    
-        
-        lst = gene_lst + level_lst + impact_lst + rank_lst
+        all_pivot_values_lst.extend(pivot_value_lst)
     
+    meta_lst = []
+    annot_lst = []
+    for i, header in enumerate(lst):    
+        if re.search("CHROM|POS|ID|REF|ALT|ANNOTATED_ALLELE|GENE_SYMBOL|Mult_Alt|IGV|UCSC", header):
+            meta_lst.append(header)
+        elif header not in all_pivot_values_lst:
+            annot_lst.append(header) 
+                     
+    lst = meta_lst + all_pivot_values_lst + annot_lst
+
     return lst
     
-def insert_mult_alt(df):
-    df.insert(0, "Mult_Alt", "")
+def insert_links(joined_output):
+    for row, col in joined_output.T.iteritems():
+        joined_output.loc[row, "UCSC"] = "http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position=chr" + joined_output.loc[row, "CHROM"] + ":" + str(int(joined_output.loc[row, "POS"]) - 50)+ "-" + str(int(joined_output.loc[row, "POS"]) + 50)
+        
+        joined_output.loc[row, "IGV"] = "localhost:60151/goto?locus=chr" + joined_output.loc[row, "CHROM"] + ":" + joined_output.loc[row, "POS"]
+ 
+def style_workbook(output_path):
+    wb = load_workbook(output_path)
+    ws = wb.active
+    
+    for col in ws.columns:  
+        if re.search("IGV", col[0].value):
+            format_links(ws, col, "IGV")
+        elif re.search("UCSC", col[0].value): 
+            format_links(ws, col, "UCSC")
+    
+        count = 0
+        colors = ["FFFF99", "FFCC00", "FF9900", "FF6600"]
+        for tag in pivot_values:
+            if re.search(tag, col[0].value):
+                fill_cell(col, colors[count])
+            count += 1
+        
+        if re.search("CHROM|POS|ID|REF|ALT|Mult_Alt|ANNOTATED_ALLELE|GENE_SYMBOL|IGV|UCSC", col[0].value):
+            fill_cell(col, "C0C0C0")   
 
-    return df
+        if col[0].style.fill.start_color.index == "FFFFFFFF":
+            fill_cell(col, "C9F2C9")
+        # if re.search("Mult_Alt", col[0].value):
+            # for row in col:
+                # print row.value
+    wb.save(output_path)
+ 
+def format_links(ws, column, cell_value):
+    for pos in column:
+        if pos != column[0]:
+            desired_cell = str(pos).strip("(<>)").split(".")[-1]
+            ws[desired_cell].hyperlink = pos.value
+            pos.value = cell_value
+            pos.style.font.color.index = Color.BLUE
+            pos.style.font.underline = Font. UNDERLINE_SINGLE
+            
+def fill_cell(column, color):
+    column[0].style.fill.fill_type = Fill.FILL_SOLID
+    column[0].style.fill.start_color.index = color
     
 def process_files(sample_file_readers, pivot_builder=build_pivoter):
-    pivot_values = ["GT"]
-    
     first_file_reader = sample_file_readers[0]
     first_path        = str(first_file_reader)
     first_reader      = first_file_reader
     
-    pivoter  = pivot_builder(first_path, first_reader, pivot_values)
+    pivoter  = pivot_builder(first_path, first_reader, pivot_values, header_index)
+    # pivoter = EpeeVariantPivoter(pivot_values)
     
     for file_reader in sample_file_readers:
         path   = str(file_reader)
         reader = file_reader
         
-        pivoter.add_file(path, reader)
+        print "Reading: " + path
+         
+        pivoter.add_file(path, reader, header_index)
   
-    pivoted_df = pivoter.pivot()
-    pivoted_df = pivoted_df.fillna('.')
-  
-    annot_path = script_dir + '/../combined_annotation.txt'
-    df_annot = pd.read_csv(annot_path, header=False, sep="\t", dtype='str')
-
-    joined_output, df_annot = pivoter._pivoter.join_dataframes(pivoted_df, df_annot)
-    complete_output = rearrange_columns(joined_output, "variant")
+    print "validating annotations"
+    pivoter._pivoter.validate_annotations()
     
+    print "validating sample data"
+    pivoter._pivoter.validate_sample_data()
+  
+    print "pivoting data"
+    pivoted_df = pivoter.pivot()
+    pivoted_df = pivoted_df.fillna("")
+    
+    print "joining sample data with annotations"
+    joined_output = pivoter._pivoter.join_dataframes(pivoted_df)
+    insert_links(joined_output)
+  
+    print "calculating mult alts"
+    pivoter._pivoter.insert_mult_alt(joined_output)
+    
+    try:
+        joined_output["CHROM"] = joined_output["CHROM"].apply(lambda x: int(x))
+        joined_output["POS"] = joined_output["POS"].apply(lambda x: int(x))
+    except:
+        pass
+
+    print "rearranging columns"
+    complete_output = rearrange_columns(joined_output, pivot_values)
+    
+    print "sorting rows"
     sorted_df = pivoter._pivoter.sort_rows(complete_output)
 
     if "index" in sorted_df:
         del sorted_df["index"]
-    
-    writer = ExcelWriter(script_dir + '/../output/test_output.xlsx')
-    sorted_df.to_excel(writer, "Variant_output", index=True, merge_cells = 0)  
-    writer.save() 
 
+    # print "writing to excel file: {0}".format(output_path)
+    print "writing to csv file: {0}".format(output_path)
+    # writer = ExcelWriter(output_path)
+    # sorted_df.to_excel(writer, "Variant_output", index=False, merge_cells = 0)  
+    sorted_df.to_csv(output_path, index=False, sep="\t")  
+    print "almost done..."
+    # print "saving file"
+    # writer.save() 
+    
+    # print "styling workbook"
+    # style_workbook(output_path)
+   
+    print "done"
+    
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
+    pd.set_option('chained_assignment', None)
     
-    sample_path = script_dir + '/../Rhim_input'
+    if len(sys.argv) != 4:
+        print "Invalid arguments."
+        print "Usage: pivot.py [in_dir] [out_excel_file_path] [format_tag(s)]"
+        print "Example: pivot.py ../Rhim_input ../Rhim_output/output.xlsx GT,DP"
+        exit(1)
+    else:
+        input_dir    = script_dir + "/" + sys.argv[1]
+        output_path  = script_dir + "/" + sys.argv[2]
+        pivot_values = sys.argv[3].split(",")
+
+    output_dir, outfile_name = os.path.split(output_path)
+    
+    if not os.path.isdir(input_dir):
+        print "Error. Specified input directory {0} does not exist".format(input_dir)
+        exit(1)
+        
+    if not os.path.isdir(output_dir):
+        os.makedirs(output_dir)
+    
+    # sample_path = 
     sample_file_readers = []
-    
-    for item in listdir(sample_path):
-        if isfile(join(sample_path, item)):
-            sample_file_readers.append(sample_path + "/" + item)
-
-    process_files(sample_file_readers)
-
-    
-    
-##OLD CODE from here down:    
-def process_file(df_annot):
-    # sample_path = script_dir + '\input\combined_All_Genes.txt'
-    
-    # sample_path = script_dir + '\\Malek_input'
-    sample_path = script_dir + '/../Rhim_input'
-    epee = 1
-    annotation = 1
-    # format = "RNA_FREQ"
-    format = ["RNA_FREQ", "RNA_COVERAGE"]
-    fname = "Rhim_output"
-    
-    # sample_path = script_dir + '\\Malek_922_input'
-    # epee = 0
-    # annotation = 0
-    # format = "FREQ"
-    # fname = "Malek_922_all_vcfs_output"
-    
-    count = 1
-    complete_df = pd.DataFrame()
-    complete_df_gs = pd.DataFrame()
-
-    if epee:
-        header = 1
-    else:
-        header = False
-    
-    for item in listdir(sample_path):
-        if isfile(join(sample_path, item)):
-            print "Reading file " + str(count) + ": " + item
-            
-            df = pd.read_csv(sample_path + "/" + item, header=header, sep=r"\t")
-            df2 = pd.read_csv(sample_path + "/" + item, header=header, sep=r"\t")
-            
-            print df
-            exit(1)
-            
-            if "SAMPLE_NAME" not in df:
-                df["SAMPLE_NAME"] = item
-                df2["SAMPLE_NAME"] = item
-            
-            df_var = pivot(df, epee, format)
-            if complete_df.empty:
-                complete_df = df_var
-            else:
-                complete_df = complete_df.join(df_var, how="outer")
-            
-            if epee:
-                df_gs = pivot2(df2)
-                if complete_df_gs.empty:
-                    complete_df_gs = df_gs
+    headers = []
+    for item in listdir(input_dir):
+        if isfile(join(input_dir, item)):
+            f = open(input_dir + "/" + item, 'r')
+            for num, line in enumerate(f):
+                if line.startswith("#"):
+                    headers.append(num)
                 else:
-                    complete_df_gs = complete_df_gs.join(df_gs, how="outer")
+                    break
+            sample_file_readers.append(input_dir + "/" + item)
 
-        else:
-            print "Skipping " + item
-        
-        count += 1
+    header_index = headers[-1]
+    process_files(sample_file_readers)
     
-    complete_df_gs = calculate_impact_score(complete_df_gs)
-    sorted_df_gs = rearrange_columns(complete_df_gs, "gene")
-
-    if annotation:
-        joined_output, df_annot = join_dataframes(complete_df, df_annot, epee)
-        complete_output = rearrange_columns(joined_output, "variant")
-        
-        sorted_df = sort_rows(complete_output, epee)
-        
-        if "index" in sorted_df:
-            del sorted_df["index"]
-            
-        write_files(fname, epee, sorted_df, sorted_df_gs, df_annot)
-    
-    else:
-        sorted_df = sort_rows(complete_df, epee)
-        write_files(fname, epee, sorted_df, sorted_df_gs, df_annot)
-        
-    print "done"        
-        
-def pivot(df, epee, format):
-    # df = df[df['WARNING/ERROR']=='.']
-
-    # df, values = expand_format(df, "FORMAT", "Sample1", format)
-    values = format
-    if epee:
-        df = pd.pivot_table(df, values=values, rows=["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"], cols=["SAMPLE_NAME"], aggfunc=lambda x: x)
-    else:
-        df = pd.pivot_table(df, values=values, rows=["CHROM", "POS", "REF", "ALT"], cols=["SAMPLE_NAME"], aggfunc=lambda x: x)    
-    
-    try:
-        df = df.applymap(lambda x: int(x))
-    except:
-        pass
-    
-    return df
-    
-def pivot2(df2):        
-    # if "HIGHEST_IMPACT" in df2:
-        # df2 = df2[df2['HIGHEST_IMPACT'] != 'MODIFIER']
-    
-    df_level = pd.pivot_table(df2, values=["ID"], rows=["GENE_SYMBOL", "SAMPLE_NAME"], cols=["HIGHEST_IMPACT"], aggfunc=lambda x: len(x))
-
-    df_level = df_level["ID"]
-    df_level = df_level.fillna(0)
-
-    df_level["IMPACT"] = ""
-    
-    if "HIGH" not in df_level:
-        df_level["HIGH"] = 0
-    if "MODERATE" not in df_level:
-        df_level["MODERATE"] = 0
-    if "LOW" not in df_level:
-        df_level["LOW"] = 0
-    if "MODIFIER" not in df_level:
-        df_level["MODIFIER"] = 0
-    
-    for col, data in df_level.T.iteritems():
-        df_level["IMPACT"][col] = str(int(data["HIGH"])) + "|" + str(int(data["MODERATE"])) + "|" + str(int(data["LOW"])) + "|" + str(int(data["MODIFIER"]))
-        
-    df_level["IMPACT_SCORE"] = 100000.0 *df_level["HIGH"] + df_level["MODERATE"] + df_level["LOW"]/100000.0 + df_level["MODIFIER"]/10**12
-    
-    del df_level["HIGH"]
-    del df_level["LOW"]
-    del df_level["MODERATE"]
-    del df_level["MODIFIER"]
-    
-    df_level = df_level.unstack("SAMPLE_NAME")
-    
-    df_impact = pd.pivot_table(df2, values=["Impact_Damaging"], rows=["GENE_SYMBOL"], cols=["SAMPLE_NAME"], aggfunc=lambda x: sum(x))
-    
-    df_combined = df_level.join(df_impact, how='outer')
-    
-    return df_combined    
-
-def calculate_impact_score(df):
-    df["IMPACT_Rank"]            = df["IMPACT_SCORE"].sum(axis=1)
-    df["Impact_Damaging_Rank"] = df["Impact_Damaging"].sum(axis=1)
-    # df["Combined_Rank"]        = df["Impact_Damaging_Rank"].add(df["IMPACT_Rank"])
-    
-    df["Impact_Damaging"] = df["Impact_Damaging"].applymap(lambda x: "." if x == 0.0 else x)
-    
-    df = df.sort("IMPACT_Rank", ascending=0)
-    df = df.sort("Impact_Damaging_Rank", ascending=0)
-    # df = df.sort("Combined_Rank", ascending=0)
-    
-    df["IMPACT_Rank"]            = df["IMPACT_Rank"].rank(ascending=0, method="min")
-    df["Impact_Damaging_Rank"] = df["Impact_Damaging_Rank"].rank(ascending=0, method="min")
-    # df["Combined_Rank"]        = df["Combined_Rank"].rank(ascending=0, method="min")
-
-    del df["IMPACT_SCORE"]
-    
-    return df
-    
-def join_dataframes_old(df1, df2, epee):
-    if epee:
-        output = merge(df2, df1, left_on=["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"], right_index=True, how='right', sort=False)
-    else:
-        output = merge(df2, df1, left_on=["CHROM", "POS", "REF", "ALT"], right_index=True, how='right', sort=False)
-    
-    output = output.fillna('.')
-    
-    return output, df2
-    
-def rearrange_columns_old(output, sheet):
-    ##change tuples to strings:
-    lst = []
-    for i in list(output.columns.values):
-        if type(i) is tuple:
-            i = "_".join(i)
-        lst.append(i)
-    output.columns = lst 
-    
-    ##change order of columns:
-    lst = change_order(lst, sheet)    
-    output = output.ix[:,lst]
-
-    return output
-
-def change_order_old(lst, sheet):
-    if sheet == "variant":
-        meta_lst = []
-        freq_lst = []
-        dp_lst = []
-        annot_lst = []
-        for i, header in enumerate(lst):    
-            if re.search("CHROM|POS|REF|ANNOTATED_ALLELE|GENE_SYMBOL", header):
-                meta_lst.append(header)
-
-            elif re.search("FREQ", header):
-                freq_lst.append(header)
-            elif re.search("COVERAGE", header):
-                dp_lst.append(header)
-            else:
-                annot_lst.append(header)    
-        
-        lst = meta_lst + freq_lst + dp_lst + annot_lst
-        
-    elif sheet == "gene":
-        gene_lst = []
-        level_lst = []
-        impact_lst = []
-        rank_lst = []
-        for i, header in enumerate(lst):    
-            if re.search("GENE_SYMBOL", header):
-                gene_lst.append(header)
-            elif re.search("IMPACT", header):
-                level_lst.append(header)
-            elif re.search("Impact_Damaging", header):
-                impact_lst.append(header)
-            elif re.search("Combined", header):
-                rank_lst.append(header)    
-        
-        lst = gene_lst + level_lst + impact_lst + rank_lst
-    
-    return lst
-    
-def sort_rows_old(df, epee):
-    df.reset_index(inplace=True)
-        
-    try:
-        df["CHROM"] = df["CHROM"].apply(lambda x: x.replace("chr", ""))
-    except:
-        pass
-    
-    df["CHROM"] = df["CHROM"].apply(lambda x: int(x))
-
-    if epee:
-        sorted_df = df.sort(["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"])
-    else:
-        sorted_df = df.sort(["CHROM", "POS", "REF", "ALT"])
-        
-    # sorted_df["CHROM"] = sorted_df["CHROM"].apply(lambda x: "chr" + str(x))
-
-    # pos_array = []
-    # mult_alts = []
-    # for pos in sorted_df["POS"]:
-        # if pos in pos_array:
-            # mult_alts.append(pos)
-        # else:
-            # pos_array.append(pos)
-            
-    sorted_df = insert_mult_alt(sorted_df)
-
-    ### for position in mult_alts:
-        ### sorted_df.loc[sorted_df["POS"] == position, "Mult_Alt"] = "True"
-
-    grouped = sorted_df.groupby(["CHROM", "POS", "REF", "ANNOTATED_ALLELE"])
-    
-    if epee:
-        sorted_df.set_index(["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"], inplace=True)
-    else:
-        sorted_df.set_index(["CHROM", "POS", "REF", "ALT"], inplace=True)
-    
-    #label mult-alts
-    multalt_dict = {}
-    for k, gp in grouped:
-        key = str(k[0]) + "_" + str(k[1]) + "_" + str(k[2])
-        val = str(k[3])
-        if key in multalt_dict:
-            multalt_dict[key].append(val)
-        else:
-            multalt_dict[key] = [val]
-    
-    for key, vals in multalt_dict.iteritems():
-        if len(vals) != 1:
-            split_key = key.split("_")
-            chrom = int(split_key[0])
-            pos = int(split_key[1])
-            ref = split_key[2]
-            
-            for val in vals:
-                for i, j in sorted_df.T.iteritems():
-                    if chrom == i[0] and pos == i[1] and ref == i[2] and val == i[3]:
-                        sorted_df.loc[i, "Mult_Alt"] = "True"
-        
-    return sorted_df    
-    
-def insert_mult_alt_old(df):
-    df.insert(0, "Mult_Alt", "")
-
-    return df
-    
-def write_files(fname, epee, output, df_gs, df_annot):
-    df_gs = df_gs.fillna('.')
-
-    # writer = ExcelWriter(script_dir + '/output/output.xlsx')
-    writer = ExcelWriter(script_dir + '/../output/' + fname + '.xlsx')
-    
-    output.to_excel(writer, "Variant_output", merge_cells = 0)    
-    
-    if epee:
-        df_gs.to_excel(writer, "Gene_output", merge_cells = 0)    
-        # df_annot.to_excel(writer, "Original", merge_cells = 0)    
-        
-    writer.save()    
-    
-# if __name__ == "__main__":
-    # script_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    # annot_path = script_dir + '/../combined_annotation.txt'
-    # df_annot = pd.read_csv(annot_path, header=False, sep=r"\t")
-    # process_file(df_annot)
-    
-    # sample_path = script_dir + '\\..\\Rhim_input'
-    # sample_file_readers = {}
-    # sample_file_readers = []
-    
-    # for item in listdir(sample_path):
-        # if isfile(join(sample_path, item)):
-            # sample_file_readers[str(sample_path + "/" + item)] = sample_path + "/" + item
-            # sample_file_readers.append(sample_path + "\\" + item)
-
-    # process_files(sample_file_readers)
-    
-        
-def pivot_samples():
-    sample_path = script_dir + '\..\input\combined_All_Genes.txt'
-    df = pd.read_csv(sample_path, header=False, sep=r"\t")
-    # df = df[df['WARNING/ERROR']=='.']
-    
-    df = pd.pivot_table(df, values=["FORMAT", "Sample1"], rows=["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL", "WARNING/ERROR"], cols=["SAMPLE_NAME"], aggfunc=lambda x: x.iloc[0])  ##aggfunc=lambda x: x.iloc[0] takes the first item aggfunc=lambda x: x.iloc[0].split(':')
-
-    for col, data in df.iteritems():
-        sample_name = col[1]
-        
-        format_col = df["FORMAT"][sample_name].dropna()
-        format_col = format_col.apply(lambda x: x.split(':'))
-        format_tags = format_col[-1]
-        
-        sample_col = df["Sample1"][sample_name].dropna()
-        sample_col = sample_col.apply(lambda x: x.split(':'))
-        sample_data = sample_col[-1]
-        
-        format_dict = dict(zip(format_tags, sample_data))
-        
-        # desired_tags = format_tags
-        desired_tags = ["GT", "DP", "AD"]
-        desired_format = []
-        desired_data = []
-        
-        for desired_tag in desired_tags:
-            if desired_tag in format_dict:
-                desired_format.append(desired_tag)
-                desired_data.append(format_dict[desired_tag])
-        
-        desired_format = ":".join(desired_format)
-        desired_data = ":".join(desired_data)
-
-        format_col = format_col.apply(lambda x: desired_format)
-        df["FORMAT", sample_name] = format_col
-        
-        sample_col = sample_col.apply(lambda x: desired_data)
-        df["Sample1", sample_name] = sample_col
-    
-    del df["FORMAT"]
-    
-    return df    
     

@@ -1,0 +1,36 @@
+Traceback (most recent call last):
+  File "./pivot.py", line 462, in <module>
+    process_files(sample_file_readers)
+  File "./pivot.py", line 379, in process_files
+    pivoter  = pivot_builder(first_path, first_reader, pivot_values, header_index)
+  File "./pivot.py", line 208, in build_pivoter
+    if pivoter.is_compatible(initial_df):
+  File "./pivot.py", line 174, in is_compatible
+    self._pivoter._is_compatible(initial_df)
+  File "./pivot.py", line 126, in _is_compatible
+    unpivoted_df = self._transform(dataframe)
+  File "./pivot.py", line 153, in transform
+    expanded_df = expand_format(filtered_df, pivot_values, rows)
+  File "./pivot.py", line 251, in expand_format
+    unpivoted_format_value_df = s.apply(lambda x: pd.Series(x))
+  File "/usr/lib/python2.7/site-packages/pandas/core/series.py", line 2026, in apply
+    return DataFrame(mapped.tolist(), index=self.index)
+  File "/usr/lib/python2.7/site-packages/pandas/core/frame.py", line 241, in __init__
+    arrays, columns = _to_arrays(data, columns, dtype=dtype)
+  File "/usr/lib/python2.7/site-packages/pandas/core/frame.py", line 4591, in _to_arrays
+    dtype=dtype)
+  File "/usr/lib/python2.7/site-packages/pandas/core/frame.py", line 4670, in _list_of_series_to_arrays
+    s.index for s in data if getattr(s, 'index', None) is not None
+  File "/usr/lib/python2.7/site-packages/pandas/core/index.py", line 3577, in _get_combined_index
+    union = _union_indexes(indexes)
+  File "/usr/lib/python2.7/site-packages/pandas/core/index.py", line 3603, in _union_indexes
+    result = result.union(other)
+  File "/usr/lib/python2.7/site-packages/pandas/core/index.py", line 878, in union
+    if len(other) == 0 or self.equals(other):
+  File "/usr/lib/python2.7/site-packages/pandas/core/index.py", line 1718, in equals
+    return np.array_equal(self, other)
+  File "/usr/lib/python2.7/site-packages/numpy/core/numeric.py", line 2119, in array_equal
+    return bool(equal(a1,a2).all())
+  File "/usr/lib/python2.7/site-packages/numpy/core/_methods.py", line 30, in _all
+    keepdims=keepdims)
+KeyboardInterrupt
