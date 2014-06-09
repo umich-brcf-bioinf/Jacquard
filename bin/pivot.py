@@ -250,7 +250,7 @@ class VcfVariantPivoter():
         except PivotError:
             return False
 
-def validate_parameters():
+def validate_parameters(input_keys, first_line, header_names, pivot_values):
     invalid_fields = []
     
     fields = header_names.split("\t")
@@ -258,7 +258,7 @@ def validate_parameters():
         if key not in fields:
             invalid_fields.append(key)
     
-    invalid_tags = validate_format_tags(fields)
+    invalid_tags = validate_format_tags(first_line, pivot_values, fields)
                 
     message = "Invalid input parameter(s) "
     raise_err = 0
@@ -269,10 +269,9 @@ def validate_parameters():
         message += str(invalid_tags)
         raise_err = 1
     
-    if raise_err == 1:
-        raise PivotError(message)
+    return raise_err, message
 
-def validate_format_tags(fields):
+def validate_format_tags(first_line, pivot_values, fields):
     invalid_tags = []
     for line in first_line:
         my_line = line.split("\t")
@@ -334,7 +333,7 @@ def melt_samples(df):
     
     first_sample_name = df.columns[first_sample_column_index].split("_")
 
-    ##find sample names -- a bit naive because it just looks to see if subsequent fields are structured the same as first sample field. this will likely break if sample name is not structured like "Sample_1"
+    ##find sample names -- very naive because it just looks to see if subsequent fields are structured the same as first sample field. this will likely break if sample name is not structured like "Sample_1. can't just take all columns after format because epee isn't structured that way"
     sample_names = []
     for i in range(first_sample_column_index, last_column):
         field_name = df.columns[i]
@@ -372,8 +371,6 @@ def expand_format(df, formats_to_expand, rows):
     
     if "#CHROM" in joined_df.columns:
         joined_df.rename(columns={"#CHROM": "CHROM"}, inplace=True)
-    
-    pd.pivot_table(joined_df, rows=rows+["SAMPLE_NAME"], cols="FORMAT2", values="VALUE2", aggfunc=lambda x: x)
     
     try:
         pivoted_df = pd.pivot_table(joined_df, rows=rows+["SAMPLE_NAME"], cols="FORMAT2", values="VALUE2", aggfunc=lambda x: x)
@@ -502,8 +499,10 @@ def process_files(sample_file_readers, pivot_builder=build_pivoter):
     first_reader      = first_file_reader
     
     print "validating command line parameters"
-    validate_parameters()
-    
+    raise_err, message = validate_parameters(input_keys, first_line, header_names, pivot_values)  
+    if raise_err == 1:
+        raise PivotError(message)
+        
     print "determining file type"
     pivoter  = pivot_builder(first_path, first_reader, input_keys, pivot_values, header_index)
     # pivoter = EpeeVariantPivoter(pivot_values)

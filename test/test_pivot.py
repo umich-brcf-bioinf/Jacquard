@@ -4,7 +4,7 @@ from pandas import *
 import unittest
 from pandas.util.testing import assert_frame_equal
 import pandas.util.testing as tm
-from bin.pivot import PivotError, VariantPivoter, EpeeVariantPivoter, VcfVariantPivoter, pivot, expand_format, merge_samples, create_initial_df, project_prepivot, build_pivoter, append_to_annot_df, melt_samples
+from bin.pivot import PivotError, VariantPivoter, EpeeVariantPivoter, VcfVariantPivoter, pivot, expand_format, merge_samples, create_initial_df, project_prepivot, build_pivoter, append_to_annot_df, melt_samples, validate_parameters
 from StringIO import StringIO
 import pprint
 import os
@@ -15,8 +15,37 @@ pd.set_option('chained_assignment', None)
 
 def dataframe(input_data, sep="\t", index_col=None):
     return pd.read_csv(StringIO(input_data), sep=sep, header=False, dtype='str', index_col=index_col)
-
+    
 class VariantPivoterTestCase(unittest.TestCase):
+    def test_validate_parameters_all_valid(self):
+        input_keys = ["CHROM", "POS", "REF"]
+        first_line = ["1\t24\tA\tC\tGT:DP\tfoo;bar\t1/1:258"]
+        header_names = "CHROM\tPOS\tREF\tALT\tFORMAT\tINFO\tsample2"
+        pivot_values = ["GT"]
+        output, message = validate_parameters(input_keys, first_line, header_names, pivot_values)
+
+        self.assertEqual(0, output)
+    
+    def test_validate_parameters_invalid_keys(self):
+        input_keys = ["foo"]
+        first_line = ["1\t24\tA\tC\tGT:DP\tfoo;bar\t1/1:258"]
+        header_names = "CHROM\tPOS\tREF\tALT\tFORMAT\tINFO\tsample2"
+        pivot_values = ["GT"]
+        output, message = validate_parameters(input_keys, first_line, header_names, pivot_values)
+        
+        self.assertEqual(1, output)
+        self.assertEqual("Invalid input parameter(s) ['foo']", message)
+        
+    def test_validate_parameters_invalid_pivot(self):
+        input_keys = ["CHROM", "POS", "REF"]
+        first_line = ["1\t24\tA\tC\tGT:DP\tfoo;bar\t1/1:258"]
+        header_names = "CHROM\tPOS\tREF\tALT\tFORMAT\tINFO\tsample2"
+        pivot_values = ["foo", "GT"]
+        output, message = validate_parameters(input_keys, first_line, header_names, pivot_values)
+        
+        self.assertEqual(1, output)
+        self.assertEqual("Invalid input parameter(s) ['foo']", message)
+
     def test_add_files(self):
         annot_df = pd.DataFrame()
         rows = ['COORDINATE']
@@ -333,8 +362,7 @@ class VcfVariantPivoterTestCase(unittest.TestCase):
             "1|42|SAMPLE_1|420",sep='|')
             
         actual_df = actual_df.applymap(lambda x: str(x))
-        print expected_df
-        print actual_df
+
         tm.assert_frame_equal(expected_df, actual_df)
         
     def test_is_compatible_trueIfCompatible(self):
