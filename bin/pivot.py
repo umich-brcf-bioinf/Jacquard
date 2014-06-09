@@ -9,8 +9,9 @@ from pandas import *
 import random
 import re
 import sys 
-# from openpyxl import load_workbook
-# from openpyxl.style import Color, Fill, Font
+import openpyxl
+from openpyxl import load_workbook
+from openpyxl.style import Color, Fill, Font
 
 class PivotError(Exception):
     """Base class for exceptions in this module."""
@@ -23,13 +24,13 @@ class VariantPivoter():
         "contain required columns {0}; review input data."
     NOOP_TRANSFORM = lambda x : x
 
-    def __init__(self, rows, cols, pivot_values, transform=NOOP_TRANSFORM):
+    def __init__(self, rows, cols, pivot_values, transform=NOOP_TRANSFORM, combined_df=pd.DataFrame(), annot_df=pd.DataFrame()):
         self._rows = rows
         self._cols = cols
         self._pivot_values = pivot_values
         self._transform = transform
-        self._combined_df = pd.DataFrame()
-        self._annot_df = pd.DataFrame()
+        self._combined_df = combined_df
+        self._annot_df = annot_df
 
     def pivot(self):
         pivoted_df = pd.pivot_table(
@@ -61,12 +62,33 @@ class VariantPivoter():
         self._annot_df.reset_index(inplace=True)
         
     def validate_sample_data(self):
-        grouped_df = self._combined_df.groupby(self._rows + ["SAMPLE_NAME"])
-        group = grouped_df.groups
-        for key, val in group.items():
-            if len(val) != 1:
-                raise PivotError("Uh oh")
-
+        grouped = self._combined_df.groupby(self._rows + ["SAMPLE_NAME"])
+        group = grouped.groups
+        
+        for column in self._combined_df:
+            for key, val in group.items():
+                self.find_non_unique_columns(grouped, column, key, val)
+            self.find_non_unique_rows(column)
+        return self._combined_df
+        
+    def find_non_unique_columns(self, grouped, column, key, val):
+        if len(val) != 1:
+            col_data = []
+            for index in val:
+                data = grouped.get_group(key).ix[index, column]
+                if data not in col_data:
+                    col_data.append(data)
+            if len(col_data) != 1:
+                for index in val:
+                    self._combined_df.ix[index, column] = "^"    
+                    
+    def find_non_unique_rows(self, column):
+        count = 0
+        for data in self._combined_df[column]:
+            if type(data) == np.ndarray:
+                self._combined_df.ix[count, column] = "^"
+            count += 1
+                
     def join_dataframes(self, pivot_df):
         output = merge(self._annot_df, pivot_df, left_on=self._rows, right_index=True, how='outer', sort=False)
         output = output.fillna("")
@@ -75,14 +97,6 @@ class VariantPivoter():
     
     def sort_rows(self, df):
         df.reset_index(inplace=True)
-            
-        # try:
-            # df["POS"]   = df["POS"].apply(lambda x: int(x))
-            # df["CHROM"] = df["CHROM"].apply(lambda x: x.replace("chr", ""))
-            # df["CHROM"] = df["CHROM"].apply(lambda x: int(x))
-        # except:
-            # pass
-        
         sorted_df = df.sort(self._rows)
 
         return sorted_df
@@ -134,7 +148,15 @@ class VariantPivoter():
             
             for val in vals:
                 df.loc[(str(chrom), str(pos), str(ref), str(val), str(gene_symbol), str(warn_err)), "Mult_Alt"] = "True"
-    
+
+    def _is_compatible(self, dataframe):      
+        unpivoted_df = self._transform(dataframe)
+
+        self._check_required_columns_present(unpivoted_df)
+        self._check_pivot_is_unique(unpivoted_df)
+
+        return unpivoted_df
+
     def _check_required_columns_present(self, dataframe):
         required_columns = set(self._rows + self._cols)
         if not required_columns.issubset(dataframe.columns.values):
@@ -149,17 +171,9 @@ class VariantPivoter():
             print "not unique"
             raise PivotError("Duplicate keys would result in an invalid pivot; contact sysadmin.")
      
-    def _is_compatible(self, dataframe):      
-        unpivoted_df = self._transform(dataframe)
-        
-        self._check_required_columns_present(unpivoted_df)
-        self._check_pivot_is_unique(unpivoted_df)
-
-        return unpivoted_df
         
         
 class EpeeVariantPivoter():
-    ROWS = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"]
     COLUMNS = ["SAMPLE_NAME"]
  
     @staticmethod
@@ -181,16 +195,16 @@ class EpeeVariantPivoter():
             filtered_df = EpeeVariantPivoter._exclude_errors_and_warnings(df)
 
             expanded_df = expand_format(filtered_df, pivot_values, rows)
-        
+
             return project_prepivot(expanded_df, pivot_values, rows, columns)
         return transform
             
-    def __init__(self, pivot_values):
+    def __init__(self, input_keys, pivot_values):
         self._pivoter = VariantPivoter(
-            EpeeVariantPivoter.ROWS, 
+            input_keys, 
             EpeeVariantPivoter.COLUMNS, 
             pivot_values,
-            EpeeVariantPivoter._build_transform_method(EpeeVariantPivoter.ROWS, EpeeVariantPivoter.COLUMNS, pivot_values))
+            EpeeVariantPivoter._build_transform_method(input_keys, EpeeVariantPivoter.COLUMNS, pivot_values))
 
     def pivot(self):
         return self._pivoter.pivot()
@@ -206,23 +220,22 @@ class EpeeVariantPivoter():
             return False
        
 class VcfVariantPivoter():
-    ROWS = ["CHROM", "POS", "REF", "ALT"]
     COLUMNS = ["SAMPLE_NAME"]
    
     @staticmethod
     def _build_transform_method(rows, columns, pivot_values):
         def transform(df):
             expanded_df = expand_format(df, pivot_values, rows)
-
+            
             return project_prepivot(expanded_df, pivot_values, rows, columns)
         return transform
         
-    def __init__(self, pivot_values):
+    def __init__(self, input_keys, pivot_values):
         self._pivoter = VariantPivoter(
-        VcfVariantPivoter.ROWS, 
+        input_keys, 
         VcfVariantPivoter.COLUMNS, 
         pivot_values,
-        VcfVariantPivoter._build_transform_method(VcfVariantPivoter.ROWS, VcfVariantPivoter.COLUMNS, pivot_values))
+        VcfVariantPivoter._build_transform_method(input_keys, VcfVariantPivoter.COLUMNS, pivot_values))
         
     def pivot(self):
         return self._pivoter.pivot()
@@ -237,9 +250,45 @@ class VcfVariantPivoter():
         except PivotError:
             return False
 
+def validate_parameters():
+    invalid_fields = []
+    
+    fields = header_names.split("\t")
+    for key in input_keys:
+        if key not in fields:
+            invalid_fields.append(key)
+    
+    invalid_tags = validate_format_tags(fields)
+                
+    message = "Invalid input parameter(s) "
+    raise_err = 0
+    if invalid_fields != []:
+        message += str(invalid_fields)
+        raise_err = 1
+    if invalid_tags != []:
+        message += str(invalid_tags)
+        raise_err = 1
+    
+    if raise_err == 1:
+        raise PivotError(message)
 
-def build_pivoter(path, reader, pivot_values, header_index):
-    pivoters = [EpeeVariantPivoter(pivot_values), VcfVariantPivoter(pivot_values)]
+def validate_format_tags(fields):
+    invalid_tags = []
+    for line in first_line:
+        my_line = line.split("\t")
+        for index, field in enumerate(fields):
+            if field == "FORMAT":
+                format = my_line[index]
+                format_tags = format.split(":")
+                
+                for val in pivot_values:
+                    if val not in format_tags:
+                        invalid_tags.append(val)
+    
+    return invalid_tags
+    
+def build_pivoter(path, reader, input_keys, pivot_values, header_index):
+    pivoters = [EpeeVariantPivoter(input_keys, pivot_values), VcfVariantPivoter(input_keys, pivot_values)]
     initial_df  = create_initial_df(path, reader, header_index)
 
     for pivoter in pivoters:
@@ -247,7 +296,7 @@ def build_pivoter(path, reader, pivot_values, header_index):
             return pivoter
 
     raise PivotError("Input file is not compatible with defined pivoters; review input file or contact system admin.")
-
+    
 def create_initial_df(path, reader, header_index):
     initial_df = pd.read_csv(reader, sep="\t", header=header_index, dtype='str')
 
@@ -263,7 +312,9 @@ def append_to_annot_df(initial_df, annot_df):
     ##remove column if it is format column or any column to the right of format
     for i in range(format_index, last_column):
         annotation_columns.remove(initial_df.columns[i])
-
+    if "INFO" in annotation_columns:
+        annotation_columns.remove("INFO")
+    
     temp_df = pd.DataFrame()
     for col in initial_df.columns:
         temp_df[col] = initial_df[col]
@@ -321,12 +372,13 @@ def expand_format(df, formats_to_expand, rows):
     
     if "#CHROM" in joined_df.columns:
         joined_df.rename(columns={"#CHROM": "CHROM"}, inplace=True)
-            
-    pivoted_df = pd.pivot_table(joined_df, rows=rows+["SAMPLE_NAME"], cols="FORMAT2", values="VALUE2", aggfunc=lambda x: x)
+    
+    pd.pivot_table(joined_df, rows=rows+["SAMPLE_NAME"], cols="FORMAT2", values="VALUE2", aggfunc=lambda x: x)
     
     try:
         pivoted_df = pd.pivot_table(joined_df, rows=rows+["SAMPLE_NAME"], cols="FORMAT2", values="VALUE2", aggfunc=lambda x: x)
     except:
+        # print "ugh"
         raise PivotError("Cannot pivot data.")
 
     for tag in formats_to_expand:
@@ -449,7 +501,11 @@ def process_files(sample_file_readers, pivot_builder=build_pivoter):
     first_path        = str(first_file_reader)
     first_reader      = first_file_reader
     
-    pivoter  = pivot_builder(first_path, first_reader, pivot_values, header_index)
+    print "validating command line parameters"
+    validate_parameters()
+    
+    print "determining file type"
+    pivoter  = pivot_builder(first_path, first_reader, input_keys, pivot_values, header_index)
     # pivoter = EpeeVariantPivoter(pivot_values)
     
     for file_reader in sample_file_readers:
@@ -492,14 +548,16 @@ def process_files(sample_file_readers, pivot_builder=build_pivoter):
     if "index" in sorted_df:
         del sorted_df["index"]
 
-    # print "writing to excel file: {0}".format(output_path)
-    print "writing to csv file: {0}".format(output_path)
-    # writer = ExcelWriter(output_path)
-    # sorted_df.to_excel(writer, "Variant_output", index=False, merge_cells = 0)  
-    sorted_df.to_csv(output_path, index=False, sep="\t")  
-    print "almost done..."
-    # print "saving file"
-    # writer.save() 
+    print "writing to excel file: {0}".format(output_path)
+    writer = ExcelWriter(output_path)
+    sorted_df.to_excel(writer, "Variant_output", index=False, merge_cells = 0)  
+    
+    # print "writing to csv file: {0}".format(output_path)
+    # sorted_df.to_csv(output_path, index=False, sep=",")  
+    # print "almost done..."
+   
+    print "saving file"
+    writer.save() 
     
     # print "styling workbook"
     # style_workbook(output_path)
@@ -510,15 +568,16 @@ if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
     pd.set_option('chained_assignment', None)
     
-    if len(sys.argv) != 4:
+    if len(sys.argv) != 5:
         print "Invalid arguments."
-        print "Usage: pivot.py [in_dir] [out_excel_file_path] [format_tag(s)]"
-        print "Example: pivot.py ../Rhim_input ../Rhim_output/output.xlsx GT,DP"
+        print "Usage: pivot.py [in_dir] [out_excel_file_path] [columns_for_pivot_keys] [format_tag(s)]"
+        print "Example: pivot.py Rhim_input Rhim_output/output.xlsx CHROM,POS,REF,ALT GT,DP"
         exit(1)
     else:
-        input_dir    = script_dir + "/" + sys.argv[1]
-        output_path  = script_dir + "/" + sys.argv[2]
-        pivot_values = sys.argv[3].split(",")
+        input_dir    = os.path.abspath(sys.argv[1])
+        output_path  = os.path.abspath(sys.argv[2])
+        input_keys   = sys.argv[3].split(",")
+        pivot_values = sys.argv[4].split(",")
 
     output_dir, outfile_name = os.path.split(output_path)
     
@@ -529,20 +588,26 @@ if __name__ == "__main__":
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
     
-    # sample_path = 
     sample_file_readers = []
     headers = []
+    header_names = []
+    first_line = []
     for item in listdir(input_dir):
         if isfile(join(input_dir, item)):
             f = open(input_dir + "/" + item, 'r')
             for num, line in enumerate(f):
                 if line.startswith("#"):
                     headers.append(num)
+                    header_names.append(line)
                 else:
+                    first_line.append(line)
                     break
+            f.close()
             sample_file_readers.append(input_dir + "/" + item)
 
     header_index = headers[-1]
+    header_names = header_names[-1]
+    
     process_files(sample_file_readers)
     
     

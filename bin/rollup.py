@@ -9,7 +9,8 @@ from pandas import *
 import random
 import re
 import sys 
-# from openpyxl import load_workbook
+import openpyxl
+from openpyxl import load_workbook
 
 
 class PivotError(Exception):
