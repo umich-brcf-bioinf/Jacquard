@@ -4,7 +4,7 @@ from pandas import *
 import unittest
 from pandas.util.testing import assert_frame_equal
 import pandas.util.testing as tm
-from bin.pivot import PivotError, VariantPivoter, EpeeVariantPivoter, VcfVariantPivoter, pivot, expand_format, merge_samples, create_initial_df, project_prepivot, build_pivoter, append_to_annot_df, melt_samples, validate_parameters
+from bin.pivot import PivotError, VariantPivoter, pivot, expand_format, merge_samples, create_initial_df, project_prepivot, build_pivoter, append_to_annot_df, melt_samples, validate_parameters
 from StringIO import StringIO
 import pprint
 import os
@@ -12,7 +12,7 @@ from os import listdir
 from os.path import isfile, join
 
 pd.set_option('chained_assignment', None)
-
+##VariantPivoter._build_transform_method
 def dataframe(input_data, sep="\t", index_col=None):
     return pd.read_csv(StringIO(input_data), sep=sep, header=False, dtype='str', index_col=index_col)
     
@@ -46,84 +46,53 @@ class VariantPivoterTestCase(unittest.TestCase):
         self.assertEqual(1, output)
         self.assertEqual("Invalid input parameter(s) ['foo']", message)
 
-    def test_add_files(self):
+    # def test_add_files(self):
+    def add_files(self):
         annot_df = pd.DataFrame()
         rows = ['COORDINATE']
         cols = ['SAMPLE_NAME']
         pivot_values = ['DP']
-        transform = lambda x : x
-        pivoter = VariantPivoter(rows, cols, pivot_values, transform)
-        sample_A_file = \
-'''COORDINATE	FORMAT	Samp1	SAMPLE_NAME
-1	DP	1	foo
-2	DP	12	foo
-3	DP	31	foo
-4	DP	6	foo'''
-        sample_B_file = \
-'''COORDINATE	FORMAT	Samp1	SAMPLE_NAME
-1	DP	5	foo
-2	DP	2	foo
-3	DP	74	foo
-4	DP	25	foo'''
-
-        pivoter.add_file("sample_A", StringIO(sample_A_file), 0)
-        pivoter.add_file("sample_B", StringIO(sample_B_file), 0)
-        actual_df = pivoter.pivot()
-
-        actual_stringIO = StringIO()
-        actual_df.to_csv(actual_stringIO, sep="\t")
-        actual_flattened_df = pd.read_csv(StringIO(actual_stringIO.getvalue()), index_col=0, header=False, sep="\t", dtype='str')
-
-        expected_string = \
-'''COORDINATE	SAMPLE_NAME
-1	foo
-2	foo
-3	foo
-4	foo
-1	foo
-2	foo
-3	foo
-4	foo'''
-
-        tm.assert_frame_equal(dataframe(expected_string), actual_flattened_df)
         
-    def test_add_files_transformAsFilter(self):
-        annot_df = pd.DataFrame()
-        rows = ['COORDINATE']
-        cols = ['SAMPLE_NAME']
-        pivot_values = ['DP']
-        transform = lambda df : df[df["FILTER_COL"]=='.']
-        pivoter = VariantPivoter(rows, cols, pivot_values, transform)
+        pivoter = VariantPivoter(rows, cols, pivot_values)
         sample_A_file = \
-'''COORDINATE	FILTER_COL	SAMPLE_NAME	FORMAT
-1	DP	.	foo
-2	DP	.	foo
-3	DP	Yep	foo
-4	DP	.	foo
-'''
+'''COORDINATE	FORMAT	Samp1
+1	DP	1
+2	DP	12
+3	DP	31
+4	DP	6'''
         sample_B_file = \
-'''COORDINATE	FILTER_COL	SAMPLE_NAME	FORMAT
-1	.	foo	DP
-2	Yep	foo	DP
-3	.	foo	DP
-4	.	foo	DP
-'''
+'''COORDINATE	FORMAT	Samp2
+1	DP	5
+2	DP	2
+3	DP	74
+4	DP	25'''
+
         pivoter.add_file("sample_A", StringIO(sample_A_file), 0)
         pivoter.add_file("sample_B", StringIO(sample_B_file), 0)
-        actual_df = pivoter.pivot()
-
-        actual_stringIO = StringIO()
-        actual_df.to_csv(actual_stringIO, sep="\t")
-        actual_flattened_df = pd.read_csv(StringIO(actual_stringIO.getvalue()), header=False, sep="\t", dtype='str')
+        
+        actual_df = pivoter._combined_df
+        # actual_df = pivoter.pivot()
+        # actual_df = actual_df["DP"]
+        
+        # actual_stringIO = StringIO()
+        # actual_df.to_csv(actual_stringIO, sep="\t")
+        # actual_flattened_df = pd.read_csv(StringIO(actual_stringIO.getvalue()), index_col=None, header=False, sep="\t", dtype='str')
 
         expected_string = \
-'''	COORDINATE	SAMPLE_NAME
-0	1	foo
-2	3	foo
-3	4	foo'''
+'''FORMAT2	COORDINATE	SAMPLE_NAME	DP
+0	1	Samp1	1
+1	2	Samp1	12
+2	3	Samp1	31
+3	4	Samp1	6
+4	5	Samp2	5
+5	6	Samp2	2
+6	7	Samp2	74
+7	8	Samp2	25
+'''
+        expected_df = dataframe(expected_string)
+        expected_df.reset_index(inplace=True)
 
-        tm.assert_frame_equal(dataframe(expected_string), actual_flattened_df)
-
+        tm.assert_frame_equal(dataframe(expected_string), actual_df)
        
     def test_is_compatible_raiseIfMissingRequiredColumns(self): 
         rows = ['COORDINATE', 'foo']
@@ -133,14 +102,14 @@ class VariantPivoterTestCase(unittest.TestCase):
         pivoter = VariantPivoter(rows, cols, pivot_values, transform)
         
         input_string = \
-'''COORDINATE	SAMPLE_NAME	sample_A	sample_B
-1	foo	10	100
-2	bar	20	200
-3	foo	30	300
-4	bar	40	400'''
+'''COORDINATE	FORMAT	sample_A	sample_B
+1	DP	10	100
+2	DP	20	200
+3	DP	30	300
+4	DP	40	400'''
         df = dataframe(input_string)
         
-        self.assertRaises(PivotError, pivoter._is_compatible, df)
+        self.assertRaises(PivotError, pivoter.is_compatible, df)
         
     def test_check_required_columns_present(self):
         rows = ['Foo']
@@ -208,7 +177,6 @@ sample2	2	3	A	T	foo	.	GT	0/1	20	200	NaN'''
         rows = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"]
         cols = ["SAMPLE_NAME"]
         pivot_values = ['GT']
-        transform = lambda x : x
         
         input_string = \
 '''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	SAMPLE_NAME	SAMPLE_DATA
@@ -218,7 +186,7 @@ sample2	2	3	A	T	foo	.	GT	0/1	20	200	NaN'''
         df = dataframe(input_string)
         combined_df = df
         
-        pivoter = VariantPivoter(rows, cols, pivot_values, transform, combined_df)
+        pivoter = VariantPivoter(rows, cols, pivot_values, combined_df)
         actual_df = pivoter.validate_sample_data()
         
         expected_string = \
@@ -258,153 +226,6 @@ sample2	2	3	A	T	foo	.	GT	0/1	20	200	NaN'''
         # print actual_df
         # tm.assert_frame_equal(expected_df, actual_df)
     
-    
-    
-class EpeeVariantPivoterTestCase(unittest.TestCase):
-    def test_build_transform_method(self):
-        input_df = dataframe(
-            "#CHROM|POS|WARNING/ERROR|FORMAT|SAMPLE_1\n" + \
-            "1|41|warn|GT:DP|0/41:410\n" + \
-            "1|42|.|GT:DP|0/42:420\n",'|')
-        transform = EpeeVariantPivoter._build_transform_method(['CHROM','POS'], ['SAMPLE_NAME'],['DP'])
-
-        actual_df = transform(input_df)
-        
-        expected_df = dataframe(
-            "CHROM|POS|SAMPLE_NAME|DP\n" + \
-            "1|42|SAMPLE_1|420",sep='|')
-            
-        actual_df = actual_df.applymap(lambda x: str(x))
-        
-        tm.assert_frame_equal(expected_df, actual_df)
-
-
-    def test_exclude_errors_warnings_throwsIfColumnMissing(self):
-        input_df = dataframe(
-            "#CHROM|POS\n" + \
-            "1|A\n" + \
-            "2|B",'|')
-        input_keys = ['CHROM', 'POS', 'REF', 'ANNOTATED_ALLELE', 'GENE_SYMBOL']
-        filter = EpeeVariantPivoter(input_keys, ["GT"])._pivoter._transform
-
-        self.assertRaises(PivotError, filter, input_df)
-
-    def test_is_compatible_trueIfCompatible(self):
-        input_keys = ['CHROM', 'POS', 'REF', 'ANNOTATED_ALLELE', 'GENE_SYMBOL']
-        pivot_values = ['GT']
-        pivoter = EpeeVariantPivoter(input_keys, pivot_values)        
-        input_string = \
-'''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	Sample1	sample_A	sample_B
-1	2	A	T	foo	.	GT	0/1	10	100
-1	2	A	T	foo	WARN	GT	0/1	10	100
-2	3	A	T	foo	.	GT	0/1	20	200
-'''
-        df = dataframe(input_string)
-
-        self.assertEqual(True, pivoter.is_compatible(df))
-    
-    def test_is_compatible_falseIfMissingColumns(self):
-        input_keys = ['CHROM', 'POS', 'REF', 'ANNOTATED_ALLELE', 'GENE_SYMBOL']
-        pivot_values = ['DP']
-        pivoter = EpeeVariantPivoter(input_keys, pivot_values)        
-        input_string = \
-'''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	Sample1	sample_A	sample_B
-1	2	A	T	foo	.	GT	0/1	10	100
-1	2	A	T	foo	WARN	GT	0/1	10	100
-2	3	A	T	foo	.	GT	0/1	20	200
-'''
-        df = dataframe(input_string)
-
-        self.assertEqual(False, pivoter.is_compatible(df))
-        
-    def test_is_compatible_trueIfWarningDuplicates(self):
-        input_keys = ['CHROM', 'POS', 'REF', 'ANNOTATED_ALLELE', 'GENE_SYMBOL']
-        pivot_values = ['GT']
-        pivoter = EpeeVariantPivoter(input_keys, pivot_values)        
-        input_string = \
-'''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	Sample1	sample_A	sample_B
-1	2	A	T	foo	.	GT	0/1	10	100
-1	2	A	T	foo	WARN	GT	0/1	10	100
-2	3	A	T	foo	.	GT	0/1	20	200
-'''
-        df = dataframe(input_string)
-
-        self.assertEqual(True, pivoter.is_compatible(df))
-        
-    def test_is_compatible_falseIfDuplicates(self):
-        input_keys = ['CHROM', 'POS', 'REF', 'ANNOTATED_ALLELE', 'GENE_SYMBOL']
-        pivot_values = ['GT']
-        pivoter = EpeeVariantPivoter(input_keys, pivot_values)        
-        input_string = \
-'''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	Sample1	sample_A	sample_B
-1	2	A	T	foo	.	GT	0/1	10	100
-1	2	A	T	foo	.	GT	0/1	10	100
-2	3	A	T	foo	.	GT	0/1	20	200
-'''
-        df = dataframe(input_string)
-
-        self.assertEqual(False, pivoter.is_compatible(df)) ##ERROR: function does not reduce
-
-        
-class VcfVariantPivoterTestCase(unittest.TestCase):
-    def test_build_transform_method(self):
-        input_df = dataframe(
-            "#CHROM|POS|FORMAT|SAMPLE_1\n" + \
-            "1|41|GT:DP|0/41:410\n" + \
-            "1|42|GT:DP|0/42:420\n",'|')
-        transform = VcfVariantPivoter._build_transform_method(['CHROM','POS'], ['SAMPLE_NAME'],['DP'])
-
-        actual_df = transform(input_df)
-        
-        expected_df = dataframe(
-            "CHROM|POS|SAMPLE_NAME|DP\n" + \
-            "1|41|SAMPLE_1|410\n" + \
-            "1|42|SAMPLE_1|420",sep='|')
-            
-        actual_df = actual_df.applymap(lambda x: str(x))
-
-        tm.assert_frame_equal(expected_df, actual_df)
-        
-    def test_is_compatible_trueIfCompatible(self):
-        input_keys = ['CHROM','POS','REF','ALT']
-        pivot_values = ['GT']
-        pivoter = VcfVariantPivoter(input_keys, pivot_values)        
-        input_string = \
-'''CHROM	POS	REF	ALT	GENE_SYMBOL	FORMAT	Sample1	sample_A	sample_B
-1	2	A	T	foo	GT	0/1	10	100
-2	3	A	T	foo	GT	0/1	20	200
-'''
-        df = dataframe(input_string)
-
-        self.assertEqual(True, pivoter.is_compatible(df))  
-        
-    def test_is_compatible_falseIfDuplicates(self):
-        input_keys = ['CHROM','POS','REF','ALT']
-        pivot_values = ['DP']
-        pivoter = VcfVariantPivoter(input_keys, pivot_values)        
-        input_string = \
-'''CHROM	POS	REF	ALT	GENE_SYMBOL	FORMAT	Sample1	sample_A	sample_B
-1	2	A	T	foo	GT	0/1	10	100
-1	2	A	T	foo	GT	0/1	10	100
-2	3	A	T	foo	GT	0/1	20	200
-'''
-        df = dataframe(input_string)
-
-        self.assertEqual(False, pivoter.is_compatible(df))
-        
-    def test_is_compatible_falseIfMissingColumns(self):
-        input_keys = ['CHROM','POS','REF','ALT']
-        pivot_values = ['DP']
-        pivoter = VcfVariantPivoter(input_keys, pivot_values)        
-        input_string = \
-'''CHROM	POS	REF	ALT	GENE_SYMBOL	FORMAT	Sample1	sample_A	sample_B
-1	2	A	T	foo	GT	0/1	10	100
-2	3	A	T	foo	GT	0/1	20	200
-'''
-        df = dataframe(input_string)
-
-        self.assertEqual(False, pivoter.is_compatible(df))
-        
 class PivotTestCase(unittest.TestCase):
     def test_build_pivoter_invalidHeaderRaisesPivotError(self):
         input_string = \
@@ -418,35 +239,6 @@ class PivotTestCase(unittest.TestCase):
             
         self.assertRaises(PivotError, build_pivoter, "sampleA", StringIO(input_string), input_keys, pivot_values, 0)
 
-    def test_build_pivoter_epeeHeader(self):
-        input_string = \
-'''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	Sample1	sample_A	sample_B
-1	2	A	T	foo	WARN	GT	0/1	10	100
-2	3	A	T	foo	.	GT	0/1	20	200
-3	4	A	T	foo	.	GT	0/1	30	300
-4	5	A	T	foo	.	GT	0/1	40	400'''
-        input_keys = ['CHROM','POS','REF','ANNOTATED_ALLELE', 'GENE_SYMBOL']
-        pivot_values = ["GT"]
-        
-        pivoter = build_pivoter("sampleA", StringIO(input_string), input_keys, pivot_values, 0)
-
-        self.assertIsInstance(pivoter, EpeeVariantPivoter)
-        
-    def test_build_pivoter_vcfHeader(self):
-        input_string = \
-'''CHROM	POS	REF	ALT	FORMAT	SAMPLE_NAME	sample_A	sample_B
-1	2	A	T	GT	foo	10	100
-2	3	A	T	GT	foo	20	200
-3	4	A	T	GT	bar	30	300
-4	5	A	T	GT	bar	40	400'''
-        input_keys = ['CHROM','POS','REF','ALT']
-        pivot_values = ["GT"]
-        
-        pivoter = build_pivoter("sampleA", StringIO(input_string), input_keys, pivot_values, 0)
-        
-        self.assertIsInstance(pivoter, VcfVariantPivoter)
-            
-        
     ##create_initial_df
     def test_create_initial_df(self):
         reader = StringIO( 
@@ -579,24 +371,24 @@ chr1	4	A	T	GT	Sample_2	0/1'''
     def test_melt_samples_trailing_field(self):
         dataString = \
 '''CHROM	POS	REF	ANNOTATED_ALLELE	FORMAT	Sample_1	Sample_2	Sample
-chr1	1	A	T	GT	0/1	1/1	foo
-chr1	2	A	T	GT	0/1	0/1	foo
-chr1	3	A	T	GT	1/1	1/1	foo
-chr1	4	A	T	GT	1/1	0/1	foo'''
+chr1	1	A	T	GT:DP	0/1:2	1/1:12	foo
+chr1	2	A	T	GT:DP	0/1:3	0/1:13	foo
+chr1	3	A	T	GT:DP	1/1:4	1/1:14	foo
+chr1	4	A	T	GT:DP	1/1:5	0/1:15	foo'''
         df = pd.read_csv(StringIO(dataString), sep="\t", header=False, dtype='str')
         
         actual_df = melt_samples(df)
         
         expected_dataString = \
 '''CHROM	POS	REF	ANNOTATED_ALLELE	FORMAT	Sample	SAMPLE_NAME	SAMPLE_DATA
-chr1	1	A	T	GT	foo	Sample_1	0/1
-chr1	2	A	T	GT	foo	Sample_1	0/1
-chr1	3	A	T	GT	foo	Sample_1	1/1
-chr1	4	A	T	GT	foo	Sample_1	1/1
-chr1	1	A	T	GT	foo	Sample_2	1/1
-chr1	2	A	T	GT	foo	Sample_2	0/1
-chr1	3	A	T	GT	foo	Sample_2	1/1
-chr1	4	A	T	GT	foo	Sample_2	0/1'''
+chr1	1	A	T	GT:DP	foo	Sample_1	0/1:2
+chr1	2	A	T	GT:DP	foo	Sample_1	0/1:3
+chr1	3	A	T	GT:DP	foo	Sample_1	1/1:4
+chr1	4	A	T	GT:DP	foo	Sample_1	1/1:5
+chr1	1	A	T	GT:DP	foo	Sample_2	1/1:12
+chr1	2	A	T	GT:DP	foo	Sample_2	0/1:13
+chr1	3	A	T	GT:DP	foo	Sample_2	1/1:14
+chr1	4	A	T	GT:DP	foo	Sample_2	0/1:15'''
         expected_df = pd.read_csv(StringIO(expected_dataString), sep="\t", header=False, dtype='str')
 
         tm.assert_frame_equal(expected_df, actual_df)

@@ -1,5 +1,6 @@
 #!/usr/bin/python2.7
-import math
+
+import argparse
 import numpy
 import os
 from os import listdir
@@ -19,16 +20,22 @@ class PivotError(Exception):
 
 
 class VariantPivoter():
-
     MISSING_REQUIRED_COLUMNS_ERROR="The columns of specified dataframe do not " +\
         "contain required columns {0}; review input data."
-    NOOP_TRANSFORM = lambda x : x
 
-    def __init__(self, rows, cols, pivot_values, transform=NOOP_TRANSFORM, combined_df=pd.DataFrame(), annot_df=pd.DataFrame()):
+    @staticmethod
+    def _build_transform_method(rows, columns, pivot_values):
+        def transform(df):
+            expanded_df = expand_format(df, pivot_values, rows)
+            
+            return project_prepivot(expanded_df, pivot_values, rows, columns)
+        return transform
+
+    def __init__(self, rows, cols, pivot_values, combined_df=pd.DataFrame(), annot_df=pd.DataFrame()):
         self._rows = rows
         self._cols = cols
         self._pivot_values = pivot_values
-        self._transform = transform
+        self._transform = VariantPivoter._build_transform_method(self._rows, self._cols, self._pivot_values)
         self._combined_df = combined_df
         self._annot_df = annot_df
 
@@ -52,7 +59,7 @@ class VariantPivoter():
         
         self._annot_df = append_to_annot_df(initial_df, self._annot_df)
         
-        unpivoted_df = self._is_compatible(initial_df)
+        unpivoted_df = self.is_compatible(initial_df)
 
         self._combined_df = merge_samples(unpivoted_df, self._combined_df)
         
@@ -101,60 +108,106 @@ class VariantPivoter():
 
         return sorted_df
     
-    def insert_mult_alt(self, df):
-        df.insert(0, "Mult_Alt", "")
-        if "SnpEff_WARNING/ERROR" in df.columns.values:
+    def insert_mult_alt_and_gene(self, df):
+        if "SnpEff_WARNING/ERROR" in df.columns.values and "SnpEff_WARNING/ERROR" not in self._rows:
             df.rename(columns={"SnpEff_WARNING/ERROR": "WARNING/ERROR"}, inplace=True)
-        if "WARNING/ERROR" in df.columns.values:
+        if "WARNING/ERROR" in df.columns.values and "WARNING/ERROR" not in self._rows:
             cols_to_group = self._rows + ["WARNING/ERROR"]
         else:
             cols_to_group = self._rows
-        
+
         grouped = df.groupby(cols_to_group)
         
         df.set_index(cols_to_group, inplace=True)
-
-        self.label_mult_alts(grouped, df)
+        
+        if "GENE_SYMBOL" in cols_to_group:
+            df.insert(0, "Mult_Gene", "")
+            df = self.label_mult(grouped, df, "gene")
+            
+        df.insert(0, "Mult_Alt", "")
+        df = self.label_mult(grouped, df, "alt")
         
         df.reset_index(inplace=True)
+        
+        return df
      
-    def label_mult_alts(self, grouped, df):
+    def label_mult(self, grouped, df, type):
         preliminary_dict = {}
-        multalt_dict     = {}
+        mult_dict     = {}
+        val_index = ""
+
+        count = 0
+        for field in grouped.keys:
+            if type == "alt":
+                if field == "ANNOTATED_ALLELE" or field == "ALT":
+                    val_index = count
+            elif type == "gene":
+                if field == "GENE_SYMBOL":
+                    val_index = count
+                    
+            count += 1
+            
+        if val_index == "":
+            raise PivotError("Cannot calculate mult-alts and/or mult-genes with given keys {0}.".format(grouped.keys))
+            
+        mult_dict = self._create_mult_dict(grouped, val_index, preliminary_dict, mult_dict)
+
+        for key, vals in mult_dict.iteritems():
+            row_key = key.split("_")
+
+            for val in vals:
+                complete_key = self._determine_row_key(row_key, val, val_index)
+
+                if type == "alt":
+                    df.loc[complete_key, "Mult_Alt"] = "True"
+                elif type == "gene":
+                    df.loc[complete_key, "Mult_Gene"] = "True"
+        
+        return df
+   
+    def _create_mult_dict(self, grouped, val_index, preliminary_dict, mult_dict):
         for k, gp in grouped:
             k_list = []
             for item in k:
                 k_list.append(item)
             
-            val = str(k_list[3]) ##CHROM,POS,REF,GENE_SYMBOL,[WARNING/ERROR]
-            del k_list[3]
-            key = "_".join(k_list) ##ANNOTATED_ALLELE
-           
+            val = str(k_list[val_index])
+            del k_list[val_index]
+            key = "_".join(k_list)
+
             if key in preliminary_dict:
-                if key in multalt_dict:
-                    multalt_dict[key].append(val)
+                if key in mult_dict:
+                    mult_dict[key].append(val)
                 else:
-                    multalt_dict[key] = [preliminary_dict[key], val]
+                    mult_dict[key] = [preliminary_dict[key], val]
             else:
                 preliminary_dict[key] = val
-
-        for key, vals in multalt_dict.iteritems():
-            split_key = key.split("_")
-            chrom = split_key[0]
-            pos = split_key[1]
-            ref = split_key[2]
-            gene_symbol = split_key[3]
-            warn_err = split_key[4]
+                
+        return mult_dict
+    
+    def _determine_row_key(self, row_key, val, val_index):
+        complete_key = []
+        first = row_key[:val_index]
+        last = row_key[val_index:]
+        
+        for field in first:
+            complete_key.append(field)
             
-            for val in vals:
-                df.loc[(str(chrom), str(pos), str(ref), str(val), str(gene_symbol), str(warn_err)), "Mult_Alt"] = "True"
+        complete_key.append(val)
+        
+        for field in last:
+            complete_key.append(field)
 
-    def _is_compatible(self, dataframe):      
-        unpivoted_df = self._transform(dataframe)
+        complete_key = tuple(complete_key)
+       
+        return complete_key
+                
+    def is_compatible(self, initial_df):   
+        unpivoted_df = self._transform(initial_df)
 
         self._check_required_columns_present(unpivoted_df)
-        self._check_pivot_is_unique(unpivoted_df)
-
+        self._check_pivot_is_unique(unpivoted_df)  
+       
         return unpivoted_df
 
     def _check_required_columns_present(self, dataframe):
@@ -170,93 +223,19 @@ class VariantPivoter():
         if len(grouped_df.groups) != len(dataframe):
             print "not unique"
             raise PivotError("Duplicate keys would result in an invalid pivot; contact sysadmin.")
-     
-        
-        
-class EpeeVariantPivoter():
-    COLUMNS = ["SAMPLE_NAME"]
- 
-    @staticmethod
-    def _exclude_errors_and_warnings(df):
-        try:
-            filtered_df = df[df['WARNING/ERROR']=='.']
-            return filtered_df
-        except KeyError as e:
-            raise PivotError("File is missing SnpEff_WARNING/ERROR column; review input files")
-        else:
-            raise
-            
-    @staticmethod
-    def _build_transform_method(rows, columns, pivot_values):
-        def transform(df):
-            if "SnpEff_WARNING/ERROR" in df.columns.values:
-                df.rename(columns={"SnpEff_WARNING/ERROR": "WARNING/ERROR"}, inplace=True)
-
-            filtered_df = EpeeVariantPivoter._exclude_errors_and_warnings(df)
-
-            expanded_df = expand_format(filtered_df, pivot_values, rows)
-
-            return project_prepivot(expanded_df, pivot_values, rows, columns)
-        return transform
-            
-    def __init__(self, input_keys, pivot_values):
-        self._pivoter = VariantPivoter(
-            input_keys, 
-            EpeeVariantPivoter.COLUMNS, 
-            pivot_values,
-            EpeeVariantPivoter._build_transform_method(input_keys, EpeeVariantPivoter.COLUMNS, pivot_values))
-
-    def pivot(self):
-        return self._pivoter.pivot()
-        
-    def add_file(self, path, reader, header_index):
-        return self._pivoter.add_file(path, reader, header_index)
-        
-    def is_compatible(self, initial_df):
-        try:
-            self._pivoter._is_compatible(initial_df)
-            return True
-        except PivotError:
-            return False
-       
-class VcfVariantPivoter():
-    COLUMNS = ["SAMPLE_NAME"]
-   
-    @staticmethod
-    def _build_transform_method(rows, columns, pivot_values):
-        def transform(df):
-            expanded_df = expand_format(df, pivot_values, rows)
-            
-            return project_prepivot(expanded_df, pivot_values, rows, columns)
-        return transform
-        
-    def __init__(self, input_keys, pivot_values):
-        self._pivoter = VariantPivoter(
-        input_keys, 
-        VcfVariantPivoter.COLUMNS, 
-        pivot_values,
-        VcfVariantPivoter._build_transform_method(input_keys, VcfVariantPivoter.COLUMNS, pivot_values))
-        
-    def pivot(self):
-        return self._pivoter.pivot()
-    
-    def add_file(self, path, reader, header_index):
-        self._pivoter.add_file(path, reader, header_index)
-
-    def is_compatible(self, initial_df):
-        try:
-            self._pivoter._is_compatible(initial_df)
-            return True
-        except PivotError:
-            return False
 
 def validate_parameters(input_keys, first_line, header_names, pivot_values):
     invalid_fields = []
-    
+
     fields = header_names.split("\t")
+
     for key in input_keys:
         if key not in fields:
-            invalid_fields.append(key)
+            if key == "SnpEff_WARNING/ERROR":
+                input_keys.remove(key)
+                input_keys.append("WARNING/ERROR")
+            else:
+                invalid_fields.append(key)
     
     invalid_tags = validate_format_tags(first_line, pivot_values, fields)
                 
@@ -287,15 +266,26 @@ def validate_format_tags(first_line, pivot_values, fields):
     return invalid_tags
     
 def build_pivoter(path, reader, input_keys, pivot_values, header_index):
-    pivoters = [EpeeVariantPivoter(input_keys, pivot_values), VcfVariantPivoter(input_keys, pivot_values)]
     initial_df  = create_initial_df(path, reader, header_index)
 
-    for pivoter in pivoters:
-        if pivoter.is_compatible(initial_df):
-            return pivoter
-
-    raise PivotError("Input file is not compatible with defined pivoters; review input file or contact system admin.")
+    if "SnpEff_WARNING/ERROR" in initial_df.columns.values:
+        initial_df.rename(columns={"SnpEff_WARNING/ERROR": "WARNING/ERROR"}, inplace=True)
+        initial_df = _exclude_errors_and_warnings(initial_df)
     
+    pivoter = VariantPivoter(input_keys, ["SAMPLE_NAME"], pivot_values)
+    pivoter.is_compatible(initial_df)
+    
+    return pivoter
+  
+def _exclude_errors_and_warnings(df):
+        try:
+            filtered_df = df[df['WARNING/ERROR']=='.']
+            return filtered_df
+        except KeyError as e:
+            raise PivotError("File is missing SnpEff_WARNING/ERROR column; review input files")
+        else:
+            raise
+
 def create_initial_df(path, reader, header_index):
     initial_df = pd.read_csv(reader, sep="\t", header=header_index, dtype='str')
 
@@ -327,19 +317,17 @@ def append_to_annot_df(initial_df, annot_df):
     return annot_df
   
 def melt_samples(df): 
+    format_data = df.ix[0, "FORMAT"].split(":")
+    
     first_sample_column_index = df.columns.get_loc("FORMAT") + 1
     first_sample_column = df.ix[:, first_sample_column_index]
     last_column = df.shape[1]
     
-    first_sample_name = df.columns[first_sample_column_index].split("_")
-
-    ##find sample names -- very naive because it just looks to see if subsequent fields are structured the same as first sample field. this will likely break if sample name is not structured like "Sample_1. can't just take all columns after format because epee isn't structured that way"
     sample_names = []
     for i in range(first_sample_column_index, last_column):
         field_name = df.columns[i]
-        split_field_name = field_name.split("_")
-        
-        if len(first_sample_name) == len(split_field_name):
+        data = df.ix[0, field_name].split(":")
+        if len(data) == len(format_data):
             sample_names.append(field_name)
 
     column_list = []
@@ -347,8 +335,8 @@ def melt_samples(df):
 
     for col in sample_names:
         if col in column_list: 
-            column_list.remove(col)
-    
+            column_list.remove(col)   
+
     melted_df = melt(df, id_vars=column_list, var_name='SAMPLE_NAME', value_name='SAMPLE_DATA')
     
     return melted_df
@@ -371,11 +359,13 @@ def expand_format(df, formats_to_expand, rows):
     
     if "#CHROM" in joined_df.columns:
         joined_df.rename(columns={"#CHROM": "CHROM"}, inplace=True)
+        
+    if "WARNING/ERROR" in joined_df.columns and "WARNING/ERROR" not in rows:
+        joined_df.rename(columns={"WARNING/ERROR": "SnpEff_WARNING/ERROR"}, inplace=True)
     
     try:
         pivoted_df = pd.pivot_table(joined_df, rows=rows+["SAMPLE_NAME"], cols="FORMAT2", values="VALUE2", aggfunc=lambda x: x)
     except:
-        # print "ugh"
         raise PivotError("Cannot pivot data.")
 
     for tag in formats_to_expand:
@@ -438,7 +428,7 @@ def change_order(lst, pivot_values):
     meta_lst = []
     annot_lst = []
     for i, header in enumerate(lst):    
-        if re.search("CHROM|POS|ID|REF|ALT|ANNOTATED_ALLELE|GENE_SYMBOL|Mult_Alt|IGV|UCSC", header):
+        if re.search("CHROM|POS|ID|REF|ALT|ANNOTATED_ALLELE|GENE_SYMBOL|Mult_Alt|Mult_Gene|IGV|UCSC", header):
             meta_lst.append(header)
         elif header not in all_pivot_values_lst:
             annot_lst.append(header) 
@@ -449,9 +439,9 @@ def change_order(lst, pivot_values):
     
 def insert_links(joined_output):
     for row, col in joined_output.T.iteritems():
-        joined_output.loc[row, "UCSC"] = "http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position=chr" + joined_output.loc[row, "CHROM"] + ":" + str(int(joined_output.loc[row, "POS"]) - 50)+ "-" + str(int(joined_output.loc[row, "POS"]) + 50)
+        joined_output.loc[row, "UCSC"] = '=hyperlink("http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position=chr' + joined_output.loc[row, "CHROM"] + ":" + str(int(joined_output.loc[row, "POS"]) - 50)+ "-" + str(int(joined_output.loc[row, "POS"]) + 50) + '", "UCSC")'
         
-        joined_output.loc[row, "IGV"] = "localhost:60151/goto?locus=chr" + joined_output.loc[row, "CHROM"] + ":" + joined_output.loc[row, "POS"]
+        joined_output.loc[row, "IGV"] = '=hyperlink("localhost:60151/goto?locus=chr' + joined_output.loc[row, "CHROM"] + ':' + joined_output.loc[row, "POS"] + '", "IGV")'
  
 def style_workbook(output_path):
     wb = load_workbook(output_path)
@@ -470,7 +460,7 @@ def style_workbook(output_path):
                 fill_cell(col, colors[count])
             count += 1
         
-        if re.search("CHROM|POS|ID|REF|ALT|Mult_Alt|ANNOTATED_ALLELE|GENE_SYMBOL|IGV|UCSC", col[0].value):
+        if re.search("CHROM|POS|ID|REF|ALT|Mult_Alt|Mult_Gene|ANNOTATED_ALLELE|GENE_SYMBOL|IGV|UCSC", col[0].value):
             fill_cell(col, "C0C0C0")   
 
         if col[0].style.fill.start_color.index == "FFFFFFFF":
@@ -516,33 +506,33 @@ def process_files(sample_file_readers, pivot_builder=build_pivoter):
         pivoter.add_file(path, reader, header_index)
   
     print "validating annotations"
-    pivoter._pivoter.validate_annotations()
+    pivoter.validate_annotations()
     
     print "validating sample data"
-    pivoter._pivoter.validate_sample_data()
+    pivoter.validate_sample_data()
   
     print "pivoting data"
     pivoted_df = pivoter.pivot()
     pivoted_df = pivoted_df.fillna("")
     
     print "joining sample data with annotations"
-    joined_output = pivoter._pivoter.join_dataframes(pivoted_df)
+    joined_output = pivoter.join_dataframes(pivoted_df)
     insert_links(joined_output)
   
-    print "calculating mult alts"
-    pivoter._pivoter.insert_mult_alt(joined_output)
+    print "calculating mult alts and mult genes"
+    mult_alt_gene_df = pivoter.insert_mult_alt_and_gene(joined_output)
     
     try:
-        joined_output["CHROM"] = joined_output["CHROM"].apply(lambda x: int(x))
-        joined_output["POS"] = joined_output["POS"].apply(lambda x: int(x))
+        mult_alt_gene_df["CHROM"] = mult_alt_gene_df["CHROM"].apply(lambda x: int(x))
+        mult_alt_gene_df["POS"] = mult_alt_gene_df["POS"].apply(lambda x: int(x))
     except:
         pass
 
     print "rearranging columns"
-    complete_output = rearrange_columns(joined_output, pivot_values)
+    complete_output = rearrange_columns(mult_alt_gene_df, pivot_values)
     
     print "sorting rows"
-    sorted_df = pivoter._pivoter.sort_rows(complete_output)
+    sorted_df = pivoter.sort_rows(complete_output)
 
     if "index" in sorted_df:
         del sorted_df["index"]
@@ -558,39 +548,28 @@ def process_files(sample_file_readers, pivot_builder=build_pivoter):
     print "saving file"
     writer.save() 
     
-    # print "styling workbook"
-    # style_workbook(output_path)
+    print "styling workbook"
+    style_workbook(output_path)
    
     print "done"
     
-if __name__ == "__main__":
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    pd.set_option('chained_assignment', None)
+def determine_input_keys(input_dir):
+    for file in listdir(input_dir):
+        if isfile(join(input_dir, file)):
+            fname, extension = os.path.splitext(file)
+            
+            if extension == ".txt":
+                return ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL", "SnpEff_WARNING/ERROR"]
+           
+            elif extension == ".vcf":
+                return ["CHROM", "POS", "REF", "ALT"]
     
-    if len(sys.argv) != 5:
-        print "Invalid arguments."
-        print "Usage: pivot.py [in_dir] [out_excel_file_path] [columns_for_pivot_keys] [format_tag(s)]"
-        print "Example: pivot.py Rhim_input Rhim_output/output.xlsx CHROM,POS,REF,ALT GT,DP"
-        exit(1)
-    else:
-        input_dir    = os.path.abspath(sys.argv[1])
-        output_path  = os.path.abspath(sys.argv[2])
-        input_keys   = sys.argv[3].split(",")
-        pivot_values = sys.argv[4].split(",")
-
-    output_dir, outfile_name = os.path.split(output_path)
-    
-    if not os.path.isdir(input_dir):
-        print "Error. Specified input directory {0} does not exist".format(input_dir)
-        exit(1)
-        
-    if not os.path.isdir(output_dir):
-        os.makedirs(output_dir)
-    
+def get_headers_and_readers(input_dir):
     sample_file_readers = []
     headers = []
     header_names = []
     first_line = []
+    
     for item in listdir(input_dir):
         if isfile(join(input_dir, item)):
             f = open(input_dir + "/" + item, 'r')
@@ -607,6 +586,49 @@ if __name__ == "__main__":
     header_index = headers[-1]
     header_names = header_names[-1]
     
+    header_names = re.sub(r'#CHROM', 'CHROM', header_names)
+    
+    return sample_file_readers, header_index, header_names, first_line
+    
+if __name__ == "__main__":
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    pd.set_option('chained_assignment', None)
+    
+    parser = argparse.ArgumentParser(
+    formatter_class=argparse.RawDescriptionHelpFormatter, 
+    description='''\
+    Pivot.py
+    Pivots input files so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files. ''', 
+    epilog="author: Jessica Bene 05/2014")
+    parser.add_argument("input_dir")
+    parser.add_argument("output_file")
+    parser.add_argument("-k", "--keys",
+            help="Columns to be used as keys for the pivoting. Default keys for VCF are CHROM,POS,REF,ALT. Default keys for Epee TXT are CHROM,POS,REF,ANNOTATED_ALLELE,GENE_SYMBOL")
+    parser.add_argument("-t", "--tags",
+            help="Format tags to be fielded out in the pivoting.")
+            
+    args   = parser.parse_args()
+    input_dir = os.path.abspath(args.input_dir)
+    output_path = os.path.abspath(args.output_file)
+    input_keys = args.keys.split(",") if args.keys else determine_input_keys(input_dir)
+    pivot_values = args.tags.split(",") if args.tags else ["GT"]
+    
+    output_dir, outfile_name = os.path.split(output_path)
+    
+    if not os.path.isdir(input_dir):
+        print "Error. Specified input directory {0} does not exist".format(input_dir)
+        exit(1)
+        
+    if not os.path.isdir(output_dir):
+        os.makedirs(output_dir)
+        
+    fname, extension = os.path.splitext(outfile_name)
+    if extension != ".xlsx": 
+        print "Error. Specified output {0} must have a .xlsx extension".format(output_path)
+        exit(1)
+    
+    sample_file_readers, header_index, header_names, first_line = get_headers_and_readers(input_dir)
+
     process_files(sample_file_readers)
     
     
