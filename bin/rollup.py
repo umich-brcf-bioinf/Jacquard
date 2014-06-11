@@ -1,5 +1,4 @@
 #!/usr/bin/python2.7
-import math
 import numpy
 import os
 from os import listdir

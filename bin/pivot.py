@@ -1,5 +1,4 @@
 #!/usr/bin/python2.7
-
 import argparse
 import numpy
 import os
@@ -68,6 +67,8 @@ class VariantPivoter():
         self._annot_df = grouped_df.last()
         self._annot_df.reset_index(inplace=True)
         
+        return self._annot_df
+        
     def validate_sample_data(self):
         grouped = self._combined_df.groupby(self._rows + ["SAMPLE_NAME"])
         group = grouped.groups
@@ -109,10 +110,13 @@ class VariantPivoter():
         return sorted_df
     
     def insert_mult_alt_and_gene(self, df):
-        if "SnpEff_WARNING/ERROR" in df.columns.values and "SnpEff_WARNING/ERROR" not in self._rows:
-            df.rename(columns={"SnpEff_WARNING/ERROR": "WARNING/ERROR"}, inplace=True)
+        # if "SnpEff_WARNING/ERROR" in df.columns.values and "SnpEff_WARNING/ERROR" not in self._rows:
+            # df.rename(columns={"SnpEff_WARNING/ERROR": "WARNING/ERROR"}, inplace=True)
         if "WARNING/ERROR" in df.columns.values and "WARNING/ERROR" not in self._rows:
-            cols_to_group = self._rows + ["WARNING/ERROR"]
+            df.rename(columns={"WARNING/ERROR": "SnpEff_WARNING/ERROR"}, inplace=True)
+        
+        if "SnpEff_WARNING/ERROR" in df.columns.values and "SnpEff_WARNING/ERROR" not in self._rows:
+            cols_to_group = self._rows + ["SnpEff_WARNING/ERROR"]
         else:
             cols_to_group = self._rows
 
@@ -268,8 +272,8 @@ def validate_format_tags(first_line, pivot_values, fields):
 def build_pivoter(path, reader, input_keys, pivot_values, header_index):
     initial_df  = create_initial_df(path, reader, header_index)
 
-    if "SnpEff_WARNING/ERROR" in initial_df.columns.values:
-        initial_df.rename(columns={"SnpEff_WARNING/ERROR": "WARNING/ERROR"}, inplace=True)
+    if "SnpEff_WARNING/ERROR" in initial_df.columns.values or "WARNING/ERROR" in initial_df.columns.values:
+        initial_df.rename(columns={"WARNING/ERROR": "SnpEff_WARNING/ERROR"}, inplace=True)
         initial_df = _exclude_errors_and_warnings(initial_df)
     
     pivoter = VariantPivoter(input_keys, ["SAMPLE_NAME"], pivot_values)
@@ -279,7 +283,7 @@ def build_pivoter(path, reader, input_keys, pivot_values, header_index):
   
 def _exclude_errors_and_warnings(df):
         try:
-            filtered_df = df[df['WARNING/ERROR']=='.']
+            filtered_df = df[df['SnpEff_WARNING/ERROR']=='.']
             return filtered_df
         except KeyError as e:
             raise PivotError("File is missing SnpEff_WARNING/ERROR column; review input files")
@@ -360,9 +364,9 @@ def expand_format(df, formats_to_expand, rows):
     if "#CHROM" in joined_df.columns:
         joined_df.rename(columns={"#CHROM": "CHROM"}, inplace=True)
         
-    if "WARNING/ERROR" in joined_df.columns and "WARNING/ERROR" not in rows:
-        joined_df.rename(columns={"WARNING/ERROR": "SnpEff_WARNING/ERROR"}, inplace=True)
-    
+    if "SnpEff_WARNING/ERROR" in joined_df.columns and "SnpEff_WARNING/ERROR" not in rows:
+        joined_df.rename(columns={"SnpEff_WARNING/ERROR": "WARNING/ERROR"}, inplace=True)
+
     try:
         pivoted_df = pd.pivot_table(joined_df, rows=rows+["SAMPLE_NAME"], cols="FORMAT2", values="VALUE2", aggfunc=lambda x: x)
     except:
@@ -400,20 +404,20 @@ def merge_samples(reduced_df, combined_df):
 
     return combined_df    
     
-def rearrange_columns(output, pivot_values):
+def rearrange_columns(output_df, pivot_values):
     ##change tuples to strings:
     lst = []
-    for i in list(output.columns.values):
+    for i in list(output_df.columns.values):
         if type(i) is tuple:
             i = "_".join(i)
         lst.append(i)
-    output.columns = lst 
+    output_df.columns = lst 
     
     ##change order of columns:
     lst = change_order(lst, pivot_values)    
-    output = output.ix[:,lst]
+    output_df = output_df.ix[:,lst]
 
-    return output
+    return output_df
     
 def change_order(lst, pivot_values):
     all_pivot_values_lst = []
@@ -465,9 +469,11 @@ def style_workbook(output_path):
 
         if col[0].style.fill.start_color.index == "FFFFFFFF":
             fill_cell(col, "C9F2C9")
-        # if re.search("Mult_Alt", col[0].value):
-            # for row in col:
-                # print row.value
+        if re.search("Mult_Alt", col[0].value):
+            fill_mults(ws, col)
+        if re.search("Mult_Gene", col[0].value):
+            fill_mults(ws, col)
+
     wb.save(output_path)
  
 def format_links(ws, column, cell_value):
@@ -482,6 +488,20 @@ def format_links(ws, column, cell_value):
 def fill_cell(column, color):
     column[0].style.fill.fill_type = Fill.FILL_SOLID
     column[0].style.fill.start_color.index = color
+
+def fill_row(row, color):
+    row.style.fill.fill_type = Fill.FILL_SOLID
+    row.style.fill.start_color.index = color
+    
+def fill_mults(ws, col):
+    for row in col:
+        if row.value == "True":
+            coordinate = row.address
+            row = row.address[1:]
+            for item in ws.range("A" + row + ":" + coordinate):
+                for cell in item:
+                    if cell.value != "None":
+                        fill_row(cell, "FFD698")
     
 def process_files(sample_file_readers, pivot_builder=build_pivoter):
     first_file_reader = sample_file_readers[0]
@@ -495,7 +515,6 @@ def process_files(sample_file_readers, pivot_builder=build_pivoter):
         
     print "determining file type"
     pivoter  = pivot_builder(first_path, first_reader, input_keys, pivot_values, header_index)
-    # pivoter = EpeeVariantPivoter(pivot_values)
     
     for file_reader in sample_file_readers:
         path   = str(file_reader)
@@ -536,6 +555,9 @@ def process_files(sample_file_readers, pivot_builder=build_pivoter):
 
     if "index" in sorted_df:
         del sorted_df["index"]
+        
+    if "WARNING/ERROR" in sorted_df.columns.values:
+        sorted_df.rename(columns={"WARNING/ERROR":"SnpEff_WARNING/ERROR"}, inplace=True)
 
     print "writing to excel file: {0}".format(output_path)
     writer = ExcelWriter(output_path)
@@ -563,6 +585,9 @@ def determine_input_keys(input_dir):
            
             elif extension == ".vcf":
                 return ["CHROM", "POS", "REF", "ALT"]
+                
+            else:
+                raise PivotError("Cannot determine columns to be used as keys for the pivoting from file [{0}]. Please specify parameter [-k] or [--keys]".format(os.path.abspath(file)))
     
 def get_headers_and_readers(input_dir):
     sample_file_readers = []

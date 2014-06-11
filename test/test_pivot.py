@@ -4,7 +4,7 @@ from pandas import *
 import unittest
 from pandas.util.testing import assert_frame_equal
 import pandas.util.testing as tm
-from bin.pivot import PivotError, VariantPivoter, pivot, expand_format, merge_samples, create_initial_df, project_prepivot, build_pivoter, append_to_annot_df, melt_samples, validate_parameters
+from bin.pivot import PivotError, VariantPivoter, pivot, expand_format, merge_samples, create_initial_df, project_prepivot, build_pivoter, append_to_annot_df, melt_samples, validate_parameters, validate_format_tags, rearrange_columns, change_order, determine_input_keys, get_headers_and_readers
 from StringIO import StringIO
 import pprint
 import os
@@ -12,42 +12,44 @@ from os import listdir
 from os.path import isfile, join
 
 pd.set_option('chained_assignment', None)
-##VariantPivoter._build_transform_method
+
 def dataframe(input_data, sep="\t", index_col=None):
     return pd.read_csv(StringIO(input_data), sep=sep, header=False, dtype='str', index_col=index_col)
     
 class VariantPivoterTestCase(unittest.TestCase):
-    def test_validate_parameters_all_valid(self):
-        input_keys = ["CHROM", "POS", "REF"]
-        first_line = ["1\t24\tA\tC\tGT:DP\tfoo;bar\t1/1:258"]
-        header_names = "CHROM\tPOS\tREF\tALT\tFORMAT\tINFO\tsample2"
-        pivot_values = ["GT"]
-        output, message = validate_parameters(input_keys, first_line, header_names, pivot_values)
+    def test_build_transform(self):
+        rows = ['COORDINATE']
+        cols = ['SAMPLE_NAME']
+        pivot_values = ['DP']
+        pivoter = VariantPivoter(rows, cols, pivot_values)
+        
+        input_string = \
+'''COORDINATE	INFO	FORMAT	sample_A	sample_B
+1	blah	DP	10	100
+2	blah	DP	20	200
+3	blah	DP	30	300
+4	blah	DP	40	400'''
+        df = dataframe(input_string)
+        
+        transform = pivoter._build_transform_method(rows, cols, pivot_values)
+        actual_df = transform(df)
+        actual_df.columns.names = [""]
+        expected_string = \
+'''COORDINATE	SAMPLE_NAME	DP
+1	sample_A	10
+1	sample_B	100
+2	sample_A	20
+2	sample_B	200
+3	sample_A	30
+3	sample_B	300
+4	sample_A	40
+4	sample_B	400'''
+        expected_df = dataframe(expected_string)
+        expected_df.columns.names = [""]
 
-        self.assertEqual(0, output)
-    
-    def test_validate_parameters_invalid_keys(self):
-        input_keys = ["foo"]
-        first_line = ["1\t24\tA\tC\tGT:DP\tfoo;bar\t1/1:258"]
-        header_names = "CHROM\tPOS\tREF\tALT\tFORMAT\tINFO\tsample2"
-        pivot_values = ["GT"]
-        output, message = validate_parameters(input_keys, first_line, header_names, pivot_values)
-        
-        self.assertEqual(1, output)
-        self.assertEqual("Invalid input parameter(s) ['foo']", message)
-        
-    def test_validate_parameters_invalid_pivot(self):
-        input_keys = ["CHROM", "POS", "REF"]
-        first_line = ["1\t24\tA\tC\tGT:DP\tfoo;bar\t1/1:258"]
-        header_names = "CHROM\tPOS\tREF\tALT\tFORMAT\tINFO\tsample2"
-        pivot_values = ["foo", "GT"]
-        output, message = validate_parameters(input_keys, first_line, header_names, pivot_values)
-        
-        self.assertEqual(1, output)
-        self.assertEqual("Invalid input parameter(s) ['foo']", message)
+        tm.assert_frame_equal(expected_df, actual_df)
 
-    # def test_add_files(self):
-    def add_files(self):
+    def test_add_files(self):
         annot_df = pd.DataFrame()
         rows = ['COORDINATE']
         cols = ['SAMPLE_NAME']
@@ -71,35 +73,29 @@ class VariantPivoterTestCase(unittest.TestCase):
         pivoter.add_file("sample_B", StringIO(sample_B_file), 0)
         
         actual_df = pivoter._combined_df
-        # actual_df = pivoter.pivot()
-        # actual_df = actual_df["DP"]
-        
-        # actual_stringIO = StringIO()
-        # actual_df.to_csv(actual_stringIO, sep="\t")
-        # actual_flattened_df = pd.read_csv(StringIO(actual_stringIO.getvalue()), index_col=None, header=False, sep="\t", dtype='str')
-
+        actual_df.columns.names = [""]
         expected_string = \
-'''FORMAT2	COORDINATE	SAMPLE_NAME	DP
-0	1	Samp1	1
-1	2	Samp1	12
-2	3	Samp1	31
-3	4	Samp1	6
-4	5	Samp2	5
-5	6	Samp2	2
-6	7	Samp2	74
-7	8	Samp2	25
+'''COORDINATE	SAMPLE_NAME	DP
+1	Samp1	1
+2	Samp1	12
+3	Samp1	31
+4	Samp1	6
+1	Samp2	5
+2	Samp2	2
+3	Samp2	74
+4	Samp2	25
 '''
         expected_df = dataframe(expected_string)
-        expected_df.reset_index(inplace=True)
+        expected_df.columns.names = [""]
 
-        tm.assert_frame_equal(dataframe(expected_string), actual_df)
-       
+        tm.assert_frame_equal(expected_df, actual_df)
+    
+    ##is_compatible
     def test_is_compatible_raiseIfMissingRequiredColumns(self): 
         rows = ['COORDINATE', 'foo']
         cols = ['SAMPLE_NAME']
         pivot_values = ['DP']
-        transform = lambda x : x
-        pivoter = VariantPivoter(rows, cols, pivot_values, transform)
+        pivoter = VariantPivoter(rows, cols, pivot_values)
         
         input_string = \
 '''COORDINATE	FORMAT	sample_A	sample_B
@@ -115,8 +111,7 @@ class VariantPivoterTestCase(unittest.TestCase):
         rows = ['Foo']
         cols = ['SAMPLE_NAME']
         pivot_values = ['DP']
-        transform = lambda x : x
-        pivoter = VariantPivoter(rows, cols, pivot_values, transform)
+        pivoter = VariantPivoter(rows, cols, pivot_values)
        
         expected_string = \
 '''COORDINATE	sample_A	sample_B
@@ -132,8 +127,7 @@ class VariantPivoterTestCase(unittest.TestCase):
         rows = ["Foo", "Bar", "Baz"]
         cols = ["Blah"]
         pivot_values = ['DP']
-        transform = lambda x : x
-        pivoter = VariantPivoter(rows, cols, pivot_values, transform)
+        pivoter = VariantPivoter(rows, cols, pivot_values)
        
         expected_string = \
 '''Foo	Bar	Baz	Blah
@@ -143,36 +137,258 @@ class VariantPivoterTestCase(unittest.TestCase):
         df = dataframe(expected_string)
 
         self.assertRaises(PivotError, pivoter._check_pivot_is_unique, df)
+    
+    ##mult alts and mult genes
+    def test_insert_mult_alts(self):
+        rows = ['CHROM', 'POS', 'REF', 'ALT']
+        cols = ['SAMPLE_NAME']
+        pivot_values = ['DP']
         
-    def test_label_mult_alts(self):
+        input_string = \
+'''CHROM	POS	REF	ALT	FORMAT	sample_A	sample_B
+1	2	A	G	DP	134	57
+1	3	C	G	DP	135	58
+8	4	A	T	DP	136	59
+13	5	T	AA	DP	137	60
+13	5	T	AAAA	DP	137	60
+'''
+        df = dataframe(input_string)
+        
+        pivoter = VariantPivoter(rows, cols, pivot_values)
+        actual_df = pivoter.insert_mult_alt_and_gene(df)
+        
+        expected_string = \
+'''CHROM	POS	REF	ALT	Mult_Alt	FORMAT	sample_A	sample_B
+1	2	A	G		DP	134	57
+1	3	C	G		DP	135	58
+8	4	A	T		DP	136	59
+13	5	T	AA	True	DP	137	60
+13	5	T	AAAA	True	DP	137	60
+'''
+        expected_df = dataframe(expected_string)
+        expected_df.fillna(value="", inplace=True)
+
+        tm.assert_frame_equal(expected_df, actual_df)
+        
+    def test_insert_mult_genes(self):
+        rows = ['CHROM', 'POS', 'REF', 'ALT', 'GENE_SYMBOL']
+        cols = ['SAMPLE_NAME']
+        pivot_values = ['DP']
+        
+        input_string = \
+'''CHROM	POS	REF	ALT	GENE_SYMBOL	FORMAT	sample_A	sample_B
+1	2	A	G	BRCA1	DP	134	57
+1	3	C	G	EGFR	DP	135	58
+8	4	A	T	TANK	DP	136	59
+13	5	T	AA	ERBB2	DP	137	60
+13	5	T	AA	CREBBP	DP	137	60
+'''
+        df = dataframe(input_string)
+        
+        pivoter = VariantPivoter(rows, cols, pivot_values)
+        actual_df = pivoter.insert_mult_alt_and_gene(df)
+        
+        expected_string = \
+'''CHROM	POS	REF	ALT	GENE_SYMBOL	Mult_Alt	Mult_Gene	FORMAT	sample_A	sample_B
+1	2	A	G	BRCA1			DP	134	57
+1	3	C	G	EGFR			DP	135	58
+8	4	A	T	TANK			DP	136	59
+13	5	T	AA	ERBB2		True	DP	137	60
+13	5	T	AA	CREBBP		True	DP	137	60
+'''
+        expected_df = dataframe(expected_string)
+        expected_df.fillna(value="", inplace=True)
+
+        tm.assert_frame_equal(expected_df, actual_df)
+        
+    def test_insert_mult_alt_and_genes(self):
+        rows = ['CHROM', 'POS', 'REF', 'ALT', 'GENE_SYMBOL']
+        cols = ['SAMPLE_NAME']
+        pivot_values = ['DP']
+        
+        input_string = \
+'''CHROM	POS	REF	ALT	GENE_SYMBOL	FORMAT	sample_A	sample_B
+1	2	A	G	BRCA1	DP	134	57
+1	3	C	G	EGFR	DP	135	58
+8	4	A	T	TANK	DP	136	59
+8	4	A	TTT	TANK	DP	136	59
+13	5	T	AA	ERBB2	DP	137	60
+13	5	T	AA	CREBBP	DP	137	60
+'''
+        df = dataframe(input_string)
+        
+        pivoter = VariantPivoter(rows, cols, pivot_values)
+        actual_df = pivoter.insert_mult_alt_and_gene(df)
+        
+        expected_string = \
+'''CHROM	POS	REF	ALT	GENE_SYMBOL	Mult_Alt	Mult_Gene	FORMAT	sample_A	sample_B
+1	2	A	G	BRCA1			DP	134	57
+1	3	C	G	EGFR			DP	135	58
+8	4	A	T	TANK	True		DP	136	59
+8	4	A	TTT	TANK	True		DP	136	59
+13	5	T	AA	ERBB2		True	DP	137	60
+13	5	T	AA	CREBBP		True	DP	137	60
+'''
+        expected_df = dataframe(expected_string)
+        expected_df.fillna(value="", inplace=True)
+
+        tm.assert_frame_equal(expected_df, actual_df)
+        
+    def test_label_mult_alt(self):
         rows = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"]
         cols = ["SAMPLE_NAME"]
         pivot_values = ['GT']
-        transform = lambda x : x
-        pivoter = VariantPivoter(rows, cols, pivot_values, transform)
+        pivoter = VariantPivoter(rows, cols, pivot_values)
     
         input_string = \
-'''SAMPLE_NAME	CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	Sample1	sample_A	sample_B
+'''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	Sample1	sample_A	sample_B
+1	2	A	T	foo	.	GT	0/1	10	100
+1	2	A	G	foo	.	GT	0/1	10	100
+2	3	A	T	foo	.	GT	0/1	20	200'''
+        df = dataframe(input_string)
+        
+        cols_to_group = rows + ["WARNING/ERROR"]
+        grouped = df.groupby(cols_to_group)
+        df.set_index(cols_to_group, inplace=True)
+        
+        df = pivoter.label_mult(grouped, df, 'alt')
+        df.fillna(value="", inplace=True)
+        
+        expected_string = \
+'''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	Sample1	sample_A	sample_B	Mult_Alt
+1	2	A	T	foo	.	GT	0/1	10	100	True
+1	2	A	G	foo	.	GT	0/1	10	100	True
+2	3	A	T	foo	.	GT	0/1	20	200	'''
+        expected_df = dataframe(expected_string)
+        expected_df.set_index(cols_to_group, inplace=True)
+        expected_df.fillna(value="", inplace=True)
+        
+        tm.assert_frame_equal(expected_df, df)
+    
+    def test_label_mult_gene(self):
+        rows = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"]
+        cols = ["SAMPLE_NAME"]
+        pivot_values = ['GT']
+        pivoter = VariantPivoter(rows, cols, pivot_values)
+    
+        input_string = \
+'''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	Sample1	sample_A	sample_B
+1	2	A	T	foo	.	GT	0/1	10	100
+1	2	A	T	bar	.	GT	0/1	10	100
+2	3	A	T	foo	.	GT	0/1	20	200'''
+        df = dataframe(input_string)
+        
+        cols_to_group = rows + ["WARNING/ERROR"]
+        grouped = df.groupby(cols_to_group)
+        df.set_index(cols_to_group, inplace=True)
+        
+        df = pivoter.label_mult(grouped, df, 'gene')
+        df.fillna(value="", inplace=True)
+        
+        expected_string = \
+'''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	Sample1	sample_A	sample_B	Mult_Gene
+1	2	A	T	foo	.	GT	0/1	10	100	True
+1	2	A	T	bar	.	GT	0/1	10	100	True
+2	3	A	T	foo	.	GT	0/1	20	200	'''
+        expected_df = dataframe(expected_string)
+        expected_df.set_index(cols_to_group, inplace=True)
+        expected_df.fillna(value="", inplace=True)
+        
+        tm.assert_frame_equal(expected_df, df)
+    
+    def test_create_mult_dict_alt(self):
+        rows = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"]
+        cols = ["SAMPLE_NAME"]
+        pivot_values = ['GT']
+        pivoter = VariantPivoter(rows, cols, pivot_values)
+    
+        input_string = \
+'''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	Sample1	sample_A	sample_B
 sample1	1	2	A	T	foo	.	GT	0/1	10	100
 sample1	1	2	A	G	foo	.	GT	0/1	10	100
 sample2	2	3	A	T	foo	.	GT	0/1	20	200'''
         df = dataframe(input_string)
+        
         cols_to_group = rows + ["WARNING/ERROR"]
         grouped = df.groupby(cols_to_group)
         
-        df.set_index(cols_to_group, inplace=True)
-        pivoter.label_mult_alts(grouped, df)
+        val_index = 3
+        preliminary_dict = {}
+        mult_dict = {}
+        actual_dict = pivoter._create_mult_dict(grouped, val_index, preliminary_dict, mult_dict)
+        
+        expected_dict = {"1_2_A_foo_." : ["G", "T"]}
+        
+        self.assertEquals(expected_dict, actual_dict)
+        
+    def test_create_mult_dict_gene(self):
+        rows = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"]
+        cols = ["SAMPLE_NAME"]
+        pivot_values = ['GT']
+        pivoter = VariantPivoter(rows, cols, pivot_values)
+    
+        input_string = \
+'''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	Sample1	sample_A	sample_B
+sample1	1	2	A	T	foo	.	GT	0/1	10	100
+sample1	1	2	A	T	bar	.	GT	0/1	10	100
+sample2	2	3	A	T	foo	.	GT	0/1	20	200'''
+        df = dataframe(input_string)
+        
+        cols_to_group = rows + ["WARNING/ERROR"]
+        grouped = df.groupby(cols_to_group)
+        
+        val_index = 4
+        preliminary_dict = {}
+        mult_dict = {}
+        actual_dict = pivoter._create_mult_dict(grouped, val_index, preliminary_dict, mult_dict)
+        
+        expected_dict = {"1_2_A_T_." : ["bar", "foo"]}
+        
+        self.assertEquals(expected_dict, actual_dict)
+    
+    def test_determine_row_key(self):
+        rows = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"]
+        cols = ["SAMPLE_NAME"]
+        pivot_values = ['GT']
+        pivoter = VariantPivoter(rows, cols, pivot_values)
+        
+        row_key = ["1", "2", "A", "T", "."]
+        val = "bar"
+        val_index = 4
+        actual_key = pivoter._determine_row_key(row_key, val, val_index)
+        
+        expected_key = ("1", "2", "A", "T", "bar", ".")
+        
+        self.assertEquals(expected_key, actual_key)
+        
+    ##validate data
+    def test_validate_annotations(self):
+        rows = ['COORDINATE']
+        cols = ['SAMPLE_NAME']
+        pivot_values = ['DP']
+        
+        input_string = \
+'''COORDINATE	INFO	FORMAT	sample_A	sample_B
+1	blah	DP	10	100
+1	blah	DP	10	100
+2	blah	DP	20	200
+3	blah	DP	30	300
+4	blah	DP	40	400'''
+        df = dataframe(input_string)
+        
+        pivoter = VariantPivoter(rows, cols, pivot_values, combined_df=pd.DataFrame(), annot_df=df)
+        actual_df = pivoter.validate_annotations()
         
         expected_string = \
-'''SAMPLE_NAME	CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	Sample1	sample_A	sample_B	Mult_Alt
-sample1	1	2	A	T	foo	.	GT	0/1	10	100	True
-sample1	1	2	A	G	foo	.	GT	0/1	10	100	True
-sample2	2	3	A	T	foo	.	GT	0/1	20	200	NaN'''
+'''COORDINATE	INFO	FORMAT	sample_A	sample_B
+1	blah	DP	10	100
+2	blah	DP	20	200
+3	blah	DP	30	300
+4	blah	DP	40	400'''
         expected_df = dataframe(expected_string)
-        expected_df.set_index(cols_to_group, inplace=True)
         
-        tm.assert_frame_equal(expected_df, df)
-            
+        tm.assert_frame_equal(expected_df, actual_df)
+    
     def test_validate_sample_data_non_unique_cols(self):
         rows = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"]
         cols = ["SAMPLE_NAME"]
@@ -203,7 +419,6 @@ sample2	2	3	A	T	foo	.	GT	0/1	20	200	NaN'''
         # rows = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"]
         # cols = ["SAMPLE_NAME"]
         # pivot_values = ['GT']
-        # transform = lambda x : x
         
         # input_string = \
 # '''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	SAMPLE_NAME	SAMPLE_DATA
@@ -212,7 +427,7 @@ sample2	2	3	A	T	foo	.	GT	0/1	20	200	NaN'''
 # 2	3	C	G	foo	.	GT	sampleB	10'''.format(np.ndarray(shape=(1,2)))
         # df = dataframe(input_string)
         
-        # pivoter = VariantPivoter(rows, cols, pivot_values, transform, df)
+        # pivoter = VariantPivoter(rows, cols, pivot_values, df)
         # actual_df = pivoter.validate_sample_data()
         
         # expected_string = \
@@ -227,6 +442,88 @@ sample2	2	3	A	T	foo	.	GT	0/1	20	200	NaN'''
         # tm.assert_frame_equal(expected_df, actual_df)
     
 class PivotTestCase(unittest.TestCase):
+    ##validate parameters
+    def test_validate_parameters_all_valid(self):
+        input_keys = ["CHROM", "POS", "REF"]
+        first_line = ["1\t24\tA\tC\tGT:DP\tfoo;bar\t1/1:258"]
+        header_names = "CHROM\tPOS\tREF\tALT\tFORMAT\tINFO\tsample2"
+        pivot_values = ["GT"]
+        output, message = validate_parameters(input_keys, first_line, header_names, pivot_values)
+
+        self.assertEqual(0, output)
+    
+    def test_validate_parameters_invalid_keys(self):
+        input_keys = ["foo"]
+        first_line = ["1\t24\tA\tC\tGT:DP\tfoo;bar\t1/1:258"]
+        header_names = "CHROM\tPOS\tREF\tALT\tFORMAT\tINFO\tsample2"
+        pivot_values = ["GT"]
+        output, message = validate_parameters(input_keys, first_line, header_names, pivot_values)
+        
+        self.assertEqual(1, output)
+        self.assertEqual("Invalid input parameter(s) ['foo']", message)
+        
+    def test_validate_parameters_invalid_pivot(self):
+        input_keys = ["CHROM", "POS", "REF"]
+        first_line = ["1\t24\tA\tC\tGT:DP\tfoo;bar\t1/1:258"]
+        header_names = "CHROM\tPOS\tREF\tALT\tFORMAT\tINFO\tsample2"
+        pivot_values = ["foo", "GT"]
+        output, message = validate_parameters(input_keys, first_line, header_names, pivot_values)
+        
+        self.assertEqual(1, output)
+        self.assertEqual("Invalid input parameter(s) ['foo']", message)
+
+    def test_validate_format_tags_invalid(self):
+        first_line = ["1\t24\tA\tC\tGT:DP\tfoo;bar\t1/1:258"]
+        pivot_values = ["foo"]
+        fields = ["CHROM", "POS", "REF", "ALT", "FORMAT", "INFO", "sample2"]
+        actual_invalid_tags = validate_format_tags(first_line, pivot_values, fields)
+        
+        expected_invalid_tags = ["foo"]
+        
+        self.assertEqual(expected_invalid_tags, actual_invalid_tags)
+        
+    def test_validate_format_tags_valid(self):
+        first_line = ["1\t24\tA\tC\tGT:DP\tfoo;bar\t1/1:258"]
+        pivot_values = ["GT"]
+        fields = ["CHROM", "POS", "REF", "ALT", "FORMAT", "INFO", "sample2"]
+        actual_invalid_tags = validate_format_tags(first_line, pivot_values, fields)
+        
+        expected_invalid_tags = []
+        
+        self.assertEqual(expected_invalid_tags, actual_invalid_tags)
+    
+    ##determine input keys
+    def test_determine_input_keys_txt(self):
+        input_dir = "test/test_input/test_input_keys_txt"
+        actual_lst = determine_input_keys(input_dir)
+        
+        expected_lst = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL", "SnpEff_WARNING/ERROR"]
+        
+        self.assertEquals(expected_lst, actual_lst)
+        
+    def test_determine_input_keys_vcf(self):
+        input_dir = "test/test_input/test_input_keys_vcf"
+        actual_lst = determine_input_keys(input_dir)
+        
+        expected_lst = ["CHROM", "POS", "REF", "ALT"]
+        
+        self.assertEquals(expected_lst, actual_lst)
+        
+    def test_determine_input_keys_invalid(self):
+        input_dir = "test/test_input/test_input_keys_invalid"
+        
+        self.assertRaises(PivotError, determine_input_keys, input_dir)
+    
+    ##get headers, readers
+    def test_get_headers_and_readers(self):
+        input_dir = "test/test_input/test_input_keys_txt"
+        sample_file_readers, header_index, header_names, first_line = get_headers_and_readers(input_dir)
+        
+        self.assertEquals([input_dir + "/foo1.txt", input_dir + "/foo2.txt"], sample_file_readers)
+        self.assertEquals(2, header_index)
+        self.assertEquals("CHROM	POS	REF	ALT	GENE_SYMBOL	FORMAT	Sample_252	Sample_253\n", header_names)
+        self.assertEquals(["1	2342	A	T	EGFR	GT:DP	1/1:241	0/1:70\n", "1	134	G	C	EGFR	GT:DP	1/1:242	0/1:546\n"], first_line)
+    
     def test_build_pivoter_invalidHeaderRaisesPivotError(self):
         input_string = \
 '''COORDINATE	FORMAT	sample_A	sample_B
@@ -450,7 +747,45 @@ chr1	4	A	T	sample3	0/1	4''')
         expected_df = pd.read_csv(expected_data, sep="\t", header=False, dtype='str')
 
         tm.assert_frame_equal(expected_df, actual_df)
+    
+    ##rearrange columns
+    def test_rearrange_columns(self):
+        input_string = \
+'''CHROM	POS	REF	ALT	FORMAT	DP_sample_A	DP_sample_B
+1	2	A	G	DP	134	57
+1	3	C	G	DP	135	58
+8	4	A	T	DP	136	59
+13	5	T	AA	DP	137	60
+13	5	T	AAAA	DP	137	60
+'''
+        df = dataframe(input_string)
         
+        pivot_values = ["DP"]
+        
+        actual_df = rearrange_columns(df, pivot_values)
+        
+        expected_string = \
+'''CHROM	POS	REF	ALT	DP_sample_A	DP_sample_B	FORMAT
+1	2	A	G	134	57	DP
+1	3	C	G	135	58	DP
+8	4	A	T	136	59	DP
+13	5	T	AA	137	60	DP
+13	5	T	AAAA	137	60	DP
+'''
+        expected_df = dataframe(expected_string)
+        
+        tm.assert_frame_equal(expected_df, actual_df)
+    
+    def test_change_order(self):
+        lst = ["CHROM", "POS", "REF", "ALT", "FORMAT", "INFO", "DP_sample1", "DP_sample2"]
+        pivot_values = ["DP"]
+        actual_lst = change_order(lst, pivot_values)
+        
+        expected_lst = ["CHROM", "POS", "REF", "ALT", "DP_sample1", "DP_sample2", "FORMAT", "INFO"]
+        
+        self.assertEqual(expected_lst, actual_lst)
+        
+    ##annot df
     def test_append_to_annot_df(self):
         annot_df = pd.DataFrame()
 
