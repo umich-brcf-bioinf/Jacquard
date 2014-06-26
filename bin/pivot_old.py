@@ -26,8 +26,8 @@ class VariantPivoter():
 
     @staticmethod
     def _build_transform_method(rows, columns, pivot_values):
-        def transform(df, fname):
-            expanded_df = expand_format(df, pivot_values, rows, fname)
+        def transform(df):
+            expanded_df = expand_format(df, pivot_values, rows)
             
             return project_prepivot(expanded_df, pivot_values, rows, columns)
         return transform
@@ -54,14 +54,13 @@ class VariantPivoter():
  
     def add_file(self, path, reader, header_index):
         initial_df  = create_initial_df(path, reader, header_index)
-        fname = os.path.splitext(os.path.basename(path))[0]
         
         if "#CHROM" in initial_df.columns:
             initial_df.rename(columns={"#CHROM": "CHROM"}, inplace=True)
         
         self._annot_df = append_to_annot_df(initial_df, self._annot_df)
         
-        unpivoted_df = self.is_compatible(initial_df, fname)
+        unpivoted_df = self.is_compatible(initial_df)
 
         self._combined_df = merge_samples(unpivoted_df, self._combined_df)
         
@@ -75,12 +74,11 @@ class VariantPivoter():
     def validate_sample_data(self):
         grouped = self._combined_df.groupby(self._rows + ["SAMPLE_NAME"])
         group = grouped.groups
-
+        
         for column in self._combined_df:
             # for key, val in group.items():
                 # self.find_non_unique_columns(grouped, column, key, val)
             self.find_non_unique_rows(column)
-            
         return self._combined_df
         
     def find_non_unique_columns(self, grouped, column, key, val):
@@ -210,8 +208,8 @@ class VariantPivoter():
        
         return complete_key
                 
-    def is_compatible(self, initial_df, fname=""):   
-        unpivoted_df = self._transform(initial_df, fname)
+    def is_compatible(self, initial_df):   
+        unpivoted_df = self._transform(initial_df)
 
         self._check_required_columns_present(unpivoted_df)
         self._check_pivot_is_unique(unpivoted_df)  
@@ -330,7 +328,7 @@ def append_to_annot_df(initial_df, annot_df):
         annot_df = annot_df.append(temp_df, ignore_index=True)
     return annot_df
   
-def melt_samples(df, fname): 
+def melt_samples(df): 
     format_data = df.ix[0, "FORMAT"].split(":")
     if "ESAF" not in format_data:
         format_data.append("ESAF")
@@ -346,7 +344,6 @@ def melt_samples(df, fname):
         
         if len(data) == len(format_data):
             sample_names.append(field_name)
-            
 
     column_list = []
     column_list.extend(df.columns)
@@ -354,14 +351,13 @@ def melt_samples(df, fname):
     for col in sample_names:
         if col in column_list: 
             column_list.remove(col)   
-        df.rename(columns={col: fname + "_" + col}, inplace=True)
-        
+
     melted_df = melt(df, id_vars=column_list, var_name='SAMPLE_NAME', value_name='SAMPLE_DATA')
     
     return melted_df
     
-def expand_format(df, formats_to_expand, rows, fname):
-    df = melt_samples(df, fname)
+def expand_format(df, formats_to_expand, rows):     
+    df = melt_samples(df)
 
     df["aggregate_format_sample"] = df["FORMAT"] + "=" + df['SAMPLE_DATA']
     df["aggregate_format_sample"] = df["aggregate_format_sample"].map(combine_format_values)
@@ -383,7 +379,7 @@ def expand_format(df, formats_to_expand, rows, fname):
         joined_df.rename(columns={"SnpEff_WARNING/ERROR": "WARNING/ERROR"}, inplace=True)
 
     try:
-        pivoted_df = pd.pivot_table(joined_df, rows=rows+["SAMPLE_NAME"], cols="FORMAT2", values="VALUE2", aggfunc=lambda x: x)
+        pivoted_df = pd.pivot_table(joined_df, rows=rows+["SAMPLE_NAME"], cols="FORMAT2", values="VALUE2", aggfunc=lambda x: str(x))
     except Exception as e :
         raise PivotError("Cannot pivot data. {0}".format(e))
 
@@ -574,7 +570,8 @@ def process_files(sample_file_readers, pivot_builder=build_pivoter):
         
     if "WARNING/ERROR" in sorted_df.columns.values:
         sorted_df.rename(columns={"WARNING/ERROR":"SnpEff_WARNING/ERROR"}, inplace=True)
-    
+
+    # print sorted_df.info
     print "{0} - writing to excel file: {1}".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'), output_path)
     writer = ExcelWriter(output_path)
     sorted_df.to_excel(writer, "Variant_output", index=False, merge_cells=0)  
@@ -586,8 +583,8 @@ def process_files(sample_file_readers, pivot_builder=build_pivoter):
     print "{0} - saving file".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     writer.save() 
     
-    # print "{0} - styling workbook".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
-    # style_workbook(output_path)
+    print "{0} - styling workbook".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
+    style_workbook(output_path)
    
     print "{0} - done".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     

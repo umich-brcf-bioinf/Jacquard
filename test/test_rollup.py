@@ -4,7 +4,7 @@ from pandas import *
 import unittest
 from pandas.util.testing import assert_frame_equal
 import pandas.util.testing as tm
-from bin.rollup import gene_rollup_highest_impact, gene_rollup_damaging_impact, combine_dfs
+from bin.rollup import RollupError, gene_rollup_highest_impact, gene_rollup_damaging_impact, combine_dfs
 from StringIO import StringIO
 import pprint
 import os
@@ -19,15 +19,17 @@ def dataframe(input_data, sep="\t", index_col=None):
 class RollupTestCase(unittest.TestCase):
     def test_gene_rollup_highest_impact(self):
         input_string = \
-'''SAMPLE_NAME	CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	HIGHEST_IMPACT	RNA_FREQ_sampleA	RNA_FREQ_sampleB
-sample1	1	2	A	T	foo	HIGH	0.5	0.2
-sample1	1	2	A	G	foo	LOW	0.7	.28
-sample2	2	3	A	T	bar	MODIFIER	0.5	0.1
-sample2	2	3	A	T	foo	.	0.5	0.1
-sample2	2	3	A	T	bar	MODERATE	0.5	.'''
+'''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	HIGHEST_IMPACT	RNA_FREQ_sampleA	RNA_FREQ_sampleB
+1	2	A	T	foo	HIGH	0.5	0.2
+1	2	A	G	foo	LOW	0.7	.28
+2	3	A	T	bar	MODIFIER	0.5	0.1
+2	3	A	T	foo	.	0.5	0.1
+2	3	A	T	bar	MODERATE	0.5	.'''
         df = dataframe(input_string)
+        samples = "RNA_FREQ"
+        cols = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"]
         
-        actual_df = gene_rollup_highest_impact(df)
+        actual_df = gene_rollup_highest_impact(df, samples, cols)
  
         impact_RNA_FREQ_sampleA = pd.Series({"bar": "mx", "foo": "hl"}, name="GENE_SYMBOL", index=["bar", "foo"])
         impact_RNA_FREQ_sampleB = pd.Series({"bar": "x", "foo": "hl"}, name="GENE_SYMBOL", index=["bar", "foo"])
@@ -50,14 +52,16 @@ sample2	2	3	A	T	bar	0	.	0.1
 sample2	2	3	A	T	foo	7	0.5	0.1
 sample2	2	3	A	T	bar	2	0.5	.'''
         df = dataframe(input_string)
+        samples = "RNA_FREQ"
+        cols = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"]
         
-        actual_df = gene_rollup_damaging_impact(df)
+        actual_df = gene_rollup_damaging_impact(df, samples, cols)
         
         impact_RNA_FREQ_sampleA = pd.Series({"bar": 2, "foo": 8}, name="GENE_SYMBOL", index=["bar", "foo"])
         impact_RNA_FREQ_sampleB = pd.Series({"bar": 2, "foo": 8}, name="GENE_SYMBOL", index=["bar", "foo"])
         
-        tm.assert_series_equal(impact_RNA_FREQ_sampleA, actual_df["Impact_Damaging", "RNA_FREQ_sampleA"])
-        tm.assert_series_equal(impact_RNA_FREQ_sampleB, actual_df["Impact_Damaging", "RNA_FREQ_sampleB"])
+        tm.assert_series_equal(impact_RNA_FREQ_sampleA, actual_df["dbNSFP_Impact_Damaging", "RNA_FREQ_sampleA"])
+        tm.assert_series_equal(impact_RNA_FREQ_sampleB, actual_df["dbNSFP_Impact_Damaging", "RNA_FREQ_sampleB"])
         
         
     def test_combine_dfs(self):
@@ -71,8 +75,11 @@ sample2	2	3	A	T	bar	LOW	2	0.5	.'''
         df1 = dataframe(input_string)
         df2 = dataframe(input_string)
         
-        df1 = gene_rollup_highest_impact(df1)
-        df2 = gene_rollup_damaging_impact(df2)
+        samples = "RNA_FREQ"
+        cols = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"]
+        
+        df1 = gene_rollup_highest_impact(df1, samples, cols)
+        df2 = gene_rollup_damaging_impact(df2, samples, cols)
         
         combined_df = combine_dfs(df1, df2)
 
@@ -87,8 +94,8 @@ sample2	2	3	A	T	bar	LOW	2	0.5	.'''
         tm.assert_series_equal(impact_combined_RNA_FREQ_sampleA, combined_df["Impact_complete", "RNA_FREQ_sampleA"])
         tm.assert_series_equal(impact_combined_RNA_FREQ_sampleB, combined_df["Impact_complete", "RNA_FREQ_sampleB"])
 
-        tm.assert_series_equal(impact_damaging_RNA_FREQ_sampleA, combined_df["Impact_Damaging", "RNA_FREQ_sampleA"])
-        tm.assert_series_equal(impact_damaging_RNA_FREQ_sampleB, combined_df["Impact_Damaging", "RNA_FREQ_sampleB"])
+        tm.assert_series_equal(impact_damaging_RNA_FREQ_sampleA, combined_df["dbNSFP_Impact_Damaging", "RNA_FREQ_sampleA"])
+        tm.assert_series_equal(impact_damaging_RNA_FREQ_sampleB, combined_df["dbNSFP_Impact_Damaging", "RNA_FREQ_sampleB"])
         
         tm.assert_series_equal(rank, combined_df["Impact_complete_Rank"])
         tm.assert_series_equal(rank, combined_df["Impact_Damaging_Rank"])

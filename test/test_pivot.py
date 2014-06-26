@@ -25,25 +25,25 @@ class VariantPivoterTestCase(unittest.TestCase):
         
         input_string = \
 '''COORDINATE	INFO	FORMAT	sample_A	sample_B
-1	blah	DP	10	100
-2	blah	DP	20	200
-3	blah	DP	30	300
-4	blah	DP	40	400'''
+1	blah	DP:ESAF	10:0.2	100:0.2
+2	blah	DP:ESAF	20:0.2	200:0.2
+3	blah	DP:ESAF	30:0.2	300:0.2
+4	blah	DP:ESAF	40:0.2	400:0.2'''
         df = dataframe(input_string)
         
         transform = pivoter._build_transform_method(rows, cols, pivot_values)
-        actual_df = transform(df)
+        actual_df = transform(df, "foo")
         actual_df.columns.names = [""]
         expected_string = \
 '''COORDINATE	SAMPLE_NAME	DP
-1	sample_A	10
-1	sample_B	100
-2	sample_A	20
-2	sample_B	200
-3	sample_A	30
-3	sample_B	300
-4	sample_A	40
-4	sample_B	400'''
+1	foo_sample_A	10
+1	foo_sample_B	100
+2	foo_sample_A	20
+2	foo_sample_B	200
+3	foo_sample_A	30
+3	foo_sample_B	300
+4	foo_sample_A	40
+4	foo_sample_B	400'''
         expected_df = dataframe(expected_string)
         expected_df.columns.names = [""]
 
@@ -58,16 +58,16 @@ class VariantPivoterTestCase(unittest.TestCase):
         pivoter = VariantPivoter(rows, cols, pivot_values)
         sample_A_file = \
 '''COORDINATE	FORMAT	Samp1
-1	DP	1
-2	DP	12
-3	DP	31
-4	DP	6'''
+1	DP:ESAF	1:0.2
+2	DP:ESAF	12:0.2
+3	DP:ESAF	31:0.2
+4	DP:ESAF	6:0.2'''
         sample_B_file = \
 '''COORDINATE	FORMAT	Samp2
-1	DP	5
-2	DP	2
-3	DP	74
-4	DP	25'''
+1	DP:ESAF	5:0.2
+2	DP:ESAF	2:0.2
+3	DP:ESAF	74:0.2
+4	DP:ESAF	25:0.2'''
 
         pivoter.add_file("sample_A", StringIO(sample_A_file), 0)
         pivoter.add_file("sample_B", StringIO(sample_B_file), 0)
@@ -76,14 +76,14 @@ class VariantPivoterTestCase(unittest.TestCase):
         actual_df.columns.names = [""]
         expected_string = \
 '''COORDINATE	SAMPLE_NAME	DP
-1	Samp1	1
-2	Samp1	12
-3	Samp1	31
-4	Samp1	6
-1	Samp2	5
-2	Samp2	2
-3	Samp2	74
-4	Samp2	25
+1	sample_A_Samp1	1
+2	sample_A_Samp1	12
+3	sample_A_Samp1	31
+4	sample_A_Samp1	6
+1	sample_B_Samp2	5
+2	sample_B_Samp2	2
+3	sample_B_Samp2	74
+4	sample_B_Samp2	25
 '''
         expected_df = dataframe(expected_string)
         expected_df.columns.names = [""]
@@ -99,13 +99,13 @@ class VariantPivoterTestCase(unittest.TestCase):
         
         input_string = \
 '''COORDINATE	FORMAT	sample_A	sample_B
-1	DP	10	100
-2	DP	20	200
-3	DP	30	300
-4	DP	40	400'''
+1	DP:ESAF	10:0.2	100:0.2
+2	DP:ESAF	20:0.2	200:0.2
+3	DP:ESAF	30:0.2	300:0.2
+4	DP:ESAF	40:0.2	400:0.2'''
         df = dataframe(input_string)
         
-        self.assertRaises(PivotError, pivoter.is_compatible, df)
+        self.assertRaises(PivotError, pivoter.is_compatible, df, "foo")
         
     def test_check_required_columns_present(self):
         rows = ['Foo']
@@ -389,7 +389,9 @@ sample2	2	3	A	T	foo	.	GT	0/1	20	200'''
         
         tm.assert_frame_equal(expected_df, actual_df)
     
-    def test_validate_sample_data_non_unique_cols(self):
+    #not being called in pivot.py
+    # def test_validate_sample_data_non_unique_cols(self):
+    def validate_sample_data_non_unique_cols(self):
         rows = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"]
         cols = ["SAMPLE_NAME"]
         pivot_values = ['GT']
@@ -517,20 +519,20 @@ class PivotTestCase(unittest.TestCase):
     ##get headers, readers
     def test_get_headers_and_readers(self):
         input_dir = "test/test_input/test_input_keys_txt"
-        sample_file_readers, header_index, header_names, first_line = get_headers_and_readers(input_dir)
+        sample_file_readers, headers, header_names, first_line = get_headers_and_readers(input_dir)
         
         self.assertEquals([input_dir + "/foo1.txt", input_dir + "/foo2.txt"], sample_file_readers)
-        self.assertEquals(2, header_index)
-        self.assertEquals("CHROM	POS	REF	ALT	GENE_SYMBOL	FORMAT	Sample_252	Sample_253\n", header_names)
+        self.assertEquals([2,2], headers)
+        self.assertEquals("CHROM	POS	REF	ALT	GENE_SYMBOL	FORMAT	Sample_2384	Sample_2385\n", header_names)
         self.assertEquals(["1	2342	A	T	EGFR	GT:DP	1/1:241	0/1:70\n", "1	134	G	C	EGFR	GT:DP	1/1:242	0/1:546\n"], first_line)
     
     def test_build_pivoter_invalidHeaderRaisesPivotError(self):
         input_string = \
 '''COORDINATE	FORMAT	sample_A	sample_B
-1	GT	10	100
-2	GT	20	200
-3	GT	30	300
-4	GT	40	400'''
+1	GT:ESAF	10:0.2	100:0.2
+2	GT:ESAF	20:0.2	200:0.2
+3	GT:ESAF	30:0.2	300:0.2
+4	GT:ESAF	40:0.2	400:0.2'''
         input_keys = ['CHROM', 'POS']
         pivot_values = ["GT"]
             
@@ -560,60 +562,57 @@ class PivotTestCase(unittest.TestCase):
     def test_expand_format(self):
         dataString = \
 '''CHROM	POS	FORMAT	Sample1
-1	2	GT:DP	A:1
-1	3	GT:DP	B:2
-1	5	GT:DP	:3
-13	3	GT:DP	D:'''
+1	2	GT:DP:ESAF	A:1:0.2
+1	3	GT:DP:ESAF	B:2:0.2
+1	5	GT:DP:ESAF	:3:0.2
+13	3	GT:DP:ESAF	D::0.2'''
         input_df = pd.read_csv(StringIO(dataString), sep="\t", header=False)
         rows=["CHROM", "POS"]
-        actual_df = expand_format(input_df, ["GT"], rows)
+        actual_df = expand_format(input_df, ["GT"], rows, "foo")
  
         expected_string = \
-'''CHROM	POS	SAMPLE_NAME	DP	GT
-1	2	Sample1	1	A
-1	3	Sample1	2	B
-1	5	Sample1	3	
-13	3	Sample1		D'''
+'''CHROM	POS	SAMPLE_NAME	DP	ESAF	GT
+1	2	foo_Sample1	1	0.2	A
+1	3	foo_Sample1	2	0.2	B
+1	5	foo_Sample1	3	0.2	
+13	3	foo_Sample1		0.2	D'''
 
-        expected_df = pd.read_csv(StringIO(expected_string), sep="\t", header=False, dtype={'DP':str})
+        expected_df = pd.read_csv(StringIO(expected_string), sep="\t", header=False, dtype={'DP':str, 'ESAF':str})
         expected_df.fillna(value="", inplace=True)
 
-        tm.assert_frame_equal(expected_df, actual_df, check_names=False)
+        tm.assert_series_equal(expected_df.ix[:,0], actual_df.ix[:,0])
+        tm.assert_series_equal(expected_df.ix[:,1], actual_df.ix[:,1])
+        tm.assert_series_equal(expected_df.ix[:,2], actual_df.ix[:,2])
+        tm.assert_series_equal(expected_df.ix[:,3], actual_df.ix[:,3])
+        tm.assert_series_equal(expected_df.ix[:,4], actual_df.ix[:,4])
+        tm.assert_series_equal(expected_df.ix[:,5], actual_df.ix[:,5])
         
     def test_expand_format_multipleFormats(self):
         dataString = \
 '''CHROM	POS	FORMAT	Sample1
-1	1	GT:DP	A:1
-1	2	GT:DP	B:2
-1	3	GT:DP	:3
-1	4	GT:DP	D:'''
+1	1	GT:DP:ESAF	A:1:0.2
+1	2	GT:DP:ESAF	B:2:0.2
+1	3	GT:DP:ESAF	:3:0.2
+1	4	GT:DP:ESAF	D::0.2'''
         input_df = pd.read_csv(StringIO(dataString), sep="\t", header=False)
         rows = ["CHROM", "POS"]
-        actual_df = expand_format(input_df, ["GT", "DP"], rows)
+        actual_df = expand_format(input_df, ["GT", "DP"], rows, "foo")
 
         expectedString = \
-'''CHROM\tPOS\tSAMPLE_NAME\tDP\tGT
-1	1	Sample1	1	A
-1	2	Sample1	2	B
-1	3	Sample1	3	
-1	4	Sample1		D'''
-        expected_df = pd.read_csv(StringIO(expectedString), sep="\t", header=False, dtype={'DP':str})
+'''CHROM\tPOS\tSAMPLE_NAME\tDP\tESAF\tGT
+1	1	foo_Sample1	1	0.2	A
+1	2	foo_Sample1	2	0.2	B
+1	3	foo_Sample1	3	0.2	
+1	4	foo_Sample1		0.2	D'''
+        expected_df = pd.read_csv(StringIO(expectedString), sep="\t", header=False, dtype={'DP':str, 'ESAF':str})
         expected_df.fillna(value="", inplace=True)
-     
-        tm.assert_frame_equal(expected_df, actual_df, check_names=False)
 
-    def test_expand_format_invalidFormatsIgnored(self):
-        dataString = \
-'''CHROM	POS	FORMAT	Sample1
-1	1	GT:DP	A:1
-1	2	GT:DP	B:2
-1	3	GT:DP	:3
-1	4	GT:DP	D:'''
-        input_df = pd.read_csv(StringIO(dataString), sep="\t", header=False)
-        rows = ["CHROM", "POS"]
-      
-        self.assertRaises(PivotError, expand_format, input_df, ["GT", "DP", "FOO"], rows)
-
+        tm.assert_series_equal(expected_df.ix[:,0], actual_df.ix[:,0])
+        tm.assert_series_equal(expected_df.ix[:,1], actual_df.ix[:,1])
+        tm.assert_series_equal(expected_df.ix[:,2], actual_df.ix[:,2])
+        tm.assert_series_equal(expected_df.ix[:,3], actual_df.ix[:,3])
+        tm.assert_series_equal(expected_df.ix[:,4], actual_df.ix[:,4])
+        tm.assert_series_equal(expected_df.ix[:,5], actual_df.ix[:,5])
         
     ##select_prepivot
     def test_project_prepivot(self):
@@ -643,24 +642,24 @@ sample6	chr1	4	A	T	1/1'''
     def test_melt_samples(self):
         dataString = \
 '''CHROM	POS	REF	ANNOTATED_ALLELE	FORMAT	Sample_1	Sample_2
-chr1	1	A	T	GT	0/1	1/1
-chr1	2	A	T	GT	0/1	0/1
-chr1	3	A	T	GT	1/1	1/1
-chr1	4	A	T	GT	1/1	0/1'''
+chr1	1	A	T	GT:ESAF	0/1:0.2	1/1:0.2
+chr1	2	A	T	GT:ESAF	0/1:0.2	0/1:0.2
+chr1	3	A	T	GT:ESAF	1/1:0.2	1/1:0.2
+chr1	4	A	T	GT:ESAF	1/1:0.2	0/1:0.2'''
         df = pd.read_csv(StringIO(dataString), sep="\t", header=False, dtype='str')
         
-        actual_df = melt_samples(df)
+        actual_df = melt_samples(df, "foo")
         
         expected_dataString = \
 '''CHROM	POS	REF	ANNOTATED_ALLELE	FORMAT	SAMPLE_NAME	SAMPLE_DATA
-chr1	1	A	T	GT	Sample_1	0/1
-chr1	2	A	T	GT	Sample_1	0/1
-chr1	3	A	T	GT	Sample_1	1/1
-chr1	4	A	T	GT	Sample_1	1/1
-chr1	1	A	T	GT	Sample_2	1/1
-chr1	2	A	T	GT	Sample_2	0/1
-chr1	3	A	T	GT	Sample_2	1/1
-chr1	4	A	T	GT	Sample_2	0/1'''
+chr1	1	A	T	GT:ESAF	foo_Sample_1	0/1:0.2
+chr1	2	A	T	GT:ESAF	foo_Sample_1	0/1:0.2
+chr1	3	A	T	GT:ESAF	foo_Sample_1	1/1:0.2
+chr1	4	A	T	GT:ESAF	foo_Sample_1	1/1:0.2
+chr1	1	A	T	GT:ESAF	foo_Sample_2	1/1:0.2
+chr1	2	A	T	GT:ESAF	foo_Sample_2	0/1:0.2
+chr1	3	A	T	GT:ESAF	foo_Sample_2	1/1:0.2
+chr1	4	A	T	GT:ESAF	foo_Sample_2	0/1:0.2'''
         expected_df = pd.read_csv(StringIO(expected_dataString), sep="\t", header=False, dtype='str')
 
         tm.assert_frame_equal(expected_df, actual_df)
@@ -668,24 +667,24 @@ chr1	4	A	T	GT	Sample_2	0/1'''
     def test_melt_samples_trailing_field(self):
         dataString = \
 '''CHROM	POS	REF	ANNOTATED_ALLELE	FORMAT	Sample_1	Sample_2	Sample
-chr1	1	A	T	GT:DP	0/1:2	1/1:12	foo
-chr1	2	A	T	GT:DP	0/1:3	0/1:13	foo
-chr1	3	A	T	GT:DP	1/1:4	1/1:14	foo
-chr1	4	A	T	GT:DP	1/1:5	0/1:15	foo'''
+chr1	1	A	T	GT:DP:ESAF	0/1:2:0.2	1/1:12:0.2	foo
+chr1	2	A	T	GT:DP:ESAF	0/1:3:0.2	0/1:13:0.2	foo
+chr1	3	A	T	GT:DP:ESAF	1/1:4:0.2	1/1:14:0.2	foo
+chr1	4	A	T	GT:DP:ESAF	1/1:5:0.2	0/1:15:0.2	foo'''
         df = pd.read_csv(StringIO(dataString), sep="\t", header=False, dtype='str')
         
-        actual_df = melt_samples(df)
+        actual_df = melt_samples(df, "foo")
         
         expected_dataString = \
 '''CHROM	POS	REF	ANNOTATED_ALLELE	FORMAT	Sample	SAMPLE_NAME	SAMPLE_DATA
-chr1	1	A	T	GT:DP	foo	Sample_1	0/1:2
-chr1	2	A	T	GT:DP	foo	Sample_1	0/1:3
-chr1	3	A	T	GT:DP	foo	Sample_1	1/1:4
-chr1	4	A	T	GT:DP	foo	Sample_1	1/1:5
-chr1	1	A	T	GT:DP	foo	Sample_2	1/1:12
-chr1	2	A	T	GT:DP	foo	Sample_2	0/1:13
-chr1	3	A	T	GT:DP	foo	Sample_2	1/1:14
-chr1	4	A	T	GT:DP	foo	Sample_2	0/1:15'''
+chr1	1	A	T	GT:DP:ESAF	foo	foo_Sample_1	0/1:2:0.2
+chr1	2	A	T	GT:DP:ESAF	foo	foo_Sample_1	0/1:3:0.2
+chr1	3	A	T	GT:DP:ESAF	foo	foo_Sample_1	1/1:4:0.2
+chr1	4	A	T	GT:DP:ESAF	foo	foo_Sample_1	1/1:5:0.2
+chr1	1	A	T	GT:DP:ESAF	foo	foo_Sample_2	1/1:12:0.2
+chr1	2	A	T	GT:DP:ESAF	foo	foo_Sample_2	0/1:13:0.2
+chr1	3	A	T	GT:DP:ESAF	foo	foo_Sample_2	1/1:14:0.2
+chr1	4	A	T	GT:DP:ESAF	foo	foo_Sample_2	0/1:15:0.2'''
         expected_df = pd.read_csv(StringIO(expected_dataString), sep="\t", header=False, dtype='str')
 
         tm.assert_frame_equal(expected_df, actual_df)
