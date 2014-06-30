@@ -30,7 +30,7 @@ def verify_headers(df):
             epee_missing_columns.append(col)
     
     vcf_missing_columns = []
-    vcf_cols = ["CHROM", "POS", "REF", "ALT"]
+    vcf_cols = ["CHROM", "POS", "REF", "ALT", "GENE_SYMBOL"]
     if epee_missing_columns != []:
         for col in vcf_cols:
             if col not in df.columns:
@@ -246,8 +246,8 @@ def process_files(input, samples, delim):
     print "saving file"
     writer.save() 
     
-    print "styling workbook"
-    style_workbook(output)
+    # print "styling workbook"
+    # style_workbook(output)
 
     print "done"
     

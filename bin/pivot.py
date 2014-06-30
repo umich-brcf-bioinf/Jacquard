@@ -114,8 +114,6 @@ class VariantPivoter():
         return sorted_df
     
     def insert_mult_alt_and_gene(self, df):
-        # if "SnpEff_WARNING/ERROR" in df.columns.values and "SnpEff_WARNING/ERROR" not in self._rows:
-            # df.rename(columns={"SnpEff_WARNING/ERROR": "WARNING/ERROR"}, inplace=True)
         if "WARNING/ERROR" in df.columns.values and "WARNING/ERROR" not in self._rows:
             df.rename(columns={"WARNING/ERROR": "SnpEff_WARNING/ERROR"}, inplace=True)
         
@@ -246,7 +244,6 @@ def validate_parameters(input_keys, first_line, header_names, pivot_values):
                 invalid_fields.append(key)
     
     invalid_tags = validate_format_tags(first_line, pivot_values, fields)
-    # invalid_tags = []
     
     message = "Invalid input parameter(s) "
     raise_err = 0
@@ -408,10 +405,7 @@ def merge_samples(reduced_df, combined_df):
     if combined_df.empty:
         combined_df = reduced_df
     else:
-        # if len(combined_df.columns) == len(reduced_df.columns):
         combined_df = combined_df.append(reduced_df, ignore_index=True)
-        # else:
-            # raise PivotError("Columns do not match across files")
 
     return combined_df    
     
