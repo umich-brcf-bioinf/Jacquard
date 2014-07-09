@@ -580,7 +580,7 @@ if __name__ == "__main__":
     description='''\
     Jacquard.py
     Pivots input files so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files. ''', 
-    epilog="author: Jessica Bene 05/2014")
+    epilog="authors: Jessica Bene, Chris Gates 05/2014")
     parser.add_argument("input_dir")
     parser.add_argument("output_file")
     parser.add_argument("-k", "--keys",
