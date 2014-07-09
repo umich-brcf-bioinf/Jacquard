@@ -30,7 +30,7 @@ def verify_headers(df):
             epee_missing_columns.append(col)
     
     vcf_missing_columns = []
-    vcf_cols = ["CHROM", "POS", "REF", "ALT", "GENE_SYMBOL"]
+    vcf_cols = ["CHROM", "POS", "REF", "ALT"]
     if epee_missing_columns != []:
         for col in vcf_cols:
             if col not in df.columns:
@@ -42,9 +42,10 @@ def verify_headers(df):
         raise RollupError("Unable to determine file source. Input file is missing required columns - needs to include either [{0}] for Epee or [{1}] for VCF".format(epee_missing_columns, vcf_missing_columns))
         
     else:
+        if "GENE_SYMBOL" in df.columns:
+            vcf_cols.append("GENE_SYMBOL")
         return vcf_cols
             
-    
 
 def gene_rollup_highest_impact(initial_df, samples, cols):
     sample_cols =  initial_df.filter(regex=re.escape(samples))
@@ -78,9 +79,12 @@ def gene_rollup_highest_impact(initial_df, samples, cols):
             pivoted_df[item] = 0
         pivoted_df[item + "_initial_sum"] = pivoted_df[item].map(int)
 
-    pivoted_df["Impact_complete"] = pivoted_df["HIGH"].apply(lambda x: "h" * x) + pivoted_df["MODERATE"].apply(lambda x: "m" * x) + pivoted_df["LOW"].apply(lambda x: "l" * x) + pivoted_df["MODIFIER"].apply(lambda x: "x" * x)
+    # pivoted_df["SnpEff_Impact"] = pivoted_df["HIGH"].apply(lambda x: "h" * x) + pivoted_df["MODERATE"].apply(lambda x: "m" * x) + pivoted_df["LOW"].apply(lambda x: "l" * x) + pivoted_df["MODIFIER"].apply(lambda x: "x" * x)
 
+    pivoted_df["SnpEff_Impact"] = (pivoted_df["HIGH"] * 50 + pivoted_df["MODERATE"]*10 + pivoted_df["LOW"] + pivoted_df["MODIFIER"]/10)/4
+    
     pivoted_df["Impact_score"] = pivoted_df["HIGH"] * 100000.0 + pivoted_df["MODERATE"] + pivoted_df["LOW"]/100000.0 + pivoted_df["MODIFIER"]/10**12
+    # pivoted_df["Impact_score"] = pivoted_df["HIGH"] * 50 + pivoted_df["MODERATE"]*10 + pivoted_df["LOW"] + pivoted_df["MODIFIER"]/10
 
     del pivoted_df["HIGH"]
     del pivoted_df["MODERATE"]
@@ -136,22 +140,23 @@ def combine_dfs(df1, df2):
     return ranked_df
     
 def calculate_ranks(df):
-    df["Impact_complete_Rank"] = df["Impact_score"].sum(axis=1)
-    df["Impact_Damaging_Rank"] = df["dbNSFP_Impact_Damaging"].sum(axis=1)
+    df["SnpEff_Impact_Rank"] = df["Impact_score"].sum(axis=1)
+    df["dbNSFP_Impact_Damaging_Rank"] = df["dbNSFP_Impact_Damaging"].sum(axis=1)
     
     lst = ["HIGH", "MODERATE", "LOW", "MODIFIER"]
+
     for item in lst:
         df[item + "_sum"] = df[item + "_initial_sum"].sum(axis=1)
 
     df["dbNSFP_Impact_Damaging"] = df["dbNSFP_Impact_Damaging"].applymap(lambda x: "" if x == 0.0 else x)
     
-    df["Impact_Score"] = df["Impact_complete_Rank"]
+    df["Impact_Score"] = df["SnpEff_Impact_Rank"]
     
-    df = df.sort("Impact_complete_Rank", ascending=0)
-    df = df.sort("Impact_Damaging_Rank", ascending=0)
+    df = df.sort("SnpEff_Impact_Rank", ascending=0)
+    df = df.sort("dbNSFP_Impact_Damaging_Rank", ascending=0)
     
-    df["Impact_complete_Rank"] = df["Impact_complete_Rank"].rank(ascending=0, method="min")
-    df["Impact_Damaging_Rank"] = df["Impact_Damaging_Rank"].rank(ascending=0, method="min")
+    df["SnpEff_Impact_Rank"] = df["SnpEff_Impact_Rank"].rank(ascending=0, method="min")
+    df["dbNSFP_Impact_Damaging_Rank"] = df["dbNSFP_Impact_Damaging_Rank"].rank(ascending=0, method="min")
 
     del df["Impact_score"]
     lst = ["HIGH", "MODERATE", "LOW", "MODIFIER"]
@@ -186,13 +191,13 @@ def change_order(lst):
     for i, header in enumerate(lst):    
         if re.search("GENE_SYMBOL", header):
             gene_lst.append(header)
-        elif re.search("Impact_complete", header):
+        elif re.search("SnpEff_Impact", header):
             impact_lst.append(header)
         elif re.search("sum", header):
             sum_lst.append(header)
         elif re.search("Score", header):
             score_lst.append(header)
-        elif re.search("Impact_Damaging", header):
+        elif re.search("dbNSFP_Impact_Damaging", header):
             level_lst.append(header)
    
     lst = gene_lst + impact_lst + sum_lst + score_lst + level_lst
@@ -238,6 +243,17 @@ def process_files(input, samples, delim):
     
     rearranged_df = rearrange_columns(rollup_df)
     
+    new_columns = []
+    for col in rearranged_df.columns:
+        new_col = re.sub(samples + "_", "", col)
+        new_columns.append(new_col)
+        
+        # if col[-1] == "_":
+            # new_columns.append(col[:-1])
+    rearranged_df.columns = new_columns
+    
+    
+    
     print "writing to excel file: {0}".format(output)
     writer = ExcelWriter(output)
     
@@ -265,7 +281,7 @@ if __name__ == "__main__":
     parser.add_argument("input_file")
     parser.add_argument("output_file")
     parser.add_argument("-s", "--sample_identifier", required=True,
-            help="Identifier for all samples. This can be the format tag specified for pivot.py.")
+            help="Identifier for all samples. This should be a string that is present in all samples.")
     parser.add_argument("-d", "--input_delimiter",
             help="Delimiter for input file. If no delimiter given, defaults to comma.")
             
