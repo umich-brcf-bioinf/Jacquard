@@ -20,7 +20,6 @@ class PivotError(Exception):
     pass 
 
 
-
 class VariantPivoter():
     MISSING_REQUIRED_COLUMNS_ERROR="The columns of specified dataframe do not " +\
         "contain required columns {0}; review input data."
@@ -78,6 +77,7 @@ class VariantPivoter():
         group = grouped.groups
 
         for column in self._combined_df:
+            ###this produces a memory error
             # for key, val in group.items():
                 # self.find_non_unique_columns(grouped, column, key, val)
             self.find_non_unique_rows(column)
@@ -453,62 +453,6 @@ def insert_links(joined_output):
         
         joined_output.loc[row, "IGV"] = '=hyperlink("localhost:60151/goto?locus=chr' + joined_output.loc[row, "CHROM"] + ':' + joined_output.loc[row, "POS"] + '", "IGV")'
  
-def style_workbook(output_path):
-    wb = load_workbook(output_path)
-    ws = wb.active
-    
-    for col in ws.columns:  
-        if re.search("IGV", col[0].value):
-            format_links(ws, col, "IGV")
-        elif re.search("UCSC", col[0].value): 
-            format_links(ws, col, "UCSC")
-    
-        count = 0
-        colors = ["FFFF99", "FFCC00", "FF9900", "FF6600"]
-        for tag in pivot_values:
-            if re.search(tag, col[0].value):
-                fill_cell(col, colors[count])
-            count += 1
-        
-        if re.search("CHROM|POS|ID|REF|ALT|Mult_Alt|Mult_Gene|ANNOTATED_ALLELE|GENE_SYMBOL|IGV|UCSC", col[0].value):
-            fill_cell(col, "C0C0C0")   
-
-        if col[0].style.fill.start_color.index == "FFFFFFFF":
-            fill_cell(col, "C9F2C9")
-        if re.search("Mult_Alt", col[0].value):
-            fill_mults(ws, col)
-        if re.search("Mult_Gene", col[0].value):
-            fill_mults(ws, col)
-
-    wb.save(output_path)
- 
-def format_links(ws, column, cell_value):
-    for pos in column:
-        if pos != column[0]:
-            desired_cell = str(pos).strip("(<>)").split(".")[-1]
-            ws[desired_cell].hyperlink = pos.value
-            pos.value = cell_value
-            pos.style.font.color.index = Color.BLUE
-            pos.style.font.underline = Font. UNDERLINE_SINGLE
-            
-def fill_cell(column, color):
-    column[0].style.fill.fill_type = Fill.FILL_SOLID
-    column[0].style.fill.start_color.index = color
-
-def fill_row(row, color):
-    row.style.fill.fill_type = Fill.FILL_SOLID
-    row.style.fill.start_color.index = color
-    
-def fill_mults(ws, col):
-    for row in col:
-        if row.value == "True":
-            coordinate = row.address
-            row = row.address[1:]
-            for item in ws.range("A" + row + ":" + coordinate):
-                for cell in item:
-                    if cell.value != "None":
-                        fill_row(cell, "FFD698")
-    
 def process_files(sample_file_readers, pivot_builder=build_pivoter):
     first_file_reader = sample_file_readers[0]
     first_path        = str(first_file_reader)
@@ -580,9 +524,6 @@ def process_files(sample_file_readers, pivot_builder=build_pivoter):
    
     print "{0} - saving file".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     writer.save() 
-    
-    # print "{0} - styling workbook".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
-    # style_workbook(output_path)
    
     print "{0} - done".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     
@@ -637,9 +578,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter, 
     description='''\
-    Pivot.py
+    Jacquard.py
     Pivots input files so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files. ''', 
-    epilog="author: Jessica Bene 05/2014")
+    epilog="authors: Jessica Bene, Chris Gates 05/2014")
     parser.add_argument("input_dir")
     parser.add_argument("output_file")
     parser.add_argument("-k", "--keys",

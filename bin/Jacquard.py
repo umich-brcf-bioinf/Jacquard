@@ -26,8 +26,8 @@ class VariantPivoter():
 
     @staticmethod
     def _build_transform_method(rows, columns, pivot_values):
-        def transform(df):
-            expanded_df = expand_format(df, pivot_values, rows)
+        def transform(df, fname):
+            expanded_df = expand_format(df, pivot_values, rows, fname)
             
             return project_prepivot(expanded_df, pivot_values, rows, columns)
         return transform
@@ -54,13 +54,14 @@ class VariantPivoter():
  
     def add_file(self, path, reader, header_index):
         initial_df  = create_initial_df(path, reader, header_index)
+        fname = os.path.splitext(os.path.basename(path))[0]
         
         if "#CHROM" in initial_df.columns:
             initial_df.rename(columns={"#CHROM": "CHROM"}, inplace=True)
         
         self._annot_df = append_to_annot_df(initial_df, self._annot_df)
         
-        unpivoted_df = self.is_compatible(initial_df)
+        unpivoted_df = self.is_compatible(initial_df, fname)
 
         self._combined_df = merge_samples(unpivoted_df, self._combined_df)
         
@@ -74,11 +75,13 @@ class VariantPivoter():
     def validate_sample_data(self):
         grouped = self._combined_df.groupby(self._rows + ["SAMPLE_NAME"])
         group = grouped.groups
-        
+
         for column in self._combined_df:
+            ###this produces a memory error
             # for key, val in group.items():
                 # self.find_non_unique_columns(grouped, column, key, val)
             self.find_non_unique_rows(column)
+            
         return self._combined_df
         
     def find_non_unique_columns(self, grouped, column, key, val):
@@ -112,8 +115,6 @@ class VariantPivoter():
         return sorted_df
     
     def insert_mult_alt_and_gene(self, df):
-        # if "SnpEff_WARNING/ERROR" in df.columns.values and "SnpEff_WARNING/ERROR" not in self._rows:
-            # df.rename(columns={"SnpEff_WARNING/ERROR": "WARNING/ERROR"}, inplace=True)
         if "WARNING/ERROR" in df.columns.values and "WARNING/ERROR" not in self._rows:
             df.rename(columns={"WARNING/ERROR": "SnpEff_WARNING/ERROR"}, inplace=True)
         
@@ -208,8 +209,8 @@ class VariantPivoter():
        
         return complete_key
                 
-    def is_compatible(self, initial_df):   
-        unpivoted_df = self._transform(initial_df)
+    def is_compatible(self, initial_df, fname=""):   
+        unpivoted_df = self._transform(initial_df, fname)
 
         self._check_required_columns_present(unpivoted_df)
         self._check_pivot_is_unique(unpivoted_df)  
@@ -244,7 +245,6 @@ def validate_parameters(input_keys, first_line, header_names, pivot_values):
                 invalid_fields.append(key)
     
     invalid_tags = validate_format_tags(first_line, pivot_values, fields)
-    # invalid_tags = []
     
     message = "Invalid input parameter(s) "
     raise_err = 0
@@ -328,7 +328,7 @@ def append_to_annot_df(initial_df, annot_df):
         annot_df = annot_df.append(temp_df, ignore_index=True)
     return annot_df
   
-def melt_samples(df): 
+def melt_samples(df, fname): 
     format_data = df.ix[0, "FORMAT"].split(":")
     if "ESAF" not in format_data:
         format_data.append("ESAF")
@@ -344,6 +344,7 @@ def melt_samples(df):
         
         if len(data) == len(format_data):
             sample_names.append(field_name)
+            
 
     column_list = []
     column_list.extend(df.columns)
@@ -351,13 +352,14 @@ def melt_samples(df):
     for col in sample_names:
         if col in column_list: 
             column_list.remove(col)   
-
+        df.rename(columns={col: fname + "_" + col}, inplace=True)
+        
     melted_df = melt(df, id_vars=column_list, var_name='SAMPLE_NAME', value_name='SAMPLE_DATA')
     
     return melted_df
     
-def expand_format(df, formats_to_expand, rows):     
-    df = melt_samples(df)
+def expand_format(df, formats_to_expand, rows, fname):
+    df = melt_samples(df, fname)
 
     df["aggregate_format_sample"] = df["FORMAT"] + "=" + df['SAMPLE_DATA']
     df["aggregate_format_sample"] = df["aggregate_format_sample"].map(combine_format_values)
@@ -379,7 +381,7 @@ def expand_format(df, formats_to_expand, rows):
         joined_df.rename(columns={"SnpEff_WARNING/ERROR": "WARNING/ERROR"}, inplace=True)
 
     try:
-        pivoted_df = pd.pivot_table(joined_df, rows=rows+["SAMPLE_NAME"], cols="FORMAT2", values="VALUE2", aggfunc=lambda x: str(x))
+        pivoted_df = pd.pivot_table(joined_df, rows=rows+["SAMPLE_NAME"], cols="FORMAT2", values="VALUE2", aggfunc=lambda x: x)
     except Exception as e :
         raise PivotError("Cannot pivot data. {0}".format(e))
 
@@ -404,10 +406,7 @@ def merge_samples(reduced_df, combined_df):
     if combined_df.empty:
         combined_df = reduced_df
     else:
-        # if len(combined_df.columns) == len(reduced_df.columns):
         combined_df = combined_df.append(reduced_df, ignore_index=True)
-        # else:
-            # raise PivotError("Columns do not match across files")
 
     return combined_df    
     
@@ -454,62 +453,6 @@ def insert_links(joined_output):
         
         joined_output.loc[row, "IGV"] = '=hyperlink("localhost:60151/goto?locus=chr' + joined_output.loc[row, "CHROM"] + ':' + joined_output.loc[row, "POS"] + '", "IGV")'
  
-def style_workbook(output_path):
-    wb = load_workbook(output_path)
-    ws = wb.active
-    
-    for col in ws.columns:  
-        if re.search("IGV", col[0].value):
-            format_links(ws, col, "IGV")
-        elif re.search("UCSC", col[0].value): 
-            format_links(ws, col, "UCSC")
-    
-        count = 0
-        colors = ["FFFF99", "FFCC00", "FF9900", "FF6600"]
-        for tag in pivot_values:
-            if re.search(tag, col[0].value):
-                fill_cell(col, colors[count])
-            count += 1
-        
-        if re.search("CHROM|POS|ID|REF|ALT|Mult_Alt|Mult_Gene|ANNOTATED_ALLELE|GENE_SYMBOL|IGV|UCSC", col[0].value):
-            fill_cell(col, "C0C0C0")   
-
-        if col[0].style.fill.start_color.index == "FFFFFFFF":
-            fill_cell(col, "C9F2C9")
-        if re.search("Mult_Alt", col[0].value):
-            fill_mults(ws, col)
-        if re.search("Mult_Gene", col[0].value):
-            fill_mults(ws, col)
-
-    wb.save(output_path)
- 
-def format_links(ws, column, cell_value):
-    for pos in column:
-        if pos != column[0]:
-            desired_cell = str(pos).strip("(<>)").split(".")[-1]
-            ws[desired_cell].hyperlink = pos.value
-            pos.value = cell_value
-            pos.style.font.color.index = Color.BLUE
-            pos.style.font.underline = Font. UNDERLINE_SINGLE
-            
-def fill_cell(column, color):
-    column[0].style.fill.fill_type = Fill.FILL_SOLID
-    column[0].style.fill.start_color.index = color
-
-def fill_row(row, color):
-    row.style.fill.fill_type = Fill.FILL_SOLID
-    row.style.fill.start_color.index = color
-    
-def fill_mults(ws, col):
-    for row in col:
-        if row.value == "True":
-            coordinate = row.address
-            row = row.address[1:]
-            for item in ws.range("A" + row + ":" + coordinate):
-                for cell in item:
-                    if cell.value != "None":
-                        fill_row(cell, "FFD698")
-    
 def process_files(sample_file_readers, pivot_builder=build_pivoter):
     first_file_reader = sample_file_readers[0]
     first_path        = str(first_file_reader)
@@ -570,8 +513,7 @@ def process_files(sample_file_readers, pivot_builder=build_pivoter):
         
     if "WARNING/ERROR" in sorted_df.columns.values:
         sorted_df.rename(columns={"WARNING/ERROR":"SnpEff_WARNING/ERROR"}, inplace=True)
-
-    # print sorted_df.info
+    
     print "{0} - writing to excel file: {1}".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'), output_path)
     writer = ExcelWriter(output_path)
     sorted_df.to_excel(writer, "Variant_output", index=False, merge_cells=0)  
@@ -582,9 +524,6 @@ def process_files(sample_file_readers, pivot_builder=build_pivoter):
    
     print "{0} - saving file".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     writer.save() 
-    
-    print "{0} - styling workbook".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
-    style_workbook(output_path)
    
     print "{0} - done".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     
@@ -639,7 +578,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter, 
     description='''\
-    Pivot.py
+    Jacquard.py
     Pivots input files so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files. ''', 
     epilog="author: Jessica Bene 05/2014")
     parser.add_argument("input_dir")
