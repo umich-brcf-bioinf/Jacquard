@@ -578,16 +578,23 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter, 
     description='''\
-    Jacquard.py
-    Pivots input files so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files. ''', 
+    Jacquard.py''', 
     epilog="authors: Jessica Bene, Chris Gates 05/2014")
-    parser.add_argument("input_dir")
-    parser.add_argument("output_file")
-    parser.add_argument("-k", "--keys",
+    subparsers = parser.add_subparsers(title="subcommands")
+   
+    parser_pivot = subparsers.add_parser("pivot", help="Pivots input files so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
+    parser_pivot.add_argument("input_dir")
+    parser_pivot.add_argument("output_file")
+    parser_pivot.add_argument("-k", "--keys",
             help="Columns to be used as keys for the pivoting. Default keys for VCF are CHROM,POS,REF,ALT. Default keys for Epee TXT are CHROM,POS,REF,ANNOTATED_ALLELE,GENE_SYMBOL")
-    parser.add_argument("-t", "--tags",
+    parser_pivot.add_argument("-t", "--tags",
             help="Format tags to be fielded out in the pivoting.")
-            
+    
+    parser_tagMutect = subparsers.add_parser("tagMutect", help="Accepts a directory of VCf results and creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
+    parser_tagMutect.add_argument("input_dir")
+    parser_tagMutect.add_argument("output_dir")
+    
+    
     args   = parser.parse_args()
     input_dir = os.path.abspath(args.input_dir)
     output_path = os.path.abspath(args.output_file)
