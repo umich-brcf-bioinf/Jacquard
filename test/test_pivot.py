@@ -4,7 +4,7 @@ from pandas import *
 import unittest
 from pandas.util.testing import assert_frame_equal
 import pandas.util.testing as tm
-from bin.Jacquard import PivotError, VariantPivoter, pivot, expand_format, merge_samples, create_initial_df, project_prepivot, build_pivoter, append_to_annot_df, melt_samples, validate_parameters, validate_format_tags, rearrange_columns, change_order, determine_input_keys, get_headers_and_readers
+from bin.pivot_variants import PivotError, VariantPivoter, pivot, expand_format, merge_samples, create_initial_df, project_prepivot, build_pivoter, append_to_annot_df, melt_samples, validate_parameters, validate_format_tags, rearrange_columns, change_order, determine_input_keys, get_headers_and_readers
 from StringIO import StringIO
 import pprint
 import os
