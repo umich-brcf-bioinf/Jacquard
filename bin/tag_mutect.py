@@ -7,12 +7,16 @@ class AlleleFreqTag():
     def format(self, format_param_string, format_value_string):
         format_param_array = format_param_string.split(":")
         format_value_array = format_value_string.split(":")
-        
         format_dict = dict(zip(format_param_array, format_value_array))
-        
+
+        if "FA" in format_dict.keys():
+            rounded_FA = "{0:.2f}".format(float(format_dict["FA"])) if len(format_dict["FA"].split(".")[1]) > 2 else format_dict["FA"]
+            final_value_string = format_value_string + ":" + rounded_FA
+        else:
+            final_value_string = format_value_string
+            
         final_param_string = format_param_string + ":JQ_AF_MT" if "FA" in format_dict.keys() else format_param_string
-        final_value_string = format_value_string + ":" + format_dict["FA"] if "FA" in format_dict.keys() else format_value_string 
-        
+       
         return final_param_string, final_value_string
                 
         

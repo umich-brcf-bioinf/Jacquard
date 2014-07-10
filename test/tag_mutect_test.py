@@ -19,7 +19,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         self.assertEqual(("A:B", "1:2"), tag.format(format_param_string, format_value_string))
         
         
-    def Xtest_format_rounds(self):
+    def test_format_rounds(self):
         tag = AlleleFreqTag()
         self.assertEqual(("A:FA:JQ_AF_MT", "1:0.234:0.23"), tag.format("A:FA", "1:0.234"))
         self.assertEqual(("A:FA:JQ_AF_MT", "1:0.234:0.23"), tag.format("A:FA", "1:0.234"))
