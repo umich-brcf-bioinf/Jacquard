@@ -12,7 +12,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         format_value_string = "1:0.2"
         self.assertEqual(("A:FA:JQ_AF_MT", "1:0.2:0.2"), tag.format(format_param_string, format_value_string))
         
-    def Xtest_format_missingAFTag(self):
+    def test_format_missingAFTag(self):
         tag = AlleleFreqTag()
         format_param_string = "A:B"
         format_value_string = "1:2"

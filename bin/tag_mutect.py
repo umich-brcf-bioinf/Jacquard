@@ -10,8 +10,8 @@ class AlleleFreqTag():
         
         format_dict = dict(zip(format_param_array, format_value_array))
         
-        final_param_string = format_param_string + ":JQ_AF_MT"
-        final_value_string = format_value_string + ":" + format_dict["FA"]
+        final_param_string = format_param_string + ":JQ_AF_MT" if "FA" in format_dict.keys() else format_param_string
+        final_value_string = format_value_string + ":" + format_dict["FA"] if "FA" in format_dict.keys() else format_value_string 
         
         return final_param_string, final_value_string
                 
