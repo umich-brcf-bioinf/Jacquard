@@ -78,8 +78,8 @@ class VariantPivoter():
 
         for column in self._combined_df:
             ###this produces a memory error
-            for key, val in group.items():
-                self.find_non_unique_rows(grouped, column, key, val)
+#             for key, val in group.items():
+#                 self.find_non_unique_rows(grouped, column, key, val)
             self.find_non_unique_cells(column)
             
         return self._combined_df
