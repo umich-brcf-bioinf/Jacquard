@@ -78,13 +78,13 @@ class VariantPivoter():
 
         for column in self._combined_df:
             ###this produces a memory error
-            # for key, val in group.items():
-                # self.find_non_unique_columns(grouped, column, key, val)
-            self.find_non_unique_rows(column)
+            for key, val in group.items():
+                self.find_non_unique_rows(grouped, column, key, val)
+            self.find_non_unique_cells(column)
             
         return self._combined_df
         
-    def find_non_unique_columns(self, grouped, column, key, val):
+    def find_non_unique_rows(self, grouped, column, key, val):
         if len(val) != 1:
             col_data = []
             for index in val:
@@ -95,7 +95,7 @@ class VariantPivoter():
                 for index in val:
                     self._combined_df.ix[index, column] = "^"    
                     
-    def find_non_unique_rows(self, column):
+    def find_non_unique_cells(self, column):
         count = 0
         for data in self._combined_df[column]:
             if type(data) == np.ndarray:
