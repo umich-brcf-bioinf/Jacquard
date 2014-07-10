@@ -2,6 +2,7 @@
 import unittest
 from bin.tag_mutect import AlleleFreqTag
 
+
 class AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
         self.assertEqual('##FORMAT=<ID=JQ_AF_MT,Number=1,Type=Float, Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA).">', AlleleFreqTag().metaheader)
