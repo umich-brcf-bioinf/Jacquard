@@ -17,6 +17,7 @@ class AlleleFreqTag():
             
         final_param_string = format_param_string + ":JQ_AF_MT" if "FA" in format_dict.keys() else format_param_string
        
+       
         return final_param_string, final_value_string
                 
         
