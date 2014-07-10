@@ -1,10 +1,10 @@
 #!/usr/bin/python2.7
 import pandas as pd
 from pandas import *
-import unittest
+import unittest 
 from pandas.util.testing import assert_frame_equal
 import pandas.util.testing as tm
-from bin.rollup import RollupError, gene_rollup_highest_impact, gene_rollup_damaging_impact, combine_dfs
+from bin.rollup_genes import RollupError, gene_rollup_highest_impact, gene_rollup_damaging_impact, combine_dfs 
 from StringIO import StringIO
 import pprint
 import os
@@ -34,13 +34,11 @@ class RollupTestCase(unittest.TestCase):
         impact_RNA_FREQ_sampleA = pd.Series({"bar": 2.525, "foo": 12.750}, name="GENE_SYMBOL", index=["bar", "foo"])
         impact_RNA_FREQ_sampleB = pd.Series({"bar": 0.025, "foo": 12.750}, name="GENE_SYMBOL", index=["bar", "foo"])
         
-        # score_RNA_FREQ_sampleA = pd.Series({"bar": 1.00000, "foo": 100000.00001}, name="GENE_SYMBOL", index=["bar", "foo"])
-        # score_RNA_FREQ_sampleB = pd.Series({"bar": 0.00000, "foo": 100000.00001}, name="GENE_SYMBOL", index=["bar", "foo"])
         score_RNA_FREQ_sampleA = pd.Series({"bar": 1.00000, "foo": 100000.00001}, name="GENE_SYMBOL", index=["bar", "foo"])
         score_RNA_FREQ_sampleB = pd.Series({"bar": 0.000000000001, "foo": 100000}, name="GENE_SYMBOL", index=["bar", "foo"])
 
-        tm.assert_series_equal(impact_RNA_FREQ_sampleA, actual_df["Impact_complete", "RNA_FREQ_sampleA"])
-        tm.assert_series_equal(impact_RNA_FREQ_sampleB, actual_df["Impact_complete", "RNA_FREQ_sampleB"])
+        tm.assert_series_equal(impact_RNA_FREQ_sampleA, actual_df["SnpEff_Impact", "RNA_FREQ_sampleA"])
+        tm.assert_series_equal(impact_RNA_FREQ_sampleB, actual_df["SnpEff_Impact", "RNA_FREQ_sampleB"])
 
         tm.assert_series_equal(score_RNA_FREQ_sampleA, actual_df["Impact_score", "RNA_FREQ_sampleA"])
         tm.assert_series_equal(score_RNA_FREQ_sampleB, actual_df["Impact_score", "RNA_FREQ_sampleB"])
@@ -94,11 +92,11 @@ sample2	2	3	A	T	bar	LOW	2	0.5	.'''
         rank = pd.Series({"bar": 2., "foo": 1.}, name="GENE_SYMBOL", index=["foo", "bar"])
         print combined_df
         
-        tm.assert_series_equal(impact_combined_RNA_FREQ_sampleA, combined_df["Impact_complete", "RNA_FREQ_sampleA"])
-        tm.assert_series_equal(impact_combined_RNA_FREQ_sampleB, combined_df["Impact_complete", "RNA_FREQ_sampleB"])
+        tm.assert_series_equal(impact_combined_RNA_FREQ_sampleA, combined_df["SnpEff_Impact", "RNA_FREQ_sampleA"])
+        tm.assert_series_equal(impact_combined_RNA_FREQ_sampleB, combined_df["SnpEff_Impact", "RNA_FREQ_sampleB"])
 
         tm.assert_series_equal(impact_damaging_RNA_FREQ_sampleA, combined_df["dbNSFP_Impact_Damaging", "RNA_FREQ_sampleA"])
         tm.assert_series_equal(impact_damaging_RNA_FREQ_sampleB, combined_df["dbNSFP_Impact_Damaging", "RNA_FREQ_sampleB"])
         
-        tm.assert_series_equal(rank, combined_df["Impact_complete_Rank"])
-        tm.assert_series_equal(rank, combined_df["Impact_Damaging_Rank"])
+        tm.assert_series_equal(rank, combined_df["SnpEff_Impact_Rank"])
+        tm.assert_series_equal(rank, combined_df["dbNSFP_Impact_Damaging_Rank"])

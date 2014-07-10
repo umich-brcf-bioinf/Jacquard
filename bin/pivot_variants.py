@@ -77,13 +77,14 @@ class VariantPivoter():
         group = grouped.groups
 
         for column in self._combined_df:
-            # for key, val in group.items():
-                # self.find_non_unique_columns(grouped, column, key, val)
-            self.find_non_unique_rows(column)
+            ###this produces a memory error
+#             for key, val in group.items():
+#                 self.find_non_unique_rows(grouped, column, key, val)
+            self.find_non_unique_cells(column)
             
         return self._combined_df
         
-    def find_non_unique_columns(self, grouped, column, key, val):
+    def find_non_unique_rows(self, grouped, column, key, val):
         if len(val) != 1:
             col_data = []
             for index in val:
@@ -94,7 +95,7 @@ class VariantPivoter():
                 for index in val:
                     self._combined_df.ix[index, column] = "^"    
                     
-    def find_non_unique_rows(self, column):
+    def find_non_unique_cells(self, column):
         count = 0
         for data in self._combined_df[column]:
             if type(data) == np.ndarray:
@@ -452,69 +453,12 @@ def insert_links(joined_output):
         
         joined_output.loc[row, "IGV"] = '=hyperlink("localhost:60151/goto?locus=chr' + joined_output.loc[row, "CHROM"] + ':' + joined_output.loc[row, "POS"] + '", "IGV")'
  
-def style_workbook(output_path):
-    wb = load_workbook(output_path)
-    ws = wb.active
-    
-    for col in ws.columns:  
-        if re.search("IGV", col[0].value):
-            format_links(ws, col, "IGV")
-        elif re.search("UCSC", col[0].value): 
-            format_links(ws, col, "UCSC")
-    
-        count = 0
-        colors = ["FFFF99", "FFCC00", "FF9900", "FF6600"]
-        for tag in pivot_values:
-            if re.search(tag, col[0].value):
-                fill_cell(col, colors[count])
-            count += 1
-        
-        if re.search("CHROM|POS|ID|REF|ALT|Mult_Alt|Mult_Gene|ANNOTATED_ALLELE|GENE_SYMBOL|IGV|UCSC", col[0].value):
-            fill_cell(col, "C0C0C0")   
-
-        if col[0].style.fill.start_color.index == "FFFFFFFF":
-            fill_cell(col, "C9F2C9")
-        if re.search("Mult_Alt", col[0].value):
-            fill_mults(ws, col)
-        if re.search("Mult_Gene", col[0].value):
-            fill_mults(ws, col)
-
-    wb.save(output_path)
- 
-def format_links(ws, column, cell_value):
-    for pos in column:
-        if pos != column[0]:
-            desired_cell = str(pos).strip("(<>)").split(".")[-1]
-            ws[desired_cell].hyperlink = pos.value
-            pos.value = cell_value
-            pos.style.font.color.index = Color.BLUE
-            pos.style.font.underline = Font. UNDERLINE_SINGLE
-            
-def fill_cell(column, color):
-    column[0].style.fill.fill_type = Fill.FILL_SOLID
-    column[0].style.fill.start_color.index = color
-
-def fill_row(row, color):
-    row.style.fill.fill_type = Fill.FILL_SOLID
-    row.style.fill.start_color.index = color
-    
-def fill_mults(ws, col):
-    for row in col:
-        if row.value == "True":
-            coordinate = row.address
-            row = row.address[1:]
-            for item in ws.range("A" + row + ":" + coordinate):
-                for cell in item:
-                    if cell.value != "None":
-                        fill_row(cell, "FFD698")
-    
-def process_files(sample_file_readers, pivot_builder=build_pivoter):
+def process_files(sample_file_readers, input_dir, output_path, input_keys, pivot_values, headers, header_names, first_line, pivot_builder=build_pivoter):
     first_file_reader = sample_file_readers[0]
     first_path        = str(first_file_reader)
     first_reader      = first_file_reader
     
     print "{0} - starting pivot".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
-    print "Pandas version {0}".format(pd.__version__)
     print "{0} - validating command line parameters".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     raise_err, message = validate_parameters(input_keys, first_line, header_names, pivot_values)  
     if raise_err == 1:
@@ -579,9 +523,6 @@ def process_files(sample_file_readers, pivot_builder=build_pivoter):
    
     print "{0} - saving file".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     writer.save() 
-    
-    # print "{0} - styling workbook".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
-    # style_workbook(output_path)
    
     print "{0} - done".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     
@@ -613,6 +554,8 @@ def get_headers_and_readers(input_dir):
                 count += 1
                 if line.startswith("##"):
                     continue
+                elif line.startswith("#Epee"):
+                    continue
                 elif line.startswith("#"):
                     headers.append(count)
                     header_names.append(line)
@@ -628,46 +571,3 @@ def get_headers_and_readers(input_dir):
     header_names = re.sub(r'#CHROM', 'CHROM', header_names)
     
     return sample_file_readers, headers, header_names, first_line
-    
-if __name__ == "__main__":
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    pd.set_option('chained_assignment', None)
-    
-    parser = argparse.ArgumentParser(
-    formatter_class=argparse.RawDescriptionHelpFormatter, 
-    description='''\
-    Pivot.py
-    Pivots input files so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files. ''', 
-    epilog="author: Jessica Bene 05/2014")
-    parser.add_argument("input_dir")
-    parser.add_argument("output_file")
-    parser.add_argument("-k", "--keys",
-            help="Columns to be used as keys for the pivoting. Default keys for VCF are CHROM,POS,REF,ALT. Default keys for Epee TXT are CHROM,POS,REF,ANNOTATED_ALLELE,GENE_SYMBOL")
-    parser.add_argument("-t", "--tags",
-            help="Format tags to be fielded out in the pivoting.")
-            
-    args   = parser.parse_args()
-    input_dir = os.path.abspath(args.input_dir)
-    output_path = os.path.abspath(args.output_file)
-    input_keys = args.keys.split(",") if args.keys else determine_input_keys(input_dir)
-    pivot_values = args.tags.split(",") if args.tags else ["GT"]
-    
-    output_dir, outfile_name = os.path.split(output_path)
-    
-    if not os.path.isdir(input_dir):
-        print "Error. Specified input directory {0} does not exist".format(input_dir)
-        exit(1)
-        
-    if not os.path.isdir(output_dir):
-        os.makedirs(output_dir)
-        
-    fname, extension = os.path.splitext(outfile_name)
-    if extension != ".xlsx": 
-        print "Error. Specified output {0} must have a .xlsx extension".format(output_path)
-        exit(1)
-    
-    sample_file_readers, headers, header_names, first_line = get_headers_and_readers(input_dir)
-
-    process_files(sample_file_readers)
-    
-    

@@ -4,7 +4,7 @@ from pandas import *
 import unittest
 from pandas.util.testing import assert_frame_equal
 import pandas.util.testing as tm
-from bin.pivot import PivotError, VariantPivoter, pivot, expand_format, merge_samples, create_initial_df, project_prepivot, build_pivoter, append_to_annot_df, melt_samples, validate_parameters, validate_format_tags, rearrange_columns, change_order, determine_input_keys, get_headers_and_readers
+from bin.pivot_variants import PivotError, VariantPivoter, pivot, expand_format, merge_samples, create_initial_df, project_prepivot, build_pivoter, append_to_annot_df, melt_samples, validate_parameters, validate_format_tags, rearrange_columns, change_order, determine_input_keys, get_headers_and_readers
 from StringIO import StringIO
 import pprint
 import os
@@ -389,9 +389,8 @@ sample2	2	3	A	T	foo	.	GT	0/1	20	200'''
         
         tm.assert_frame_equal(expected_df, actual_df)
     
-    #not being called in pivot.py
-    # def test_validate_sample_data_non_unique_cols(self):
-    def validate_sample_data_non_unique_cols(self):
+    #memory error for large files
+    def xtest_validate_sample_data_non_unique_cols(self):
         rows = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"]
         cols = ["SAMPLE_NAME"]
         pivot_values = ['GT']
@@ -417,31 +416,31 @@ sample2	2	3	A	T	foo	.	GT	0/1	20	200'''
         tm.assert_frame_equal(expected_df, actual_df)
         
     # not sure how to test if numpy.ndarray
-    # def test_validate_sample_data_non_unique_rows(self):
-        # rows = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"]
-        # cols = ["SAMPLE_NAME"]
-        # pivot_values = ['GT']
-        
-        # input_string = \
-# '''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	SAMPLE_NAME	SAMPLE_DATA
-# 1	2	A	T	foo	.	GT	sampleA	{0}
-# 1	2	A	C	foo	.	GT	sampleA	11
-# 2	3	C	G	foo	.	GT	sampleB	10'''.format(np.ndarray(shape=(1,2)))
-        # df = dataframe(input_string)
-        
-        # pivoter = VariantPivoter(rows, cols, pivot_values, df)
-        # actual_df = pivoter.validate_sample_data()
-        
-        # expected_string = \
-# '''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	SAMPLE_NAME	SAMPLE_DATA
-# 1	2	A	T	foo	.	GT	sampleA	^
-# 1	2	A	C	foo	.	GT	sampleA	11
-# 2	3	C	G	foo	.	GT	sampleB	11'''
-        # expected_df = dataframe(expected_string)
-        # print actual_df.applymap(lambda x: type(x))
-        
-        # print actual_df
-        # tm.assert_frame_equal(expected_df, actual_df)
+    def xtest_validate_sample_data_non_unique_cells(self):
+        rows = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"]
+        cols = ["SAMPLE_NAME"]
+        pivot_values = ['GT']
+          
+        input_string = \
+'''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	SAMPLE_NAME	SAMPLE_DATA
+1	2	A	T	foo	.	GT	sampleA	{0}
+1	2	A	C	foo	.	GT	sampleA	11
+2	3	C	G	foo	.	GT	sampleB	10'''.format(np.ndarray(shape=(1,2)))
+        df = dataframe(input_string)
+          
+        pivoter = VariantPivoter(rows, cols, pivot_values, df)
+        actual_df = pivoter.validate_sample_data()
+          
+        expected_string = \
+'''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	SAMPLE_NAME	SAMPLE_DATA
+1	2	A	T	foo	.	GT	sampleA	^
+1	2	A	C	foo	.	GT	sampleA	11
+2	3	C	G	foo	.	GT	sampleB	11'''
+        expected_df = dataframe(expected_string)
+        print actual_df.applymap(lambda x: type(x))
+          
+        print actual_df
+        tm.assert_frame_equal(expected_df, actual_df)
     
 class PivotTestCase(unittest.TestCase):
     ##validate parameters
@@ -821,10 +820,10 @@ chr1	4	A	T'''
 
         try:
             expected_df["CHROM"] = expected_df["CHROM"].apply(lambda x: x.replace("chr", ""))
-            annot_df_df["CHROM"] = annot_df_df["CHROM"].apply(lambda x: x.replace("chr", ""))
+            annot_df["CHROM"] = annot_df["CHROM"].apply(lambda x: x.replace("chr", ""))
            
             expected_df["CHROM"] = expected_df["CHROM"].apply(lambda x: int(x))
-            annot_df_df["CHROM"] = annot_df_df["CHROM"].apply(lambda x: int(x))
+            annot_df["CHROM"] = annot_df["CHROM"].apply(lambda x: int(x))
         except:
             pass
 
