@@ -546,7 +546,7 @@ def get_headers_and_readers(input_dir):
     header_names = []
     first_line = []
     
-    for item in listdir(input_dir):
+    for item in sorted(listdir(input_dir)):
         if isfile(join(input_dir, item)):
             f = open(input_dir + "/" + item, 'r')
             count = -1
