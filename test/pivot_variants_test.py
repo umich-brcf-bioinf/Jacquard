@@ -317,7 +317,7 @@ sample2	2	3	A	T	foo	.	GT	0/1	20	200'''
         mult_dict = {}
         actual_dict = pivoter._create_mult_dict(grouped, val_index, preliminary_dict, mult_dict)
         
-        expected_dict = {"1_2_A_foo_." : ["G", "T"]}
+        expected_dict = {"1|2|A|foo|." : ["G", "T"]}
         
         self.assertEquals(expected_dict, actual_dict)
         
@@ -342,7 +342,7 @@ sample2	2	3	A	T	foo	.	GT	0/1	20	200'''
         mult_dict = {}
         actual_dict = pivoter._create_mult_dict(grouped, val_index, preliminary_dict, mult_dict)
         
-        expected_dict = {"1_2_A_T_." : ["bar", "foo"]}
+        expected_dict = {"1|2|A|T|." : ["bar", "foo"]}
         
         self.assertEquals(expected_dict, actual_dict)
     

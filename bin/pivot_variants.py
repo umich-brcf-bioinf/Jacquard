@@ -160,7 +160,7 @@ class VariantPivoter():
         mult_dict = self._create_mult_dict(grouped, val_index, preliminary_dict, mult_dict)
 
         for key, vals in mult_dict.iteritems():
-            row_key = key.split("_")
+            row_key = key.split("|")
 
             for val in vals:
                 complete_key = self._determine_row_key(row_key, val, val_index)
@@ -180,7 +180,7 @@ class VariantPivoter():
             
             val = str(k_list[val_index])
             del k_list[val_index]
-            key = "_".join(k_list)
+            key = "|".join(k_list)
 
             if key in preliminary_dict:
                 if key in mult_dict:
