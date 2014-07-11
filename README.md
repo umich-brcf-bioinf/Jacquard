@@ -12,5 +12,9 @@ Collection of utilities used for secondary and tertiary analysis of Exome Seq da
   
 ================
 
+<<<<<<< HEAD
 Jessica Bene, Chris Gates - 
 UM BRCF Bioinformatics Core
+=======
+Jessica Bene, Chris Gates - UM BRCF Bioinformatics Core
+>>>>>>> 019022e9ec8dd31161d043222ccf2498b4ee2bec

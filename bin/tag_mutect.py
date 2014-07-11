@@ -8,13 +8,69 @@ class AlleleFreqTag():
         format_param_array = format_param_string.split(":")
         format_value_array = format_value_string.split(":")
         format_dict = dict(zip(format_param_array, format_value_array))
+        
         if "FA" in format_dict.keys():
-            rounded_FA = "{0:.2f}".format(float(format_dict["FA"])) if len(format_dict["FA"].split(".")[1]) > 2 else format_dict["FA"]
-            final_value_string = format_value_string + ":" + rounded_FA
-        else:
-            final_value_string = format_value_string
+            format_value_string += ":" + self.roundTwoDigits(format_dict["FA"])
+            format_param_string += ":JQ_AF_MT"
             
-        final_param_string = format_param_string + ":JQ_AF_MT" if "FA" in format_dict.keys() else format_param_string
-       
-        return final_param_string, final_value_string
-                
+        return format_param_string, format_value_string
+
+    def roundTwoDigits(self, value): 
+        if len(value.split(".")[1]) <= 2:
+            return value
+        else:
+            return str(round(100 * float(value))/100) 
+        
+class DepthTag():
+    def __init__(self):
+        self.metaheader = '##FORMAT=<ID=JQ_DP_MT,Number=1,Type=Float, Description="Jacquard depth for MuTect (based on DP).">'
+
+    def format(self, format_param_string, format_value_string):
+        format_param_array = format_param_string.split(":")
+        format_value_array = format_value_string.split(":")
+        format_dict = dict(zip(format_param_array, format_value_array))
+        
+        if "DP" in format_dict.keys():
+            format_value_string += ":" + format_dict["DP"]
+            format_param_string += ":JQ_DP_MT"
+            
+        return format_param_string, format_value_string
+    
+class SomaticTag():
+    def __init__(self):
+        self.metaheader = '##FORMAT=<ID=JQ_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag).">'
+
+    def format(self, format_param_string, format_value_string):
+        format_param_array = format_param_string.split(":")
+        format_value_array = format_value_string.split(":")
+        format_dict = dict(zip(format_param_array, format_value_array))
+        
+        if "SS" in format_dict.keys():
+            format_value_string += ":" + self.somatic_status(format_dict["SS"])
+            format_param_string += ":JQ_SOM_MT"
+            
+        return format_param_string, format_value_string
+
+    def somatic_status(self, ss_value):
+        if ss_value == "2":
+            return "1"
+        else:
+            return "0"
+
+class LineProcessor():
+    def __init__(self, tags):
+        self.tags = tags
+    def add_tags(self, input_line):
+        line   = input_line.split("\t")[:8]
+        format = input_line.split("\t")[8]
+        sample = input_line.split("\t")[9]         
+
+        for tag in self.tags:
+            param, value = tag.format(format, sample)
+        
+        line.extend([param, value])
+
+        return "\t".join(line)
+            
+            
+        
