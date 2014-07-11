@@ -747,7 +747,7 @@ chr1	4	A	T	sample3	0/1	4''')
         tm.assert_frame_equal(expected_df, actual_df)
     
     ##rearrange columns
-    def test_rearrange_columns(self):
+    def Xtest_rearrange_columns(self):
         input_string = \
 '''CHROM	POS	REF	ALT	FORMAT	DP_sample_A	DP_sample_B
 1	2	A	G	DP	134	57
@@ -758,9 +758,7 @@ chr1	4	A	T	sample3	0/1	4''')
 '''
         df = dataframe(input_string)
         
-        pivot_values = ["DP"]
-        
-        actual_df = rearrange_columns(df, pivot_values)
+        actual_df = rearrange_columns(df)
         
         expected_string = \
 '''CHROM	POS	REF	ALT	DP_sample_A	DP_sample_B	FORMAT
@@ -774,12 +772,21 @@ chr1	4	A	T	sample3	0/1	4''')
         
         tm.assert_frame_equal(expected_df, actual_df)
     
-    def test_change_order(self):
-        lst = ["CHROM", "POS", "REF", "ALT", "FORMAT", "INFO", "DP_sample1", "DP_sample2"]
+    def Xtest_change_order(self):
+        lst = ["CHROM", "POS", "REF", "ALT", "FORMAT", "INFO", "DP_fname1_sample1", "DP_fname2_sample2"]
         pivot_values = ["DP"]
         actual_lst = change_order(lst, pivot_values)
         
-        expected_lst = ["CHROM", "POS", "REF", "ALT", "DP_sample1", "DP_sample2", "FORMAT", "INFO"]
+        expected_lst = ["CHROM", "POS", "REF", "ALT", "DP_fname1_sample1", "DP_fname2_sample2", "FORMAT", "INFO"]
+        
+        self.assertEqual(expected_lst, actual_lst)
+        
+    def Xtest_change_order_formatsInFilenamesOkay(self):
+        lst = ["CHROM", "POS", "REF", "ALT", "FORMAT", "INFO", "DP_fnameDPGQ_sample1", "GQ_fnameDPGQ_sample1"]
+        pivot_values = ["DP", "GQ"]
+        actual_lst = change_order(lst, pivot_values)
+        
+        expected_lst = ["CHROM", "POS", "REF", "ALT", "DP_fnameDPGQ_sample1", "GQ_fnameDPGQ_sample1", "FORMAT", "INFO"]
         
         self.assertEqual(expected_lst, actual_lst)
         

@@ -410,40 +410,33 @@ def merge_samples(reduced_df, combined_df):
 
     return combined_df    
     
-def rearrange_columns(output_df, pivot_values):
+def rearrange_columns(output_df):
     ##change tuples to strings:
     lst = []
+    pivot_columns = []
     for i in list(output_df.columns.values):
         if type(i) is tuple:
             i = "_".join(i)
+            pivot_columns.append(i)
         lst.append(i)
     output_df.columns = lst 
     
     ##change order of columns:
-    lst = change_order(lst, pivot_values)    
+    lst = change_order(lst, pivot_columns)    
     output_df = output_df.ix[:,lst]
 
     return output_df
     
-def change_order(lst, pivot_values):
-    all_pivot_values_lst = []
-    for pivot_value in pivot_values:
-        pivot_value_lst = []
-        for i, header in enumerate(lst):    
-            if re.search(pivot_value, header):
-                pivot_value_lst.append(header)
-        
-        all_pivot_values_lst.extend(pivot_value_lst)
-    
+def change_order(lst, pivot_columns):
     meta_lst = []
     annot_lst = []
-    for i, header in enumerate(lst):    
+    for header in lst:    
         if re.search("CHROM|POS|ID|REF|ALT|ANNOTATED_ALLELE|GENE_SYMBOL|Mult_Alt|Mult_Gene|IGV|UCSC", header):
             meta_lst.append(header)
-        elif header not in all_pivot_values_lst:
+        elif header not in pivot_columns:
             annot_lst.append(header) 
-                     
-    lst = meta_lst + all_pivot_values_lst + annot_lst
+
+    lst = meta_lst + pivot_columns + annot_lst
 
     return lst
     
@@ -502,7 +495,7 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, pivot
         pass
 
     print "{0} - rearranging columns".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
-    complete_output = rearrange_columns(mult_alt_gene_df, pivot_values)
+    complete_output = rearrange_columns(mult_alt_gene_df)
     
     print "{0} - sorting rows".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     sorted_df = pivoter.sort_rows(complete_output)
