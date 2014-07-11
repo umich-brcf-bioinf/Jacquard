@@ -63,12 +63,16 @@ class LineProcessor():
     def add_tags(self, input_line):
         line   = input_line.split("\t")[:8]
         format = input_line.split("\t")[8]
-        sample = input_line.split("\t")[9]         
+        samples = input_line.split("\t")[9:]         
 
         for tag in self.tags:
-            param, value = tag.format(format, sample)
-        
-        line.extend([param, value])
+            values = []
+            for sample in samples:
+                param, value = tag.format(format, sample)
+                values.append(value)
+                
+        line.append(param)
+        line.extend(values)
 
         return "\t".join(line)
             

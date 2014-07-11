@@ -58,10 +58,23 @@ class LineProcessorTestCase(unittest.TestCase):
         input_line = "chr1|42|.|ref|alt|qual|filter|INFO|A:B:C|X:Y:Z".replace("|", "\t")
 
         actual_line = processor.add_tags(input_line)
-        actual_format_params, actual_format_values = actual_line.split("\t")[8:10]
+        actual_format_params = actual_line.split("\t")[8]
+        actual_format_values = actual_line.split("\t")[9:]
         
         self.assertEqual("a:b:c", actual_format_params)
-        self.assertEqual("x:y:z", actual_format_values)
+        self.assertEqual(["x:y:z"], actual_format_values)
+        
+    def test_process_line_MultSample(self):
+        tag = MockLowerTag()    
+        processor = LineProcessor([tag])
+        input_line = "chr1|42|.|ref|alt|qual|filter|INFO|A:B:C|U:V:W|X:Y:Z".replace("|", "\t")
+
+        actual_line = processor.add_tags(input_line)
+        actual_format_params = actual_line.split("\t")[8]
+        actual_format_values = actual_line.split("\t")[9:]
+        
+        self.assertEqual("a:b:c", actual_format_params)
+        self.assertEqual(["u:v:w", "x:y:z"], actual_format_values)
         
 
 class MockLowerTag():
