@@ -15,7 +15,16 @@ import sys
 import time
 
 from pivot_variants import get_headers_and_readers, process_files, determine_input_keys
+from tag_mutect import AlleleFreqTag, DepthTag, SomaticTag, LineProcessor, FileProcessor
     
+def validate_directories(input_dir, output_dir):    
+    if not os.path.isdir(input_dir):
+            print "Error. Specified input directory {0} does not exist".format(input_dir)
+            exit(1)
+            
+    if not os.path.isdir(output_dir):
+        os.makedirs(output_dir)
+            
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
     pd.set_option('chained_assignment', None)
@@ -46,8 +55,23 @@ if __name__ == "__main__":
         input_dir = os.path.abspath(args.input_dir)
         output_dir = os.path.abspath(args.output_dir)
         
-        print "foo"
-        exit
+        validate_directories(input_dir, output_dir)     
+        
+        print FileProcessor().meta_header
+        
+        file_count = 0
+        for item in sorted(listdir(input_dir)):
+            fname, extension = os.path.splitext(item)
+            if isfile(join(input_dir, item)) and extension == ".vcf":
+                 file_count += 1  
+            
+            f = open(item, "r")
+            for line in f:
+                line_proc = LineProcessor(AlleleFreqTag)
+                output_line = line_proc.add_tags(input_line)     
+                print output_line
+        print "Processing [{0}] VCF files from [{1}]".format(file_count, input_dir)
+
         
     elif args.subparser_name == "pivot":
         input_dir = os.path.abspath(args.input_dir)
@@ -57,12 +81,7 @@ if __name__ == "__main__":
         
         output_dir, outfile_name = os.path.split(output_path)
     
-        if not os.path.isdir(input_dir):
-            print "Error. Specified input directory {0} does not exist".format(input_dir)
-            exit(1)
-            
-        if not os.path.isdir(output_dir):
-            os.makedirs(output_dir)
+        validate_directories(input_dir, output_dir)
             
         fname, extension = os.path.splitext(outfile_name)
         if extension != ".xlsx": 

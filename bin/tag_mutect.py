@@ -60,6 +60,7 @@ class SomaticTag():
 class LineProcessor():
     def __init__(self, tags):
         self.tags = tags
+
     def add_tags(self, input_line):
         line   = input_line.split("\t")[:8]
         format = input_line.split("\t")[8]
@@ -75,6 +76,13 @@ class LineProcessor():
         line.extend(values)
 
         return "\t".join(line)
-            
+
+class FileProcessor():
+    def __init__(self):
+        self.metaheader = '''##jacquard.version=0.1\n
+        ##jacquard.tagMutect.command=tagMutect inDir outDir\n
+        ##jacquard.tagMutect.cwd=/foo/bar'''
+
+        
             
         
