@@ -1,4 +1,5 @@
 #!/usr/bin/python2.7
+import ast
 import pandas as pd
 from pandas import *
 import unittest
@@ -14,7 +15,16 @@ from os.path import isfile, join
 pd.set_option('chained_assignment', None)
 
 def dataframe(input_data, sep="\t", index_col=None):
-    return pd.read_csv(StringIO(input_data), sep=sep, header=False, dtype='str', index_col=index_col)
+    def tupelizer(thing):
+        if isinstance(thing, str) and thing.startswith("(") and thing.endswith(")"):
+            return ast.literal_eval(thing)
+        return thing
+
+    df = pd.read_csv(StringIO(input_data), sep=sep, header=False, dtype='str', index_col=index_col)
+    new_cols = [tupelizer(col) for col in list(df.columns.values)]
+    df.columns = pd.core.index.Index(new_cols)
+    
+    return df
     
 class VariantPivoterTestCase(unittest.TestCase):
     def test_build_transform(self):
@@ -747,9 +757,9 @@ chr1	4	A	T	sample3	0/1	4''')
         tm.assert_frame_equal(expected_df, actual_df)
     
     ##rearrange columns
-    def Xtest_rearrange_columns(self):
+    def test_rearrange_columns(self):
         input_string = \
-'''CHROM	POS	REF	ALT	FORMAT	DP_sample_A	DP_sample_B
+'''CHROM	POS	REF	ALT	FORMAT	('DP', 'sample_A')	('DP', 'sample_B')
 1	2	A	G	DP	134	57
 1	3	C	G	DP	135	58
 8	4	A	T	DP	136	59
@@ -769,22 +779,22 @@ chr1	4	A	T	sample3	0/1	4''')
 13	5	T	AAAA	137	60	DP
 '''
         expected_df = dataframe(expected_string)
-        
+
         tm.assert_frame_equal(expected_df, actual_df)
     
-    def Xtest_change_order(self):
+    def test_change_order(self):
         lst = ["CHROM", "POS", "REF", "ALT", "FORMAT", "INFO", "DP_fname1_sample1", "DP_fname2_sample2"]
-        pivot_values = ["DP"]
-        actual_lst = change_order(lst, pivot_values)
+        pivot_columns = ["DP_fname1_sample1", "DP_fname2_sample2"]
+        actual_lst = change_order(lst, pivot_columns)
         
         expected_lst = ["CHROM", "POS", "REF", "ALT", "DP_fname1_sample1", "DP_fname2_sample2", "FORMAT", "INFO"]
         
         self.assertEqual(expected_lst, actual_lst)
         
-    def Xtest_change_order_formatsInFilenamesOkay(self):
+    def test_change_order_formatsInFilenamesOkay(self):
         lst = ["CHROM", "POS", "REF", "ALT", "FORMAT", "INFO", "DP_fnameDPGQ_sample1", "GQ_fnameDPGQ_sample1"]
-        pivot_values = ["DP", "GQ"]
-        actual_lst = change_order(lst, pivot_values)
+        pivot_columns = ["DP_fnameDPGQ_sample1", "GQ_fnameDPGQ_sample1"]
+        actual_lst = change_order(lst, pivot_columns)
         
         expected_lst = ["CHROM", "POS", "REF", "ALT", "DP_fnameDPGQ_sample1", "GQ_fnameDPGQ_sample1", "FORMAT", "INFO"]
         
