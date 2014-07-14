@@ -79,9 +79,8 @@ def gene_rollup_highest_impact(initial_df, samples, cols):
             pivoted_df[item] = 0
         pivoted_df[item + "_initial_sum"] = pivoted_df[item].map(int)
 
-    # pivoted_df["SnpEff_Impact"] = pivoted_df["HIGH"].apply(lambda x: "h" * x) + pivoted_df["MODERATE"].apply(lambda x: "m" * x) + pivoted_df["LOW"].apply(lambda x: "l" * x) + pivoted_df["MODIFIER"].apply(lambda x: "x" * x)
-
-    pivoted_df["SnpEff_Impact"] = (pivoted_df["HIGH"] * 50 + pivoted_df["MODERATE"]*10 + pivoted_df["LOW"] + pivoted_df["MODIFIER"]/10)/4
+    pivoted_df["SnpEff_Impact"] = pivoted_df["HIGH"].apply(lambda x: "h" * x) + pivoted_df["MODERATE"].apply(lambda x: "m" * x) + pivoted_df["LOW"].apply(lambda x: "l" * x) + pivoted_df["MODIFIER"].apply(lambda x: "x" * x)
+#     pivoted_df["SnpEff_Impact"] = (pivoted_df["HIGH"] * 50 + pivoted_df["MODERATE"]*10 + pivoted_df["LOW"] + pivoted_df["MODIFIER"]/10)/4
     
     pivoted_df["Impact_score"] = pivoted_df["HIGH"] * 100000.0 + pivoted_df["MODERATE"] + pivoted_df["LOW"]/100000.0 + pivoted_df["MODIFIER"]/10**12
     # pivoted_df["Impact_score"] = pivoted_df["HIGH"] * 50 + pivoted_df["MODERATE"]*10 + pivoted_df["LOW"] + pivoted_df["MODIFIER"]/10
