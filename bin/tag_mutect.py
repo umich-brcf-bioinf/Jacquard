@@ -78,11 +78,19 @@ class LineProcessor():
         return "\t".join(line)
 
 class FileProcessor():
-    def __init__(self):
-        self.metaheader = '''##jacquard.version=0.1\n
-        ##jacquard.tagMutect.command=tagMutect inDir outDir\n
-        ##jacquard.tagMutect.cwd=/foo/bar'''
-
-        
+    def __init__(self, reader, execution_context_metadataheader = []):
+        self.reader = reader
+        self.metaheader = self._metaheader_handler(execution_context_metadataheader)
             
+    def _metaheader_handler(self, metaheaders):
+        new_headers = ["##{}\n".format(header) for header in metaheaders]
+        return ''.join(new_headers)
+
+    def process(self, writer):
+        writer.write(self.metaheader)
+        
+        for line in self.reader:
+            if line.startswith("##"):
+                writer.write(line)
+        writer.close()
         

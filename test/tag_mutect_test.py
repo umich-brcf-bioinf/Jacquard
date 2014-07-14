@@ -80,10 +80,33 @@ class LineProcessorTestCase(unittest.TestCase):
         self.assertEqual("chr1\t42\t.\tref\talt\tqual\tfilter\tINFO\ta:b:c\tu:v:w\tx:y:z", actual_line)
 
 class FileProcessorTestCase(unittest.TestCase):
-    def test_metaheader(self):
-        self.assertEqual('''##jacquard.version=0.1\n
-        ##jacquard.tagMutect.command=tagMutect inDir outDir\n
-        ##jacquard.tagMutect.cwd=/foo/bar''', FileProcessor().metaheader)
+    def test_process_prependsExecutionContext(self):
+        mockWriter = MockWriter()
+        input_metaheaders = ["jacquard.version=X","jacquard.tagMutect.command=foo"]
+        processor = FileProcessor([], input_metaheaders)
+        processor.process(mockWriter)
+        actualLines = mockWriter.lines()
+        self.assertEqual(2, len(actualLines))
+        self.assertEqual("##jacquard.version=X", actualLines[0])
+        self.assertEqual("##jacquard.tagMutect.command=foo", actualLines[1])
+
+    def test_process_closesWriter(self):
+        mockWriter = MockWriter()
+        processor = FileProcessor([])
+        processor.process(mockWriter)
+        self.assertEqual(True, mockWriter.wasClosed)
+
+    def test_metaheader_prependsExecutionContextWhenBlank(self):
+        processor = FileProcessor([])
+        self.assertEqual("", processor.metaheader)
+
+    def test_metaheader_passthroughExistingHeaders(self):
+        mockWriter = MockWriter()
+        reader = ["##Hello\n","##World\n","#CHROM\n","1\n"]
+        processor = FileProcessor(reader)
+        processor.process(mockWriter)
+        self.assertEqual(["##Hello", "##World"], mockWriter.lines())
+
          
 #     def test_process_file(self):
 #         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -100,3 +123,16 @@ class MockLowerTag():
     def format(self, params, values):
         return (params.lower(), values.lower())
     
+class MockWriter():
+    def __init__(self):
+        self._content = []
+        self.wasClosed = False
+
+    def write(self, content):
+        self._content.extend(content.splitlines())
+        
+    def lines(self):
+        return self._content
+
+    def close(self):
+        self.wasClosed = True
