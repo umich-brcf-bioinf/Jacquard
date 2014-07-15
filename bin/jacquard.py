@@ -15,7 +15,7 @@ import sys
 import time
 
 from pivot_variants import get_headers_and_readers, process_files, determine_input_keys
-from tag_mutect import AlleleFreqTag, DepthTag, SomaticTag, LineProcessor, FileProcessor
+from tag_mutect import AlleleFreqTag, DepthTag, SomaticTag, LineProcessor, FileProcessor, tag_mutect_files
     
 def validate_directories(input_dir, output_dir):    
     if not os.path.isdir(input_dir):
@@ -56,8 +56,7 @@ if __name__ == "__main__":
         output_dir = os.path.abspath(args.output_dir)
         
         validate_directories(input_dir, output_dir)     
-        
-        print FileProcessor().meta_header
+        input_metaheaders = ["##jacquard.version={0}".format(__version__), "##jacquard.tagMutect.command=tagMutect {0} {1}".format(input_dir, output_dir), "##jacquard.tagMutect.cwd={0}".format(os.path.dirname(os.getcwd()))]
         
         file_count = 0
         for item in sorted(listdir(input_dir)):
@@ -65,12 +64,13 @@ if __name__ == "__main__":
             if isfile(join(input_dir, item)) and extension == ".vcf":
                  file_count += 1  
             
-            f = open(item, "r")
-            for line in f:
-                line_proc = LineProcessor(AlleleFreqTag)
-                output_line = line_proc.add_tags(input_line)     
-                print output_line
-        print "Processing [{0}] VCF files from [{1}]".format(file_count, input_dir)
+            tag_mutect_files(input_dir, output_dir)
+            
+#             for line in f:
+#                 line_proc = LineProcessor(AlleleFreqTag)
+#                 output_line = line_proc.add_tags(input_line)     
+#                 print output_line
+#         print "Processing [{0}] VCF files from [{1}]".format(file_count, input_dir)
 
         
     elif args.subparser_name == "pivot":

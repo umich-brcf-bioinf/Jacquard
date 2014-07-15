@@ -1,8 +1,11 @@
 #!/usr/bin/python2.7
+import os
+from os import listdir
+import shutil
 
 class AlleleFreqTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_AF_MT,Number=1,Type=Float, Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA).">'
+        self.metaheader = '##FORMAT=<ID=JQ_AF_MT,Number=1,Type=Float, Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA).">\n'
 
     def format(self, format_param_string, format_value_string):
         format_param_array = format_param_string.split(":")
@@ -23,7 +26,7 @@ class AlleleFreqTag():
         
 class DepthTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_DP_MT,Number=1,Type=Float, Description="Jacquard depth for MuTect (based on DP).">'
+        self.metaheader = '##FORMAT=<ID=JQ_DP_MT,Number=1,Type=Float, Description="Jacquard depth for MuTect (based on DP).">\n'
 
     def format(self, format_param_string, format_value_string):
         format_param_array = format_param_string.split(":")
@@ -38,7 +41,7 @@ class DepthTag():
     
 class SomaticTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag).">'
+        self.metaheader = '##FORMAT=<ID=JQ_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag).">\n'
 
     def format(self, format_param_string, format_value_string):
         format_param_array = format_param_string.split(":")
@@ -78,19 +81,50 @@ class LineProcessor():
         return "\t".join(line)
 
 class FileProcessor():
-    def __init__(self, reader, execution_context_metadataheader = []):
-        self.reader = reader
-        self.metaheader = self._metaheader_handler(execution_context_metadataheader)
+    
+    def __init__(self, tags=[], execution_context_metadataheaders = []):
+        self._tags = tags
+        self._metaheader = self._metaheader_handler(execution_context_metadataheaders)
+        
+        for tag in self._tags:
+            self._metaheader += tag.metaheader
+        self._lineProcessor = LineProcessor(self._tags)
             
     def _metaheader_handler(self, metaheaders):
         new_headers = ["##{}\n".format(header) for header in metaheaders]
         return ''.join(new_headers)
 
-    def process(self, writer):
-        writer.write(self.metaheader)
-        
-        for line in self.reader:
+    def process(self, reader, writer):
+
+        for line in reader:
             if line.startswith("##"):
                 writer.write(line)
-        writer.close()
+            elif line.startswith("#"):
+                writer.write(self._metaheader)
+                writer.write(line)
+            else:
+                edited_line = self._lineProcessor.add_tags(line)
+                writer.write(edited_line)
+                
+#         writer.close()
         
+def tag_mutect_files(input_dir, output_dir):
+    af_tag = AlleleFreqTag()
+    processor = FileProcessor(tags=[af_tag])
+    
+    for file in sorted(listdir(input_dir)):
+        fname, extension = os.path.splitext(file)
+        new_file = fname + "_jacquard" + extension
+        
+        in_file = open(os.path.join(input_dir, file), "r")
+        
+        for line in in_file:
+            if line.startswith("##MuTect"):
+                in_file.close()
+                in_file = open(os.path.join(input_dir, file), "r")
+                out_file = open(os.path.join(output_dir, new_file), "w")
+                processor.process(in_file, out_file)
+                out_file.close()
+                break
+        in_file.close()
+

@@ -1,11 +1,14 @@
 #!/usr/bin/python2.7
 import os
+from os import listdir
+import testfixtures
+from testfixtures import TempDirectory
 import unittest
-from bin.tag_mutect import AlleleFreqTag, DepthTag, SomaticTag, LineProcessor, FileProcessor
+from bin.tag_mutect import AlleleFreqTag, DepthTag, SomaticTag, LineProcessor, FileProcessor, tag_mutect_files
 
 class AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_AF_MT,Number=1,Type=Float, Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA).">', AlleleFreqTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_AF_MT,Number=1,Type=Float, Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA).">\n', AlleleFreqTag().metaheader)
                 
     def test_format_missingAFTag(self):
         tag = AlleleFreqTag()
@@ -25,7 +28,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
 
 class DepthTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_DP_MT,Number=1,Type=Float, Description="Jacquard depth for MuTect (based on DP).">', DepthTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_DP_MT,Number=1,Type=Float, Description="Jacquard depth for MuTect (based on DP).">\n', DepthTag().metaheader)
                 
     def test_format_missingDPTag(self):
         tag = DepthTag()
@@ -39,7 +42,7 @@ class DepthTagTestCase(unittest.TestCase):
 
 class SomaticTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag).">', SomaticTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag).">\n', SomaticTag().metaheader)
                 
     def test_format_missingSSTag(self):
         tag = SomaticTag()
@@ -80,46 +83,123 @@ class LineProcessorTestCase(unittest.TestCase):
         self.assertEqual("chr1\t42\t.\tref\talt\tqual\tfilter\tINFO\ta:b:c\tu:v:w\tx:y:z", actual_line)
 
 class FileProcessorTestCase(unittest.TestCase):
+    
     def test_process_prependsExecutionContext(self):
         mockWriter = MockWriter()
         input_metaheaders = ["jacquard.version=X","jacquard.tagMutect.command=foo"]
-        processor = FileProcessor([], input_metaheaders)
-        processor.process(mockWriter)
+        processor = FileProcessor(tags=[], execution_context_metadataheaders=input_metaheaders)
+        processor.process(reader=["#CHROM\n"], writer=mockWriter)
         actualLines = mockWriter.lines()
-        self.assertEqual(2, len(actualLines))
+        self.assertEqual(3, len(actualLines))
         self.assertEqual("##jacquard.version=X", actualLines[0])
         self.assertEqual("##jacquard.tagMutect.command=foo", actualLines[1])
 
-    def test_process_closesWriter(self):
+    def test_prependsExecutionContextWhenBlank(self):
+        processor = FileProcessor()
         mockWriter = MockWriter()
-        processor = FileProcessor([])
-        processor.process(mockWriter)
-        self.assertEqual(True, mockWriter.wasClosed)
+        processor.process(reader=[], writer=mockWriter)
+        self.assertEqual(0, len(mockWriter.lines()))
 
-    def test_metaheader_prependsExecutionContextWhenBlank(self):
-        processor = FileProcessor([])
-        self.assertEqual("", processor.metaheader)
-
-    def test_metaheader_passthroughExistingHeaders(self):
+    def test_process_passthroughExistingMetaHeaders(self):
         mockWriter = MockWriter()
-        reader = ["##Hello\n","##World\n","#CHROM\n","1\n"]
-        processor = FileProcessor(reader)
-        processor.process(mockWriter)
+        processor = FileProcessor()
+        reader = ["##Hello\n","##World\n"]
+        processor.process(reader, mockWriter)
         self.assertEqual(["##Hello", "##World"], mockWriter.lines())
 
-         
-#     def test_process_file(self):
-#         script_dir = os.path.dirname(os.path.abspath(__file__))
-#         input_file = script_dir + "/test_input/P2_tiny_test_input.txt"
-#         processor = FileProcessor(input_file)
-# 
-#         actual_line = processor.get_line()
-#         expected_line = "1       1       17730   .       C       A       A       .       .       WASH7P  .       .       .       .       HOM     .       SNP     Novel_locus     .       .         .       HIGH    SPLICE_SITE_ACCEPTOR    .       SPLICE_SITE_ACCEPTOR(HIGH|||||WASH7P|unprocessed_pseudogene|NON_CODING|ENST00000430492|7|1),EXON(MODIFIER|||||WAS         H7P|unprocessed_pseudogene|NON_CODING|ENST00000423562|4|1),EXON(MODIFIER|||||WASH7P|unprocessed_pseudogene|NON_CODING|ENST00000438504|5|1),EXON(MODIFIER|||||WASH         7P|unprocessed_pseudogene|NON_CODING|ENST00000488147|5|1),EXON(MODIFIER|||||WASH7P|unprocessed_pseudogene|NON_CODING|ENST00000537342|4|1),EXON(MODIFIER|||||WASH7         P|unprocessed_pseudogene|NON_CODING|ENST00000538476|5|1),EXON(MODIFIER|||||WASH7P|unprocessed_pseudogene|NON_CODING|ENST00000541675|4|1),INTRON(MODIFIER|||||WASH         7P|unprocessed_pseudogene|NON_CODING|ENST00000430492|6|1)       POPULATION_SNPFreq=Novel_locus;POPULATION_AF_CATEGORY=Novel_locus;POPULATION_AF=.;POPULATION_AF_S         OURCE=.;NUCMATCH=0;in_strand=2;in_rna_coverage=11;in_rna_meanq=37.36;in_rna_base_count=2,9,0,0;in_rna_all_subs=CA;in_rna_frequency=0.18;in_dna_coverage=292;in_dn         a_meanq=37.09;in_dna_base_count=8,284,0,0;in_dna_all_subs=-;in_dna_frequency=0.00;in_rdd=1;SNP;HOM;VARTYPE=SNP;dbNSFP_rollup_tolerated=0;dbNSFP_rollup_damaging=0         ;dbNSFP_rollup_total=0  .       .       .       .       .       .       .       .       .       .       .       0       0       0       RDD_GT:RNA_COVERAGE:RNA_F         REQ:RNA_ACGT    C_A:11:0.18:2,9,0,0     .       .\n"
-#         
-#         self.assertEqual(expected_line, actual_line)
+    def test_process_addsNewMetaHeaders(self):
+        mockWriter = MockWriter()
+        mockTag = MockLowerTag("##mockMetaHeader")
+        processor = FileProcessor(tags=[mockTag])
+        processor.process(reader=["#CHROM\n"], writer=mockWriter)
+        self.assertEqual(2, len(mockWriter.lines()))
+        self.assertEqual("##mockMetaHeader", mockWriter.lines()[0])
 
+    def test_process_adjustsVcfRecords(self):
+        mockWriter = MockWriter()
+        mockTag = MockLowerTag("##mockMetaHeader")
+        recordHeader = "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleA|SampleB".replace("|","\t")
+        reader = [ recordHeader,
+                  "chr1|1|.|ref|alt|qual|filter|INFO|A:B:C|A1:B1:C1|A2:B2:C2".replace("|","\t"),
+                  "chr2|10|.|ref|alt|qual|filter|INFO|A:B:C|A10:B10:C10|A20:B20:C20".replace("|","\t")
+                  ]
+        processor = FileProcessor(tags=[mockTag])
+        processor.process(reader, mockWriter)
+        self.assertEqual(4, len(mockWriter.lines()))
+        self.assertEqual("##mockMetaHeader", mockWriter.lines()[0])
+        self.assertEqual(recordHeader, mockWriter.lines()[1])
+        self.assertEqual("chr1\t1\t.\tref\talt\tqual\tfilter\tINFO\ta:b:c\ta1:b1:c1\ta2:b2:c2", mockWriter.lines()[2])
+        self.assertEqual("chr2\t10\t.\tref\talt\tqual\tfilter\tINFO\ta:b:c\ta10:b10:c10\ta20:b20:c20", mockWriter.lines()[3])
+
+
+class TagMutectTest(unittest.TestCase):
+    def test_tagMutectFiles(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("A.vcf","##MuTect\n#CHROM\n")
+            input_dir.write("B.vcf","##MuTect\n#CHROM\n")
+            input_dir.write("C.vcf","##MuTect\n#CHROM\n")
+
+            tag_mutect_files(input_dir.path, output_dir.path)
+            actual_files = sorted(listdir(output_dir.path))
+
+            self.assertEqual(3, len(actual_files))
+            self.assertEqual("A_jacquard.vcf", actual_files[0])
+            self.assertEqual("B_jacquard.vcf", actual_files[1])
+            self.assertEqual("C_jacquard.vcf", actual_files[2])
+             
+            input_dir.cleanup()
+            output_dir.cleanup()
+
+    def test_tagMutectFilesContent(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("A.vcf","##MuTect\n#CHROM\n")
+            input_dir.write("B.vcf","##MuTect\n#CHROM\n")
+            input_dir.write("C.vcf","##MuTect\n#CHROM\n")
+
+            tag_mutect_files(input_dir.path, output_dir.path)
+            actual_files = sorted(listdir(output_dir.path))
+            for actual_file in actual_files:
+                result = open(output_dir.path + "/" + actual_file).read()
+                self.assertEqual('##MuTect\n##FORMAT=<ID=JQ_AF_MT,Number=1,Type=Float, Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA).">\n#CHROM\n', result)
+            
+            input_dir.cleanup()
+            output_dir.cleanup()
+
+    def test_tagMutectFilesNoMutectHeader(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("A.vcf","#CHROM\n")
+            input_dir.write("B.vcf","#CHROM\n")
+            input_dir.write("C.vcf","#CHROM\n")
+
+            tag_mutect_files(input_dir.path, output_dir.path)
+            actual_files = sorted(listdir(output_dir.path))
+            input_files = sorted(listdir(input_dir.path))
+            
+            self.assertEqual(0, len(actual_files))
+            self.assertEqual(3, len(input_files))
+             
+            input_dir.cleanup()
+            output_dir.cleanup()
+    
+#     def test_tagMutectFiles(self):
+#         #make a mutect file
+#         script_dir = os.path.dirname(os.path.abspath(__file__))
+#         input_path = script_dir + "/test_mutect/input"
+#         expected_output = script_dir + "/test_mutect/expected/expected_tiny_mutect_output.vcf"
+#        
+#         with TempDirectory() as d:
+#             process_mutect_file(input_path, d)
+#             actual_output = output_path + "/jacquard_tiny_mutect_output.vcf"
+#             
+#             self.compare(d.read(expected_output), actual_output)
         
+
+
+
 class MockLowerTag():
+    def __init__(self, metaheader=""):
+        self.metaheader = metaheader
+
     def format(self, params, values):
         return (params.lower(), values.lower())
     

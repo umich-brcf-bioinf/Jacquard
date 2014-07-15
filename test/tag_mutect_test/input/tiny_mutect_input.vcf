@@ -1,0 +1,48 @@
+##fileformat=VCFv4.1
+##FILTER=<ID=PASS,Description="Accept as a confident somatic mutation">
+##FILTER=<ID=REJECT,Description="Rejected as a confident somatic mutation">
+##FORMAT=<ID=AD,Number=.,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">
+##FORMAT=<ID=BQ,Number=A,Type=Float,Description="Average base quality for reads supporting alleles">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">
+##FORMAT=<ID=FA,Number=A,Type=Float,Description="Allele fraction of the alternate allele with regard to reference">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification">
+##FORMAT=<ID=SS,Number=1,Type=Integer,Description="Variant status relative to non-adjacent Normal,0=wildtype,1=germline,2=somatic,3=LOH,4=post-transcriptional modification,5=unknown">
+##INFO=<ID=DB,Number=0,Type=Flag,Description="dbSNP Membership">
+##INFO=<ID=MQ0,Number=1,Type=Integer,Description="Total Mapping Quality Zero Reads">
+##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description="Somatic event">
+##INFO=<ID=VT,Number=1,Type=String,Description="Variant type, can be SNP, INS or DEL">
+##MuTect="analysis_type=MuTect input_file=[BMT-101-N.35127_recal.bam, BMT-101-T.35109_recal.bam] read_buffer_size=null phone_home=STANDARD gatk_key=null tag=NA read_filter=[BadCigar] intervals=[/ccmb/BioinfCore/SoftwareDev/common/TargetRegion_buffered10bases.bed] excludeIntervals=null interval_set_rule=UNION interval_merging=ALL interval_padding=0 reference_sequence=/ccmb/BioinfCore/SoftwareDev/common/gatk/hg19/hg19.fa nonDeterministicRandomSeed=false disableRandomization=false maxRuntime=-1 maxRuntimeUnits=MINUTES downsampling_type=BY_SAMPLE downsample_to_fraction=null downsample_to_coverage=1000 enable_experimental_downsampling=false baq=OFF baqGapOpenPenalty=40.0 performanceLog=null useOriginalQualities=false BQSR=null quantize_quals=0 disable_indel_quals=false emit_original_quals=false preserve_qscores_less_than=6 defaultBaseQualities=-1 validation_strictness=SILENT remove_program_records=false keep_program_records=false unsafe=null num_threads=1 num_cpu_threads_per_data_thread=1 num_io_threads=0 monitorThreadEfficiency=false num_bam_file_handles=null read_group_black_list=null pedigree=[] pedigreeString=[] pedigreeValidationType=STRICT allow_intervals_with_unindexed_bam=false generateShadowBCF=false logging_level=INFO log_to_file=null help=false noop=false enable_extended_output=false artifact_detection_mode=false tumor_sample_name=BMT-101-T.35109 bam_tumor_sample_name=null normal_sample_name=BMT-101-N.35127 force_output=false force_alleles=false only_passing_calls=false initial_tumor_lod=4.0 tumor_lod=6.3 fraction_contamination=0.02 minimum_mutation_cell_fraction=0.0 normal_lod=2.2 normal_artifact_lod=1.0 strand_artifact_lod=2.0 strand_artifact_power_threshold=0.9 dbsnp_normal_lod=5.5 somatic_classification_normal_power_threshold=0.95 minimum_normal_allele_fraction=0.0 tumor_f_pretest=0.0050 min_qscore=5 gap_events_threshold=3 heavily_clipped_read_fraction=0.3 clipping_bias_pvalue_threshold=0.05 fraction_mapq0_threshold=0.5 pir_median_threshold=10.0 pir_mad_threshold=3.0 required_maximum_alt_allele_mapping_quality_score=20 max_alt_alleles_in_normal_count=2 max_alt_alleles_in_normal_qscore_sum=20 max_alt_allele_in_normal_fraction=0.03 power_constant_qscore=30 absolute_copy_number_data=null power_constant_af=0.30000001192092896 vcf=org.broadinstitute.sting.gatk.io.stubs.VariantContextWriterStub no_cmdline_in_header=org.broadinstitute.sting.gatk.io.stubs.VariantContextWriterStub sites_only=org.broadinstitute.sting.gatk.io.stubs.VariantContextWriterStub bcf=org.broadinstitute.sting.gatk.io.stubs.VariantContextWriterStub dbsnp=[(RodBinding name=dbsnp source=/ccmb/BioinfCore/Common/SOFTWARES/hg19bundle/dbsnp_138.hg19.ordered.vcf)] cosmic=[(RodBinding name=cosmic source=/ccmb/BioinfCore/SoftwareDev/common/b37_cosmic_v54_120711.hg19.vcf)] normal_panel=[] coverage_20_q20_file=null power_file=null tumor_depth_file=null normal_depth_file=null filter_mismatching_base_and_quals=false"
+##contig=<ID=chr1,length=249250621,assembly=hg19>
+##contig=<ID=chr2,length=243199373,assembly=hg19>
+##contig=<ID=chr3,length=198022430,assembly=hg19>
+##contig=<ID=chr4,length=191154276,assembly=hg19>
+##contig=<ID=chr5,length=180915260,assembly=hg19>
+##contig=<ID=chr6,length=171115067,assembly=hg19>
+##contig=<ID=chr7,length=159138663,assembly=hg19>
+##contig=<ID=chr8,length=146364022,assembly=hg19>
+##contig=<ID=chr9,length=141213431,assembly=hg19>
+##contig=<ID=chr10,length=135534747,assembly=hg19>
+##contig=<ID=chr11,length=135006516,assembly=hg19>
+##contig=<ID=chr12,length=133851895,assembly=hg19>
+##contig=<ID=chr13,length=115169878,assembly=hg19>
+##contig=<ID=chr14,length=107349540,assembly=hg19>
+##contig=<ID=chr15,length=102531392,assembly=hg19>
+##contig=<ID=chr16,length=90354753,assembly=hg19>
+##contig=<ID=chr17,length=81195210,assembly=hg19>
+##contig=<ID=chr18,length=78077248,assembly=hg19>
+##contig=<ID=chr19,length=59128983,assembly=hg19>
+##contig=<ID=chr20,length=63025520,assembly=hg19>
+##contig=<ID=chr21,length=48129895,assembly=hg19>
+##contig=<ID=chr22,length=51304566,assembly=hg19>
+##contig=<ID=chrX,length=155270560,assembly=hg19>
+##contig=<ID=chrY,length=59373566,assembly=hg19>
+##contig=<ID=chrM,length=16571,assembly=hg19>
+##reference=file:///ccmb/BioinfCore/SoftwareDev/common/gatk/hg19/hg19.fa
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	BMT-101-T.35109	BMT-101-N.35127
+chr1	15820	rs200482301	G	T	.	REJECT	DB	GT:AD:BQ:DP:FA	0/1:85,23:31:108:0.213	0:69,29:.:79:0.296
+chr1	15996	.	C	A	.	PASS	SOMATIC;VT=SNP	GT:AD:BQ:DP:FA:SS	0/1:35,4:25:39:0.103:2	0:48,0:.:24:0.00:0
+chr1	16014	.	C	T	.	REJECT	.	GT:AD:BQ:DP:FA	0/1:32,3:32:35:0.086	0:40,8:.:22:0.167
+chr1	16571	rs199676946	G	A	.	REJECT	DB	GT:AD:BQ:DP:FA	0/1:20,57:32:77:0.740	0:61,76:.:76:0.555
+chr1	16580	.	C	G	.	REJECT	.	GT:AD:BQ:DP:FA	0/1:77,6:34:83:0.072	0:135,10:.:81:0.069
