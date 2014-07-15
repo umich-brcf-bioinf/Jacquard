@@ -63,15 +63,8 @@ if __name__ == "__main__":
             fname, extension = os.path.splitext(item)
             if isfile(join(input_dir, item)) and extension == ".vcf":
                  file_count += 1  
-            
+             
             tag_mutect_files(input_dir, output_dir)
-            
-#             for line in f:
-#                 line_proc = LineProcessor(AlleleFreqTag)
-#                 output_line = line_proc.add_tags(input_line)     
-#                 print output_line
-#         print "Processing [{0}] VCF files from [{1}]".format(file_count, input_dir)
-
         
     elif args.subparser_name == "pivot":
         input_dir = os.path.abspath(args.input_dir)
