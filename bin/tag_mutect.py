@@ -1,6 +1,9 @@
 #!/usr/bin/python2.7
+from collections import OrderedDict
+import glob
 import os
 from os import listdir
+from os.path import isfile, join
 import shutil
 
 class AlleleFreqTag():
@@ -63,22 +66,30 @@ class SomaticTag():
 class LineProcessor():
     def __init__(self, tags):
         self.tags = tags
-
+        
     def add_tags(self, input_line):
-        line   = input_line.split("\t")[:8]
-        format = input_line.split("\t")[8]
-        samples = input_line.split("\t")[9:]         
+        no_newline_line = input_line.rstrip("\n")
+        original_vcf_fields = no_newline_line.split("\t")
+        new_vcf_fields = original_vcf_fields[:8]
+        format = original_vcf_fields[8]
+        samples = original_vcf_fields[9:]         
 
-        for tag in self.tags:
-            values = []
-            for sample in samples:
+        count = 0
+        for sample in samples:
+            format_dict = OrderedDict()
+            for tag in self.tags:
                 param, value = tag.format(format, sample)
-                values.append(value)
+                param_list = param.split(":")
+                value_list = value.split(":")
+                for i in range(0, len(param_list)):
+                    format_dict[param_list[i]] = value_list[i]
+#                 format_dict = OrderedDict(zip(param.split(":"), value.split(":")))
+            if count < 1: ##only add format column once
+                new_vcf_fields.append(":".join(format_dict.keys()))
+            new_vcf_fields.append(":".join(format_dict.values()))
+            count += 1
                 
-        line.append(param)
-        line.extend(values)
-
-        return "\t".join(line)
+        return "\t".join(new_vcf_fields) + "\n"
 
 class FileProcessor():
     
@@ -105,15 +116,21 @@ class FileProcessor():
             else:
                 edited_line = self._lineProcessor.add_tags(line)
                 writer.write(edited_line)
-                
+#         print self._lineProcessor.formats
 #         writer.close()
         
-def tag_mutect_files(input_dir, output_dir):
-    af_tag = AlleleFreqTag()
-    processor = FileProcessor(tags=[af_tag])
+def tag_mutect_files(input_dir, output_dir, input_metaheaders=[]):
+    processor = FileProcessor(tags=[AlleleFreqTag(), DepthTag(), SomaticTag()], execution_context_metadataheaders=input_metaheaders)
     
-    for file in sorted(listdir(input_dir)):
-        fname, extension = os.path.splitext(file)
+    in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
+    
+    print "\n".join(input_metaheaders)
+    print "Processing [{0}] VCF file(s) from [{1}]".format(len(in_files), input_dir)
+                                                       
+    for file in in_files:
+        fname, extension = os.path.splitext(os.path.basename(file))
+        if not isfile(file):
+            continue
         new_file = fname + "_jacquard" + extension
         
         in_file = open(os.path.join(input_dir, file), "r")
@@ -127,4 +144,7 @@ def tag_mutect_files(input_dir, output_dir):
                 out_file.close()
                 break
         in_file.close()
+    out_files = sorted(glob.glob(os.path.join(output_dir,"*.vcf")))
+    
+    print "Wrote [{0}] VCF file(s) to [{1}]".format(len(out_files), output_dir)
 
