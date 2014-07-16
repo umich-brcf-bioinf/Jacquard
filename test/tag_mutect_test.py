@@ -6,7 +6,7 @@ import sys
 import testfixtures
 from testfixtures import TempDirectory
 import unittest
-from bin.tag_mutect import AlleleFreqTag, DepthTag, SomaticTag, LineProcessor, FileProcessor, tag_mutect_files
+from bin.tag_mutect import AlleleFreqTag, DepthTag, SomaticTag, LineProcessor, FileProcessor, tag_mutect_files, validate_directories
 
 class AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
@@ -164,8 +164,7 @@ class FileProcessorTestCase(unittest.TestCase):
         self.assertEqual("chr1\t1\t.\tref\talt\tqual\tfilter\tINFO\ta:b:c\ta1:b1:c1\ta2:b2:c2", mockWriter.lines()[2])
         self.assertEqual("chr2\t10\t.\tref\talt\tqual\tfilter\tINFO\ta:b:c\ta10:b10:c10\ta20:b20:c20", mockWriter.lines()[3])
 
-
-class TagMutectTest(unittest.TestCase):
+class TagMutectTestCase(unittest.TestCase):
     def setUp(self):
         self.output = StringIO()
         self.saved_stdout = sys.stdout
@@ -232,11 +231,12 @@ class TagMutectTest(unittest.TestCase):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             input_dir.write("A.txt","##MuTect\n#CHROM\n")
             input_dir.write("B.vcf.bak","##MuTect\n#CHROM\n")
+            input_dir.write("C.vcf","##MuTect\n#CHROM\n")
 
             tag_mutect_files(input_dir.path, output_dir.path)
             
             actual_files = sorted(listdir(output_dir.path))
-            self.assertEqual(0, len(actual_files))
+            self.assertEqual(1, len(actual_files))
             
             input_dir.cleanup()
             output_dir.cleanup()
@@ -267,8 +267,27 @@ class TagMutectTest(unittest.TestCase):
             self.assertEqual(True, output_list[1].startswith("Processing [2]"))
             self.assertEqual(True, output_list[2].startswith("Wrote [1]"))
 
-
+class test_ValidateDirectoriesTestCase(unittest.TestCase):
+    def test_validateDirectories_inputDirectoryDoesntExist(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        input_dir = script_dir + "/tag_mutect_test/foo"
+        output_dir = script_dir + "/tag_mutect_test/output"
+        
+        with self.assertRaises(SystemExit) as cm:
+            validate_directories(input_dir, output_dir)
+        self.assertEqual(cm.exception.code, 1)
     
+    def xtest_validateDirectories_inputDirectoryUnreadable(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        input_dir = script_dir + "/tag_mutect_test/unreadable"
+        output_dir = script_dir + "/tag_mutect_test/output"
+        validate_directories(input_dir, output_dir)
+
+        self.assertEqual(1,2)
+#         with self.assertRaises(SystemExit) as cm:
+#             validate_directories(input_dir, output_dir)
+#         self.assertEqual(cm.exception.code, 1)
+        
 class MockLowerTag():
     def __init__(self, metaheader=""):
         self.metaheader = metaheader

@@ -116,14 +116,37 @@ class FileProcessor():
             else:
                 edited_line = self._lineProcessor.add_tags(line)
                 writer.write(edited_line)
-#         print self._lineProcessor.formats
-#         writer.close()
+
+
+def add_subparser(subparser):
+    parser_tagMutect = subparser.add_parser("tag_mutect", help="Accepts a directory of VCf results and creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
+    parser_tagMutect.add_argument("input_dir")
+    parser_tagMutect.add_argument("output_dir")
+
+
+def validate_directories(input_dir, output_dir):    
+    if not os.path.isdir(input_dir):
+        print "Error. Specified input directory {0} does not exist".format(input_dir)
+        exit(1)
+#     print os.access(input_dir, os.R_OK)
+    if not os.access(input_dir, os.R_OK):
+        print "Error: Specified input directory [{0}] cannot be read. Check permissions and try again.".format(input_dir)
+        exit(1)
+    if not os.path.isdir(output_dir):
+        try:
+            os.makedirs(output_dir)
+        except:
+            print "Error: Output directory could not be created. Check parameters and try again"
+            exit(1)
         
 def tag_mutect_files(input_dir, output_dir, input_metaheaders=[]):
     processor = FileProcessor(tags=[AlleleFreqTag(), DepthTag(), SomaticTag()], execution_context_metadataheaders=input_metaheaders)
     
     in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
-    
+    if len(in_files) < 1:
+        print "Error: Specified input directory [{0}] contains no VCF files. Check parameters and try again."
+        exit(1)
+        
     print "\n".join(input_metaheaders)
     print "Processing [{0}] VCF file(s) from [{1}]".format(len(in_files), input_dir)
                                                        
@@ -148,3 +171,10 @@ def tag_mutect_files(input_dir, output_dir, input_metaheaders=[]):
     
     print "Wrote [{0}] VCF file(s) to [{1}]".format(len(out_files), output_dir)
 
+def execute(args, execution_context): 
+    input_dir = os.path.abspath(args.input_dir)
+    output_dir = os.path.abspath(args.output_dir)
+     
+    validate_directories(input_dir, output_dir)
+    tag_mutect_files(input_dir, output_dir, execution_context)
+    
