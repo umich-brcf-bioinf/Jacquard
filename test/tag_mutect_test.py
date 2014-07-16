@@ -1,6 +1,8 @@
 #!/usr/bin/python2.7
 import os
 from os import listdir
+from StringIO import StringIO
+import sys
 import testfixtures
 from testfixtures import TempDirectory
 import unittest
@@ -57,30 +59,47 @@ class SomaticTagTestCase(unittest.TestCase):
 
 class LineProcessorTestCase(unittest.TestCase):
     def test_process_line_singleSample(self):
-        tag = MockLowerTag()    
+        tag = MockAddTag("JQ", "42")    
         processor = LineProcessor([tag])
-        input_line = "chr1|42|.|ref|alt|qual|filter|INFO|A:B:C|X:Y:Z".replace("|", "\t")
+        input_line = "chr1|42|.|ref|alt|qual|filter|INFO|A:B:C|X:Y:Z\n".replace("|", "\t")
 
         actual_line = processor.add_tags(input_line)
-        actual_format_params = actual_line.split("\t")[8]
-        actual_format_values = actual_line.split("\t")[9:]
+        self.assertEqual(True, actual_line.endswith("\n"))
+        self.assertEquals(1, len(actual_line.splitlines()))
         
-        self.assertEqual("a:b:c", actual_format_params)
-        self.assertEqual(["x:y:z"], actual_format_values)
-        self.assertEqual("chr1\t42\t.\tref\talt\tqual\tfilter\tINFO\ta:b:c\tx:y:z", actual_line)
+        trimmed_actual_line = actual_line.rstrip("\n")
+        actual_format_params = trimmed_actual_line.split("\t")[8]
+        actual_format_values = trimmed_actual_line.split("\t")[9:]        
+        self.assertEqual("A:B:C:JQ", actual_format_params)
+        self.assertEqual(["X:Y:Z:42"], actual_format_values)
         
     def test_process_line_MultSample(self):
         tag = MockLowerTag()    
         processor = LineProcessor([tag])
-        input_line = "chr1|42|.|ref|alt|qual|filter|INFO|A:B:C|U:V:W|X:Y:Z".replace("|", "\t")
+        input_line = "chr1|42|.|ref|alt|qual|filter|INFO|A:B:C|U:V:W|X:Y:Z\n".replace("|", "\t")
 
         actual_line = processor.add_tags(input_line)
         actual_format_params = actual_line.split("\t")[8]
         actual_format_values = actual_line.split("\t")[9:]
         
         self.assertEqual("a:b:c", actual_format_params)
-        self.assertEqual(["u:v:w", "x:y:z"], actual_format_values)
-        self.assertEqual("chr1\t42\t.\tref\talt\tqual\tfilter\tINFO\ta:b:c\tu:v:w\tx:y:z", actual_line)
+        self.assertEqual(["u:v:w", "x:y:z\n"], actual_format_values)
+        self.assertEqual("chr1\t42\t.\tref\talt\tqual\tfilter\tINFO\ta:b:c\tu:v:w\tx:y:z\n", actual_line)
+        
+        
+    def test_process_line_MultTags(self):
+        processor = LineProcessor([MockAddTag("JQ", "42"), MockAddTag("JQ_2", "43"), MockAddTag("JQ_3", "43")])
+        input_line = "chr1|42|.|ref|alt|qual|filter|INFO|A:B:C|X:Y:Z\n".replace("|", "\t")
+
+        actual_line = processor.add_tags(input_line)
+        self.assertEqual(True, actual_line.endswith("\n"))
+        self.assertEquals(1, len(actual_line.splitlines()))
+        
+        trimmed_actual_line = actual_line.rstrip("\n")
+        actual_format_params = trimmed_actual_line.split("\t")[8]
+        actual_format_values = trimmed_actual_line.split("\t")[9:]        
+        self.assertEqual("A:B:C:JQ:JQ_2:JQ_3", actual_format_params)
+        self.assertEqual(["X:Y:Z:42:43:43"], actual_format_values)
 
 class FileProcessorTestCase(unittest.TestCase):
     
@@ -133,6 +152,15 @@ class FileProcessorTestCase(unittest.TestCase):
 
 
 class TagMutectTest(unittest.TestCase):
+    def setUp(self):
+        self.output = StringIO()
+        self.saved_stdout = sys.stdout
+        sys.stdout = self.output
+
+    def tearDown(self):
+        self.output.close()
+        sys.stdout = self.saved_stdout
+    
     def test_tagMutectFiles(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             input_dir.write("A.vcf","##MuTect\n#CHROM\n")
@@ -150,7 +178,7 @@ class TagMutectTest(unittest.TestCase):
             input_dir.cleanup()
             output_dir.cleanup()
 
-    def test_tagMutectFilesContent(self):
+    def test_tagMutectFiles_content(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             input_dir.write("A.vcf","##MuTect\n#CHROM\n")
             input_dir.write("B.vcf","##MuTect\n#CHROM\n")
@@ -160,12 +188,17 @@ class TagMutectTest(unittest.TestCase):
             actual_files = sorted(listdir(output_dir.path))
             for actual_file in actual_files:
                 result = open(output_dir.path + "/" + actual_file).read()
-                self.assertEqual('##MuTect\n##FORMAT=<ID=JQ_AF_MT,Number=1,Type=Float, Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA).">\n#CHROM\n', result)
+                split_result = result.split("\n")
+                self.assertEqual('##MuTect', split_result[0])
+                self.assertEqual('##FORMAT=<ID=JQ_AF_MT,Number=1,Type=Float, Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA).">', split_result[1])
+                self.assertEqual('##FORMAT=<ID=JQ_DP_MT,Number=1,Type=Float, Description="Jacquard depth for MuTect (based on DP).">', split_result[2])
+                self.assertEqual('##FORMAT=<ID=JQ_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag).">', split_result[3])
+                self.assertEqual('#CHROM', split_result[4])
             
             input_dir.cleanup()
             output_dir.cleanup()
 
-    def test_tagMutectFilesNoMutectHeader(self):
+    def test_tagMutectFiles_noMutectHeader(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             input_dir.write("A.vcf","#CHROM\n")
             input_dir.write("B.vcf","#CHROM\n")
@@ -180,22 +213,48 @@ class TagMutectTest(unittest.TestCase):
              
             input_dir.cleanup()
             output_dir.cleanup()
+
+    def test_tagMutectFiles_ignoresNonVcfFiles(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("A.txt","##MuTect\n#CHROM\n")
+            input_dir.write("B.vcf.bak","##MuTect\n#CHROM\n")
+
+            tag_mutect_files(input_dir.path, output_dir.path)
+            
+            actual_files = sorted(listdir(output_dir.path))
+            self.assertEqual(0, len(actual_files))
+            
+            input_dir.cleanup()
+            output_dir.cleanup()
+
+    def test_tagMutectFiles_ignoresDirectories(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.makedir("A")
+            input_dir.makedir("B.vcf")
+
+            tag_mutect_files(input_dir.path, output_dir.path)
+            
+            actual_files = sorted(listdir(output_dir.path))
+            self.assertEqual(0, len(actual_files))
+            
+            input_dir.cleanup()
+            output_dir.cleanup()
+            
+    def test_tagMutectFiles_ignoresDirectories(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("A.vcf","##MuTect\n#CHROM\n")
+            input_dir.write("B.vcf","#CHROM\n")
+
+            tag_mutect_files(input_dir.path, output_dir.path, ["execution metaheaders"])
+            
+            output_list = self.output.getvalue().splitlines()
+            self.assertEqual(3, len(output_list))
+            self.assertEqual(True, output_list[0].startswith("execution"))
+            self.assertEqual(True, output_list[1].startswith("Processing [2]"))
+            self.assertEqual(True, output_list[2].startswith("Wrote [1]"))
+
+
     
-#     def test_tagMutectFiles(self):
-#         #make a mutect file
-#         script_dir = os.path.dirname(os.path.abspath(__file__))
-#         input_path = script_dir + "/test_mutect/input"
-#         expected_output = script_dir + "/test_mutect/expected/expected_tiny_mutect_output.vcf"
-#        
-#         with TempDirectory() as d:
-#             process_mutect_file(input_path, d)
-#             actual_output = output_path + "/jacquard_tiny_mutect_output.vcf"
-#             
-#             self.compare(d.read(expected_output), actual_output)
-        
-
-
-
 class MockLowerTag():
     def __init__(self, metaheader=""):
         self.metaheader = metaheader
@@ -203,6 +262,15 @@ class MockLowerTag():
     def format(self, params, values):
         return (params.lower(), values.lower())
     
+class MockAddTag():
+    def __init__(self, tag="MockFormat", value="MockValue"):
+        self.metaheader = "MockMetaheader"
+        self.tag= tag
+        self.value = value
+
+    def format(self, params, values):
+        return (params+":"+self.tag, values+":"+self.value)
+
 class MockWriter():
     def __init__(self):
         self._content = []

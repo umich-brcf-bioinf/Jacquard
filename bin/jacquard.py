@@ -58,13 +58,7 @@ if __name__ == "__main__":
         validate_directories(input_dir, output_dir)     
         input_metaheaders = ["##jacquard.version={0}".format(__version__), "##jacquard.tagMutect.command=tagMutect {0} {1}".format(input_dir, output_dir), "##jacquard.tagMutect.cwd={0}".format(os.path.dirname(os.getcwd()))]
         
-        file_count = 0
-        for item in sorted(listdir(input_dir)):
-            fname, extension = os.path.splitext(item)
-            if isfile(join(input_dir, item)) and extension == ".vcf":
-                 file_count += 1  
-             
-            tag_mutect_files(input_dir, output_dir)
+        tag_mutect_files(input_dir, output_dir, input_metaheaders)
         
     elif args.subparser_name == "pivot":
         input_dir = os.path.abspath(args.input_dir)
