@@ -18,17 +18,17 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         info_string = ""
         format_param_string = "A:B"
         format_value_string = "1:2"
-        self.assertEqual(("A:B", "1:2"), tag.format(info_string, format_param_string, format_value_string))
+        self.assertEqual(("A:B", "1:2"), tag.format(info_string, format_param_string, format_value_string, 0))
                 
     def test_format_rounds(self):
         tag = AlleleFreqTag()
-        self.assertEqual(("A:FREQ:JQ_AF_VS", "1:0.2:0.2"), tag.format("", "A:FREQ", "1:0.2"))
-        self.assertEqual(("A:FREQ:JQ_AF_VS", "1:0.20:0.20"), tag.format("", "A:FREQ", "1:0.20"))
-        self.assertEqual(("A:FREQ:JQ_AF_VS", "1:0.204:0.2"), tag.format("", "A:FREQ", "1:0.204"))
-        self.assertEqual(("A:FREQ:JQ_AF_VS", "1:0.205:0.21"), tag.format("", "A:FREQ", "1:0.205"))
-        self.assertEqual(("A:FREQ:JQ_AF_VS", "1:0.206:0.21"), tag.format("", "A:FREQ", "1:0.206"))
-        self.assertEqual(("A:FREQ:JQ_AF_VS", "1:1.0:1.0"), tag.format("", "A:FREQ", "1:1.0"))
-        self.assertEqual(("A:FREQ:JQ_AF_VS", "1:1.00:1.00"), tag.format("", "A:FREQ", "1:1.00"))
+        self.assertEqual(("A:FREQ:JQ_AF_VS", "1:20%:0.2"), tag.format("", "A:FREQ", "1:20%", 0))
+        self.assertEqual(("A:FREQ:JQ_AF_VS", "1:20.0%:0.2"), tag.format("", "A:FREQ", "1:20.0%", 0))
+        self.assertEqual(("A:FREQ:JQ_AF_VS", "1:20.4%:0.2"), tag.format("", "A:FREQ", "1:20.4%", 0))
+        self.assertEqual(("A:FREQ:JQ_AF_VS", "1:20.5%:0.21"), tag.format("", "A:FREQ", "1:20.5%", 0))
+        self.assertEqual(("A:FREQ:JQ_AF_VS", "1:20.6%:0.21"), tag.format("", "A:FREQ", "1:20.6%", 0))
+        self.assertEqual(("A:FREQ:JQ_AF_VS", "1:100%:1.0"), tag.format("", "A:FREQ", "1:100%", 0))
+        self.assertEqual(("A:FREQ:JQ_AF_VS", "1:100.0%:1.0"), tag.format("", "A:FREQ", "1:100.0%", 0))
 
 class DepthTagTestCase(unittest.TestCase):
     def test_metaheader(self):
@@ -38,11 +38,11 @@ class DepthTagTestCase(unittest.TestCase):
         tag = DepthTag()
         format_param_string = "A:B"
         format_value_string = "1:2"
-        self.assertEqual(("A:B", "1:2"), tag.format("", format_param_string, format_value_string))
+        self.assertEqual(("A:B", "1:2"), tag.format("", format_param_string, format_value_string, 0))
                 
     def test_format(self):
         tag = DepthTag()
-        self.assertEqual(("A:DP:JQ_DP_VS", "1:42:42"), tag.format("", "A:DP", "1:42"))
+        self.assertEqual(("A:DP:JQ_DP_VS", "1:42:42"), tag.format("", "A:DP", "1:42", 0))
 
 class SomaticTagTestCase(unittest.TestCase):
     def test_metaheader(self):
@@ -52,12 +52,14 @@ class SomaticTagTestCase(unittest.TestCase):
         tag = SomaticTag()
         format_param_string = "A:B"
         format_value_string = "1:2"
-        self.assertEqual(("A:B", "1:2"), tag.format("INFO", format_param_string, format_value_string))
+        self.assertEqual(("A:B", "1:2"), tag.format("INFO", format_param_string, format_value_string, 0))
                 
     def test_format(self):
         tag = SomaticTag()
-        self.assertEqual(("A:JQ_SOM_VS", "1:1"), tag.format("INFO;SS=2", "A", "1"))
-        self.assertEqual(("A", "1"), tag.format("INFO", "A", "1"))
+        self.assertEqual(("A:JQ_SOM_VS", "1:0"), tag.format("INFO;SS=2", "A", "1", 0))
+        self.assertEqual(("A:JQ_SOM_VS", "1:1"), tag.format("INFO;SS=2", "A", "1", 1))
+        self.assertEqual(("A", "1"), tag.format("INFO", "A", "1", 0))
+        self.assertEqual(("A", "1"), tag.format("INFO", "A", "1", 1))
 
 class LineProcessorTestCase(unittest.TestCase):
     def test_process_line_singleSample(self):
@@ -118,12 +120,19 @@ class LineProcessorTestCase(unittest.TestCase):
         self.assertEqual(["U:V:W:42:43:43","X:Y:Z:42:43:43"], actual_format_values)
 
 class FileProcessorTestCase(unittest.TestCase):
-    
+    def test_process_diesIfMissingNormalTumorHeaders(self):
+        mockWriter = MockWriter()
+        input_metaheaders = ["jacquard.version=X","jacquard.tagMutect.command=foo"]
+        processor = FileProcessor(tags=[], execution_context_metadataheaders=input_metaheaders)
+        with self.assertRaises(SystemExit) as cm:
+            processor.process(reader=["#CHROM\n"], writer=mockWriter)
+        self.assertEqual(cm.exception.code, 1)
+        
     def test_process_prependsExecutionContext(self):
         mockWriter = MockWriter()
         input_metaheaders = ["jacquard.version=X","jacquard.tagMutect.command=foo"]
         processor = FileProcessor(tags=[], execution_context_metadataheaders=input_metaheaders)
-        processor.process(reader=["#CHROM\n"], writer=mockWriter)
+        processor.process(reader=["#CHROM\tNORMAL\tTUMOR\n"], writer=mockWriter)
         actualLines = mockWriter.lines()
         self.assertEqual(3, len(actualLines))
         self.assertEqual("##jacquard.version=X", actualLines[0])
@@ -146,14 +155,14 @@ class FileProcessorTestCase(unittest.TestCase):
         mockWriter = MockWriter()
         mockTag = MockLowerTag("##mockMetaHeader")
         processor = FileProcessor(tags=[mockTag])
-        processor.process(reader=["#CHROM\n"], writer=mockWriter)
+        processor.process(reader=["#CHROM\tNORMAL\tTUMOR\n"], writer=mockWriter)
         self.assertEqual(2, len(mockWriter.lines()))
         self.assertEqual("##mockMetaHeader", mockWriter.lines()[0])
 
     def test_process_adjustsVcfRecords(self):
         mockWriter = MockWriter()
         mockTag = MockLowerTag("##mockMetaHeader")
-        recordHeader = "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleA|SampleB".replace("|","\t")
+        recordHeader = "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR\n".replace("|","\t")
         reader = [ recordHeader,
                   "chr1|1|.|ref|alt|qual|filter|INFO|A:B:C|A1:B1:C1|A2:B2:C2".replace("|","\t"),
                   "chr2|10|.|ref|alt|qual|filter|INFO|A:B:C|A10:B10:C10|A20:B20:C20".replace("|","\t")
@@ -162,7 +171,7 @@ class FileProcessorTestCase(unittest.TestCase):
         processor.process(reader, mockWriter)
         self.assertEqual(4, len(mockWriter.lines()))
         self.assertEqual("##mockMetaHeader", mockWriter.lines()[0])
-        self.assertEqual(recordHeader, mockWriter.lines()[1])
+        self.assertEqual(recordHeader.strip("\n"), mockWriter.lines()[1])
         self.assertEqual("chr1\t1\t.\tref\talt\tqual\tfilter\tINFO\ta:b:c\ta1:b1:c1\ta2:b2:c2", mockWriter.lines()[2])
         self.assertEqual("chr2\t10\t.\tref\talt\tqual\tfilter\tINFO\ta:b:c\ta10:b10:c10\ta20:b20:c20", mockWriter.lines()[3])
 
@@ -178,9 +187,9 @@ class TagVarScanTestCase(unittest.TestCase):
     
     def test_tagVarScanFiles(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("A.vcf","##source=VarScan2\n#CHROM\n")
-            input_dir.write("B.vcf","##source=VarScan2\n#CHROM\n")
-            input_dir.write("C.vcf","##source=VarScan2\n#CHROM\n")
+            input_dir.write("A.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
+            input_dir.write("B.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
+            input_dir.write("C.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
 
             tag_varscan_files(input_dir.path, output_dir.path)
             actual_files = sorted(listdir(output_dir.path))
@@ -195,9 +204,9 @@ class TagVarScanTestCase(unittest.TestCase):
 
     def test_tagVarScanFiles_content(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("A.vcf","##source=VarScan2\n#CHROM\n")
-            input_dir.write("B.vcf","##source=VarScan2\n#CHROM\n")
-            input_dir.write("C.vcf","##source=VarScan2\n#CHROM\n")
+            input_dir.write("A.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
+            input_dir.write("B.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
+            input_dir.write("C.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
 
             tag_varscan_files(input_dir.path, output_dir.path)
             actual_files = sorted(listdir(output_dir.path))
@@ -208,16 +217,16 @@ class TagVarScanTestCase(unittest.TestCase):
                 self.assertEqual('##FORMAT=<ID=JQ_AF_VS,Number=1,Type=Float, Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ).">', split_result[1])
                 self.assertEqual('##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float, Description="Jacquard depth for VarScan (based on DP).">', split_result[2])
                 self.assertEqual('##FORMAT=<ID=JQ_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR).">', split_result[3])
-                self.assertEqual('#CHROM', split_result[4])
+                self.assertEqual('#CHROM\tNORMAL\tTUMOR', split_result[4])
             
             input_dir.cleanup()
             output_dir.cleanup()
 
     def test_tagVarScanFiles_noMutectHeader(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("A.vcf","#CHROM\n")
-            input_dir.write("B.vcf","#CHROM\n")
-            input_dir.write("C.vcf","#CHROM\n")
+            input_dir.write("A.vcf","#CHROM\tNORMAL\tTUMOR\n")
+            input_dir.write("B.vcf","#CHROM\tNORMAL\tTUMOR\n")
+            input_dir.write("C.vcf","#CHROM\tNORMAL\tTUMOR\n")
 
             tag_varscan_files(input_dir.path, output_dir.path)
             actual_files = sorted(listdir(output_dir.path))
@@ -231,9 +240,9 @@ class TagVarScanTestCase(unittest.TestCase):
 
     def test_tagVarScanFiles_ignoresNonVcfFiles(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("A.txt","##source=VarScan2\n#CHROM\n")
-            input_dir.write("B.vcf.bak","##source=VarScan2\n#CHROM\n")
-            input_dir.write("C.vcf","##source=VarScan2\n#CHROM\n")
+            input_dir.write("A.txt","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
+            input_dir.write("B.vcf.bak","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
+            input_dir.write("C.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
 
             tag_varscan_files(input_dir.path, output_dir.path)
             
@@ -258,8 +267,8 @@ class TagVarScanTestCase(unittest.TestCase):
             
     def test_tagVarScanFilestest_tagMutectFiles_ignoresDirectories(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("A.vcf","##source=VarScan2\n#CHROM\n")
-            input_dir.write("B.vcf","#CHROM\n")
+            input_dir.write("A.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
+            input_dir.write("B.vcf","#CHROM\tNORMAL\tTUMOR\n")
 
             tag_varscan_files(input_dir.path, output_dir.path, ["execution metaheaders"])
             
@@ -278,7 +287,6 @@ class TagVarScanTestCase(unittest.TestCase):
             tag_varscan_files(input_dir, output_dir)
         os.rmdir(input_dir)
         self.assertEqual(cm.exception.code, 1)
-        
 
 class test_ValidateDirectoriesTestCase(unittest.TestCase):
     def test_validateDirectories_inputDirectoryDoesntExist(self):
@@ -312,7 +320,7 @@ class MockLowerTag():
     def __init__(self, metaheader=""):
         self.metaheader = metaheader
 
-    def format(self, info, params, values):
+    def format(self, info, params, values, count):
         return (params.lower(), values.lower())
     
 class MockAddTag():
@@ -321,7 +329,7 @@ class MockAddTag():
         self.tag= tag
         self.value = value
 
-    def format(self, info, params, values):
+    def format(self, info, params, values, count):
         return (params+":"+self.tag, values+":"+self.value)
 
 class MockWriter():

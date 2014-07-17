@@ -10,7 +10,7 @@ class AlleleFreqTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID=JQ_AF_VS,Number=1,Type=Float, Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ).">\n'
 
-    def format(self, info_string, format_param_string, format_value_string):
+    def format(self, info_string, format_param_string, format_value_string, count):
         format_param_array = format_param_string.split(":")
         format_value_array = format_value_string.split(":")
         format_dict = dict(zip(format_param_array, format_value_array))
@@ -22,6 +22,7 @@ class AlleleFreqTag():
         return format_param_string, format_value_string
 
     def roundTwoDigits(self, value): 
+        value = str(float(value.strip("%"))/100)
         if len(value.split(".")[1]) <= 2:
             return value
         else:
@@ -31,7 +32,7 @@ class DepthTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float, Description="Jacquard depth for VarScan (based on DP).">\n'
 
-    def format(self, info_string, format_param_string, format_value_string):
+    def format(self, info_string, format_param_string, format_value_string, count):
         format_param_array = format_param_string.split(":")
         format_value_array = format_value_string.split(":")
         format_dict = dict(zip(format_param_array, format_value_array))
@@ -46,22 +47,19 @@ class SomaticTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID=JQ_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR).">\n'
 #  
-    def format(self, info_string, format_param_string, format_value_string):
+    def format(self, info_string, format_param_string, format_value_string, count):
         info_array = info_string.split(";")
-#         format_param_array = format_param_string.split(":")
-#         format_value_array = format_value_string.split(":")
-#         format_dict = dict(zip(format_param_array, format_value_array))
 
         if "SS=2" in info_array:
-            format_value_string += ":1"
+            format_value_string += ":" + self.somatic_status(count)
             format_param_string += ":JQ_SOM_VS"
         return format_param_string, format_value_string
 #  
-#     def somatic_status(self, ss_value):
-#         if ss_value == "2":
-#             return "1"
-#         else:
-#             return "0"
+    def somatic_status(self, count):
+        if count == 0: #it's NORMAL
+            return "0"
+        else: #it's TUMOR
+            return "1"
 
 class LineProcessor():
     def __init__(self, tags):
@@ -79,7 +77,7 @@ class LineProcessor():
         for sample in samples:
             format_dict = OrderedDict()
             for tag in self.tags:
-                param, value = tag.format(info, format, sample)
+                param, value = tag.format(info, format, sample, count)
                 param_list = param.split(":")
                 value_list = value.split(":")
                 for i in range(0, len(param_list)):
@@ -89,7 +87,7 @@ class LineProcessor():
                 new_vcf_fields.append(":".join(format_dict.keys()))
             new_vcf_fields.append(":".join(format_dict.values()))
             count += 1
-        print new_vcf_fields 
+
         return "\t".join(new_vcf_fields) + "\n"
 
 class FileProcessor():
@@ -112,8 +110,12 @@ class FileProcessor():
             if line.startswith("##"):
                 writer.write(line)
             elif line.startswith("#"):
-                writer.write(self._metaheader)
-                writer.write(line)
+                if "NORMAL\t" in line and "TUMOR\n" in line:
+                    writer.write(self._metaheader)
+                    writer.write(line)
+                else:
+                    print "Unexpected VarScan VCF structure - missing NORMAL\t and TUMOR\n headers."
+                    exit(1)
             else:
                 edited_line = self._lineProcessor.add_tags(line)
                 writer.write(edited_line)
