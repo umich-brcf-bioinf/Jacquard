@@ -83,7 +83,6 @@ class LineProcessor():
                 value_list = value.split(":")
                 for i in range(0, len(param_list)):
                     format_dict[param_list[i]] = value_list[i]
-#                 format_dict = OrderedDict(zip(param.split(":"), value.split(":")))
             if count < 1: ##only add format column once
                 new_vcf_fields.append(":".join(format_dict.keys()))
             new_vcf_fields.append(":".join(format_dict.values()))

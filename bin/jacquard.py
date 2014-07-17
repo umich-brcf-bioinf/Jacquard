@@ -7,6 +7,7 @@ import sys
 
 import pivot_variants 
 import tag_mutect
+import tag_varscan
 
 
 def main(modules, arguments):
@@ -32,5 +33,5 @@ def main(modules, arguments):
 
 
 if __name__ == "__main__":
-    main([pivot_variants, tag_mutect], sys.argv[1:])
+    main([pivot_variants, tag_mutect, tag_varscan], sys.argv[1:])
 

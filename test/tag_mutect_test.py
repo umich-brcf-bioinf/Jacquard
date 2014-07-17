@@ -289,7 +289,7 @@ class test_ValidateDirectoriesTestCase(unittest.TestCase):
             validate_directories(input_dir, output_dir)
         self.assertEqual(cm.exception.code, 1)
     
-    def test_validateDirectories_inputDirectoryUnreadable(self):
+    def xtest_validateDirectories_inputDirectoryUnreadable(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/tag_mutect_test/unreadable"
         os.mkdir(input_dir, 0333)
@@ -300,7 +300,7 @@ class test_ValidateDirectoriesTestCase(unittest.TestCase):
         os.rmdir(input_dir)
         self.assertEqual(cm.exception.code, 1)
         
-    def test_validateDirectories_outputDirectoryNotCreated(self):
+    def xtest_validateDirectories_outputDirectoryNotCreated(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/tag_mutect_test/outNotCreated_in"
         os.mkdir(input_dir)
