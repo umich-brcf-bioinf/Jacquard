@@ -128,7 +128,6 @@ def validate_directories(input_dir, output_dir):
     if not os.path.isdir(input_dir):
         print "Error. Specified input directory {0} does not exist".format(input_dir)
         exit(1)
-#     print os.access(input_dir, os.R_OK)
     if not os.access(input_dir, os.R_OK):
         print "Error: Specified input directory [{0}] cannot be read. Check permissions and try again.".format(input_dir)
         exit(1)

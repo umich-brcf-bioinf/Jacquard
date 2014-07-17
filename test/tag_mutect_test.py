@@ -3,6 +3,7 @@ import os
 from os import listdir
 from StringIO import StringIO
 import sys
+from stat import *
 import testfixtures
 from testfixtures import TempDirectory
 import unittest
@@ -266,6 +267,17 @@ class TagMutectTestCase(unittest.TestCase):
             self.assertEqual(True, output_list[0].startswith("execution"))
             self.assertEqual(True, output_list[1].startswith("Processing [2]"))
             self.assertEqual(True, output_list[2].startswith("Wrote [1]"))
+            
+    def test_tagMutectFiles_inputDirectoryNoVCFs(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        input_dir = script_dir + "/tag_mutect_test/noVCFs"
+        os.mkdir(input_dir)
+        output_dir = script_dir + "/tag_mutect_test/output"
+        with self.assertRaises(SystemExit) as cm:
+            tag_mutect_files(input_dir, output_dir)
+        os.rmdir(input_dir)
+        self.assertEqual(cm.exception.code, 1)
+        
 
 class test_ValidateDirectoriesTestCase(unittest.TestCase):
     def test_validateDirectories_inputDirectoryDoesntExist(self):
@@ -277,17 +289,29 @@ class test_ValidateDirectoriesTestCase(unittest.TestCase):
             validate_directories(input_dir, output_dir)
         self.assertEqual(cm.exception.code, 1)
     
-    def xtest_validateDirectories_inputDirectoryUnreadable(self):
+    def test_validateDirectories_inputDirectoryUnreadable(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/tag_mutect_test/unreadable"
+        os.mkdir(input_dir, 0333)
         output_dir = script_dir + "/tag_mutect_test/output"
-        validate_directories(input_dir, output_dir)
-
-        self.assertEqual(1,2)
-#         with self.assertRaises(SystemExit) as cm:
-#             validate_directories(input_dir, output_dir)
-#         self.assertEqual(cm.exception.code, 1)
         
+        with self.assertRaises(SystemExit) as cm:
+            validate_directories(input_dir, output_dir)
+        os.rmdir(input_dir)
+        self.assertEqual(cm.exception.code, 1)
+        
+    def test_validateDirectories_outputDirectoryNotCreated(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        input_dir = script_dir + "/tag_mutect_test/outNotCreated_in"
+        os.mkdir(input_dir)
+        first_out_dir = script_dir + "/tag_mutect_test/outNotCreated_out"
+        os.mkdir(first_out_dir, 0333)
+        
+        with self.assertRaises(SystemExit) as cm:
+            validate_directories(input_dir, first_out_dir + "/foo")
+        os.rmdir(input_dir)
+        self.assertEqual(cm.exception.code, 1)
+
 class MockLowerTag():
     def __init__(self, metaheader=""):
         self.metaheader = metaheader
