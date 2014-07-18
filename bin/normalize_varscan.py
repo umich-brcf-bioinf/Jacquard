@@ -26,6 +26,14 @@ def get_headers(file):
     
     return headers
 
+def validate_split_line(split_line, invalid):
+    if re.search('\+|-|/', split_line[4]) or re.search('\+|-|/', split_line[3]):
+        if not re.search('SS=5', split_line[7]):
+            print "ERROR: {0}".format("\t".join(split_line).strip("\n"))
+            invalid += 1
+            
+    return invalid
+    
 def change_pos_to_int(split_line):
     new_line = []
     for field in split_line:
@@ -38,16 +46,24 @@ def change_pos_to_int(split_line):
 
 def merge_data(files):
     all_variants = []
+    invalid = 0
     for file in files:
         f = open(file, "r")
         for line in f:
             split_line = line.split("\t")
+
             if line.startswith("#"):
                 continue
             else:
+                invalid = validate_split_line(split_line, invalid)
                 new_line = change_pos_to_int(split_line) #to sort properly
                 all_variants.append(new_line)
         f.close()
+        
+    if invalid != 0:
+        print "ERROR: {0} record(s) had illegal characters in REF or ALT. Review input files and try again".format(invalid)
+        exit(1)
+        
     return all_variants
                 
 def sort_data(all_variants):

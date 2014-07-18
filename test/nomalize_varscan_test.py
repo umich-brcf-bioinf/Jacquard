@@ -4,8 +4,7 @@ import os
 import unittest
 import testfixtures
 from testfixtures import TempDirectory
-from bin.normalize_varscan import identify_merge_candidates, validate_directories, get_headers, merge_data, sort_data, change_pos_to_int, write_output
-
+from bin.normalize_varscan import identify_merge_candidates, validate_directories, get_headers, merge_data, sort_data, change_pos_to_int, write_output, validate_split_line
 class IdentifyMergeCandidatesTestCase(unittest.TestCase):
     def test_identifyMergeCandidates(self):
         in_files = ["foo.snp.vcf", "foo.indel.vcf", "bar.snp.vcf", "bar.indel.vcf", "foo.1.snp.vcf", "foo.1.indel.vcf"]
@@ -55,6 +54,67 @@ class MergeTestCase(unittest.TestCase):
             self.assertEqual([1,2352,"A","GT","foo","DP",234], all_variants[1])
         input_dir.cleanup()
     
+    def test_validateSplitLine_valid(self):
+        split_line = ["chr1", "234", ".", "A", "G", ".", "PASS", "SS=5", "DP", "345"]
+        invalid = validate_split_line(split_line, 0)
+        self.assertEqual(0, invalid)
+        
+        split_line = ["chr1", "234", ".", "A", "G", ".", "PASS", "SS=2", "DP", "345"]
+        invalid = validate_split_line(split_line, 0)
+        self.assertEqual(0, invalid)
+        
+    def test_validateSplitLine_invalidAltOkaySS(self):
+        split_line = ["chr1", "234", ".", "A", "G/C", ".", "PASS", "SS=5", "DP", "345"]
+        invalid = validate_split_line(split_line, 0)
+        self.assertEqual(0, invalid)
+        
+        split_line = ["chr1", "234", ".", "A", "-G", ".", "PASS", "SS=5", "DP", "345"]
+        invalid = validate_split_line(split_line, 0)
+        self.assertEqual(0, invalid)
+        
+        split_line = ["chr1", "234", ".", "A", "+G", ".", "PASS", "SS=5", "DP", "345"]
+        invalid = validate_split_line(split_line, 0)
+        self.assertEqual(0, invalid)
+        
+    def test_validateSplitLine_invalidRefOkaySS(self):
+        split_line = ["chr1", "234", ".", "A/C", "G", ".", "PASS", "SS=5", "DP", "345"]
+        invalid = validate_split_line(split_line, 0)
+        self.assertEqual(0, invalid)
+        
+        split_line = ["chr1", "234", ".", "-A", "G", ".", "PASS", "SS=5", "DP", "345"]
+        invalid = validate_split_line(split_line, 0)
+        self.assertEqual(0, invalid)
+        
+        split_line = ["chr1", "234", ".", "+A", "G", ".", "PASS", "SS=5", "DP", "345"]
+        invalid = validate_split_line(split_line, 0)
+        self.assertEqual(0, invalid)
+        
+    def test_validateSplitLine_invalidAltBadSS(self):
+        split_line = ["chr1", "234", ".", "A", "G/C", ".", "PASS", "SS=2", "DP", "345"]
+        invalid = validate_split_line(split_line, 0)
+        self.assertEqual(1, invalid)
+        
+        split_line = ["chr1", "234", ".", "A", "+G", ".", "PASS", "SS=2", "DP", "345"]
+        invalid = validate_split_line(split_line, 0)
+        self.assertEqual(1, invalid)
+        
+        split_line = ["chr1", "234", ".", "A", "-G", ".", "PASS", "SS=2", "DP", "345"]
+        invalid = validate_split_line(split_line, 0)
+        self.assertEqual(1, invalid)
+        
+    def test_validateSplitLine_invalidRefBadSS(self):
+        split_line = ["chr1", "234", ".", "A/C", "G", ".", "PASS", "SS=2", "DP", "345"]
+        invalid = validate_split_line(split_line, 0)
+        self.assertEqual(1, invalid)
+        
+        split_line = ["chr1", "234", ".", "-A", "G", ".", "PASS", "SS=2", "DP", "345"]
+        invalid = validate_split_line(split_line, 0)
+        self.assertEqual(1, invalid)
+        
+        split_line = ["chr1", "234", ".", "+A", "G", ".", "PASS", "SS=2", "DP", "345"]
+        invalid = validate_split_line(split_line, 0)
+        self.assertEqual(1, invalid)
+        
     def test_merge_changePosToInt(self):
         split_line = ["1", "2352","A","G","foo","DP", "234"]
         line = change_pos_to_int(split_line)
