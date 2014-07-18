@@ -26,13 +26,18 @@ def get_headers(file):
     
     return headers
 
-def validate_split_line(split_line, invalid):
+def validate_split_line(split_line, invalid, warn):
+    valid_line = []
     if re.search('\+|-|/', split_line[4]) or re.search('\+|-|/', split_line[3]):
         if not re.search('SS=5', split_line[7]):
             print "ERROR: {0}".format("\t".join(split_line).strip("\n"))
             invalid += 1
+        elif re.search('SS=5', split_line[7]):
+            warn += 1
+    else:
+        valid_line = split_line
             
-    return invalid
+    return (invalid, warn, valid_line)
     
 def change_pos_to_int(split_line):
     new_line = []
@@ -47,6 +52,7 @@ def change_pos_to_int(split_line):
 def merge_data(files):
     all_variants = []
     invalid = 0
+    warn = 0
     for file in files:
         f = open(file, "r")
         for line in f:
@@ -55,11 +61,14 @@ def merge_data(files):
             if line.startswith("#"):
                 continue
             else:
-                invalid = validate_split_line(split_line, invalid)
-                new_line = change_pos_to_int(split_line) #to sort properly
-                all_variants.append(new_line)
+                invalid, warn, valid_line = validate_split_line(split_line, invalid, warn)
+                if valid_line != []:
+                    new_line = change_pos_to_int(valid_line) #to sort properly
+                    all_variants.append(new_line)
         f.close()
-        
+    
+    if warn != 0:
+        print "WARNING: {0} records with SS=5 (somatic status is unknown) had illegal characters in REF or ALT. These lines will be excluded from the output.".format(warn)
     if invalid != 0:
         print "ERROR: {0} record(s) had illegal characters in REF or ALT. Review input files and try again".format(invalid)
         exit(1)
