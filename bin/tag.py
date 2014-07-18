@@ -224,6 +224,13 @@ def determine_file_types(input_dir, in_files, callers):
                 break
     return file_types
     
+def print_file_types(file_types):
+    for key, vals in file_types.items():
+        print "Recognized [{0}] {1} file(s)".format(len(vals), key)
+    if "Unknown" in file_types.keys():
+        print "Error: unable to determine which caller was used on [{0}]. Check input files and try again.".format(file_types["Unknown"])
+        exit(1)
+    
 def tag_files(input_dir, output_dir, callers, input_metaheaders=[]):
     processors = {"VarScan" : FileProcessor(tags=[Varscan_AlleleFreqTag(), Varscan_DepthTag(), Varscan_SomaticTag()], execution_context_metadataheaders=input_metaheaders), "MuTect": FileProcessor(tags=[Mutect_AlleleFreqTag(), Mutect_DepthTag(), Mutect_SomaticTag()], execution_context_metadataheaders=input_metaheaders)}
     
@@ -236,11 +243,7 @@ def tag_files(input_dir, output_dir, callers, input_metaheaders=[]):
     print "Processing [{0}] VCF file(s) from [{1}]".format(len(in_files), input_dir)
     
     file_types = determine_file_types(input_dir, in_files, callers)
-    for key, vals in file_types.items():
-        print "Recognized [{0}] {1} files".format(len(vals), key)
-    if "Unknown" in file_types.keys():
-        print "Error: unable to determine which caller was used on [{0}]. Check input files and try again.".format(file_types["Unknown"])
-        exit(1)
+    print_file_types(file_types)
     
     for file in in_files:
         fname, extension = os.path.splitext(os.path.basename(file))

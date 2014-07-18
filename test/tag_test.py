@@ -1,5 +1,6 @@
 #!/usr/bin/python2.7
 from collections import OrderedDict
+import glob
 import os
 from os import listdir
 from StringIO import StringIO
@@ -8,7 +9,7 @@ from stat import *
 import testfixtures
 from testfixtures import TempDirectory
 import unittest
-from bin.tag import Varscan, Mutect, Unknown, Varscan_AlleleFreqTag, Varscan_DepthTag, Varscan_SomaticTag, Mutect_AlleleFreqTag, Mutect_DepthTag, Mutect_SomaticTag, LineProcessor, FileProcessor, tag_files, validate_directories
+from bin.tag import Varscan, Mutect, Unknown, Varscan_AlleleFreqTag, Varscan_DepthTag, Varscan_SomaticTag, Mutect_AlleleFreqTag, Mutect_DepthTag, Mutect_SomaticTag, LineProcessor, FileProcessor, tag_files, validate_directories, determine_file_types, print_file_types
 
 class Varscan_AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
@@ -83,7 +84,6 @@ class Varscan_SomaticTagTestCase(unittest.TestCase):
         self.assertEqual(OrderedDict([("A", "1")]), tag.format("INFO", format_dict, 0))
         self.assertEqual(OrderedDict([("A", "1")]), tag.format("INFO", format_dict, 1))
 
-
 class Mutect_AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
         self.assertEqual('##FORMAT=<ID=JQ_AF_MT,Number=1,Type=Float, Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA).">\n', Mutect_AlleleFreqTag().metaheader)
@@ -152,8 +152,6 @@ class Mutect_SomaticTagTestCase(unittest.TestCase):
         
         format_dict = OrderedDict(zip( "A:SS".split(":"), "1:1".split(":")))
         self.assertEqual(OrderedDict([('A', '1'), ('SS', '1'), ('JQ_SOM_MT', '0')]), tag.format("", format_dict, 0))
-
-
 
 class LineProcessorTestCase(unittest.TestCase):
     def test_process_line_singleSample(self):
@@ -364,7 +362,7 @@ class TagVarScanTestCase(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 1)
 
-class test_ValidateDirectoriesTestCase(unittest.TestCase):
+class ValidateDirectoriesTestCase(unittest.TestCase):
     def test_validateDirectories_inputDirectoryDoesntExist(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/tag_varscan_test/foo"
@@ -391,6 +389,62 @@ class test_ValidateDirectoriesTestCase(unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             validate_directories(input_dir, first_out_dir + "/foo")
         self.assertEqual(cm.exception.code, 1)
+
+class  DetermineFileTypesTestCase(unittest.TestCase):
+    def setUp(self):
+        self.output = StringIO()
+        self.saved_stdout = sys.stdout
+        sys.stdout = self.output
+
+    def tearDown(self):
+        self.output.close()
+        sys.stdout = self.saved_stdout
+        
+    def test_determineFileTypes_withUnknown(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        input_dir = script_dir + "/multi_caller_input/"
+        in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
+        callers = [Mutect(), Varscan(), Unknown()]
+        file_types = determine_file_types(input_dir, in_files, callers)
+        self.assertEqual(["Unknown", "VarScan", "MuTect"], file_types.keys())
+        self.assertEqual([['C:\\Users\\jebene\\git\\ExomeSeqPipeline\\test/multi_caller_input\\tiny_unknown_input.vcf'], ['C:\\Users\\jebene\\git\\ExomeSeqPipeline\\test/multi_caller_input\\tiny_varscan_input.vcf'], ['C:\\Users\\jebene\\git\\ExomeSeqPipeline\\test/multi_caller_input\\tiny_mutect_input.vcf','C:\\Users\\jebene\\git\\ExomeSeqPipeline\\test/multi_caller_input\\tiny_mutect_input2.vcf']], file_types.values())
+
+        with self.assertRaises(SystemExit) as cm:
+            print_file_types(file_types)
+        self.assertEqual(cm.exception.code, 1)
+        
+        output_list = self.output.getvalue().splitlines()
+                
+        self.assertEqual("tiny_mutect_input.vcf:##jacquard.tag.handler=MuTect", output_list[0])
+        self.assertEqual("tiny_mutect_input2.vcf:##jacquard.tag.handler=MuTect", output_list[1])
+        self.assertEqual("tiny_unknown_input.vcf:##jacquard.tag.handler=Unknown", output_list[2])
+        self.assertEqual("tiny_varscan_input.vcf:##jacquard.tag.handler=VarScan", output_list[3])
+        self.assertEqual("Recognized [1] Unknown file(s)", output_list[4])
+        self.assertEqual("Recognized [1] VarScan file(s)", output_list[5])
+        self.assertEqual("Recognized [2] MuTect file(s)", output_list[6])
+        
+        
+    def test_determineFileTypes_noUnknown(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        input_dir = script_dir + "/multi_caller_input/"
+        in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
+        unknown_vcf = "C:\\Users\\jebene\\git\\ExomeSeqPipeline\\test/multi_caller_input\\tiny_unknown_input.vcf"
+        if unknown_vcf in in_files:
+            in_files.remove(unknown_vcf)
+        callers = [Mutect(), Varscan(), Unknown()]
+        file_types = determine_file_types(input_dir, in_files, callers)
+        self.assertEqual(["VarScan", "MuTect"], file_types.keys())
+        self.assertEqual([['C:\\Users\\jebene\\git\\ExomeSeqPipeline\\test/multi_caller_input\\tiny_varscan_input.vcf'], ['C:\\Users\\jebene\\git\\ExomeSeqPipeline\\test/multi_caller_input\\tiny_mutect_input.vcf','C:\\Users\\jebene\\git\\ExomeSeqPipeline\\test/multi_caller_input\\tiny_mutect_input2.vcf']], file_types.values())
+
+        print_file_types(file_types)
+        output_list = self.output.getvalue().splitlines()
+        
+        self.assertEqual("tiny_mutect_input.vcf:##jacquard.tag.handler=MuTect", output_list[0])
+        self.assertEqual("tiny_mutect_input2.vcf:##jacquard.tag.handler=MuTect", output_list[1])
+        self.assertEqual("tiny_varscan_input.vcf:##jacquard.tag.handler=VarScan", output_list[2])
+        self.assertEqual("Recognized [1] VarScan file(s)", output_list[3])
+        self.assertEqual("Recognized [2] MuTect file(s)", output_list[4])
+
 
 class MockLowerTag():
     def __init__(self, metaheader=""):
