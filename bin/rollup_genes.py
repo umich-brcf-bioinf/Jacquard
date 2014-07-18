@@ -267,8 +267,8 @@ def process_files(input, output, samples, delim):
 
 def add_subparser(subparser):
     parser_rollup = subparser.add_parser("rollup_genes", help="Summarizes variant-level Excel file to create a gene-level rollup. Returns an Excel file containing concatenation of all input files.")
-    parser_rollup.add_argument("input_file")
-    parser_rollup.add_argument("output_file")
+    parser_rollup.add_argument("input_file", help="Path to input variant-level CSV file")
+    parser_rollup.add_argument("output_file", help="Path to output gene-level XLSX file")
     parser_rollup.add_argument("-s", "--sample_identifier", required=True,
             help="Identifier for all samples. This should be a string that is present in all samples.")
     parser_rollup.add_argument("-d", "--input_delimiter",
@@ -288,32 +288,4 @@ def execute(args, execution_context):
         exit(1)
  
     process_files(input, output, samples, delim)
-
-# if __name__ == "__main__":
-#     script_dir = os.path.dirname(os.path.abspath(__file__))
-#     pd.set_option('chained_assignment', None)
-#      
-#     parser = argparse.ArgumentParser(
-#     formatter_class=argparse.RawDescriptionHelpFormatter, 
-#     description='''\
-#     Rollup.py
-#     Creates gene rollups from input files that have been annotated by Epee. Returns an Excel file. ''', 
-#     epilog="author: Jessica Bene 05/2014")
-#     parser.add_argument("input_file")
-#     parser.add_argument("output_file")
-#     parser.add_argument("-s", "--sample_identifier", required=True,
-#             help="Identifier for all samples. This should be a string that is present in all samples.")
-#     parser.add_argument("-d", "--input_delimiter",
-#             help="Delimiter for input file. If no delimiter given, defaults to comma.")
-#             
-#     args    = parser.parse_args()
-#     input   = os.path.abspath(args.input_file)
-#     output  = os.path.abspath(args.output_file)
-#     samples = args.sample_identifier
-#     delim   = args.input_delimiter if args.input_delimiter else ","
-# 
-#     if not os.path.isfile(input):
-#         print "Error. Specified input file {0} does not exist".format(input)
-#         exit(1)
-# 
-#     process_files(input, samples, delim)
+    

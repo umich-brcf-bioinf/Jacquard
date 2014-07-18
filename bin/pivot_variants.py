@@ -231,15 +231,6 @@ class VariantPivoter():
             print "not unique"
             raise PivotError("Duplicate keys would result in an invalid pivot; contact sysadmin.")
 
-def add_subparser(subparser):
-    parser_pivot = subparser.add_parser("pivot_variants", help="Pivots input files so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
-    parser_pivot.add_argument("input_dir")
-    parser_pivot.add_argument("output_file")
-    parser_pivot.add_argument("-k", "--keys",
-        help="Columns to be used as keys for the pivoting. Default keys for VCF are CHROM,POS,REF,ALT. Default keys for Epee TXT are CHROM,POS,REF,ANNOTATED_ALLELE,GENE_SYMBOL")
-    parser_pivot.add_argument("-t", "--tags",
-        help="Format tags to be fielded out in the pivoting.")
-
 def validate_parameters(input_keys, first_line, header_names, pivot_values):
     invalid_fields = []
 
@@ -572,6 +563,15 @@ def get_headers_and_readers(input_dir):
     
     return sample_file_readers, headers, header_names, first_line
 
+def add_subparser(subparser):
+    parser_pivot = subparser.add_parser("pivot_variants", help="Pivots input files so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
+    parser_pivot.add_argument("input_dir", help="Path to directory containing VCFs. Other file types ignored")
+    parser_pivot.add_argument("output_file", help="Path to output variant-level XLSX file")
+    parser_pivot.add_argument("-k", "--keys",
+        help="Columns to be used as keys for the pivoting. Default keys for VCF are CHROM,POS,REF,ALT. Default keys for Epee TXT are CHROM,POS,REF,ANNOTATED_ALLELE,GENE_SYMBOL")
+    parser_pivot.add_argument("-t", "--tags",
+        help="Format tags to be fielded out in the pivoting.")
+
 def validate_directories(input_dir, output_dir):    
     if not os.path.isdir(input_dir):
             print "Error. Specified input directory {0} does not exist".format(input_dir)
@@ -599,3 +599,4 @@ def execute(args, execution_context):
     
     sample_file_readers, headers, header_names, first_line = get_headers_and_readers(input_dir)
     process_files(sample_file_readers, input_dir, output_path, input_keys, pivot_values, headers, header_names, first_line)
+    

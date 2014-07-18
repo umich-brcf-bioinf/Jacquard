@@ -6,7 +6,6 @@ from os import listdir
 from os.path import isfile, join
 import shutil
 
-
 class Varscan():
     def __init__(self):
         self.name = "VarScan"
@@ -191,9 +190,9 @@ class FileProcessor():
 
 
 def add_subparser(subparser):
-    parser_tagVarscan = subparser.add_parser("tag", help="Accepts a directory of VCf results and creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
-    parser_tagVarscan.add_argument("input_dir")
-    parser_tagVarscan.add_argument("output_dir")
+    parser_tag = subparser.add_parser("tag", help="Accepts a directory of VCf results and creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
+    parser_tag.add_argument("input_dir", help="Path to directory containing VCFs. Other file types ignored")
+    parser_tag.add_argument("output_dir", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
 
 def validate_directories(input_dir, output_dir):    
     if not os.path.isdir(input_dir):

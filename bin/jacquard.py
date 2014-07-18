@@ -8,7 +8,7 @@ import sys
 import pivot_variants
 import rollup_genes
 import tag 
-
+import normalize_varscan
 
 def main(modules, arguments):
     parser = argparse.ArgumentParser(
@@ -33,5 +33,5 @@ def main(modules, arguments):
 
 
 if __name__ == "__main__":
-    main([pivot_variants, rollup_genes, tag], sys.argv[1:])
+    main([pivot_variants, rollup_genes, tag, normalize_varscan], sys.argv[1:])
 
