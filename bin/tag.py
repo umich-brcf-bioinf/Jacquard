@@ -50,16 +50,11 @@ class Varscan_AlleleFreqTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID=JQ_AF_VS,Number=1,Type=Float, Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ).">\n'
 
-    def format(self, info_string, format_param_string, format_value_string, count):
-        format_param_array = format_param_string.split(":")
-        format_value_array = format_value_string.split(":")
-        format_dict = dict(zip(format_param_array, format_value_array))
-        
+    def format(self, info_string, format_dict, count):
         if "FREQ" in format_dict.keys():
-            format_value_string += ":" + self.roundTwoDigits(format_dict["FREQ"])
-            format_param_string += ":JQ_AF_VS"
+            format_dict["JQ_AF_VS"] = self.roundTwoDigits(format_dict["FREQ"])
             
-        return format_param_string, format_value_string
+        return format_dict
 
     def roundTwoDigits(self, value): 
         value = str(float(value.strip("%"))/100)
@@ -72,28 +67,22 @@ class Varscan_DepthTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float, Description="Jacquard depth for VarScan (based on DP).">\n'
 
-    def format(self, info_string, format_param_string, format_value_string, count):
-        format_param_array = format_param_string.split(":")
-        format_value_array = format_value_string.split(":")
-        format_dict = dict(zip(format_param_array, format_value_array))
-        
+    def format(self, info_string, format_dict, count):
         if "DP" in format_dict.keys():
-            format_value_string += ":" + format_dict["DP"]
-            format_param_string += ":JQ_DP_VS"
-            
-        return format_param_string, format_value_string
+            format_dict["JQ_DP_VS"] = format_dict["DP"]
+
+        return format_dict
     
 class Varscan_SomaticTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID=JQ_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR).">\n'
 #  
-    def format(self, info_string, format_param_string, format_value_string, count):
+    def format(self, info_string, format_dict, count):
         info_array = info_string.split(";")
 
         if "SS=2" in info_array:
-            format_value_string += ":" + self.somatic_status(count)
-            format_param_string += ":JQ_SOM_VS"
-        return format_param_string, format_value_string
+            format_dict["JQ_SOM_VS"] = self.somatic_status(count)
+        return format_dict
 #  
     def somatic_status(self, count):
         if count == 0: #it's NORMAL
@@ -105,16 +94,11 @@ class Mutect_AlleleFreqTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID=JQ_AF_MT,Number=1,Type=Float, Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA).">\n'
 
-    def format(self, info, format_param_string, format_value_string, count):
-        format_param_array = format_param_string.split(":")
-        format_value_array = format_value_string.split(":")
-        format_dict = dict(zip(format_param_array, format_value_array))
-        
+    def format(self, info, format_dict, count):
         if "FA" in format_dict.keys():
-            format_value_string += ":" + self.roundTwoDigits(format_dict["FA"])
-            format_param_string += ":JQ_AF_MT"
+            format_dict["JQ_AF_MT"] = self.roundTwoDigits(format_dict["FA"])
             
-        return format_param_string, format_value_string
+        return format_dict
 
     def roundTwoDigits(self, value): 
         if len(value.split(".")[1]) <= 2:
@@ -126,31 +110,21 @@ class Mutect_DepthTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID=JQ_DP_MT,Number=1,Type=Float, Description="Jacquard depth for MuTect (based on DP).">\n'
 
-    def format(self, info, format_param_string, format_value_string, count):
-        format_param_array = format_param_string.split(":")
-        format_value_array = format_value_string.split(":")
-        format_dict = dict(zip(format_param_array, format_value_array))
-        
+    def format(self, info, format_dict, count):
         if "DP" in format_dict.keys():
-            format_value_string += ":" + format_dict["DP"]
-            format_param_string += ":JQ_DP_MT"
+            format_dict["JQ_DP_MT"] = format_dict["DP"]
             
-        return format_param_string, format_value_string
+        return format_dict
     
 class Mutect_SomaticTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID=JQ_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag).">\n'
 
-    def format(self, info, format_param_string, format_value_string, count):
-        format_param_array = format_param_string.split(":")
-        format_value_array = format_value_string.split(":")
-        format_dict = dict(zip(format_param_array, format_value_array))
-        
+    def format(self, info, format_dict, count):
         if "SS" in format_dict.keys():
-            format_value_string += ":" + self.somatic_status(format_dict["SS"])
-            format_param_string += ":JQ_SOM_MT"
+            format_dict["JQ_SOM_MT"] = self.somatic_status(format_dict["SS"])
             
-        return format_param_string, format_value_string
+        return format_dict
 
     def somatic_status(self, ss_value):
         if ss_value == "2":
@@ -172,14 +146,10 @@ class LineProcessor():
 
         count = 0
         for sample in samples:
-            format_dict = OrderedDict()
+            format_dict = OrderedDict(zip(format.split(":"), sample.split(":")))
             for tag in self.tags:
-                param, value = tag.format(info, format, sample, count)
-                param_list = param.split(":")
-                value_list = value.split(":")
-                for i in range(0, len(param_list)):
-                    format_dict[param_list[i]] = value_list[i]
-
+                format_dict = tag.format(info, format_dict, count)
+                
             if count < 1: ##only add format column once
                 new_vcf_fields.append(":".join(format_dict.keys()))
             new_vcf_fields.append(":".join(format_dict.values()))
@@ -188,7 +158,6 @@ class LineProcessor():
         return "\t".join(new_vcf_fields) + "\n"
 
 class FileProcessor():
-    
     def __init__(self, tags=[], execution_context_metadataheaders = []):
         self._tags = tags
         self._metaheader = self._metaheader_handler(execution_context_metadataheaders)
