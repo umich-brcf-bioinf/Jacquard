@@ -6,6 +6,7 @@ import os
 import sys 
 
 import pivot_variants
+import rollup_genes
 import tag 
 
 
@@ -32,6 +33,5 @@ def main(modules, arguments):
 
 
 if __name__ == "__main__":
-#     main([pivot_variants, tag_mutect, tag_varscan], sys.argv[1:])
-    main([pivot_variants, tag], sys.argv[1:])
+    main([pivot_variants, rollup_genes, tag], sys.argv[1:])
 

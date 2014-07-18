@@ -415,10 +415,10 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
         
         output_list = self.output.getvalue().splitlines()
                 
-        self.assertEqual("tiny_mutect_input.vcf:##jacquard.tag.handler=MuTect", output_list[0])
-        self.assertEqual("tiny_mutect_input2.vcf:##jacquard.tag.handler=MuTect", output_list[1])
-        self.assertEqual("tiny_unknown_input.vcf:##jacquard.tag.handler=Unknown", output_list[2])
-        self.assertEqual("tiny_varscan_input.vcf:##jacquard.tag.handler=VarScan", output_list[3])
+        self.assertEqual("tiny_mutect_input.vcf: ##jacquard.tag.handler=MuTect", output_list[0])
+        self.assertEqual("tiny_mutect_input2.vcf: ##jacquard.tag.handler=MuTect", output_list[1])
+        self.assertEqual("ERROR: tiny_unknown_input.vcf: ##jacquard.tag.handler=Unknown", output_list[2])
+        self.assertEqual("tiny_varscan_input.vcf: ##jacquard.tag.handler=VarScan", output_list[3])
         self.assertEqual("Recognized [1] Unknown file(s)", output_list[4])
         self.assertEqual("Recognized [1] VarScan file(s)", output_list[5])
         self.assertEqual("Recognized [2] MuTect file(s)", output_list[6])
@@ -439,9 +439,9 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
         print_file_types(file_types)
         output_list = self.output.getvalue().splitlines()
         
-        self.assertEqual("tiny_mutect_input.vcf:##jacquard.tag.handler=MuTect", output_list[0])
-        self.assertEqual("tiny_mutect_input2.vcf:##jacquard.tag.handler=MuTect", output_list[1])
-        self.assertEqual("tiny_varscan_input.vcf:##jacquard.tag.handler=VarScan", output_list[2])
+        self.assertEqual("tiny_mutect_input.vcf: ##jacquard.tag.handler=MuTect", output_list[0])
+        self.assertEqual("tiny_mutect_input2.vcf: ##jacquard.tag.handler=MuTect", output_list[1])
+        self.assertEqual("tiny_varscan_input.vcf: ##jacquard.tag.handler=VarScan", output_list[2])
         self.assertEqual("Recognized [1] VarScan file(s)", output_list[3])
         self.assertEqual("Recognized [2] MuTect file(s)", output_list[4])
 

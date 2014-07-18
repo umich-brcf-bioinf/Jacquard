@@ -220,7 +220,10 @@ def determine_file_types(input_dir, in_files, callers):
             caller_name, valid = caller.validate_input_file(in_file)
             if valid == 1:
                 file_types[caller_name].append(file)
-                print "{0}:##jacquard.tag.handler={1}".format(os.path.basename(file), caller_name)
+                if caller_name == "Unknown":
+                    print "ERROR: {0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller_name)
+                else:
+                    print "{0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller_name)
                 break
     return file_types
     

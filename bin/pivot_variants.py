@@ -554,9 +554,7 @@ def get_headers_and_readers(input_dir):
             count = -1
             for line in f:
                 count += 1
-                if line.startswith("##"):
-                    continue
-                elif line.startswith("#Epee"):
+                if line.startswith("##") or line.startswith("#Epee"):
                     continue
                 elif line.startswith("#"):
                     headers.append(count)
