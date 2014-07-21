@@ -7,7 +7,6 @@ import sys
 import testfixtures
 from testfixtures import TempDirectory
 from bin.normalize_varscan import identify_merge_candidates, get_headers, merge_data, sort_data, change_pos_to_int, write_output, validate_split_line, identify_hc_variants, mark_hc_variants, validate_file_set
-# from bin.jacquard_utils import validate_directories
 
 class IdentifyMergeCandidatesTestCase(unittest.TestCase):
     def test_indentifyMergeCandidates_missingFiles(self):

@@ -400,13 +400,14 @@ sample2	2	3	A	T	foo	.	GT	0/1	20	200'''
         tm.assert_frame_equal(expected_df, actual_df)
     
     #memory error for large files
-    def xtest_validate_sample_data_non_unique_cols(self):
+    def test_validate_sample_data_non_unique_rows(self):
         rows = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"]
         cols = ["SAMPLE_NAME"]
         pivot_values = ['GT']
         
         input_string = \
 '''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	SAMPLE_NAME	SAMPLE_DATA
+1	2	A	CG	foo	.	GT	sampleA	10
 1	2	A	T	foo	.	GT	sampleA	13
 1	2	A	T	foo	.	GT	sampleA	12
 2	3	C	G	foo	.	GT	sampleB	11'''
@@ -418,11 +419,12 @@ sample2	2	3	A	T	foo	.	GT	0/1	20	200'''
         
         expected_string = \
 '''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	WARNING/ERROR	FORMAT	SAMPLE_NAME	SAMPLE_DATA
-1	2	A	T	foo	.	GT	sampleA	^
+1	2	A	CG	foo	.	GT	sampleA	10
 1	2	A	T	foo	.	GT	sampleA	^
 2	3	C	G	foo	.	GT	sampleB	11'''
         expected_df = dataframe(expected_string)
-
+        print actual_df
+        print expected_df
         tm.assert_frame_equal(expected_df, actual_df)
         
     # not sure how to test if numpy.ndarray

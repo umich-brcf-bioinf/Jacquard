@@ -15,6 +15,8 @@ import openpyxl
 from openpyxl import load_workbook
 from openpyxl.style import Color, Fill, Font
 
+import jacquard_utils
+
 class PivotError(Exception):
     """Base class for exceptions in this module."""
     pass 
@@ -76,25 +78,30 @@ class VariantPivoter():
         grouped = self._combined_df.groupby(self._rows + ["SAMPLE_NAME"])
         group = grouped.groups
 
-        for column in self._combined_df:
+#         for column in self._combined_df:
             ###this produces a memory error
-#             for key, val in group.items():
-#                 self.find_non_unique_rows(grouped, column, key, val)
+        for key, val in group.items():
+            if len(val) != 1:
+                for column in self._combined_df:
+                    self.find_non_unique_rows(grouped, column, key, val)
+        for column in self._combined_df:
             self.find_non_unique_cells(column)
-            
+        
+
+        self._combined_df.reset_index(inplace=True)   
+        del self._combined_df["index"]
         return self._combined_df
         
     def find_non_unique_rows(self, grouped, column, key, val):
-        if len(val) != 1:
-            col_data = []
-            for index in val:
-                data = grouped.get_group(key).ix[index, column]
-                if data not in col_data:
-                    col_data.append(data)
-            if len(col_data) != 1:
-                for index in val:
-                    self._combined_df.ix[index, column] = "^"    
-                    
+        col_data = []
+        for index in val:
+            data = grouped.get_group(key).ix[index, column]
+            if data not in col_data:
+                col_data.append(data)
+        if len(col_data) != 1:
+            self._combined_df.ix[val[-1], column] = "^" 
+            self._combined_df = self._combined_df.drop(self._combined_df.index[val[:-1]])
+        
     def find_non_unique_cells(self, column):
         count = 0
         for data in self._combined_df[column]:
@@ -570,16 +577,6 @@ def add_subparser(subparser):
         help="Columns to be used as keys for the pivoting. Default keys for VCF are CHROM,POS,REF,ALT. Default keys for Epee TXT are CHROM,POS,REF,ANNOTATED_ALLELE,GENE_SYMBOL")
     parser_pivot.add_argument("-t", "--tags",
         help="Format tags to be fielded out in the pivoting.")
-
-def validate_directories(input_dir, output_dir):    
-    if not os.path.isdir(input_dir):
-            print "Error. Specified input directory {0} does not exist".format(input_dir)
-            exit(1)
-    if not os.access(input_dir, os.R_OK):
-            print "Error: Specified input directory [{0}] cannot be read. Check permissions and try again.".format(input_dir)
-            exit(1)
-    if not os.path.isdir(output_dir):
-        os.makedirs(output_dir)
         
 def execute(args, execution_context):
     input_dir = os.path.abspath(args.input_dir)
@@ -589,7 +586,7 @@ def execute(args, execution_context):
     
     output_dir, outfile_name = os.path.split(output_path)
 
-    validate_directories(input_dir, output_dir)
+    jacquard_utils.validate_directories(input_dir, output_dir)
         
     fname, extension = os.path.splitext(outfile_name)
     if extension != ".xlsx": 
