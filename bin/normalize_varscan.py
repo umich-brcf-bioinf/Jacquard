@@ -234,12 +234,13 @@ def validate_directories(input_dir, output_dir):
     except:
         print "Error: Specified input directory [{0}] cannot be read. Check permissions and try again.".format(input_dir)
         exit(1)
-        
+
     if not os.path.isdir(output_dir):
         try:
             os.makedirs(output_dir)
+            print output_dir
         except:
-            print "Error: Output directory could not be created. Check parameters and try again"
+            print "Error: Output directory [{0}] could not be created. Check parameters and try again".format(output_dir)
             exit(1)
 
 def execute(args, execution_context): 
