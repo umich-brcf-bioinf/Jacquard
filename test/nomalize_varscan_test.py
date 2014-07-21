@@ -282,7 +282,7 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
         first_out_dir = script_dir + "/tag_varscan_test/unwriteable"
         
         with self.assertRaises(SystemExit) as cm:
-            validate_directories(input_dir, first_out_dir + "/foo")
+            validate_directories(input_dir, first_out_dir + "/bar")
         self.assertEqual(cm.exception.code, 1)
         
 class MockWriter():
