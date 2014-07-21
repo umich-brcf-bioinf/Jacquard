@@ -506,16 +506,15 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, pivot
     if "WARNING/ERROR" in sorted_df.columns.values:
         sorted_df.rename(columns={"WARNING/ERROR":"SnpEff_WARNING/ERROR"}, inplace=True)
     
-    print "{0} - writing to excel file: {1}".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'), output_path)
-    writer = ExcelWriter(output_path)
-    sorted_df.to_excel(writer, "Variant_output", index=False, merge_cells=0)  
+#     print "{0} - writing to excel file: {1}".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'), output_path)
+#     writer = ExcelWriter(output_path)
+#     sorted_df.to_excel(writer, "Variant_output", index=False, merge_cells=0)  
     
-    # print "writing to csv file: {0}".format(output_path)
-    # sorted_df.to_csv(output_path, index=False, sep=",")  
-    # print "almost done..."
+    print "writing to csv file: {0}".format(output_path)
+    sorted_df.to_csv(output_path, index=False, sep=",")  
    
-    print "{0} - saving file".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
-    writer.save() 
+#     print "{0} - saving file".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
+#     writer.save() 
    
     print "{0} - done".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     
