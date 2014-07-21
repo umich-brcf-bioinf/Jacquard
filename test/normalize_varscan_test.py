@@ -279,7 +279,7 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
     def test_validateDirectories_outputDirectoryNotCreated(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/tag_varscan_test/input"
-        first_out_dir = script_dir + "/tag_varscan_test/unwriteable"
+        first_out_dir = script_dir + "/tag_varscan_test/foo_bar/"
         
         with self.assertRaises(SystemExit) as cm:
             validate_directories(input_dir, first_out_dir + "/bar")
