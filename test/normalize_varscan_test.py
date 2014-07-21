@@ -279,10 +279,11 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
     def test_validateDirectories_outputDirectoryNotCreated(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/tag_varscan_test/input"
-        first_out_dir = script_dir + "/tag_varscan_test/foo_bar/"
-        
+        first_out_dir = script_dir + "/tag_varscan_test/foo/bar/"
+        os.mkdir(input_dir + "/foo", 0555)
+
         with self.assertRaises(SystemExit) as cm:
-            validate_directories(input_dir, first_out_dir + "/bar")
+            validate_directories(input_dir, first_out_dir)
         self.assertEqual(cm.exception.code, 1)
         
 class MockWriter():
