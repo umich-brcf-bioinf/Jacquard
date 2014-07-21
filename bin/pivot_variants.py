@@ -297,13 +297,13 @@ def build_pivoter(path, reader, input_keys, pivot_values, header_index):
     return pivoter
   
 def _exclude_errors_and_warnings(df):
-        try:
-            filtered_df = df[df['SnpEff_WARNING/ERROR']=='.']
-            return filtered_df
-        except KeyError as e:
-            raise PivotError("File is missing SnpEff_WARNING/ERROR column; review input files")
-        else:
-            raise
+    try:
+        filtered_df = df[df['SnpEff_WARNING/ERROR']=='.']
+        return filtered_df
+    except KeyError as e:
+        raise PivotError("File is missing SnpEff_WARNING/ERROR column; review input files")
+    else:
+        raise
 
 def create_initial_df(path, reader, header_index):
     initial_df = pd.read_csv(reader, sep="\t", header=header_index, dtype='str')
@@ -337,8 +337,8 @@ def append_to_annot_df(initial_df, annot_df):
   
 def melt_samples(df, fname): 
     format_data = df.ix[0, "FORMAT"].split(":")
-    if "ESAF" not in format_data:
-        format_data.append("ESAF")
+#     if "ESAF" not in format_data:
+#         format_data.append("ESAF")
     
     first_sample_column_index = df.columns.get_loc("FORMAT") + 1
     first_sample_column = df.ix[:, first_sample_column_index]
@@ -348,7 +348,6 @@ def melt_samples(df, fname):
     for i in range(first_sample_column_index, last_column):
         field_name = df.columns[i]
         data = df.ix[0, field_name].split(":")
-        
         if len(data) == len(format_data):
             sample_names.append(field_name)
             
@@ -370,7 +369,7 @@ def expand_format(df, formats_to_expand, rows, fname):
 
     df["aggregate_format_sample"] = df["FORMAT"] + "=" + df['SAMPLE_DATA']
     df["aggregate_format_sample"] = df["aggregate_format_sample"].map(combine_format_values)
-   
+
     s = df["aggregate_format_sample"].apply(pd.Series, 1).stack()
     s.index = s.index.droplevel(-1)
     s.name = "format_sample"
