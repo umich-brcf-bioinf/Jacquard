@@ -279,7 +279,7 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
     def test_validateDirectories_outputDirectoryNotCreated(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/tag_varscan_test/input"
-        unwriteable_dir = input_dir + "/foo"
+        unwriteable_dir = script_dir + "/tag_varscan_test/unwriteable/"
         os.mkdir(unwriteable_dir, 0555)
         
         desired_dir = unwriteable_dir + "/bar/"
@@ -287,6 +287,8 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             validate_directories(input_dir, desired_dir)
         self.assertEqual(cm.exception.code, 1)
+        
+        os.rmdir(unwriteable_dir)
         
 class MockWriter():
     def __init__(self):
