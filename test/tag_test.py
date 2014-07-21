@@ -402,13 +402,16 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
         
     def test_determineFileTypes_withUnknown(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/multi_caller_input/"
+        input_dir = script_dir + "/multi_caller_input/withUnknowns"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
         callers = [Mutect(), Varscan(), Unknown()]
         file_types = determine_file_types(input_dir, in_files, callers)
         self.assertEqual(["Unknown", "VarScan", "MuTect"], file_types.keys())
-        self.assertEqual([['C:\\Users\\jebene\\git\\ExomeSeqPipeline\\test/multi_caller_input\\tiny_unknown_input.vcf'], ['C:\\Users\\jebene\\git\\ExomeSeqPipeline\\test/multi_caller_input\\tiny_varscan_input.vcf'], ['C:\\Users\\jebene\\git\\ExomeSeqPipeline\\test/multi_caller_input\\tiny_mutect_input.vcf','C:\\Users\\jebene\\git\\ExomeSeqPipeline\\test/multi_caller_input\\tiny_mutect_input2.vcf']], file_types.values())
-
+        self.assertEqual('tiny_unknown_input.vcf', os.path.basename(file_types.values()[0][0]))
+        self.assertEqual('tiny_varscan_input.vcf', os.path.basename(file_types.values()[1][0]))
+        self.assertEqual('tiny_mutect_input.vcf', os.path.basename(file_types.values()[2][0]))
+        self.assertEqual('tiny_mutect_input2.vcf', os.path.basename(file_types.values()[2][1]))
+        
         with self.assertRaises(SystemExit) as cm:
             print_file_types(file_types)
         self.assertEqual(cm.exception.code, 1)
@@ -428,13 +431,13 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/multi_caller_input/"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
-        unknown_vcf = "C:\\Users\\jebene\\git\\ExomeSeqPipeline\\test/multi_caller_input\\tiny_unknown_input.vcf"
-        if unknown_vcf in in_files:
-            in_files.remove(unknown_vcf)
+        
         callers = [Mutect(), Varscan(), Unknown()]
         file_types = determine_file_types(input_dir, in_files, callers)
         self.assertEqual(["VarScan", "MuTect"], file_types.keys())
-        self.assertEqual([['C:\\Users\\jebene\\git\\ExomeSeqPipeline\\test/multi_caller_input\\tiny_varscan_input.vcf'], ['C:\\Users\\jebene\\git\\ExomeSeqPipeline\\test/multi_caller_input\\tiny_mutect_input.vcf','C:\\Users\\jebene\\git\\ExomeSeqPipeline\\test/multi_caller_input\\tiny_mutect_input2.vcf']], file_types.values())
+        self.assertEqual('tiny_varscan_input.vcf', os.path.basename(file_types.values()[0][0]))
+        self.assertEqual('tiny_mutect_input.vcf', os.path.basename(file_types.values()[1][0]))
+        self.assertEqual('tiny_mutect_input2.vcf', os.path.basename(file_types.values()[1][1]))
 
         print_file_types(file_types)
         output_list = self.output.getvalue().splitlines()
