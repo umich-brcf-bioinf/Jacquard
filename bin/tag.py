@@ -6,6 +6,8 @@ from os import listdir
 from os.path import isfile, join
 import shutil
 
+import jacquard_utils
+
 class Varscan():
     def __init__(self):
         self.name = "VarScan"
@@ -194,23 +196,6 @@ def add_subparser(subparser):
     parser_tag.add_argument("input_dir", help="Path to directory containing VCFs. Other file types ignored")
     parser_tag.add_argument("output_dir", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
 
-def validate_directories(input_dir, output_dir):    
-    if not os.path.isdir(input_dir):
-        print "Error. Specified input directory {0} does not exist".format(input_dir)
-        exit(1)
-    try:
-        listdir(input_dir)
-    except:
-        print "Error: Specified input directory [{0}] cannot be read. Check permissions and try again.".format(input_dir)
-        exit(1)
-        
-    if not os.path.isdir(output_dir):
-        try:
-            os.makedirs(output_dir)
-        except:
-            print "Error: Output directory could not be created. Check parameters and try again"
-            exit(1)
-
 def determine_file_types(input_dir, in_files, callers):
     file_types = defaultdict(list)                                       
     for file in in_files:
@@ -269,7 +254,7 @@ def execute(args, execution_context):
     input_dir = os.path.abspath(args.input_dir)
     output_dir = os.path.abspath(args.output_dir)
     
-    validate_directories(input_dir, output_dir)
+    jacquard_utils.validate_directories(input_dir, output_dir)
     
     callers = [Mutect(), Varscan(), Unknown()]
     tag_files(input_dir, output_dir, callers, execution_context)

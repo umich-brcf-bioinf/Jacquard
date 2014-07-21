@@ -6,6 +6,8 @@ import os
 from os import listdir
 import re
 
+import jacquard_utils
+
 def identify_hc_variants(hc_candidates):
     hc_variants = {}
     for key, vals in hc_candidates.items():
@@ -224,30 +226,12 @@ def add_subparser(subparser):
     parser_normalize_vs = subparser.add_parser("normalize_varscan", help="Accepts a directory containing VarScan VCF snp/indel results and creates a new directory of merged, sorted VCFs")
     parser_normalize_vs.add_argument("input_dir", help="Path to directory containing VCFs. Each sample must have exactly two files matching these patterns: <sample>.indel.vcf, <sample>.snp.vcf, <sample>.indel.Germline.hc, <sample>.snp.Germline.hc, <sample>.indel.LOH.hc, <sample>.snp.LOH.hc, <sample>.indel.Somatic.hc, <sample>.snp.somatic.hc, <sample>.indel.*.hc, <sample>.snp.*.hc ")
     parser_normalize_vs.add_argument("output_dir", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
-    
-def validate_directories(input_dir, output_dir):    
-    if not os.path.isdir(input_dir):
-        print "Error. Specified input directory {0} does not exist".format(input_dir)
-        exit(1)
-    try:
-        listdir(input_dir)
-    except:
-        print "Error: Specified input directory [{0}] cannot be read. Check permissions and try again.".format(input_dir)
-        exit(1)
-
-    if not os.path.isdir(output_dir):
-        try:
-            os.makedirs(output_dir)
-            print output_dir
-        except:
-            print "Error: Output directory [{0}] could not be created. Check parameters and try again".format(output_dir)
-            exit(1)
 
 def execute(args, execution_context): 
     input_dir = os.path.abspath(args.input_dir)
     output_dir = os.path.abspath(args.output_dir)
     
-    validate_directories(input_dir, output_dir)
+    jacquard_utils.validate_directories(input_dir, output_dir)
 
     merge_and_sort(input_dir, output_dir, execution_context)
     

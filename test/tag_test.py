@@ -9,7 +9,7 @@ from stat import *
 import testfixtures
 from testfixtures import TempDirectory
 import unittest
-from bin.tag import Varscan, Mutect, Unknown, Varscan_AlleleFreqTag, Varscan_DepthTag, Varscan_SomaticTag, Mutect_AlleleFreqTag, Mutect_DepthTag, Mutect_SomaticTag, LineProcessor, FileProcessor, tag_files, validate_directories, determine_file_types, print_file_types
+from bin.tag import Varscan, Mutect, Unknown, Varscan_AlleleFreqTag, Varscan_DepthTag, Varscan_SomaticTag, Mutect_AlleleFreqTag, Mutect_DepthTag, Mutect_SomaticTag, LineProcessor, FileProcessor, tag_files, determine_file_types, print_file_types
 
 class Varscan_AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
@@ -360,34 +360,6 @@ class TagVarScanTestCase(unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
            tag_files(input_dir, output_dir, [Mutect(), Varscan(), Unknown()])
 
-        self.assertEqual(cm.exception.code, 1)
-
-class ValidateDirectoriesTestCase(unittest.TestCase):
-    def xtest_validateDirectories_inputDirectoryDoesntExist(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/tag_varscan_test/foo"
-        output_dir = script_dir + "/tag_varscan_test/output"
-        
-        with self.assertRaises(SystemExit) as cm:
-            validate_directories(input_dir, output_dir)
-        self.assertEqual(cm.exception.code, 1)
-    
-    def xtest_validateDirectories_inputDirectoryUnreadable(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/tag_varscan_test/unreadable"
-        output_dir = script_dir + "/tag_varscan_test/output"
-
-        with self.assertRaises(SystemExit) as cm:
-            validate_directories(input_dir, output_dir)
-        self.assertEqual(cm.exception.code, 1)
-        
-    def xtest_validateDirectories_outputDirectoryNotCreated(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/tag_varscan_test/input"
-        first_out_dir = script_dir + "/tag_varscan_test/unwriteable"
-        
-        with self.assertRaises(SystemExit) as cm:
-            validate_directories(input_dir, first_out_dir + "/foo")
         self.assertEqual(cm.exception.code, 1)
 
 class  DetermineFileTypesTestCase(unittest.TestCase):
