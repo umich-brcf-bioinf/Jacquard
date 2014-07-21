@@ -5,16 +5,111 @@ from operator import itemgetter, attrgetter
 import os
 from os import listdir
 import re
-# import vcf
-# from vcf import utils
 
+def identify_hc_variants(hc_candidates):
+    hc_variants = {}
+    for key, vals in hc_candidates.items():
+        for file in vals:
+            f = open(file, "r")
+            for line in f:
+                split_line = line.split("\t")
+                if line.startswith("chrom"):
+                    continue
+                else:
+                    hc_key = "^".join([split_line[0], split_line[1], split_line[2], split_line[3]])
+                    hc_variants[hc_key] = 1
+            
+    return hc_variants
+
+def mark_hc_variants(hc_variants, merge_candidates):
+    marked_as_hc = []
+    for key, vals in merge_candidates.items():
+        for file in vals:
+            new_lines = []
+            f = open(file, "r")
+            for line in f:
+                split_line = line.split("\t")
+                if line.startswith("#"):
+                    new_lines.append(line)
+                else:
+                    merge_key = "^".join([split_line[0], split_line[1], split_line[3], split_line[4]])
+                    if merge_key in hc_variants:
+                        if "JQ_HC_VS" not in split_line[7]:
+                            split_line[7] += ";JQ_HC_VS"
+                        marked_as_hc.append(merge_key)
+                    new_line = "\t".join(split_line)
+                    new_lines.append(new_line)
+            f.close()
+            
+            f = open(file, "w")
+            for line in new_lines:
+                f.write(line)
+            f.close()
+    return merge_candidates, marked_as_hc
+    
+def check_for_missing(required_vals, val, key, missing):
+    missing_files = []
+    for item in required_vals:
+        if item not in val:
+            missing_files.append(item)
+            missing = 1
+    if missing_files != []:
+        print "ERROR: [{0}] is missing required files {1}".format(key.strip("_"), missing_files)
+    
+    return missing_files, missing
+
+def check_for_unknown(required_vals, val, key, added):
+    added_files = []
+    for thing in val:
+        if thing not in required_vals:
+            added_files.append(thing)
+            added = 1
+    if added_files != []:
+        print "WARNING: [{0}] has unknown .hc files {1}".format(key.strip("_"), added_files)
+    
+    return added_files, added
+            
+def validate_file_set(all_keys):
+    sample_files = defaultdict(list)
+    for key in all_keys:
+        prefix = key.split("merged")[0]
+        suffix = key.split("merged")[1]
+        sample_files[prefix.strip("_")].append(suffix)
+
+    required_vals = [".Germline.hc", ".LOH.hc", ".Somatic.hc", ".vcf"]
+    missing = 0
+    added = 0
+    for key, val in sample_files.items():
+        missing_files, missing = check_for_missing(required_vals, val, key, missing)
+        added_files, added = check_for_unknown(required_vals, val, key, added)
+        
+    if missing == 1:
+        print "ERROR: Some required files were missing. Review input directory and try again"
+        exit(1)
+    if added == 1:
+        print "WARNING: Some samples had unknown .hc files"
+        
+    return sample_files
+    
 def identify_merge_candidates(in_files):
     merge_candidates = defaultdict(list)
+    hc_candidates = defaultdict(list)
     for in_file in in_files:
-        merged_fname = re.sub("snp|indel", "merged", os.path.basename(in_file))
-        merge_candidates[merged_fname].append(in_file)
-        
-    return merge_candidates
+        fname, extension = os.path.splitext(in_file)
+        if extension == ".vcf":
+            merged_fname = re.sub("snp|indel", "merged", os.path.basename(in_file))
+            merge_candidates[merged_fname].append(in_file)
+        elif extension == ".hc":
+            merged_fname = re.sub("snp|indel", "merged", os.path.basename(in_file))
+            hc_candidates[merged_fname].append(in_file)
+    
+    all_keys = hc_candidates.keys() + merge_candidates.keys()
+    sample_files = validate_file_set(all_keys)
+    
+    hc_variants = identify_hc_variants(hc_candidates)
+    hc_merge_candidates, marked_as_hc = mark_hc_variants(hc_variants, merge_candidates)
+
+    return hc_merge_candidates
 
 def get_headers(file):
     headers = []
@@ -95,8 +190,12 @@ def merge(merge_candidates, output_dir):
     for merge_file in merge_candidates.keys():
         pair = merge_candidates[merge_file]
         headers = get_headers(pair[0])
-        headers.append("##jacquard.normalize_varscan.sources={0},{1}\n".format(pair[0], pair[1]))
         
+        sample_sources = "##jacquard.normalize_varscan.sources={0},{1}\n".format(os.path.basename(pair[0]), os.path.basename(pair[1]))
+        print merge_file + ": " + sample_sources
+        
+        headers.append(sample_sources)
+        headers.append('##INFO=<ID=JQ_HC_VS,Number=1,Type=Flag,Description="Jaquard high-confidence somatic flag for VarScan. Based on intersection with filtered VarScan variants.">\n')
         all_variants = merge_data(pair)
         sorted_variants = sort_data(all_variants)
         
@@ -109,8 +208,8 @@ def merge(merge_candidates, output_dir):
 
 def merge_and_sort(input_dir, output_dir, execution_context=[]):
     print "\n".join(execution_context)
-    
-    in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
+
+    in_files = sorted(glob.glob(os.path.join(input_dir,"*")))
     
     merge_candidates = identify_merge_candidates(in_files)
     
@@ -123,11 +222,10 @@ def merge_and_sort(input_dir, output_dir, execution_context=[]):
 
 def add_subparser(subparser):
     parser_normalize_vs = subparser.add_parser("normalize_varscan", help="Accepts a directory containing VarScan VCF snp/indel results and creates a new directory of merged, sorted VCFs")
-    parser_normalize_vs.add_argument("input_dir", help="Path to directory containing VCFs. Each sample must have exactly two files matching these patterns: <sample>.indel.vcf, <sample>.snp.vcf")
+    parser_normalize_vs.add_argument("input_dir", help="Path to directory containing VCFs. Each sample must have exactly two files matching these patterns: <sample>.indel.vcf, <sample>.snp.vcf, <sample>.indel.Germline.hc, <sample>.snp.Germline.hc, <sample>.indel.LOH.hc, <sample>.snp.LOH.hc, <sample>.indel.Somatic.hc, <sample>.snp.somatic.hc, <sample>.indel.*.hc, <sample>.snp.*.hc ")
     parser_normalize_vs.add_argument("output_dir", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
     
 def validate_directories(input_dir, output_dir):    
-    print input_dir
     if not os.path.isdir(input_dir):
         print "Error. Specified input directory {0} does not exist".format(input_dir)
         exit(1)
@@ -150,5 +248,5 @@ def execute(args, execution_context):
     
     validate_directories(input_dir, output_dir)
 
-    merge_and_sort(input_dir, output_dir)
+    merge_and_sort(input_dir, output_dir, execution_context)
     

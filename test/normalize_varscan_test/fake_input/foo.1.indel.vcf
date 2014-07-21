@@ -1,0 +1,30 @@
+##fileformat=VCFv4.1
+##source=VarScan2
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Total depth of quality bases">
+##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description="Indicates if record is a somatic mutation">
+##INFO=<ID=SS,Number=1,Type=String,Description="Somatic status of variant (0=Reference,1=Germline,2=Somatic,3=LOH, or 5=Unknown)">
+##INFO=<ID=SSC,Number=1,Type=String,Description="Somatic score in Phred scale (0-255) derived from somatic p-value">
+##INFO=<ID=GPV,Number=1,Type=Float,Description="Fisher's Exact Test P-value of tumor+normal versus no variant for Germline calls">
+##INFO=<ID=SPV,Number=1,Type=Float,Description="Fisher's Exact Test P-value of tumor versus normal for Somatic/LOH calls">
+##FILTER=<ID=str10,Description="Less than 10% or more than 90% of variant supporting reads on one strand">
+##FILTER=<ID=indelError,Description="Likely artifact due to indel reads at this position">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+##FORMAT=<ID=RD,Number=1,Type=Integer,Description="Depth of reference-supporting bases (reads1)">
+##FORMAT=<ID=AD,Number=1,Type=Integer,Description="Depth of variant-supporting bases (reads2)">
+##FORMAT=<ID=FREQ,Number=1,Type=String,Description="Variant allele frequency">
+##FORMAT=<ID=DP4,Number=1,Type=String,Description="Strand read counts: ref/fwd, ref/rev, var/fwd, var/rev">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NORMAL	TUMOR
+chr1	13116	.	T	G	.	PASS	DP=33;SS=1;SSC=1;GPV=1.1508E-8;SPV=7.2474E-1	GT:GQ:DP:RD:AD:FREQ:DP4	0/1:.:23:8:14:63.64%:3,5,7,7	0/1:.:10:4:6:60%:2,2,3,3
+chr1	13118	.	A	G	.	PASS	DP=32;SS=1;SSC=1;GPV=1.1508E-8;SPV=7.2474E-1	GT:GQ:DP:RD:AD:FREQ:DP4	0/1:.:22:8:14:63.64%:3,5,7,7	0/1:.:10:4:6:60%:2,2,3,3
+chr1	13273	.	G	C	.	PASS	DP=36;SS=1;SSC=11;GPV=4.7404E-4;SPV=7.3082E-2	GT:GQ:DP:RD:AD:FREQ:DP4	0/1:.:23:19:4:17.39%:9,10,1,3	0/1:.:13:7:6:46.15%:3,4,3,3
+chr1	13302	.	C	T	.	PASS	DP=27;SS=1;SSC=0;GPV=1.81E-5;SPV=9.9124E-1	GT:GQ:DP:RD:AD:FREQ:DP4	0/1:.:18:7:11:61.11%:2,5,5,6	0/1:.:9:7:2:22.22%:5,2,1,1
+chr1	14653	.	C	T	.	PASS	DP=117;SS=1;SSC=0;GPV=5.9858E-13;SPV=9.3774E-1	GT:GQ:DP:RD:AD:FREQ:DP4	0/1:.:51:32:19:37.25%:21,11,8,11	0/1:.:66:49:17:25.76%:36,13,11,6
+chr1	14677	.	G	A	.	PASS	DP=131;SS=1;SSC=2;GPV=8.408E-9;SPV=5.8454E-1	GT:GQ:DP:RD:AD:FREQ:DP4	0/1:.:63:51:12:19.05%:25,26,5,7	0/1:.:68:55:13:19.12%:38,17,7,6
+chr1	14907	.	A	G	.	PASS	DP=354;SS=1;SSC=0;GPV=8.4745E-46;SPV=9.0967E-1	GT:GQ:DP:RD:AD:FREQ:DP4	0/1:.:155:93:62:40%:49,44,41,21	0/1:.:199:132:67:33.67%:59,73,31,36
+chr1	14930	.	A	G	.	PASS	DP=390;SS=1;SSC=0;GPV=5.4912E-52;SPV=8.9695E-1	GT:GQ:DP:RD:AD:FREQ:DP4	0/1:.:167:99:68:40.72%:59,40,41,27	0/1:.:223:145:78:34.98%:67,78,33,45
+chr1	15118	.	A	G	.	PASS	DP=172;SS=1;SSC=4;GPV=1.1182E-9;SPV=3.2908E-1	GT:GQ:DP:RD:AD:FREQ:DP4	0/1:.:95:81:14:14.74%:4,77,3,11	0/1:.:77:62:14:18.42%:10,52,3,11
+chr1	15190	.	G	A	.	PASS	DP=93;SS=1;SSC=1;GPV=3.3899E-10;SPV=7.4334E-1	GT:GQ:DP:RD:AD:FREQ:DP4	0/1:.:50:34:16:32%:4,30,2,14	0/1:.:43:31:12:27.91%:2,29,1,11
+chr1	15211	.	T	G	.	PASS	DP=80;SS=1;SSC=1;GPV=5.1415E-34;SPV=6.7925E-1	GT:GQ:DP:RD:AD:FREQ:DP4	1/1:.:38:5:33:86.84%:1,4,5,28	1/1:.:42:6:36:85.71%:0,6,3,33
+chr1	15274	.	A	T	.	PASS	DP=32;SS=1;SSC=0;GPV=7.9107E-15;SPV=1E0	GT:GQ:DP:RD:AD:FREQ:DP4	0/1:.:15:0:11:100%:0,0,1,10	1/1:.:17:0:14:100%:0,0,1,13
