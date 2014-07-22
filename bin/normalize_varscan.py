@@ -73,7 +73,6 @@ def mark_hc_variants(hc_variants, merge_candidates, output_dir):
         f.close()
         
         sorted_headers = sort_headers(headers)
-#         print new_lines
         write_to_merged_file(new_lines, sorted_headers, key)
     
     print "Wrote [{0}] VCF files to [{1}]".format(len(merge_candidates.keys()), output_dir)
