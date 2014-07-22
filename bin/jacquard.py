@@ -9,12 +9,13 @@ import pivot_variants
 import rollup_genes
 import tag 
 import normalize_varscan
+import filter_somatic
 
 def main(modules, arguments):
     parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter, 
     description='''type 'Jacquard -h <subcommand>' for help on a specific subcommand''', 
-    epilog="authors: Jessica Bene, Chris Gates 05/2014")
+    epilog="authors: Jessica Bene, Chris Gates 07/2014")
     parser.add_argument("-v", "--version", action='version', version="v{0}".format(__version__))
     subparsers = parser.add_subparsers(title="subcommands", dest="subparser_name")
     
@@ -33,5 +34,5 @@ def main(modules, arguments):
 
 
 if __name__ == "__main__":
-    main([pivot_variants, rollup_genes, tag, normalize_varscan], sys.argv[1:])
+    main([pivot_variants, rollup_genes, tag, normalize_varscan, filter_somatic], sys.argv[1:])
 

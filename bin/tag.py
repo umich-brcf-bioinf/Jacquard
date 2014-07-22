@@ -218,15 +218,15 @@ def print_file_types(file_types):
         print "Error: unable to determine which caller was used on [{0}]. Check input files and try again.".format(file_types["Unknown"])
         exit(1)
     
-def tag_files(input_dir, output_dir, callers, input_metaheaders=[]):
-    processors = {"VarScan" : FileProcessor(tags=[Varscan_AlleleFreqTag(), Varscan_DepthTag(), Varscan_SomaticTag()], execution_context_metadataheaders=input_metaheaders), "MuTect": FileProcessor(tags=[Mutect_AlleleFreqTag(), Mutect_DepthTag(), Mutect_SomaticTag()], execution_context_metadataheaders=input_metaheaders)}
+def tag_files(input_dir, output_dir, callers, execution_context=[]):
+    processors = {"VarScan" : FileProcessor(tags=[Varscan_AlleleFreqTag(), Varscan_DepthTag(), Varscan_SomaticTag()], execution_context_metadataheaders=execution_context), "MuTect": FileProcessor(tags=[Mutect_AlleleFreqTag(), Mutect_DepthTag(), Mutect_SomaticTag()], execution_context_metadataheaders=execution_context)}
     
     in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
     if len(in_files) < 1:
         print "Error: Specified input directory [{0}] contains no VCF files. Check parameters and try again."
         exit(1)
         
-    print "\n".join(input_metaheaders)
+    print "\n".join(execution_context)
     print "Processing [{0}] VCF file(s) from [{1}]".format(len(in_files), input_dir)
     
     file_types = determine_file_types(input_dir, in_files, callers)
