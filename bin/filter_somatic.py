@@ -20,7 +20,7 @@ def find_somatic_positions(in_files, output_dir):
                     somatic_positions[key] = 1
 
         in_file.close()
-        
+    print "Found [{0}] somatic positions".format(len(somatic_positions.keys()))
     print "##jacquard.filterSomatic.total_somatic_positions={0}\n".format(len(somatic_positions.keys()))
     
     return somatic_positions
