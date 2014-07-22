@@ -54,6 +54,7 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
     def test_markHcCandidates(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/normalize_varscan_test/merged_vcf/"
+        output_dir = script_dir + "/normalize_varscan_test/output/"
         hc_variants = {'chr1^161332554^A^G': 1, 'chr9^33794812^G^T': 1, 'chr2^27015610^C^-CA': 1, 'chr3^156746013^T^C': 1, 'chr1^153773150^C^+T': 1, 'chr11^48387683^G^-T': 1, 
                         'chr11^1651198^G^-AGGCTGTGGGGGCTGTGGCTCCGGCTGTGC': 1, 'chr11^1651585^C^-CTGCTGCCAGTCCAGCTGCTGTAAGCCTTA': 1, 'chr2^32843743^A^+T': 1, 'chr9^33796627^T^C': 1, 
                         'chr2^33764141^G^+T': 1, 'chr1^16862212^C^T': 1, 'chr9^118950132^G^A': 1, 'chr1^2422614^G^A': 1, 'chr6^34004006^G^A': 1, 'chr5^139909358^A^C': 1, 
@@ -71,9 +72,8 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
                         'chr1^16748087^G^A': 1, 'chr1^248801778^A^T': 1, 'chr2^243504^C^T': 1, 'chr1^51061718^T^-A': 1, 'chr7^91627046^C^G': 1, 'chr4^166964590^T^A': 1, 'chr4^88536899^A^G': 1, 'chr2^279705^C^T': 1}
         merge_candidates = {input_dir + "tiny_merged.vcf" : [input_dir + "tiny_snp.vcf", input_dir + "tiny_indel.vcf"]}
         
-        actual_merge_candidates, marked_as_hc = mark_hc_variants(hc_variants, merge_candidates)
+        marked_as_hc = mark_hc_variants(hc_variants, merge_candidates, output_dir)
         
-        self.assertEqual(merge_candidates, actual_merge_candidates)
         self.assertEqual(['chr1^14397^CTGT^C'], marked_as_hc)
         
 class MergeTestCase(unittest.TestCase):

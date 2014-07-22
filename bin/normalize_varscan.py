@@ -23,18 +23,47 @@ def identify_hc_variants(hc_candidates):
             
     return hc_variants
 
-def mark_hc_variants(hc_variants, merge_candidates):
+def sort_headers(headers):
+    meta_headers = []
+    field_header = ""
+    for header in headers:
+        if header.startswith("##"):
+            header = header.replace("\t", "")
+            meta_headers.append(header)
+        else:
+            field_header = header
+
+    meta_headers.append(field_header)
+
+    return meta_headers
+
+def write_to_merged_file(new_lines, headers, key):
+    all_lines = []
+    for line in new_lines:
+        split_line = line.split("\t")
+        new_line = change_pos_to_int(split_line)
+        all_lines.append(new_line)
+    sorted_variants = sort_data(all_lines)
+    writer = open(key, "w")
+    write_output(writer, headers, sorted_variants)
+    writer.close()
+
+def mark_hc_variants(hc_variants, merge_candidates, output_dir):
     marked_as_hc = []
 
     for key, vals in merge_candidates.items():
         new_lines = []
+        headers = []
         f = open(key, "r")
         for line in f:
             split_line = line.split("\t")
+            if line.startswith('"'):
+                line = line.replace("\t", "")
+                line = line[1:-2] + "\n"
             if line.startswith("#"):
-                new_lines.append(line)
+                headers.append(line)
             else:
-                merge_key = "^".join([split_line[0], split_line[1], split_line[3], split_line[4]])
+                merge_key = "^".join([split_line[0], str(split_line[1]), split_line[3], split_line[4]])
                 if merge_key in hc_variants:
                     if "JQ_HC_VS" not in split_line[7]:
                         split_line[7] += ";JQ_HC_VS"
@@ -42,13 +71,14 @@ def mark_hc_variants(hc_variants, merge_candidates):
                 new_line = "\t".join(split_line)
                 new_lines.append(new_line)
         f.close()
-
-        f = open(key, "w")
-        for line in new_lines:
-            f.write(line)
-        f.close()
         
-    return merge_candidates, marked_as_hc
+        sorted_headers = sort_headers(headers)
+#         print new_lines
+        write_to_merged_file(new_lines, sorted_headers, key)
+    
+    print "Wrote [{0}] VCF files to [{1}]".format(len(merge_candidates.keys()), output_dir)
+    
+    return marked_as_hc
     
 def check_for_missing(required_vals, val, key, missing):
     missing_files = []
@@ -109,11 +139,7 @@ def identify_merge_candidates(in_files, out_dir):
     
     all_keys = hc_candidates.keys() + merge_candidates.keys()
     sample_files = validate_file_set(all_keys)
-    
-#     hc_variants = identify_hc_variants(hc_candidates)
-#     hc_merge_candidates, marked_as_hc = mark_hc_variants(hc_variants, merge_candidates)
 
-#     return hc_merge_candidates
     return merge_candidates, hc_candidates
 
 def get_headers(file):
@@ -197,7 +223,7 @@ def merge(merge_candidates, output_dir):
         headers = get_headers(pair[0])
         
         sample_sources = "##jacquard.normalize_varscan.sources={0},{1}\n".format(os.path.basename(pair[0]), os.path.basename(pair[1]))
-        print merge_file + ": " + sample_sources
+        print os.path.basename(merge_file) + ": " + sample_sources
         
         headers.append(sample_sources)
         headers.append('##INFO=<ID=JQ_HC_VS,Number=1,Type=Flag,Description="Jaquard high-confidence somatic flag for VarScan. Based on intersection with filtered VarScan variants.">\n')
@@ -207,8 +233,6 @@ def merge(merge_candidates, output_dir):
         out_file = open(merge_file, "w")
         write_output(out_file, headers, sorted_variants)
         out_file.close()
-        
-    print "Wrote [{0}] VCF files to [{1}]".format(len(merge_candidates.keys()), output_dir)
 
 def merge_and_sort(input_dir, output_dir, execution_context=[]):
     print "\n".join(execution_context)
@@ -225,9 +249,7 @@ def merge_and_sort(input_dir, output_dir, execution_context=[]):
     merge(merge_candidates, output_dir)
 
     hc_variants = identify_hc_variants(hc_candidates)
-
-    hc_merge_candidates, marked_as_hc = mark_hc_variants(hc_variants, merge_candidates)
-    print marked_as_hc
+    marked_as_hc = mark_hc_variants(hc_variants, merge_candidates, output_dir)
 
 def add_subparser(subparser):
     parser_normalize_vs = subparser.add_parser("normalize_varscan", help="Accepts a directory containing VarScan VCF snp/indel results and creates a new directory of merged, sorted VCFs")
