@@ -78,8 +78,6 @@ class VariantPivoter():
         grouped = self._combined_df.groupby(self._rows + ["SAMPLE_NAME"])
         group = grouped.groups
 
-#         for column in self._combined_df:
-            ###this produces a memory error
         for key, val in group.items():
             if len(val) != 1:
                 for column in self._combined_df:

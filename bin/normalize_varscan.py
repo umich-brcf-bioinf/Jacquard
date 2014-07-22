@@ -25,28 +25,29 @@ def identify_hc_variants(hc_candidates):
 
 def mark_hc_variants(hc_variants, merge_candidates):
     marked_as_hc = []
+
     for key, vals in merge_candidates.items():
-        for file in vals:
-            new_lines = []
-            f = open(file, "r")
-            for line in f:
-                split_line = line.split("\t")
-                if line.startswith("#"):
-                    new_lines.append(line)
-                else:
-                    merge_key = "^".join([split_line[0], split_line[1], split_line[3], split_line[4]])
-                    if merge_key in hc_variants:
-                        if "JQ_HC_VS" not in split_line[7]:
-                            split_line[7] += ";JQ_HC_VS"
-                        marked_as_hc.append(merge_key)
-                    new_line = "\t".join(split_line)
-                    new_lines.append(new_line)
-            f.close()
-            
-            f = open(file, "w")
-            for line in new_lines:
-                f.write(line)
-            f.close()
+        new_lines = []
+        f = open(key, "r")
+        for line in f:
+            split_line = line.split("\t")
+            if line.startswith("#"):
+                new_lines.append(line)
+            else:
+                merge_key = "^".join([split_line[0], split_line[1], split_line[3], split_line[4]])
+                if merge_key in hc_variants:
+                    if "JQ_HC_VS" not in split_line[7]:
+                        split_line[7] += ";JQ_HC_VS"
+                    marked_as_hc.append(merge_key)
+                new_line = "\t".join(split_line)
+                new_lines.append(new_line)
+        f.close()
+
+        f = open(key, "w")
+        for line in new_lines:
+            f.write(line)
+        f.close()
+        
     return merge_candidates, marked_as_hc
     
 def check_for_missing(required_vals, val, key, missing):
@@ -93,25 +94,27 @@ def validate_file_set(all_keys):
         
     return sample_files
     
-def identify_merge_candidates(in_files):
+def identify_merge_candidates(in_files, out_dir):
     merge_candidates = defaultdict(list)
     hc_candidates = defaultdict(list)
+    
     for in_file in in_files:
         fname, extension = os.path.splitext(in_file)
         if extension == ".vcf":
-            merged_fname = re.sub("snp|indel", "merged", os.path.basename(in_file))
+            merged_fname = re.sub("snp|indel", "merged", os.path.join(out_dir, os.path.basename(in_file)))
             merge_candidates[merged_fname].append(in_file)
         elif extension == ".hc":
-            merged_fname = re.sub("snp|indel", "merged", os.path.basename(in_file))
+            merged_fname = re.sub("snp|indel", "merged", os.path.join(out_dir, os.path.basename(in_file)))
             hc_candidates[merged_fname].append(in_file)
     
     all_keys = hc_candidates.keys() + merge_candidates.keys()
     sample_files = validate_file_set(all_keys)
     
-    hc_variants = identify_hc_variants(hc_candidates)
-    hc_merge_candidates, marked_as_hc = mark_hc_variants(hc_variants, merge_candidates)
+#     hc_variants = identify_hc_variants(hc_candidates)
+#     hc_merge_candidates, marked_as_hc = mark_hc_variants(hc_variants, merge_candidates)
 
-    return hc_merge_candidates
+#     return hc_merge_candidates
+    return merge_candidates, hc_candidates
 
 def get_headers(file):
     headers = []
@@ -201,8 +204,7 @@ def merge(merge_candidates, output_dir):
         all_variants = merge_data(pair)
         sorted_variants = sort_data(all_variants)
         
-        merge_output = os.path.join(output_dir, merge_file)
-        out_file = open(merge_output, "w")
+        out_file = open(merge_file, "w")
         write_output(out_file, headers, sorted_variants)
         out_file.close()
         
@@ -213,14 +215,19 @@ def merge_and_sort(input_dir, output_dir, execution_context=[]):
 
     in_files = sorted(glob.glob(os.path.join(input_dir,"*")))
     
-    merge_candidates = identify_merge_candidates(in_files)
-    
+    merge_candidates, hc_candidates = identify_merge_candidates(in_files, output_dir)
+
     total_files = 0
     for key, vals in merge_candidates.items():
         total_files += len(vals)
     print "Processing [{0}] samples from [{1}] files in [{2}]".format(len(merge_candidates.keys()), total_files, input_dir)
     
     merge(merge_candidates, output_dir)
+
+    hc_variants = identify_hc_variants(hc_candidates)
+
+    hc_merge_candidates, marked_as_hc = mark_hc_variants(hc_variants, merge_candidates)
+    print marked_as_hc
 
 def add_subparser(subparser):
     parser_normalize_vs = subparser.add_parser("normalize_varscan", help="Accepts a directory containing VarScan VCF snp/indel results and creates a new directory of merged, sorted VCFs")
