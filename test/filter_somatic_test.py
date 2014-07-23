@@ -42,7 +42,10 @@ class FilterSomaticTestCase(unittest.TestCase):
         input_dir = script_dir + "/filter_somatic_test/input/"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
         output_dir = script_dir + "/filter_somatic_test/output"
-        os.mkdir(output_dir)
+        try:
+            os.mkdir(output_dir)
+        except:
+            pass
         somatic_positions = {'1^2353': 1, '1^2352': 1}
         
         excluded_variants = write_somatic(in_files, output_dir, somatic_positions)
@@ -55,7 +58,10 @@ class FilterSomaticTestCase(unittest.TestCase):
         input_dir = script_dir + "/filter_somatic_test/input/"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
         output_dir = script_dir + "/filter_somatic_test/output"
-        os.mkdir(output_dir)
+        try:
+            os.mkdir(output_dir)
+        except:
+            pass
         somatic_positions = {'1^15996': 1, '1^2352': 1}
         
         excluded_variants = write_somatic(in_files, output_dir, somatic_positions)
