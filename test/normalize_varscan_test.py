@@ -6,7 +6,7 @@ import subprocess
 import sys
 import testfixtures
 from testfixtures import TempDirectory
-from bin.normalize_varscan import identify_merge_candidates, get_headers, merge_data, sort_data, change_pos_to_int, write_output, validate_split_line, identify_hc_variants, mark_hc_variants, validate_file_set
+from bin.normalize_varscan import identify_merge_candidates, get_headers, merge_data, sort_data, change_pos_to_int, validate_split_line, identify_hc_variants, mark_hc_variants, validate_file_set
 
 class IdentifyMergeCandidatesTestCase(unittest.TestCase):
     def test_indentifyMergeCandidates_missingFiles(self):
@@ -136,19 +136,6 @@ class MergeTestCase(unittest.TestCase):
 
         expected_variants = ["1\t2352\tA\tG\tfoo\tDP\t234", "1\t2352\tA\tGT\tfoo\tDP\t234"]
         self.assertEqual(expected_variants, variants)
-        
-    def test_merge_writeOutput(self):
-        mock_writer = MockWriter()
-        headers = ["#foo", "#bar"]
-        variants =["123", "456"]
-        
-        write_output(mock_writer, headers, variants)
-        actualLines = mock_writer.lines()
-        
-        self.assertEqual("#foo", actualLines[0])
-        self.assertEqual("#bar", actualLines[1])
-        self.assertEqual("123", actualLines[2])
-        self.assertEqual("456", actualLines[3])
         
     def test_merge_validateFileSet(self):
         all_keys = ["foo_merged.vcf", "foo_merged.Somatic.hc", "foo_merged.Germline.hc", "foo_merged.LOH.hc"]

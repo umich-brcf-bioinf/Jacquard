@@ -35,26 +35,6 @@ def find_somatic_positions(in_files, output_dir):
     
     return somatic_positions
 
-def write_output(writer, headers, variants):
-    for line in headers:
-        writer.write(line)
-    for line in variants:
-        writer.write(line)
-
-def sort_headers(headers):
-    meta_headers = []
-    field_header = ""
-    for header in headers:
-        if header.startswith("##"):
-            header = header.replace("\t", "")
-            meta_headers.append(header)
-        else:
-            field_header = header
-
-    meta_headers.append(field_header)
-
-    return meta_headers
-
 def write_somatic(in_files, output_dir, somatic_positions):
     for file in in_files:
         non_somatic = 0
@@ -82,8 +62,8 @@ def write_somatic(in_files, output_dir, somatic_positions):
         print os.path.basename(file) + ": " + excluded_variants
         headers.append(excluded_variants)
         
-        sorted_headers = sort_headers(headers)
-        write_output(out_file, sorted_headers, variants)
+        sorted_headers = jacquard_utils.sort_headers(headers)
+        jacquard_utils.write_output(out_file, sorted_headers, variants)
         
         in_file.close()
         out_file.close()

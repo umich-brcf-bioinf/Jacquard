@@ -23,20 +23,6 @@ def identify_hc_variants(hc_candidates):
             
     return hc_variants
 
-def sort_headers(headers):
-    meta_headers = []
-    field_header = ""
-    for header in headers:
-        if header.startswith("##"):
-            header = header.replace("\t", "")
-            meta_headers.append(header)
-        else:
-            field_header = header
-
-    meta_headers.append(field_header)
-
-    return meta_headers
-
 def write_to_merged_file(new_lines, headers, key):
     all_lines = []
     for line in new_lines:
@@ -45,7 +31,7 @@ def write_to_merged_file(new_lines, headers, key):
         all_lines.append(new_line)
     sorted_variants = sort_data(all_lines)
     writer = open(key, "w")
-    write_output(writer, headers, sorted_variants)
+    jacquard_utils.write_output(writer, headers, sorted_variants)
     writer.close()
 
 def mark_hc_variants(hc_variants, merge_candidates, output_dir):
@@ -72,7 +58,7 @@ def mark_hc_variants(hc_variants, merge_candidates, output_dir):
                 new_lines.append(new_line)
         f.close()
         
-        sorted_headers = sort_headers(headers)
+        sorted_headers = jacquard_utils.sort_headers(headers)
         write_to_merged_file(new_lines, sorted_headers, key)
     
     print "Wrote [{0}] VCF files to [{1}]".format(len(merge_candidates.keys()), output_dir)
@@ -210,12 +196,6 @@ def sort_data(all_variants):
         
     return variants
 
-def write_output(writer, headers, variants):
-    for line in headers:
-        writer.write(line)
-    for line in variants:
-        writer.write(line)
-
 def merge(merge_candidates, output_dir):
     for merge_file in merge_candidates.keys():
         pair = merge_candidates[merge_file]
@@ -230,7 +210,7 @@ def merge(merge_candidates, output_dir):
         sorted_variants = sort_data(all_variants)
         
         out_file = open(merge_file, "w")
-        write_output(out_file, headers, sorted_variants)
+        jacquard_utils.write_output(out_file, headers, sorted_variants)
         out_file.close()
 
 def merge_and_sort(input_dir, output_dir, execution_context=[]):

@@ -5,7 +5,7 @@ import subprocess
 import sys
 import testfixtures
 from testfixtures import TempDirectory
-from bin.jacquard_utils import validate_directories
+from bin.jacquard_utils import validate_directories, write_output, sort_headers
 
 class ValidateDirectoriesTestCase(unittest.TestCase):
     def test_validateDirectories_inputDirectoryDoesntExist(self):
@@ -43,6 +43,30 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
             
             self.assertEqual(cm.exception.code, 1)
  
+class WriteOutputTestCase(unittest.TestCase):
+    def test_writeOutput(self):
+        mock_writer = MockWriter()
+        headers = ["#foo", "#bar"]
+        variants =["123", "456"]
+         
+        write_output(mock_writer, headers, variants)
+        actualLines = mock_writer.lines()
+         
+        self.assertEqual("#foo", actualLines[0])
+        self.assertEqual("#bar", actualLines[1])
+        self.assertEqual("123", actualLines[2])
+        self.assertEqual("456", actualLines[3])
+        
+class SortHeadersTestCase(unittest.TestCase):
+    def test_sortHeaders(self):
+        headers = ["##foo", "##bar", "#CHROM", "##baz"]
+        
+        sorted_headers = sort_headers(headers)
+        expected_sorted_headers = ["##foo", "##bar", "##baz", "#CHROM"]
+        
+        self.assertEqual(expected_sorted_headers, sorted_headers)
+        
+ 
 def is_windows_os():
     return sys.platform.lower().startswith("win")
              
@@ -59,3 +83,18 @@ def cleanup_unwriteable_dir(unwriteable_dir):
         FNULL = open(os.devnull, 'w')
         subprocess.call("icacls {0} /reset /t /c".format(unwriteable_dir), stdout=FNULL, stderr=subprocess.STDOUT)
     os.rmdir(unwriteable_dir)
+    
+class MockWriter():
+    def __init__(self):
+        self._content = []
+        self.wasClosed = False
+
+    def write(self, content):
+        self._content.extend(content.splitlines())
+        
+    def lines(self):
+        return self._content
+
+    def close(self):
+        self.wasClosed = True
+
