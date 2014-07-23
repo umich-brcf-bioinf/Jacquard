@@ -6,7 +6,7 @@ import subprocess
 import sys
 import testfixtures
 from testfixtures import TempDirectory
-from bin.normalize_varscan import identify_merge_candidates, get_headers, merge_data, sort_data, change_pos_to_int, validate_split_line, identify_hc_variants, mark_hc_variants, validate_file_set
+from bin.normalize_varscan import identify_merge_candidates, get_headers, merge_data, validate_split_line, identify_hc_variants, mark_hc_variants, validate_file_set
 
 class IdentifyMergeCandidatesTestCase(unittest.TestCase):
     def test_indentifyMergeCandidates_missingFiles(self):
@@ -97,12 +97,12 @@ class MergeTestCase(unittest.TestCase):
             file2 = os.path.join(input_dir.path, "A.indel.vcf")
             all_variants = merge_data([file1, file2])
 
-            self.assertEqual([1,2352,"A","G","foo","DP",234], all_variants[0])
-            self.assertEqual([1,235234,"A","G","foo","DP",234], all_variants[1])
-            self.assertEqual([2,2352,"A","G","foo","DP",234], all_variants[2])
-            self.assertEqual([1,2700,"A","G","foo","DP",345], all_variants[3])
-            self.assertEqual([10,2352,"A","G","foo","DP",234], all_variants[4])
-            self.assertEqual([1,2,"A","G","foo","DP",234], all_variants[5])
+            self.assertEqual('1\t2352\tA\tG\tfoo\tDP\t234\n', all_variants[0])
+            self.assertEqual('1\t235234\tA\tG\tfoo\tDP\t234\n', all_variants[1])
+            self.assertEqual('2\t2352\tA\tG\tfoo\tDP\t234\n', all_variants[2])
+            self.assertEqual('1\t2700\tA\tG\tfoo\tDP\t345\n', all_variants[3])
+            self.assertEqual('10\t2352\tA\tG\tfoo\tDP\t234\n', all_variants[4])
+            self.assertEqual('1\t2\tA\tG\tfoo\tDP\t234\n', all_variants[5])
         input_dir.cleanup()
         
     def test_merge_mergeDataSamePos(self):
@@ -114,28 +114,9 @@ class MergeTestCase(unittest.TestCase):
             file2 = os.path.join(input_dir.path, "A.indel.vcf")
             all_variants = merge_data([file1, file2])
 
-            self.assertEqual([1,2352,"A","G","foo","DP",234], all_variants[0])
-            self.assertEqual([1,2352,"A","GT","foo","DP",234], all_variants[1])
+            self.assertEqual('1\t2352\tA\tG\tfoo\tDP\t234\n', all_variants[0])
+            self.assertEqual('1\t2352\tA\tGT\tfoo\tDP\t234\n', all_variants[1])
         input_dir.cleanup()
-        
-    def test_merge_changePosToInt(self):
-        split_line = ["1", "2352","A","G","foo","DP", "234"]
-        line = change_pos_to_int(split_line)
-        self.assertEqual([1,2352,"A","G","foo","DP",234], line)
-    
-    def test_merge_sortData(self):
-        all_variants = [[1,2352,"A","G","foo","DP",234],[1,235234,"A","G","foo","DP",234], [2,2352,"A","G","foo","DP",234],[1,2700,"A","G","foo","DP",345],[10,2352,"A","G","foo","DP",234],[1,2,"A","G","foo","DP",234]]
-        variants = sort_data(all_variants)
-
-        expected_variants = ["1\t2\tA\tG\tfoo\tDP\t234","1\t2352\tA\tG\tfoo\tDP\t234","1\t2700\tA\tG\tfoo\tDP\t345","1\t235234\tA\tG\tfoo\tDP\t234","2\t2352\tA\tG\tfoo\tDP\t234","10\t2352\tA\tG\tfoo\tDP\t234"]
-        self.assertEqual(expected_variants, variants)
-        
-    def test_merge_sortDataSamePos(self):
-        all_variants = [[1,2352,"A","G","foo","DP",234], [1,2352,"A","GT","foo","DP",234]]
-        variants = sort_data(all_variants)
-
-        expected_variants = ["1\t2352\tA\tG\tfoo\tDP\t234", "1\t2352\tA\tGT\tfoo\tDP\t234"]
-        self.assertEqual(expected_variants, variants)
         
     def test_merge_validateFileSet(self):
         all_keys = ["foo_merged.vcf", "foo_merged.Somatic.hc", "foo_merged.Germline.hc", "foo_merged.LOH.hc"]

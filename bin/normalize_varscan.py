@@ -1,7 +1,6 @@
 #!/usr/bin/python2.7
 from collections import defaultdict
 import glob
-from operator import itemgetter, attrgetter
 import os
 from os import listdir
 import re
@@ -24,12 +23,8 @@ def identify_hc_variants(hc_candidates):
     return hc_variants
 
 def write_to_merged_file(new_lines, headers, key):
-    all_lines = []
-    for line in new_lines:
-        split_line = line.split("\t")
-        new_line = change_pos_to_int(split_line)
-        all_lines.append(new_line)
-    sorted_variants = sort_data(all_lines)
+    sorted_variants = jacquard_utils.sort_data(new_lines)
+    
     writer = open(key, "w")
     jacquard_utils.write_output(writer, headers, sorted_variants)
     writer.close()
@@ -149,16 +144,6 @@ def validate_split_line(split_line, invalid, warn):
         valid_line = split_line
             
     return (invalid, warn, valid_line)
-    
-def change_pos_to_int(split_line):
-    new_line = []
-    for field in split_line:
-        try:
-            new_field = int(field)
-            new_line.append(new_field)
-        except:
-            new_line.append(field)
-    return new_line
 
 def merge_data(files):
     all_variants = []
@@ -174,8 +159,7 @@ def merge_data(files):
             else:
                 invalid, warn, valid_line = validate_split_line(split_line, invalid, warn)
                 if valid_line != []:
-                    new_line = change_pos_to_int(valid_line) #to sort properly
-                    all_variants.append(new_line)
+                    all_variants.append("\t".join(valid_line))
         f.close()
     
     if warn != 0:
@@ -185,16 +169,6 @@ def merge_data(files):
         exit(1)
         
     return all_variants
-                
-def sort_data(all_variants):
-    sorted_variants = sorted(all_variants, key=itemgetter(0,1,3,4)) #sort by CHROM, POS, REF, ALT
-    
-    variants = []
-    for variant in sorted_variants:
-        new_field = [str(field) for field in variant]
-        variants.append("\t".join(new_field))
-        
-    return variants
 
 def merge(merge_candidates, output_dir):
     for merge_file in merge_candidates.keys():
@@ -207,7 +181,7 @@ def merge(merge_candidates, output_dir):
         headers.append(sample_sources)
         headers.append('##INFO=<ID=JQ_HC_VS,Number=1,Type=Flag,Description="Jaquard high-confidence somatic flag for VarScan. Based on intersection with filtered VarScan variants.">\n')
         all_variants = merge_data(pair)
-        sorted_variants = sort_data(all_variants)
+        sorted_variants = jacquard_utils.sort_data(all_variants)
         
         out_file = open(merge_file, "w")
         jacquard_utils.write_output(out_file, headers, sorted_variants)
@@ -231,7 +205,7 @@ def merge_and_sort(input_dir, output_dir, execution_context=[]):
     marked_as_hc = mark_hc_variants(hc_variants, merge_candidates, output_dir)
 
 def add_subparser(subparser):
-    parser_normalize_vs = subparser.add_parser("normalize_varscan", help="Accepts a directory containing VarScan VCF snp/indel results and creates a new directory of merged, sorted VCFs")
+    parser_normalize_vs = subparser.add_parser("normalize_varscan", help="Accepts a directory containing VarScan VCF snp/indel results and creates a new directory of merged, sorted VCFs with added high confidence tags")
     parser_normalize_vs.add_argument("input_dir", help="Path to directory containing VCFs. Each sample must have exactly two files matching these patterns: <sample>.indel.vcf, <sample>.snp.vcf, <sample>.indel.Germline.hc, <sample>.snp.Germline.hc, <sample>.indel.LOH.hc, <sample>.snp.LOH.hc, <sample>.indel.Somatic.hc, <sample>.snp.somatic.hc, <sample>.indel.*.hc, <sample>.snp.*.hc ")
     parser_normalize_vs.add_argument("output_dir", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
 

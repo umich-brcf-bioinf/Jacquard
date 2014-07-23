@@ -5,7 +5,7 @@ import subprocess
 import sys
 import testfixtures
 from testfixtures import TempDirectory
-from bin.jacquard_utils import validate_directories, write_output, sort_headers
+from bin.jacquard_utils import validate_directories, write_output, sort_headers, sort_data, change_pos_to_int
 
 class ValidateDirectoriesTestCase(unittest.TestCase):
     def test_validateDirectories_inputDirectoryDoesntExist(self):
@@ -57,8 +57,8 @@ class WriteOutputTestCase(unittest.TestCase):
         self.assertEqual("123", actualLines[2])
         self.assertEqual("456", actualLines[3])
         
-class SortHeadersTestCase(unittest.TestCase):
-    def test_sortHeaders(self):
+class SortTestCase(unittest.TestCase):
+    def test_sort_sortHeaders(self):
         headers = ["##foo", "##bar", "#CHROM", "##baz"]
         
         sorted_headers = sort_headers(headers)
@@ -66,7 +66,34 @@ class SortHeadersTestCase(unittest.TestCase):
         
         self.assertEqual(expected_sorted_headers, sorted_headers)
         
+    def test_sort_sortData(self):
+        variants = [[1, 12, ".", "A", "G"], [1, 1, ".", "A", "G"], [1, 22, ".", "A", "G"], [13, 12, ".", "A", "G"], [2, 12, ".", "A", "G"]]
+        
+        sorted_variants = sort_data(variants)
+        expected_sorted_variants = ["chr1\t1\t.\tA\tG","chr1\t12\t.\tA\tG","chr1\t22\t.\tA\tG","chr2\t12\t.\tA\tG","chr13\t12\t.\tA\tG"]
+        
+        self.assertEqual(expected_sorted_variants, sorted_variants)
+        
+    def test_sort_changePosToInt(self):
+         split_line = ["1", "2352","A","G","foo","DP", "234"]
+         line = change_pos_to_int(split_line)
+         self.assertEqual([1,2352,"A","G","foo","DP",234], line)
+     
+    def test_sort_sortData(self):
+         all_variants = ["1\t2352\tA\tG\tfoo\tDP\t234","1\t235234\tA\tG\tfoo\tDP\t234","2\t2352\tA\tG\tfoo\tDP\t234","1\t2700\tA\tG\tfoo\tDP\t345","10\t2352\tA\tG\tfoo\tDP\t234","1\t2\tA\tG\tfoo\tDP\t234"]
+         variants = sort_data(all_variants)
  
+         expected_variants = ["chr1\t2\tA\tG\tfoo\tDP\t234","chr1\t2352\tA\tG\tfoo\tDP\t234","chr1\t2700\tA\tG\tfoo\tDP\t345","chr1\t235234\tA\tG\tfoo\tDP\t234","chr2\t2352\tA\tG\tfoo\tDP\t234","chr10\t2352\tA\tG\tfoo\tDP\t234"]
+         self.assertEqual(expected_variants, variants)
+         
+    def test_sort_sortDataSamePos(self):
+         all_variants = ["chr1\t2352\tA\tG\tfoo\tDP\t234", "1\t2352\tA\tGT\tfoo\tDP\t234"]
+         variants = sort_data(all_variants)
+
+         expected_variants = ['chr1\t2352\tA\tGT\tfoo\tDP\t234', 'chr1\t2352\tA\tG\tfoo\tDP\t234']
+         self.assertEqual(expected_variants, variants)
+        
+        
 def is_windows_os():
     return sys.platform.lower().startswith("win")
              
