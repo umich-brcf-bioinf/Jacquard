@@ -6,10 +6,11 @@ import jacquard_utils
 
 def find_somatic_positions(in_files, output_dir):
     somatic_positions = {}
+    no_jq_tags = []
     for file in in_files:
-        non_somatic = 0
-
+        somatic = 0
         in_file = open(file, "r")
+        
         for line in in_file:
             if line.startswith("#"):
                 continue
@@ -18,8 +19,17 @@ def find_somatic_positions(in_files, output_dir):
                 key = "^".join([split_line[0], split_line[1]])
                 if "JQ_SOM_" in split_line[8]:
                     somatic_positions[key] = 1
-
+                    somatic = 1
+        if somatic == 0:
+            no_jq_tags.append(file)
+            print "ERROR: input file [{0}] has no Jaquard tags.".format(os.path.basename(file))
+            
         in_file.close()
+        
+    if no_jq_tags != []:
+        print "ERROR: [{0}/{1}] VCF files have no Jacquard tags. Review input and try again.".format(len(no_jq_tags), len(in_files))
+        exit(1)
+        
     print "Found [{0}] somatic positions".format(len(somatic_positions.keys()))
     print "##jacquard.filterSomatic.total_somatic_positions={0}\n".format(len(somatic_positions.keys()))
     

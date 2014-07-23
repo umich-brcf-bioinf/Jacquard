@@ -14,6 +14,7 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
         input_dir = script_dir + "/normalize_varscan_test/input/"
         in_files = [input_dir + "foo_indel.vcf", input_dir + "tiny_indel.vcf", input_dir + "tiny_snp.vcf", input_dir + "tiny_indel.Germline.hc", input_dir + "tiny_indel.LOH.hc", input_dir + "tiny_indel.Somatic.hc", input_dir + "tiny_snp.Germline.hc", input_dir + "tiny_snp.LOH.hc", input_dir + "tiny_snp.Somatic.hc"]
         output_dir = script_dir + "/normalize_varscan_test/output"
+        
         with self.assertRaises(SystemExit) as cm:
             merge_candidates = identify_merge_candidates(in_files, output_dir)
         self.assertEqual(cm.exception.code, 1)
