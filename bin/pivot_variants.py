@@ -55,6 +55,8 @@ class VariantPivoter():
         return pivoted_df
  
     def add_file(self, path, reader, header_index):
+#         validate_tags(path, reader, header_index)
+        
         initial_df  = create_initial_df(path, reader, header_index)
         fname = os.path.splitext(os.path.basename(path))[0]
         
@@ -303,6 +305,14 @@ def _exclude_errors_and_warnings(df):
     else:
         raise
 
+# def validate_tags(path, reader, header_index):
+#     f = open(reader, "r")
+#     for line in f:
+#         if line.startswith("##"):
+#             print line
+#     f.close()
+
+
 def create_initial_df(path, reader, header_index):
     initial_df = pd.read_csv(reader, sep="\t", header=header_index, dtype='str')
 
@@ -388,6 +398,7 @@ def expand_format(df, formats_to_expand, rows, fname):
         pivoted_df = pd.pivot_table(joined_df, rows=rows+["SAMPLE_NAME"], cols="FORMAT2", values="VALUE2", aggfunc=lambda x: x)
     except Exception as e :
         raise PivotError("Cannot pivot data. {0}".format(e))
+
 
     pivoted_df.reset_index(inplace=True)
 
