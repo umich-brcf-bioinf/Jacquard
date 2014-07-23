@@ -61,7 +61,7 @@ def sort_data(all_variants):
 
 def change_pos_to_int(split_line):
     new_line = []
-    split_line[0].strip("chr")
+    split_line[0] = split_line[0].strip("chr")
     for field in split_line:
         try:
             new_field = int(field)

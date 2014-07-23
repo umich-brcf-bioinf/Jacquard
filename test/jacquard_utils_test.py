@@ -66,20 +66,25 @@ class SortTestCase(unittest.TestCase):
         
         self.assertEqual(expected_sorted_headers, sorted_headers)
         
-    def test_sort_sortData(self):
-        variants = [[1, 12, ".", "A", "G"], [1, 1, ".", "A", "G"], [1, 22, ".", "A", "G"], [13, 12, ".", "A", "G"], [2, 12, ".", "A", "G"]]
-        
-        sorted_variants = sort_data(variants)
-        expected_sorted_variants = ["chr1\t1\t.\tA\tG","chr1\t12\t.\tA\tG","chr1\t22\t.\tA\tG","chr2\t12\t.\tA\tG","chr13\t12\t.\tA\tG"]
-        
-        self.assertEqual(expected_sorted_variants, sorted_variants)
-        
     def test_sort_changePosToInt(self):
          split_line = ["1", "2352","A","G","foo","DP", "234"]
          line = change_pos_to_int(split_line)
          self.assertEqual([1,2352,"A","G","foo","DP",234], line)
+         
+    def test_sort_changePosToInt(self):
+         split_line = ["chr1", "2352","A","G","foo","DP", "234"]
+         line = change_pos_to_int(split_line)
+         self.assertEqual([1,2352,"A","G","foo","DP",234], line)
      
     def test_sort_sortData(self):
+        variants = ["chr1\t2352\tA\tG\tfoo\tDP\t234","chr1\t235234\tA\tG\tfoo\tDP\t234","chr2\t2352\tA\tG\tfoo\tDP\t234","chr1\t2700\tA\tG\tfoo\tDP\t345","chr10\t2352\tA\tG\tfoo\tDP\t234","chr1\t2\tA\tG\tfoo\tDP\t234"]
+        
+        sorted_variants = sort_data(variants)
+        expected_sorted_variants = ["chr1\t2\tA\tG\tfoo\tDP\t234","chr1\t2352\tA\tG\tfoo\tDP\t234","chr1\t2700\tA\tG\tfoo\tDP\t345","chr1\t235234\tA\tG\tfoo\tDP\t234","chr2\t2352\tA\tG\tfoo\tDP\t234","chr10\t2352\tA\tG\tfoo\tDP\t234"]
+        
+        self.assertEqual(expected_sorted_variants, sorted_variants)
+        
+    def test_sort_sortData_noCHR(self):
          all_variants = ["1\t2352\tA\tG\tfoo\tDP\t234","1\t235234\tA\tG\tfoo\tDP\t234","2\t2352\tA\tG\tfoo\tDP\t234","1\t2700\tA\tG\tfoo\tDP\t345","10\t2352\tA\tG\tfoo\tDP\t234","1\t2\tA\tG\tfoo\tDP\t234"]
          variants = sort_data(all_variants)
  
@@ -90,7 +95,7 @@ class SortTestCase(unittest.TestCase):
          all_variants = ["chr1\t2352\tA\tG\tfoo\tDP\t234", "1\t2352\tA\tGT\tfoo\tDP\t234"]
          variants = sort_data(all_variants)
 
-         expected_variants = ['chr1\t2352\tA\tGT\tfoo\tDP\t234', 'chr1\t2352\tA\tG\tfoo\tDP\t234']
+         expected_variants = ['chr1\t2352\tA\tG\tfoo\tDP\t234', 'chr1\t2352\tA\tGT\tfoo\tDP\t234']
          self.assertEqual(expected_variants, variants)
         
         
