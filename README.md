@@ -5,6 +5,7 @@ Collection of utilities used for secondary and tertiary analysis of Exome Seq da
 ## Directory List
 * bin
   * jacquard.py
+  * jacquard_utils.py
   * pivot_variants.py : consolidates a set of VCF files into a single variant-level Excel file
   * rollup_genes.py : summarizes a variant-level Excel file to create a gene-level Excel file
   * style.py : stylizes Excel file

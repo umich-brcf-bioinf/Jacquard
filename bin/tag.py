@@ -258,4 +258,3 @@ def execute(args, execution_context):
     
     callers = [Mutect(), Varscan(), Unknown()]
     tag_files(input_dir, output_dir, callers, execution_context)
-    
