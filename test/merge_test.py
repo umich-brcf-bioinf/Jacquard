@@ -1,5 +1,5 @@
 #!/usr/bin/python2.7
-import ast
+from collections import OrderedDict
 import pandas as pd
 from pandas import *
 import unittest
@@ -10,7 +10,7 @@ import pprint
 import os
 from os import listdir
 from os.path import isfile, join
-from bin.merge import PivotError, VariantPivoter, merge_samples, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers
+from bin.merge import PivotError, VariantPivoter, merge_samples, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, get_consensus_format_sample, cleanup_df, combine_format_columns
 
 def dataframe(input_data, sep="\t", index_col=None):
     def tupelizer(thing):
@@ -24,7 +24,7 @@ def dataframe(input_data, sep="\t", index_col=None):
     
     return df
 
-class VariantPivoterTestCase(unittest.TestCase):
+class MergeTestCase(unittest.TestCase):
     def test_add_files(self):
         rows = ['COORDINATE']
 
@@ -42,13 +42,13 @@ class VariantPivoterTestCase(unittest.TestCase):
 3\tDP:ESAF\t74:0.2
 4\tDP:ESAF\t25:0.2'''
 
-        pivoter.add_file(StringIO(sample_A_file), 0, ["_file1", "_file2"])
-        pivoter.add_file(StringIO(sample_B_file), 0, ["_file1", "_file2"])
+        pivoter.add_file(StringIO(sample_A_file), 0, "file1")
+        pivoter.add_file(StringIO(sample_B_file), 0, "file2")
         
         actual_df = pivoter._combined_df
         actual_df.columns.names = [""]
         expected_string = \
-'''COORDINATE\tFORMAT_file1\tSamp1\tFORMAT_file2\tSamp2
+'''COORDINATE\tfile1|FORMAT\tfile1|Samp1\tfile2|FORMAT\tfile2|Samp2
 1\tDP:ESAF\t1:0.2\tDP:ESAF\t5:0.2
 2\tDP:ESAF\t12:0.2\tDP:ESAF\t2:0.2
 3\tDP:ESAF\t31:0.2\tDP:ESAF\t74:0.2
@@ -212,7 +212,7 @@ class PivotTestCase(unittest.TestCase):
         df = pd.read_csv(StringIO(dataString), sep="\t", header=False, dtype='str')
 
         combined_df = pd.DataFrame()
-        actual_df = merge_samples(df, combined_df, ["COORDINATE"], ["_foo"])
+        actual_df = merge_samples(df, combined_df, ["COORDINATE"])
 
         expected_data = StringIO(
 '''COORDINATE\tFORMAT\tsample_A\tsample_B
@@ -226,7 +226,7 @@ class PivotTestCase(unittest.TestCase):
     
     def test_merge_samples_populatedCombinedDf(self): 
         dataString1 = \
-'''COORDINATE\tFORMAT\tsample_A\tsample_B
+'''COORDINATE\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B
 1\tGT:ESAF\t10:0.2\t100:0.2
 2\tGT:ESAF\t20:0.2\t200:0.2
 3\tGT:ESAF\t30:0.2\t300:0.2
@@ -234,7 +234,7 @@ class PivotTestCase(unittest.TestCase):
         df1 = pd.read_csv(StringIO(dataString1), sep="\t", header=False, dtype='str')
         
         dataString2 = \
-'''COORDINATE\tFORMAT\tsample_C\tsample_D
+'''COORDINATE\tfile2|FORMAT\tfile2|sample_C\tfile2|sample_D
 1\tGT:ESAF\t10:0.2\t100:0.2
 2\tGT:ESAF\t20:0.2\t200:0.2
 3\tGT:ESAF\t30:0.2\t300:0.2
@@ -242,10 +242,10 @@ class PivotTestCase(unittest.TestCase):
         df2 = pd.read_csv(StringIO(dataString2), sep="\t", header=False, dtype='str')
 
         combined_df = df2
-        actual_df = merge_samples(combined_df, df1, ["COORDINATE"], ["_file1", "_file2"])
+        actual_df = merge_samples(combined_df, df1, ["COORDINATE"])
 
         expected_data = StringIO(
-'''COORDINATE\tFORMAT_file1\tsample_A\tsample_B\tFORMAT_file2\tsample_C\tsample_D
+'''COORDINATE\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|FORMAT\tfile2|sample_C\tfile2|sample_D
 1\tGT:ESAF\t10:0.2\t100:0.2\tGT:ESAF\t10:0.2\t100:0.2
 2\tGT:ESAF\t20:0.2\t200:0.2\tGT:ESAF\t20:0.2\t200:0.2
 3\tGT:ESAF\t30:0.2\t300:0.2\tGT:ESAF\t30:0.2\t300:0.2
@@ -279,3 +279,116 @@ class PivotTestCase(unittest.TestCase):
 
         tm.assert_frame_equal(expected_df, actual_df)
     
+    
+class CombineFormatTestCase(unittest.TestCase):
+    def test_createDict(self):
+        input_string = \
+'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B
+1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tDP\t57\t57
+1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tDP\t58\t57
+8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tDP\t59\t57
+13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tDP\t60\t57
+13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tDP\t60\t57
+'''
+        df = dataframe(input_string)
+        row = 0
+        col = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "file1|FORMAT", "file1|sample_A", "file1|sample_B"]
+        expected_file_dict = {'file1': [OrderedDict([('DP', '57'), ('sample_name', 'file1|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'file1|sample_B')])]}
+        file_dict, all_tags = create_dict(df, row, col)
+        self.assertEqual(expected_file_dict, file_dict)
+    
+    def test_createDict_multFiles(self):
+        input_string = \
+'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|FORMAT\tfile2|sample_A\tfile2|sample_B
+1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tDP\t57\t57\tDP\t57\t57
+1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tDP\t58\t57\tDP\t57\t57
+8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tDP\t59\t57\tDP\t57\t57
+13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tDP\t60\t57\tDP\t57\t57
+13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tDP\t60\t57\tDP\t57\t57
+'''
+        df = dataframe(input_string)
+        row = 0
+        col = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "file1|FORMAT", "file1|sample_A", "file1|sample_B", "file2|FORMAT", "file2|sample_A", "file2|sample_B"]
+        expected_file_dict = {'file2': [OrderedDict([('DP', '57'), ('sample_name', 'file2|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('DP', '57'), ('sample_name', 'file1|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'file1|sample_B')])]}
+        file_dict, all_tags = create_dict(df, row, col)
+        self.assertEqual(expected_file_dict, file_dict)
+        
+    def test_getConsensusFormatSample(self):
+        file_dict = {'file2': [OrderedDict([('DP', '57'), ('foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('DP', '57'), ('foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('DP', '57'), ('sample_name', 'file1|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'file1|sample_B')])]}
+        all_tags = ["DP", "foo", "sample_name"]
+        
+        file_dict = get_consensus_format_sample(file_dict, all_tags)
+        expected_file_dict = {'file2': [OrderedDict([('DP', '57'), ('foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('DP', '57'), ('foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('DP', '57'), ('foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('DP', '57'), ('foo', '.'), ('sample_name', 'file1|sample_B')])]}
+
+        self.assertEqual(expected_file_dict, file_dict)
+        
+    def test_cleanupDf(self):
+        input_string = \
+'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|FORMAT\tfile2|sample_A\tfile2|sample_B
+1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tDP:sample_name\t57:file1|sample_A\t57:file1|sample_B\tDP:sample_name\t57:file2|sample_A\t57:file2|sample_B
+1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tDP:sample_name\t58:file1|sample_A\t57:file1|sample_B\tDP:sample_name\t57:file2|sample_A\t57:file2|sample_B
+8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tDP:sample_name\t59:file1|sample_A\t57:file1|sample_B\tDP:sample_name\t57:file2|sample_A\t57:file2|sample_B
+13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tDP:sample_name\t60:file1|sample_A\t57:file1|sample_B\tDP:sample_name\t57:file2|sample_A\t57:file2|sample_B
+13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tnan:sample_name\tnan:file1|sample_A\tnan:file1|sample_B\tDP:sample_name\t57:file2|sample_A\t57:file2|sample_B
+'''
+        df = dataframe(input_string)
+        file_dict = {"file1":"foo", "file2": "foo"}
+        actual_df = cleanup_df(df, file_dict)
+        
+        expected_string = \
+        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|sample_A\tfile2|sample_B
+1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tDP\t57\t57\t57\t57
+1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tDP\t58\t57\t57\t57
+8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tDP\t59\t57\t57\t57
+13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tDP\t60\t57\t57\t57
+13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\t.\t.\t.\t57\t57
+'''
+        expected_df = dataframe(expected_string)
+        tm.assert_frame_equal(expected_df, actual_df)
+        
+    def test_combineFormatColumns(self):
+        input_string = \
+'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B
+1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tDP\t57\t57
+1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tDP\t58\t57
+8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tDP\t59\t57
+13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tDP\t60\t57
+13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tnan\tnan\tnan
+'''
+        df = dataframe(input_string)
+        actual_df = combine_format_columns(df)
+        
+        expected_string = \
+        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tfile1|sample_A\tfile1|sample_B\tFORMAT
+1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\t57\t57\tDP
+1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\t58\t57\tDP
+8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\t59\t57\tDP
+13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\t60\t57\tDP
+13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\t.\t.\t.
+'''
+        expected_df = dataframe(expected_string)
+        tm.assert_frame_equal(expected_df, actual_df)
+        
+    def test_combineFormatColumns_addTags(self):
+        input_string = \
+'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|FORMAT\tfile2|sample_A\tfile2|sample_B
+1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tDP:GT\t57:0/1\t57:0/1\tDP:AF:GT\t57:0.2:0/1\t57:0.2:0/1
+1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tDP:GT\t58:0/1\t57:0/1\tDP:AF:GT\t57:0.2:0/1\t57:0.2:0/1
+8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tDP:GT\t59:0/1\t57:0/1\tDP:AF:GT\t57:0.2:0/1\t57:0.2:0/1
+13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tDP:GT\t60:0/1\t57:0/1\tDP:AF:GT\t57:0.2:0/1\t57:0.2:0/1
+13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tnan\tnan\tnan\tDP:AF:GT\t57:0.2:0/1\t57:0.2:0/1
+'''
+        df = dataframe(input_string)
+
+        actual_df = combine_format_columns(df)
+        
+        expected_string = \
+        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tfile1|sample_A\tfile1|sample_B\tfile2|sample_A\tfile2|sample_B\tFORMAT
+1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\t.:57:0/1\t.:57:0/1\t0.2:57:0/1\t0.2:57:0/1\tAF:DP:GT
+1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\t.:58:0/1\t.:57:0/1\t0.2:57:0/1\t0.2:57:0/1\tAF:DP:GT
+8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\t.:59:0/1\t.:57:0/1\t0.2:57:0/1\t0.2:57:0/1\tAF:DP:GT
+13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\t.:60:0/1\t.:57:0/1\t0.2:57:0/1\t0.2:57:0/1\tAF:DP:GT
+13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\t.\t.\t0.2:57:0/1\t0.2:57:0/1\t.
+'''
+        expected_df = dataframe(expected_string)
+        tm.assert_frame_equal(expected_df, actual_df)

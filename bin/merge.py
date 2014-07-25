@@ -1,6 +1,7 @@
 #!/usr/bin/python2.7
-
+from collections import defaultdict, OrderedDict
 import datetime
+import math
 from operator import itemgetter, attrgetter
 import os
 from os import listdir
@@ -8,6 +9,7 @@ from os.path import isfile, join
 import pandas as pd
 from pandas import *
 import re
+from sets import Set
 import sys 
 import time
 
@@ -26,14 +28,15 @@ class VariantPivoter():
         self._rows = rows
         self._combined_df = combined_df
  
-    def add_file(self, sample_file, header_index, file_names):
+    def add_file(self, sample_file, header_index, file_name):
         initial_df  = create_initial_df(sample_file, header_index)
 
         if "#CHROM" in initial_df.columns:
             initial_df.rename(columns={"#CHROM": "CHROM"}, inplace=True)
 
         unpivoted_df = self.is_compatible(initial_df)
-        self._combined_df = merge_samples(unpivoted_df, self._combined_df, self._rows, file_names)
+        fname_df = append_fname_to_samples(initial_df, file_name, self._rows)
+        self._combined_df = merge_samples(fname_df, self._combined_df, self._rows)
 
     def validate_sample_data(self):
         grouped = self._combined_df.groupby(self._rows)
@@ -137,12 +140,20 @@ def create_initial_df(sample_file, header_index):
 
     return initial_df
   
-def merge_samples(reduced_df, combined_df, rows, file_names):
+def append_fname_to_samples(df, file_name, rows):
+    indexed_df = df.set_index(rows)
+    basename = os.path.basename(file_name)
+    new_df = indexed_df.rename(columns=lambda x: "|".join([basename, x]))
+    reset_df = new_df.reset_index()
+    
+    return reset_df
+  
+def merge_samples(reduced_df, combined_df, rows):
     if combined_df.empty:
         combined_df = reduced_df
     else:
-        combined_df = merge(combined_df, reduced_df, suffixes=file_names, how="outer", on=rows)
-
+        combined_df = merge(combined_df, reduced_df, how="outer", on=rows)
+        
     return combined_df    
     
 def rearrange_columns(output_df):
@@ -162,6 +173,77 @@ def rearrange_columns(output_df):
     output_df = output_df.ix[:,headers]
     return output_df
     
+def create_dict(df, row, columns):
+    file_dict = defaultdict(list)
+    all_tags = []
+    for column in columns:
+        if re.search("\|", column) and not re.search("\|FORMAT", column):
+            fname = column.split("|")[0]
+
+            format_column = str(df.ix[row, fname + "|FORMAT"])
+            sample_column = str(df.ix[row, column])
+            format_column += ":sample_name"
+            sample_column += ":" + column
+            format_sample = "{0}={1}".format(format_column, sample_column)
+            tags, format_sample_dict = combine_format_values(format_sample)
+
+            file_dict[fname].append(format_sample_dict)
+            for tag in tags:
+                try: 
+                    float(tag)
+                except:
+                    if tag not in all_tags:
+                        all_tags.append(tag)
+    return file_dict, all_tags
+
+def combine_format_values(aggregate_col):
+    pairs = aggregate_col.split("=")
+    tags = pairs[0].split(":")
+    return tags, OrderedDict(zip(pairs[0].split(":"), pairs[1].split(":")))
+
+def get_consensus_format_sample(file_dict, all_tags):
+    new_file_dict = defaultdict(list)
+    for fname, samp_dicts in file_dict.items():
+        new_samp_dicts = []
+        for samp_dict in samp_dicts:
+            for tag in all_tags:
+                if tag not in samp_dict.keys() and "nan" not in samp_dict.keys():
+                    samp_dict[tag] = "."
+            new_samp_dict = OrderedDict(sorted(samp_dict.iteritems()))
+            new_samp_dicts.append(new_samp_dict)
+        new_file_dict[fname] = new_samp_dicts
+        
+    return new_file_dict
+
+def cleanup_df(df, file_dict):
+    for key in file_dict.keys():
+        try:
+            del df[key + "|FORMAT"]
+        except:
+            pass
+    for col in df.columns:
+        df = df.applymap(lambda x: str(x).replace(":" + col, ""))
+    
+    df = df.applymap(lambda x: str(x).replace(":sample_name", ""))
+    df.replace("nan", ".", inplace=True)
+
+    return df
+
+def combine_format_columns(df):
+    for row, col in df.T.iteritems():
+        columns = col.index.values
+        file_dict, all_tags = create_dict(df, row, columns)
+        file_dict = get_consensus_format_sample(file_dict, all_tags)
+        
+        for key, val in file_dict.items():
+            for thing in val:
+                df.ix[row, "FORMAT"] = ":".join(thing.keys())
+                df.ix[row, thing["sample_name"]] = ":".join(thing.values())
+            
+    df = cleanup_df(df, file_dict)
+
+    return df
+    
 def process_files(sample_file_readers, input_dir, output_path, input_keys, headers, header_names, first_line, pivot_builder=build_pivoter):
     first_file_reader = sample_file_readers[0]
     first_file      = first_file_reader
@@ -174,34 +256,35 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
     print "{0} - determining file type".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     pivoter  = pivot_builder(first_file, input_keys, headers[0])
     
-    file_names = []
     count = 0
     for sample_file in sample_file_readers:
         print "{0} - reading ({1}/{2}): {3}".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'), count + 1, len(sample_file_readers), sample_file)
         
-        file_names.append("_" + os.path.basename(sample_file))
-        pivoter.add_file(sample_file, headers[count], file_names)
+        pivoter.add_file(sample_file, headers[count], sample_file)
         
         count += 1
    
     print "{0} - validating sample data".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     pivoter.validate_sample_data()
-
+#
+    print "{0} - combining format columns.".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
+    formatted_df = combine_format_columns(pivoter._combined_df)
+    
     print "{0} - rearranging columns".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
-    complete_output = rearrange_columns(pivoter._combined_df)
-#     
+    rearranged_df = rearrange_columns(formatted_df)
+    
     print "{0} - sorting rows".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
-    sorted_df = pivoter.sort_rows(complete_output)
-# 
+    sorted_df = pivoter.sort_rows(rearranged_df)
+
     if "index" in sorted_df:
         del sorted_df["index"]
         
     sorted_df = sorted_df.fillna(".")
 
     print "{0} - writing to vcf file: {1}".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'), output_path)
-    sorted_df.to_csv(output_path, index=False, sep="\t")  
+    with open(output_path, "a") as f:
+        sorted_df.to_csv(f, index=False, sep="\t")  
 
-#    
     print "{0} - done".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     
 def determine_input_keys(input_dir):
@@ -264,7 +347,14 @@ def execute(args, execution_context):
     if extension != ".vcf": 
         print "Error. Specified output {0} must have a .vcf extension".format(output_path)
         exit(1)
-    
+        
+        
+    execution_context.extend(["##fileformat=VCFv4.2"])
+    execution_context[-1] = execution_context[-1] + "\n"
+    out_file = open(output_path, "w")
+    out_file.write("\n".join(execution_context))
+    out_file.close()
+
     sample_file_readers, headers, header_names, first_line = get_headers_and_readers(input_dir)
     process_files(sample_file_readers, input_dir, output_path, input_keys, headers, header_names, first_line)
     

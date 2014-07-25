@@ -1,4 +1,5 @@
 #!/usr/bin/python2.7
+from collections import OrderedDict
 from operator import itemgetter, attrgetter
 import os
 from os import listdir
@@ -69,4 +70,3 @@ def change_pos_to_int(split_line):
         except:
             new_line.append(field)
     return new_line
-
