@@ -205,20 +205,6 @@ def combine_format_values(aggregate_col):
     tags = pairs[0].split(":")
     return tags, OrderedDict(zip(pairs[0].split(":"), pairs[1].split(":")))
 
-# def get_consensus_format_sample(file_dict, all_tags):
-#     new_file_dict = defaultdict(list)
-#     for fname, samp_dicts in file_dict.items():
-#         new_samp_dicts = []
-#         for samp_dict in samp_dicts:
-#             for tag in all_tags:
-#                 if tag not in samp_dict.keys() and "nan" not in samp_dict.keys():
-#                     samp_dict[tag] = "."
-#             new_samp_dict = OrderedDict(sorted(samp_dict.iteritems()))
-#             new_samp_dicts.append(new_samp_dict)
-#         new_file_dict[fname] = new_samp_dicts
-#         
-#     return new_file_dict
-
 def add_all_tags(file_dict, sample_keys):
     for sample_list in file_dict.values():
         for sample in sample_list:
@@ -372,23 +358,33 @@ def get_headers_and_readers(in_files):
     header_names = []
     first_line = []
     meta_headers = []
+    invalid_files = []
     for in_file in in_files:
         f = open(in_file, 'r')
         count = -1
+        invalid = 1
         for line in f:
             count += 1
             if line.startswith("##"):
                 if re.search("##FORMAT=<ID=JQ_", line):
                     meta_headers.append(line.strip("\n"))
+                if re.search("##jacquard.tag.caller=", line):
+                    invalid = 0
             elif line.startswith("#"):
                 headers.append(count)
                 header_names.append(line)
             else:
                 first_line.append(line)
                 break
+        if invalid == 1:
+            invalid_files.append(file)
 
         f.close()
         sample_file_readers.append(in_file)
+
+    if invalid_files != []:
+        print "ERROR: VCF file(s) [{0}] have no Jacquard tags. Run [jacard tag] on these files and try again.".format(invalid_files)
+        exit(1)
 
     header_names = header_names[0]
     header_names = re.sub(r'#CHROM', 'CHROM', header_names)

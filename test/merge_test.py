@@ -166,15 +166,25 @@ class PivotTestCase(unittest.TestCase):
     
     ##get headers, readers
     def test_getHeadersAndReaders(self):
-        input_dir = "test/test_input/test_input_keys_txt"
+        input_dir = "test/test_input/test_input_valid"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*")))
         sample_file_readers, headers, header_names, first_line, meta_headers = get_headers_and_readers(in_files)
         
-        self.assertEquals([os.path.join(input_dir, "foo1.txt"), os.path.join(input_dir, "foo2.txt")], sample_file_readers)
-        self.assertEquals([3,2], headers)
+        self.assertEquals([os.path.join(input_dir, "foo1.txt")], sample_file_readers)
+        self.assertEquals([3], headers)
         self.assertEquals("CHROM\tPOS\tREF\tALT\tGENE_SYMBOL\tFORMAT\tSample_2384\tSample_2385\n", header_names)
-        self.assertEquals(["1\t2342\tA\tT\tEGFR\tGT:DP\t1/1:241\t0/1:70\n", "1\t134\tG\tC\tEGFR\tGT:DP\t1/1:242\t0/1:546\n"], first_line)
+        self.assertEquals(["1\t2342\tA\tT\tEGFR\tGT:DP\t1/1:241\t0/1:70\n"], first_line)
         self.assertEquals(['##FORMAT=<ID=JQ_FOO'], meta_headers)
+        
+    def test_getHeadersAndReaders_invalid(self):
+        input_dir = "test/test_input/test_input_keys_txt"
+        in_files = sorted(glob.glob(os.path.join(input_dir,"*")))
+        
+        with self.assertRaises(SystemExit) as cm:
+            sample_file_readers, headers, header_names, first_line, meta_headers = get_headers_and_readers(in_files)
+
+        self.assertEqual(cm.exception.code, 1)
+        
     def test_buildPivoter_invalidHeaderRaisesPivotError(self):
         input_string = \
 '''COORDINATE\tFORMAT\tsample_A\tsample_B
@@ -314,15 +324,6 @@ class CombineFormatTestCase(unittest.TestCase):
         expected_file_dict = {'file2': [OrderedDict([('DP', '57'), ('sample_name', 'file2|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('DP', '57'), ('sample_name', 'file1|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'file1|sample_B')])]}
         file_dict, all_tags = create_dict(df, row, col)
         self.assertEqual(expected_file_dict, file_dict)
-        
-#     def test_getConsensusFormatSample(self):
-#         file_dict = {'file2': [OrderedDict([('DP', '57'), ('foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('DP', '57'), ('foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('DP', '57'), ('sample_name', 'file1|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'file1|sample_B')])]}
-#         all_tags = ["DP", "foo", "sample_name"]
-#         
-#         file_dict = get_consensus_format_sample(file_dict, all_tags)
-#         expected_file_dict = {'file2': [OrderedDict([('DP', '57'), ('foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('DP', '57'), ('foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('DP', '57'), ('foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('DP', '57'), ('foo', '.'), ('sample_name', 'file1|sample_B')])]}
-# 
-#         self.assertEqual(expected_file_dict, file_dict)
         
     def test_cleanupDf(self):
         input_string = \

@@ -1,4 +1,6 @@
 #!/usr/bin/python2.7
+__version__ = 0.1
+
 from collections import OrderedDict
 from operator import itemgetter, attrgetter
 import os

@@ -11,7 +11,7 @@ import jacquard_utils
 class Varscan():
     def __init__(self):
         self.name = "VarScan"
-    
+        
     def validate_input_file(self, input_file):
         valid = 0
         for line in input_file:
@@ -26,7 +26,7 @@ class Varscan():
 class Mutect():
     def __init__(self):
         self.name = "MuTect"
-    
+        
     def validate_input_file(self, input_file):
         valid = 0
         for line in input_file:
@@ -49,7 +49,7 @@ class Unknown():
     
 class Varscan_AlleleFreqTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_AF_VS,Number=1,Type=Float, Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ).">\n'
+        self.metaheader = '##FORMAT=<ID=JQ_AF_VS,Number=1,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
 
     def format(self, info_string, format_dict, count):
         if "FREQ" in format_dict.keys():
@@ -66,7 +66,7 @@ class Varscan_AlleleFreqTag():
         
 class Varscan_DepthTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float, Description="Jacquard depth for VarScan (based on DP).">\n'
+        self.metaheader = '##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
 
     def format(self, info_string, format_dict, count):
         if "DP" in format_dict.keys():
@@ -76,7 +76,7 @@ class Varscan_DepthTag():
     
 class Varscan_SomaticTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR).">\n'
+        self.metaheader = '##FORMAT=<ID=JQ_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
 #  
     def format(self, info_string, format_dict, count):
         info_array = info_string.split(";")
@@ -93,7 +93,7 @@ class Varscan_SomaticTag():
 
 class Mutect_AlleleFreqTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_AF_MT,Number=1,Type=Float, Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA).">\n'
+        self.metaheader = '##FORMAT=<ID=JQ_AF_MT,Number=1,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
 
     def format(self, info, format_dict, count):
         if "FA" in format_dict.keys():
@@ -109,7 +109,7 @@ class Mutect_AlleleFreqTag():
         
 class Mutect_DepthTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_DP_MT,Number=1,Type=Float, Description="Jacquard depth for MuTect (based on DP).">\n'
+        self.metaheader = '##FORMAT=<ID=JQ_DP_MT,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
 
     def format(self, info, format_dict, count):
         if "DP" in format_dict.keys():
@@ -119,7 +119,7 @@ class Mutect_DepthTag():
     
 class Mutect_SomaticTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag).">\n'
+        self.metaheader = '##FORMAT=<ID=JQ_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
 
     def format(self, info, format_dict, count):
         if "SS" in format_dict.keys():
@@ -168,7 +168,7 @@ class FileProcessor():
         self._lineProcessor = LineProcessor(self._tags)
             
     def _metaheader_handler(self, metaheaders):
-        new_headers = ["##{}\n".format(header) for header in metaheaders]
+        new_headers = ["{}\n".format(header) for header in metaheaders]
         return ''.join(new_headers)
 
     def process(self, reader, writer, caller):
@@ -197,7 +197,8 @@ def add_subparser(subparser):
     parser_tag.add_argument("output_dir", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
 
 def determine_file_types(input_dir, in_files, callers):
-    file_types = defaultdict(list)                                       
+    file_types = defaultdict(list)   
+    inferred_callers = []                                    
     for file in in_files:
         for caller in callers:
             in_file = open(os.path.join(input_dir, file), "r")
@@ -208,8 +209,11 @@ def determine_file_types(input_dir, in_files, callers):
                     print "ERROR: {0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller_name)
                 else:
                     print "{0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller_name)
+                    inferred_caller = "##jacquard.tag.caller={0}".format(caller_name)
+                    inferred_callers.append(inferred_caller)
+                    print "{0}: {1}".format(os.path.basename(file), inferred_caller)
                 break
-    return file_types
+    return file_types, inferred_callers
     
 def print_file_types(file_types):
     for key, vals in file_types.items():
@@ -219,18 +223,18 @@ def print_file_types(file_types):
         exit(1)
     
 def tag_files(input_dir, output_dir, callers, execution_context=[]):
-    processors = {"VarScan" : FileProcessor(tags=[Varscan_AlleleFreqTag(), Varscan_DepthTag(), Varscan_SomaticTag()], execution_context_metadataheaders=execution_context), "MuTect": FileProcessor(tags=[Mutect_AlleleFreqTag(), Mutect_DepthTag(), Mutect_SomaticTag()], execution_context_metadataheaders=execution_context)}
-    
     in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
     if len(in_files) < 1:
         print "Error: Specified input directory [{0}] contains no VCF files. Check parameters and try again."
         exit(1)
-        
+
     print "\n".join(execution_context)
     print "Processing [{0}] VCF file(s) from [{1}]".format(len(in_files), input_dir)
     
-    file_types = determine_file_types(input_dir, in_files, callers)
+    file_types, inferred_callers = determine_file_types(input_dir, in_files, callers)
     print_file_types(file_types)
+
+    processors = {"VarScan" : FileProcessor(tags=[Varscan_AlleleFreqTag(), Varscan_DepthTag(), Varscan_SomaticTag()], execution_context_metadataheaders=execution_context), "MuTect": FileProcessor(tags=[Mutect_AlleleFreqTag(), Mutect_DepthTag(), Mutect_SomaticTag()], execution_context_metadataheaders=execution_context + inferred_callers)}
     
     for file in in_files:
         fname, extension = os.path.splitext(os.path.basename(file))

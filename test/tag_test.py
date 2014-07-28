@@ -10,10 +10,11 @@ import testfixtures
 from testfixtures import TempDirectory
 import unittest
 from bin.tag import Varscan, Mutect, Unknown, Varscan_AlleleFreqTag, Varscan_DepthTag, Varscan_SomaticTag, Mutect_AlleleFreqTag, Mutect_DepthTag, Mutect_SomaticTag, LineProcessor, FileProcessor, tag_files, determine_file_types, print_file_types
+from bin.jacquard_utils import __version__
 
 class Varscan_AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_AF_VS,Number=1,Type=Float, Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ).">\n', Varscan_AlleleFreqTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_AF_VS,Number=1,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={0}>\n'.format(__version__), Varscan_AlleleFreqTag().metaheader)
                 
     def test_format_missingAFTag(self):
         tag = Varscan_AlleleFreqTag()
@@ -48,7 +49,7 @@ class Varscan_AlleleFreqTagTestCase(unittest.TestCase):
 
 class Varscan_DepthTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float, Description="Jacquard depth for VarScan (based on DP).">\n', Varscan_DepthTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP),Source="Jacquard",Version={0}>\n'.format(__version__), Varscan_DepthTag().metaheader)
                 
     def test_format_missingDPTag(self):
         tag = Varscan_DepthTag()
@@ -64,7 +65,7 @@ class Varscan_DepthTagTestCase(unittest.TestCase):
 
 class Varscan_SomaticTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR).">\n', Varscan_SomaticTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={0}>\n'.format(__version__), Varscan_SomaticTag().metaheader)
                 
     def test_format_missingSSInfoTag(self):
         tag = Varscan_SomaticTag()
@@ -86,7 +87,7 @@ class Varscan_SomaticTagTestCase(unittest.TestCase):
 
 class Mutect_AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_AF_MT,Number=1,Type=Float, Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA).">\n', Mutect_AlleleFreqTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_AF_MT,Number=1,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA),Source="Jacquard",Version={0}>\n'.format(__version__), Mutect_AlleleFreqTag().metaheader)
                 
     def test_format_missingAFTag(self):
         tag = Mutect_AlleleFreqTag()
@@ -120,7 +121,7 @@ class Mutect_AlleleFreqTagTestCase(unittest.TestCase):
 
 class Mutect_DepthTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_DP_MT,Number=1,Type=Float, Description="Jacquard depth for MuTect (based on DP).">\n', Mutect_DepthTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_DP_MT,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP),Source="Jacquard",Version={0}>\n'.format(__version__), Mutect_DepthTag().metaheader)
                 
     def test_format_missingDPTag(self):
         tag = Mutect_DepthTag()
@@ -136,7 +137,7 @@ class Mutect_DepthTagTestCase(unittest.TestCase):
 
 class Mutect_SomaticTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag).">\n', Mutect_SomaticTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag),Source="Jacquard",Version={0}>\n'.format(__version__), Mutect_SomaticTag().metaheader)
                 
     def test_format_missingSSTag(self):
         tag = Mutect_SomaticTag()
@@ -222,7 +223,7 @@ class FileProcessorTestCase(unittest.TestCase):
         
     def test_process_prependsExecutionContext(self):
         mockWriter = MockWriter()
-        input_metaheaders = ["jacquard.version=X","jacquard.tagMutect.command=foo"]
+        input_metaheaders = ["##jacquard.version=X","##jacquard.tagMutect.command=foo"]
         processor = FileProcessor(tags=[], execution_context_metadataheaders=input_metaheaders)
         processor.process(reader=["#CHROM\tNORMAL\tTUMOR\n"], writer=mockWriter, caller="MuTect")
         actualLines = mockWriter.lines()
@@ -307,9 +308,9 @@ class TagVarScanTestCase(unittest.TestCase):
                 result = open(output_dir.path + "/" + actual_file).read()
                 split_result = result.split("\n")
                 self.assertEqual('##source=VarScan2', split_result[0])
-                self.assertEqual('##FORMAT=<ID=JQ_AF_VS,Number=1,Type=Float, Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ).">', split_result[1])
-                self.assertEqual('##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float, Description="Jacquard depth for VarScan (based on DP).">', split_result[2])
-                self.assertEqual('##FORMAT=<ID=JQ_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR).">', split_result[3])
+                self.assertEqual('##FORMAT=<ID=JQ_AF_VS,Number=1,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={0}>'.format(__version__), split_result[1])
+                self.assertEqual('##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP),Source="Jacquard",Version={0}>'.format(__version__), split_result[2])
+                self.assertEqual('##FORMAT=<ID=JQ_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={0}>'.format(__version__), split_result[3])
                 self.assertEqual('#CHROM\tNORMAL\tTUMOR', split_result[4])
             
             input_dir.cleanup()
@@ -338,10 +339,11 @@ class TagVarScanTestCase(unittest.TestCase):
             
             output_list = self.output.getvalue().splitlines()
 
-            self.assertEqual(6, len(output_list))
+            self.assertEqual(8, len(output_list))
+
             self.assertEqual(True, output_list[0].startswith("execution"))
             self.assertEqual(True, output_list[1].startswith("Processing [2]"))
-            self.assertEqual(True, output_list[5].startswith("Wrote [2]"))
+            self.assertEqual(True, output_list[7].startswith("Wrote [2]"))
             
     def test_tagVarScanFilestest_tagMutectFiles_inputDirectoryNoVCFs(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -377,7 +379,7 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
         input_dir = script_dir + "/multi_caller_input/withUnknowns"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
         callers = [Mutect(), Varscan(), Unknown()]
-        file_types = determine_file_types(input_dir, in_files, callers)
+        file_types, inferred_callers = determine_file_types(input_dir, in_files, callers)
         self.assertEqual(["Unknown", "VarScan", "MuTect"], file_types.keys())
         self.assertEqual('tiny_unknown_input.vcf', os.path.basename(file_types.values()[0][0]))
         self.assertEqual('tiny_varscan_input.vcf', os.path.basename(file_types.values()[1][0]))
@@ -391,12 +393,12 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
         output_list = self.output.getvalue().splitlines()
                 
         self.assertEqual("tiny_mutect_input.vcf: ##jacquard.tag.handler=MuTect", output_list[0])
-        self.assertEqual("tiny_mutect_input2.vcf: ##jacquard.tag.handler=MuTect", output_list[1])
-        self.assertEqual("ERROR: tiny_unknown_input.vcf: ##jacquard.tag.handler=Unknown", output_list[2])
-        self.assertEqual("tiny_varscan_input.vcf: ##jacquard.tag.handler=VarScan", output_list[3])
-        self.assertEqual("Recognized [1] Unknown file(s)", output_list[4])
-        self.assertEqual("Recognized [1] VarScan file(s)", output_list[5])
-        self.assertEqual("Recognized [2] MuTect file(s)", output_list[6])
+        self.assertEqual("tiny_mutect_input2.vcf: ##jacquard.tag.handler=MuTect", output_list[2])
+        self.assertEqual("ERROR: tiny_unknown_input.vcf: ##jacquard.tag.handler=Unknown", output_list[4])
+        self.assertEqual("tiny_varscan_input.vcf: ##jacquard.tag.handler=VarScan", output_list[5])
+        self.assertEqual("Recognized [1] Unknown file(s)", output_list[7])
+        self.assertEqual("Recognized [1] VarScan file(s)", output_list[8])
+        self.assertEqual("Recognized [2] MuTect file(s)", output_list[9])
         
         
     def test_determineFileTypes_noUnknown(self):
@@ -405,7 +407,7 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
         
         callers = [Mutect(), Varscan(), Unknown()]
-        file_types = determine_file_types(input_dir, in_files, callers)
+        file_types, inferred_callers = determine_file_types(input_dir, in_files, callers)
         self.assertEqual(["VarScan", "MuTect"], file_types.keys())
         self.assertEqual('tiny_varscan_input.vcf', os.path.basename(file_types.values()[0][0]))
         self.assertEqual('tiny_mutect_input.vcf', os.path.basename(file_types.values()[1][0]))
@@ -415,10 +417,10 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
         output_list = self.output.getvalue().splitlines()
         
         self.assertEqual("tiny_mutect_input.vcf: ##jacquard.tag.handler=MuTect", output_list[0])
-        self.assertEqual("tiny_mutect_input2.vcf: ##jacquard.tag.handler=MuTect", output_list[1])
-        self.assertEqual("tiny_varscan_input.vcf: ##jacquard.tag.handler=VarScan", output_list[2])
-        self.assertEqual("Recognized [1] VarScan file(s)", output_list[3])
-        self.assertEqual("Recognized [2] MuTect file(s)", output_list[4])
+        self.assertEqual("tiny_mutect_input2.vcf: ##jacquard.tag.handler=MuTect", output_list[2])
+        self.assertEqual("tiny_varscan_input.vcf: ##jacquard.tag.handler=VarScan", output_list[4])
+        self.assertEqual("Recognized [1] VarScan file(s)", output_list[6])
+        self.assertEqual("Recognized [2] MuTect file(s)", output_list[7])
 
 
 class MockLowerTag():
