@@ -1,6 +1,7 @@
 #!/usr/bin/python2.7
 from collections import defaultdict, OrderedDict
 import datetime
+import glob
 import math
 from operator import itemgetter, attrgetter
 import os
@@ -35,8 +36,10 @@ class VariantPivoter():
             initial_df.rename(columns={"#CHROM": "CHROM"}, inplace=True)
 
         unpivoted_df = self.is_compatible(initial_df)
-        fname_df = append_fname_to_samples(initial_df, file_name, self._rows)
+        fname_df, sample_columns = append_fname_to_samples(initial_df, file_name, self._rows)
         self._combined_df = merge_samples(fname_df, self._combined_df, self._rows)
+        
+        return sample_columns
 
     def validate_sample_data(self):
         grouped = self._combined_df.groupby(self._rows)
@@ -144,9 +147,10 @@ def append_fname_to_samples(df, file_name, rows):
     indexed_df = df.set_index(rows)
     basename = os.path.basename(file_name)
     new_df = indexed_df.rename(columns=lambda x: "|".join([basename, x]))
+    sample_columns = new_df.columns.values
     reset_df = new_df.reset_index()
     
-    return reset_df
+    return reset_df, sample_columns
   
 def merge_samples(reduced_df, combined_df, rows):
     if combined_df.empty:
@@ -201,19 +205,53 @@ def combine_format_values(aggregate_col):
     tags = pairs[0].split(":")
     return tags, OrderedDict(zip(pairs[0].split(":"), pairs[1].split(":")))
 
-def get_consensus_format_sample(file_dict, all_tags):
-    new_file_dict = defaultdict(list)
-    for fname, samp_dicts in file_dict.items():
+# def get_consensus_format_sample(file_dict, all_tags):
+#     new_file_dict = defaultdict(list)
+#     for fname, samp_dicts in file_dict.items():
+#         new_samp_dicts = []
+#         for samp_dict in samp_dicts:
+#             for tag in all_tags:
+#                 if tag not in samp_dict.keys() and "nan" not in samp_dict.keys():
+#                     samp_dict[tag] = "."
+#             new_samp_dict = OrderedDict(sorted(samp_dict.iteritems()))
+#             new_samp_dicts.append(new_samp_dict)
+#         new_file_dict[fname] = new_samp_dicts
+#         
+#     return new_file_dict
+
+def add_all_tags(file_dict, sample_keys):
+    for sample_list in file_dict.values():
+        for sample in sample_list:
+            for samp_key in sample_keys:
+                if samp_key not in sample.keys():
+                    sample[samp_key] = "."
+    return file_dict
+
+def sort_format_tags(file_dict):
+    sorted_file_dict = defaultdict(list)
+    for fname, sample_dicts in file_dict.items():
         new_samp_dicts = []
-        for samp_dict in samp_dicts:
-            for tag in all_tags:
-                if tag not in samp_dict.keys() and "nan" not in samp_dict.keys():
-                    samp_dict[tag] = "."
-            new_samp_dict = OrderedDict(sorted(samp_dict.iteritems()))
-            new_samp_dicts.append(new_samp_dict)
-        new_file_dict[fname] = new_samp_dicts
-        
-    return new_file_dict
+        for sample_dict in sample_dicts:
+            new_sample_dict = OrderedDict(sorted(sample_dict.iteritems()))
+            new_samp_dicts.append(new_sample_dict)
+        sorted_file_dict[fname] = new_samp_dicts
+#     
+    return sorted_file_dict
+
+def remove_non_jq_tags(file_dict):
+    sample_keys = []
+    for sample_list in file_dict.values():
+        for sample in sample_list:
+            for key, val in sample.items():
+                if not re.search("JQ_", key) and key != "sample_name":
+                    del sample[key]
+                else:
+                    if key not in sample_keys:
+                        sample_keys.append(key)
+                        
+    file_dict = add_all_tags(file_dict, sample_keys)
+    sort_format_tags(file_dict)
+    return file_dict
 
 def cleanup_df(df, file_dict):
     for key in file_dict.keys():
@@ -223,8 +261,13 @@ def cleanup_df(df, file_dict):
             pass
     for col in df.columns:
         df = df.applymap(lambda x: str(x).replace(":" + col, ""))
+        df = df.applymap(lambda x: str(x).replace(col + ":", ""))
+        df = df.applymap(lambda x: str(x).replace(col, "."))
     
     df = df.applymap(lambda x: str(x).replace(":sample_name", ""))
+    df = df.applymap(lambda x: str(x).replace("sample_name:", ""))
+    df = df.applymap(lambda x: str(x).replace("sample_name", "."))
+    
     df.replace("nan", ".", inplace=True)
 
     return df
@@ -233,7 +276,8 @@ def combine_format_columns(df):
     for row, col in df.T.iteritems():
         columns = col.index.values
         file_dict, all_tags = create_dict(df, row, columns)
-        file_dict = get_consensus_format_sample(file_dict, all_tags)
+#         file_dict = get_consensus_format_sample(file_dict, all_tags)
+        file_dict = remove_non_jq_tags(file_dict)
         
         for key, val in file_dict.items():
             for thing in val:
@@ -244,48 +288,73 @@ def combine_format_columns(df):
 
     return df
     
-def process_files(sample_file_readers, input_dir, output_path, input_keys, headers, header_names, first_line, pivot_builder=build_pivoter):
+def determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, sample_file, count):
+    samples = []
+    actual_sample_columns = []
+    
+    samp_count = 0
+    for samp_column in sample_columns:
+        samp_name = samp_column.split("|")[1]
+        if samp_name != "FORMAT":
+            samp_count += 1
+            samples.append(samp_name)
+            actual_sample_columns.append(samp_column)
+            merge_column_context = "##jacquard.merge.sample_column{0}={1}".format(samp_count, samp_column)
+            all_merge_column_context.append(merge_column_context)
+            
+    merge_context = "##jacquard.merge.file{0}={1}({2})".format(count, os.path.basename(sample_file), samples)
+    all_merge_context.append(merge_context)
+
+    return all_merge_context, all_merge_column_context
+    
+def print_new_execution_context(execution_context, out_file):
+    execution_context[-1] = execution_context[-1] + "\n"
+
+    out_file.write("\n".join(execution_context))
+    out_file.close()
+    
+def process_files(sample_file_readers, input_dir, output_path, input_keys, headers, header_names, first_line, execution_context, pivot_builder=build_pivoter):
     first_file_reader = sample_file_readers[0]
     first_file      = first_file_reader
     
-    print "{0} - validating command line parameters".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     raise_err, message = validate_parameters(input_keys, first_line, header_names)  
     if raise_err == 1:
         raise PivotError(message)
         
-    print "{0} - determining file type".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     pivoter  = pivot_builder(first_file, input_keys, headers[0])
     
+    print "Processing [{0}] VCF files from [{1}]".format(len(sample_file_readers), input_dir)
     count = 0
+    all_merge_context = []
+    all_merge_column_context = []
     for sample_file in sample_file_readers:
-        print "{0} - reading ({1}/{2}): {3}".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'), count + 1, len(sample_file_readers), sample_file)
-        
-        pivoter.add_file(sample_file, headers[count], sample_file)
-        
+#         print "{0} - reading ({1}/{2}): {3}".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'), count + 1, len(sample_file_readers), sample_file)
+        sample_columns = pivoter.add_file(sample_file, headers[count], sample_file)
         count += 1
-   
-    print "{0} - validating sample data".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
+        
+        all_merge_context, all_merge_column_context = determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, sample_file, count)
+    
+    new_execution_context = all_merge_context + all_merge_column_context
+    print "\n".join(new_execution_context)
+    
+    execution_context.extend(new_execution_context)
+    writer = open(output_path, "w")
+    print_new_execution_context(execution_context, writer)
+# 
     pivoter.validate_sample_data()
-#
-    print "{0} - combining format columns.".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     formatted_df = combine_format_columns(pivoter._combined_df)
-    
-    print "{0} - rearranging columns".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     rearranged_df = rearrange_columns(formatted_df)
-    
-    print "{0} - sorting rows".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     sorted_df = pivoter.sort_rows(rearranged_df)
 
     if "index" in sorted_df:
         del sorted_df["index"]
         
     sorted_df = sorted_df.fillna(".")
-
-    print "{0} - writing to vcf file: {1}".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'), output_path)
+    
     with open(output_path, "a") as f:
         sorted_df.to_csv(f, index=False, sep="\t")  
 
-    print "{0} - done".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
+    print "Merged [{0}] VCf files to [{1}]".format(len(sample_file_readers), output_path)
     
 def determine_input_keys(input_dir):
     for file in listdir(input_dir):
@@ -297,35 +366,34 @@ def determine_input_keys(input_dir):
             else:
                 raise PivotError("Cannot determine columns to be used as keys for the pivoting from file [{0}]. Please specify parameter [-k] or [--keys]".format(os.path.abspath(file)))
     
-def get_headers_and_readers(input_dir):
+def get_headers_and_readers(in_files):
     sample_file_readers = []
     headers = []
     header_names = []
     first_line = []
-    
-    for item in sorted(listdir(input_dir)):
-        if isfile(join(input_dir, item)):
-            f = open(input_dir + "/" + item, 'r')
-            count = -1
-            for line in f:
-                count += 1
-                if line.startswith("##"):
-                    continue
-                elif line.startswith("#"):
-                    headers.append(count)
-                    header_names.append(line)
-                else:
-                    first_line.append(line)
-                    break
+    meta_headers = []
+    for in_file in in_files:
+        f = open(in_file, 'r')
+        count = -1
+        for line in f:
+            count += 1
+            if line.startswith("##"):
+                if re.search("##FORMAT=<ID=JQ_", line):
+                    meta_headers.append(line.strip("\n"))
+            elif line.startswith("#"):
+                headers.append(count)
+                header_names.append(line)
+            else:
+                first_line.append(line)
+                break
 
-            f.close()
-            sample_file_readers.append(input_dir + "/" + item)
+        f.close()
+        sample_file_readers.append(in_file)
 
     header_names = header_names[0]
-    
     header_names = re.sub(r'#CHROM', 'CHROM', header_names)
     
-    return sample_file_readers, headers, header_names, first_line
+    return sample_file_readers, headers, header_names, first_line, meta_headers
 
 def add_subparser(subparser):
     parser_pivot = subparser.add_parser("merge", help="Accepts a directory of VCFs and returns a single merged VCF file.")
@@ -348,13 +416,14 @@ def execute(args, execution_context):
         print "Error. Specified output {0} must have a .vcf extension".format(output_path)
         exit(1)
         
+    in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
+    if len(in_files) < 1:
+        print "Error: Specified input directory [{0}] contains no VCF files. Check parameters and try again."
+        exit(1)
         
-    execution_context.extend(["##fileformat=VCFv4.2"])
-    execution_context[-1] = execution_context[-1] + "\n"
-    out_file = open(output_path, "w")
-    out_file.write("\n".join(execution_context))
-    out_file.close()
-
-    sample_file_readers, headers, header_names, first_line = get_headers_and_readers(input_dir)
-    process_files(sample_file_readers, input_dir, output_path, input_keys, headers, header_names, first_line)
+    sample_file_readers, headers, header_names, first_line, meta_headers = get_headers_and_readers(in_files)
+            
+    print "\n".join(execution_context) 
+    execution_context.extend(meta_headers + ["##fileformat=VCFv4.2"])
+    process_files(sample_file_readers, input_dir, output_path, input_keys, headers, header_names, first_line, execution_context)
     

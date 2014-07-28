@@ -533,7 +533,7 @@ class PivotTestCase(unittest.TestCase):
         sample_file_readers, headers, header_names, first_line = get_headers_and_readers(input_dir)
         
         self.assertEquals([input_dir + "/foo1.txt", input_dir + "/foo2.txt"], sample_file_readers)
-        self.assertEquals([2,2], headers)
+        self.assertEquals([3,2], headers)
         self.assertEquals("CHROM	POS	REF	ALT	GENE_SYMBOL	FORMAT	Sample_2384	Sample_2385\n", header_names)
         self.assertEquals(["1	2342	A	T	EGFR	GT:DP	1/1:241	0/1:70\n", "1	134	G	C	EGFR	GT:DP	1/1:242	0/1:546\n"], first_line)
     
