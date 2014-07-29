@@ -11,7 +11,7 @@ import pprint
 import os
 from os import listdir
 from os.path import isfile, join
-from bin.merge import PivotError, VariantPivoter, merge_samples, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller
+from bin.merge import PivotError, VariantPivoter, merge_samples, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller, validate_samples_for_callers
 
 def dataframe(input_data, sep="\t", index_col=None):
     def tupelizer(thing):
@@ -304,7 +304,19 @@ class PivotTestCase(unittest.TestCase):
         caller, unknown_callers = determine_caller(reader, unknown_callers)
         self.assertEquals("unknown", caller)
         self.assertEquals(3, unknown_callers)
+        
+    def test_validateSamplesForCallers_valid(self):
+        context = ["jacquard.foo=file1|13523|tumor(file1.vcf)", "jacquard.foo=file2|13523|tumor(file2.vcf)", "jacquard.foo=file3|13523|tumor(file3.vcf)"]
+        value = validate_samples_for_callers(context)
+        self.assertEqual(1, value)
     
+    def test_validateSamplesForCallers_invalid(self):
+        context = ["jacquard.foo=file1|13523|tumor(file1.vcf)", "jacquard.foo=file2|23|tumor(file2.vcf)", "jacquard.foo=file3|768|tumor(file3.vcf)"]
+        with self.assertRaises(SystemExit) as cm:
+            value = validate_samples_for_callers(context)
+            
+        self.assertEqual(cm.exception.code, 1)
+        
 class CombineFormatTestCase(unittest.TestCase):
     def test_createDict(self):
         input_string = \
@@ -471,12 +483,12 @@ class CombineFormatTestCase(unittest.TestCase):
         all_merge_context = []
         all_merge_column_context = []
         sample_columns = ["file1|samp1", "file1|samp2"]
-        sample_file = "file1"
+        sample_file = "file1.vcf"
         count = 1
         all_merge_context, all_merge_column_context = determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, sample_file, count)
         
-        self.assertEqual(["##jacquard.merge.file1=file1(['samp1', 'samp2'])"], all_merge_context)
-        self.assertEqual(['##jacquard.merge.sample_column1=file1|samp1', '##jacquard.merge.sample_column2=file1|samp2'], all_merge_column_context)
+        self.assertEqual(["##jacquard.merge.file1=file1.vcf(['samp1', 'samp2'])"], all_merge_context)
+        self.assertEqual(['##jacquard.merge.sample_column1=file1|samp1(file1.vcf)', '##jacquard.merge.sample_column2=file1|samp2(file1.vcf)'], all_merge_column_context)
         
     def test_printNewExecutionContext(self):
         out_file = MockWriter()

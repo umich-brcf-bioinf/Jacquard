@@ -287,7 +287,7 @@ def determine_merge_execution_context(all_merge_context, all_merge_column_contex
             samp_count += 1
             samples.append(samp_name)
             actual_sample_columns.append(samp_column)
-            merge_column_context = "##jacquard.merge.sample_column{0}={1}".format(samp_count, samp_column)
+            merge_column_context = "##jacquard.merge.sample_column{0}={1}({2})".format(samp_count, samp_column, os.path.basename(sample_file))
             all_merge_column_context.append(merge_column_context)
             
     merge_context = "##jacquard.merge.file{0}={1}({2})".format(count, os.path.basename(sample_file), samples)
@@ -320,12 +320,14 @@ def validate_samples_for_callers(all_merge_column_context):
     caller_dict = defaultdict(list)
     samples = []
     for message in all_merge_column_context:
-        column = message.split("=")[1]
+        message_info = message.split("=")[1]
+        column = message_info.split("(")[0]
+        fname = message_info.split("(")[1].strip(")")
         caller = column.split("|")[0]
-        fname = column.split("|")[1]
-        
-        samples.append(fname)
-        caller_dict[caller].append(fname)
+        sample = column.split("|")[1]
+
+        samples.append(sample)
+        caller_dict[caller].append(sample)
     print "Detected VCFs from {0}".format(caller_dict.keys())
 
     warn = 0
@@ -335,12 +337,14 @@ def validate_samples_for_callers(all_merge_column_context):
             if sample not in val:
                 missing.append(sample)
         if missing != []:
-            print "WARNING: Samples {0} were only called by {1}".format(missing, key)
+            print "WARNING: Samples {0} were not called by {1}".format(missing, key)
             warn = 1
-        
+#          
     if warn == 1:
         print "ERROR: Some samples were not present for all callers. Review log warnings and move/adjust input files as appropriate."
         exit(1)
+        
+    return 1
 
 def process_files(sample_file_readers, input_dir, output_path, input_keys, headers, header_names, first_line, execution_context, pivot_builder=build_pivoter):
     first_file_reader = sample_file_readers[0]
