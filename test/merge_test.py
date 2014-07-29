@@ -42,14 +42,14 @@ class MergeTestCase(unittest.TestCase):
 2\tDP:ESAF\t2:0.2
 3\tDP:ESAF\t74:0.2
 4\tDP:ESAF\t25:0.2'''
-
-        pivoter.add_file(StringIO(sample_A_file), 0, "file1")
-        pivoter.add_file(StringIO(sample_B_file), 0, "file2")
+    
+        pivoter.add_file(StringIO(sample_A_file), 0, "file1", "MuTect")
+        pivoter.add_file(StringIO(sample_B_file), 0, "file2", "MuTect")
         
         actual_df = pivoter._combined_df
         actual_df.columns.names = [""]
         expected_string = \
-'''COORDINATE\tfile1|FORMAT\tfile1|Samp1\tfile2|FORMAT\tfile2|Samp2
+'''COORDINATE\tMuTect|file1|FORMAT\tMuTect|file1|Samp1\tMuTect|file2|FORMAT\tMuTect|file2|Samp2
 1\tDP:ESAF\t1:0.2\tDP:ESAF\t5:0.2
 2\tDP:ESAF\t12:0.2\tDP:ESAF\t2:0.2
 3\tDP:ESAF\t31:0.2\tDP:ESAF\t74:0.2
@@ -295,7 +295,7 @@ class PivotTestCase(unittest.TestCase):
 class CombineFormatTestCase(unittest.TestCase):
     def test_createDict(self):
         input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B
+'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B
 1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tDP\t57\t57
 1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tDP\t58\t57
 8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tDP\t59\t57
@@ -304,14 +304,14 @@ class CombineFormatTestCase(unittest.TestCase):
 '''
         df = dataframe(input_string)
         row = 0
-        col = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "file1|FORMAT", "file1|sample_A", "file1|sample_B"]
-        expected_file_dict = {'file1': [OrderedDict([('DP', '57'), ('sample_name', 'file1|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'file1|sample_B')])]}
+        col = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "MuTect|file1|FORMAT", "MuTect|file1|sample_A", "MuTect|file1|sample_B"]
+        expected_file_dict = {'MuTect|file1': [OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_B')])]}
         file_dict, all_tags = create_dict(df, row, col)
         self.assertEqual(expected_file_dict, file_dict)
     
     def test_createDict_multFiles(self):
         input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|FORMAT\tfile2|sample_A\tfile2|sample_B
+'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tMuTect|file2|FORMAT\tMuTect|file2|sample_A\tMuTect|file2|sample_B
 1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tDP\t57\t57\tDP\t57\t57
 1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tDP\t58\t57\tDP\t57\t57
 8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tDP\t59\t57\tDP\t57\t57
@@ -320,8 +320,8 @@ class CombineFormatTestCase(unittest.TestCase):
 '''
         df = dataframe(input_string)
         row = 0
-        col = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "file1|FORMAT", "file1|sample_A", "file1|sample_B", "file2|FORMAT", "file2|sample_A", "file2|sample_B"]
-        expected_file_dict = {'file2': [OrderedDict([('DP', '57'), ('sample_name', 'file2|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('DP', '57'), ('sample_name', 'file1|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'file1|sample_B')])]}
+        col = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "MuTect|file1|FORMAT", "MuTect|file1|sample_A", "MuTect|file1|sample_B", "MuTect|file2|FORMAT", "MuTect|file2|sample_A", "MuTect|file2|sample_B"]
+        expected_file_dict = {'MuTect|file2': [OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file2|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file2|sample_B')])], 'MuTect|file1': [OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_B')])]}
         file_dict, all_tags = create_dict(df, row, col)
         self.assertEqual(expected_file_dict, file_dict)
         
@@ -351,19 +351,19 @@ class CombineFormatTestCase(unittest.TestCase):
         
     def test_cleanupDf_rearranged(self):
         input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|FORMAT\tfile2|sample_A\tfile2|sample_B
-1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tsample_name:DP\t57:file1|sample_A\t57:file1|sample_B\tDP:sample_name\t57:file2|sample_A\t57:file2|sample_B
-1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tsample_name:DP\t58:file1|sample_A\t57:file1|sample_B\tDP:sample_name\t57:file2|sample_A\t57:file2|sample_B
-8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tsample_name:DP\t59:file1|sample_A\t57:file1|sample_B\tDP:sample_name\t57:file2|sample_A\t57:file2|sample_B
-13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tsample_name:DP\t60:file1|sample_A\t57:file1|sample_B\tDP:sample_name\t57:file2|sample_A\t57:file2|sample_B
-13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tsample_name:nan\tnan:file1|sample_A\tnan:file1|sample_B\tDP:sample_name\t57:file2|sample_A\t57:file2|sample_B
+'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tMuTect|file2|FORMAT\tMuTect|file2|sample_A\tMuTect|file2|sample_B
+1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tsample_name:DP\t57:MuTect|file1|sample_A\t57:MuTect|file1|sample_B\tDP:sample_name\t57:MuTect|file2|sample_A\t57:MuTect|file2|sample_B
+1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tsample_name:DP\t58:MuTect|file1|sample_A\t57:MuTect|file1|sample_B\tDP:sample_name\t57:MuTect|file2|sample_A\t57:MuTect|file2|sample_B
+8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tsample_name:DP\t59:MuTect|file1|sample_A\t57:MuTect|file1|sample_B\tDP:sample_name\t57:MuTect|file2|sample_A\t57:MuTect|file2|sample_B
+13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tsample_name:DP\t60:MuTect|file1|sample_A\t57:MuTect|file1|sample_B\tDP:sample_name\t57:MuTect|file2|sample_A\t57:MuTect|file2|sample_B
+13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tsample_name:nan\tnan:MuTect|file1|sample_A\tnan:MuTect|file1|sample_B\tDP:sample_name\t57:MuTect|file2|sample_A\t57:MuTect|file2|sample_B
 '''
         df = dataframe(input_string)
-        file_dict = {"file1":"foo", "file2": "foo"}
+        file_dict = {"MuTect|file1":"foo", "MuTect|file2": "foo"}
         actual_df = cleanup_df(df, file_dict)
         
         expected_string = \
-        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|sample_A\tfile2|sample_B
+        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tMuTect|file2|sample_A\tMuTect|file2|sample_B
 1\t2\t.\tA\tG\t.\t.\tfoo\tDP\t57\t57\t57\t57
 1\t3\t.\tC\tG\t.\t.\tfoo\tDP\t58\t57\t57\t57
 8\t4\t.\tA\tT\t.\t.\tfoo\tDP\t59\t57\t57\t57
@@ -375,7 +375,7 @@ class CombineFormatTestCase(unittest.TestCase):
         
     def test_combineFormatColumns(self):
         input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B
+'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B
 1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP\t57\t57
 1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tJQ_DP\t58\t57
 8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tJQ_DP\t59\t57
@@ -386,7 +386,7 @@ class CombineFormatTestCase(unittest.TestCase):
         actual_df = combine_format_columns(df)
         
         expected_string = \
-        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tfile1|sample_A\tfile1|sample_B\tFORMAT
+        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tFORMAT
 1\t2\t.\tA\tG\t.\t.\tfoo\t57\t57\tJQ_DP
 1\t3\t.\tC\tG\t.\t.\tfoo\t58\t57\tJQ_DP
 8\t4\t.\tA\tT\t.\t.\tfoo\t59\t57\tJQ_DP
@@ -401,7 +401,7 @@ class CombineFormatTestCase(unittest.TestCase):
         
     def test_combineFormatColumns_addTags(self):
         input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|FORMAT\tfile2|sample_A\tfile2|sample_B
+'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tMuTect|file2|FORMAT\tMuTect|file2|sample_A\tMuTect|file2|sample_B
 1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tDP:JQ_GT\t57:0/1\t57:0/1\tDP:AF:JQ_GT\t57:0.2:0/1\t57:0.2:0/1
 1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tDP:JQ_GT\t58:0/1\t57:0/1\tDP:AF:JQ_GT\t57:0.2:0/1\t57:0.2:0/1
 8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tDP:JQ_GT\t59:0/1\t57:0/1\tDP:AF:JQ_GT\t57:0.2:0/1\t57:0.2:0/1
@@ -413,7 +413,7 @@ class CombineFormatTestCase(unittest.TestCase):
         actual_df = combine_format_columns(df)
         
         expected_string = \
-        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tfile1|sample_A\tfile1|sample_B\tfile2|sample_A\tfile2|sample_B\tFORMAT
+        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tMuTect|file2|sample_A\tMuTect|file2|sample_B\tFORMAT
 1\t2\t.\tA\tG\t.\t.\tfoo\t0/1\t0/1\t0/1\t0/1\tJQ_GT
 1\t3\t.\tC\tG\t.\t.\tfoo\t0/1\t0/1\t0/1\t0/1\tJQ_GT
 8\t4\t.\tA\tT\t.\t.\tfoo\t0/1\t0/1\t0/1\t0/1\tJQ_GT

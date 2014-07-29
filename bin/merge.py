@@ -29,14 +29,14 @@ class VariantPivoter():
         self._rows = rows
         self._combined_df = combined_df
  
-    def add_file(self, sample_file, header_index, file_name):
+    def add_file(self, sample_file, header_index, file_name, caller):
         initial_df  = create_initial_df(sample_file, header_index)
 
         if "#CHROM" in initial_df.columns:
             initial_df.rename(columns={"#CHROM": "CHROM"}, inplace=True)
 
         unpivoted_df = self.is_compatible(initial_df)
-        fname_df, sample_columns = append_fname_to_samples(initial_df, file_name, self._rows)
+        fname_df, sample_columns = append_fname_to_samples(initial_df, file_name, self._rows, caller)
         self._combined_df = merge_samples(fname_df, self._combined_df, self._rows)
         
         return sample_columns
@@ -143,10 +143,11 @@ def create_initial_df(sample_file, header_index):
 
     return initial_df
   
-def append_fname_to_samples(df, file_name, rows):
+def append_fname_to_samples(df, file_name, rows, caller):
     indexed_df = df.set_index(rows)
     basename = os.path.basename(file_name)
-    new_df = indexed_df.rename(columns=lambda x: "|".join([basename, x]))
+    fname_prefix = basename.split(".")[0]
+    new_df = indexed_df.rename(columns=lambda x: "|".join([caller, fname_prefix, x]))
     sample_columns = new_df.columns.values
     reset_df = new_df.reset_index()
     
@@ -182,16 +183,17 @@ def create_dict(df, row, columns):
     all_tags = []
     for column in columns:
         if re.search("\|", column) and not re.search("\|FORMAT", column):
-            fname = column.split("|")[0]
-
-            format_column = str(df.ix[row, fname + "|FORMAT"])
+            caller = column.split("|")[0]
+            fname = column.split("|")[1]
+            format_column = str(df.ix[row, "{0}|{1}|FORMAT".format(caller, fname)])
             sample_column = str(df.ix[row, column])
             format_column += ":sample_name"
             sample_column += ":" + column
             format_sample = "{0}={1}".format(format_column, sample_column)
             tags, format_sample_dict = combine_format_values(format_sample)
-
-            file_dict[fname].append(format_sample_dict)
+            
+            key = "{0}|{1}".format(caller, fname)
+            file_dict[key].append(format_sample_dict)
             for tag in tags:
                 try: 
                     float(tag)
@@ -280,7 +282,7 @@ def determine_merge_execution_context(all_merge_context, all_merge_column_contex
     
     samp_count = 0
     for samp_column in sample_columns:
-        samp_name = samp_column.split("|")[1]
+        samp_name = samp_column.split("|")[-1]
         if samp_name != "FORMAT":
             samp_count += 1
             samples.append(samp_name)
@@ -313,12 +315,28 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
     count = 0
     all_merge_context = []
     all_merge_column_context = []
+    unknown_callers = 0
     for sample_file in sample_file_readers:
 #         print "{0} - reading ({1}/{2}): {3}".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'), count + 1, len(sample_file_readers), sample_file)
-        sample_columns = pivoter.add_file(sample_file, headers[count], sample_file)
+        caller = "unknown"
+        f = open(sample_file, "r")
+        for line in f:
+            if line.startswith("##jacquard.tag.caller="):
+                caller = line.split("=")[1].strip("\n")
+            elif line.startswith("#"):
+                continue
+            else:
+                break
+        f.close()
+        if caller == "unknown":
+            print "ERROR: unable to determine variant caller for file [{0}]".format(sample_file)
+            unknown_callers += 1
+        sample_columns = pivoter.add_file(sample_file, headers[count], sample_file, caller)
         count += 1
         
         all_merge_context, all_merge_column_context = determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, sample_file, count)
+    if uknown_callers != []:
+        print "ERROR: unable to determine variant caller for [{0}] input files. Run (jacquard tag) first.".format(unknown_callers)
     
     new_execution_context = all_merge_context + all_merge_column_context
     print "\n".join(new_execution_context)
