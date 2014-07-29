@@ -11,7 +11,7 @@ import pprint
 import os
 from os import listdir
 from os.path import isfile, join
-from bin.merge import PivotError, VariantPivoter, merge_samples, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context
+from bin.merge import PivotError, VariantPivoter, merge_samples, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller
 
 def dataframe(input_data, sep="\t", index_col=None):
     def tupelizer(thing):
@@ -291,6 +291,19 @@ class PivotTestCase(unittest.TestCase):
 
         tm.assert_frame_equal(expected_df, actual_df)
     
+    def test_determineCaller_valid(self):
+        reader = MockReader("##foo\n##jacquard.tag.caller=MuTect\n#CHROM\n1234\n322")
+        unknown_callers = 0
+        caller, unknown_callers = determine_caller(reader, unknown_callers)
+        self.assertEquals("MuTect", caller)
+        self.assertEquals(0, unknown_callers)
+     
+    def test_determineCaller_invalid(self):
+        reader = MockReader("##foo\n##jacquard.tag.foo\n#CHROM\n1234\n322")
+        unknown_callers = 2
+        caller, unknown_callers = determine_caller(reader, unknown_callers)
+        self.assertEquals("unknown", caller)
+        self.assertEquals(3, unknown_callers)
     
 class CombineFormatTestCase(unittest.TestCase):
     def test_createDict(self):
@@ -486,4 +499,17 @@ class MockWriter():
 
     def close(self):
         self.wasClosed = True
+        
+class MockReader():
+    def __init__(self, content):
+        lines = [line + "\n" for line in content.split("\n") if line != ""]
+        self._iter = lines.__iter__()
+        self.wasClosed = False
+
+    def __iter__(self):
+        return self._iter
+
+    def close(self):
+        self.wasClosed=True
+
         

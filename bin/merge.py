@@ -301,6 +301,47 @@ def print_new_execution_context(execution_context, out_file):
     out_file.write("\n".join(execution_context))
     out_file.close()
     
+def determine_caller(reader, unknown_callers):
+    caller = "unknown"
+    for line in reader:
+        if line.startswith("##jacquard.tag.caller="):
+            caller = line.split("=")[1].strip("\n")
+        elif line.startswith("#"):
+            continue
+        else:
+            break
+    if caller == "unknown":
+        print "ERROR: unable to determine variant caller for file [{0}]".format(reader)
+        unknown_callers += 1
+        
+    return caller, unknown_callers
+
+def validate_samples_for_callers(all_merge_column_context):
+    caller_dict = defaultdict(list)
+    samples = []
+    for message in all_merge_column_context:
+        column = message.split("=")[1]
+        caller = column.split("|")[0]
+        fname = column.split("|")[1]
+        
+        samples.append(fname)
+        caller_dict[caller].append(fname)
+    print "Detected VCFs from {0}".format(caller_dict.keys())
+
+    warn = 0
+    for key, val in caller_dict.items():
+        missing = []
+        for sample in samples:
+            if sample not in val:
+                missing.append(sample)
+        if missing != []:
+            print "WARNING: Samples {0} were only called by {1}".format(missing, key)
+            warn = 1
+        
+    if warn == 1:
+        print "ERROR: Some samples were not present for all callers. Review log warnings and move/adjust input files as appropriate."
+        exit(1)
+
 def process_files(sample_file_readers, input_dir, output_path, input_keys, headers, header_names, first_line, execution_context, pivot_builder=build_pivoter):
     first_file_reader = sample_file_readers[0]
     first_file      = first_file_reader
@@ -312,32 +353,29 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
     pivoter  = pivot_builder(first_file, input_keys, headers[0])
     
     print "Processing [{0}] VCF files from [{1}]".format(len(sample_file_readers), input_dir)
+    
     count = 0
     all_merge_context = []
     all_merge_column_context = []
     unknown_callers = 0
+    
     for sample_file in sample_file_readers:
 #         print "{0} - reading ({1}/{2}): {3}".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'), count + 1, len(sample_file_readers), sample_file)
-        caller = "unknown"
-        f = open(sample_file, "r")
-        for line in f:
-            if line.startswith("##jacquard.tag.caller="):
-                caller = line.split("=")[1].strip("\n")
-            elif line.startswith("#"):
-                continue
-            else:
-                break
-        f.close()
-        if caller == "unknown":
-            print "ERROR: unable to determine variant caller for file [{0}]".format(sample_file)
-            unknown_callers += 1
+        reader = open(sample_file, "r")
+        caller, unknown_callers = determine_caller(reader, unknown_callers)
+        reader.close()
+        
         sample_columns = pivoter.add_file(sample_file, headers[count], sample_file, caller)
         count += 1
         
         all_merge_context, all_merge_column_context = determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, sample_file, count)
-    if uknown_callers != []:
-        print "ERROR: unable to determine variant caller for [{0}] input files. Run (jacquard tag) first.".format(unknown_callers)
     
+    if unknown_callers != 0:
+        print "ERROR: unable to determine variant caller for [{0}] input files. Run (jacquard tag) first.".format(unknown_callers)
+        exit(1)
+        
+    validate_samples_for_callers(all_merge_column_context)
+
     new_execution_context = all_merge_context + all_merge_column_context
     print "\n".join(new_execution_context)
     
