@@ -316,8 +316,9 @@ def determine_caller(reader, unknown_callers):
         
     return caller, unknown_callers
 
-def validate_samples_for_callers(all_merge_column_context):
-    caller_dict = defaultdict(list)
+def validate_samples_for_callers(all_merge_column_context, all_inconsistent_sample_sets):
+    consistent_sample_dict = defaultdict(list)
+    duplicate_sample_dict = defaultdict(list)
     samples = []
     for message in all_merge_column_context:
         message_info = message.split("=")[1]
@@ -325,13 +326,16 @@ def validate_samples_for_callers(all_merge_column_context):
         fname = message_info.split("(")[1].strip(")")
         caller = column.split("|")[0]
         sample = column.split("|")[1]
-
+        sample_column = column.split("|")[2]
+        
         samples.append(sample)
-        caller_dict[caller].append(sample)
-    print "Detected VCFs from {0}".format(caller_dict.keys())
-
+        consistent_sample_dict[caller].append(sample)
+        duplicate_sample_dict["{0}|{1}".format(sample, sample_column)].append("{0}|{1}".format(caller, fname))
+    print "Detected VCFs from {0}".format(consistent_sample_dict.keys())
+    print duplicate_sample_dict
+    
     warn = 0
-    for key, val in caller_dict.items():
+    for key, val in consistent_sample_dict.items():
         missing = []
         for sample in samples:
             if sample not in val:
@@ -340,13 +344,15 @@ def validate_samples_for_callers(all_merge_column_context):
             print "WARNING: Samples {0} were not called by {1}".format(missing, key)
             warn = 1
 #          
-    if warn == 1:
+    if warn == 1 and all_inconsistent_sample_sets == False:
         print "ERROR: Some samples were not present for all callers. Review log warnings and move/adjust input files as appropriate."
         exit(1)
+    elif warn == 1 and all_inconsistent_sample_sets == True:
+        print "WARNING: Some samples were not present for all callers."
         
     return 1
 
-def process_files(sample_file_readers, input_dir, output_path, input_keys, headers, header_names, first_line, execution_context, pivot_builder=build_pivoter):
+def process_files(sample_file_readers, input_dir, output_path, input_keys, headers, header_names, first_line, all_inconsistent_sample_sets, execution_context, pivot_builder=build_pivoter):
     first_file_reader = sample_file_readers[0]
     first_file      = first_file_reader
     
@@ -378,7 +384,7 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
         print "ERROR: unable to determine variant caller for [{0}] input files. Run (jacquard tag) first.".format(unknown_callers)
         exit(1)
         
-    validate_samples_for_callers(all_merge_column_context)
+    validate_samples_for_callers(all_merge_column_context, all_inconsistent_sample_sets)
 
     new_execution_context = all_merge_context + all_merge_column_context
     print "\n".join(new_execution_context)
@@ -457,12 +463,14 @@ def add_subparser(subparser):
     parser_pivot.add_argument("output_file", help="Path to output variant-level VCF file")
     parser_pivot.add_argument("-k", "--keys",
         help="Columns to be used as keys for the pivoting. Default keys for VCF are CHROM,POS,ID,REF,ALT,QUAL,FILTER.")
+    parser_pivot.add_argument("-a", "--allow_inconsistent_sample_sets", action="store_true", default=False, help="Allow inconsistent sample sets across callers. Not recommended.")
         
 def execute(args, execution_context):
     input_dir = os.path.abspath(args.input_dir)
     output_path = os.path.abspath(args.output_file)
     input_keys = args.keys.split(",") if args.keys else determine_input_keys(input_dir)
-    
+    all_inconsistent_sample_sets = args.allow_inconsistent_sample_sets
+
     output_dir, outfile_name = os.path.split(output_path)
 
     jacquard_utils.validate_directories(input_dir, output_dir)
@@ -481,5 +489,5 @@ def execute(args, execution_context):
             
     print "\n".join(execution_context) 
     execution_context.extend(meta_headers + ["##fileformat=VCFv4.2"])
-    process_files(sample_file_readers, input_dir, output_path, input_keys, headers, header_names, first_line, execution_context)
+    process_files(sample_file_readers, input_dir, output_path, input_keys, headers, header_names, first_line, all_inconsistent_sample_sets, execution_context)
     

@@ -307,15 +307,25 @@ class PivotTestCase(unittest.TestCase):
         
     def test_validateSamplesForCallers_valid(self):
         context = ["jacquard.foo=file1|13523|tumor(file1.vcf)", "jacquard.foo=file2|13523|tumor(file2.vcf)", "jacquard.foo=file3|13523|tumor(file3.vcf)"]
-        value = validate_samples_for_callers(context)
+        value = validate_samples_for_callers(context, False)
+        self.assertEqual(1, value)
+        
+    def test_validateSamplesForCallers_validAllow(self):
+        context = ["jacquard.foo=file1|13523|tumor(file1.vcf)", "jacquard.foo=file2|13523|tumor(file2.vcf)", "jacquard.foo=file3|13523|tumor(file3.vcf)"]
+        value = validate_samples_for_callers(context, True)
         self.assertEqual(1, value)
     
     def test_validateSamplesForCallers_invalid(self):
         context = ["jacquard.foo=file1|13523|tumor(file1.vcf)", "jacquard.foo=file2|23|tumor(file2.vcf)", "jacquard.foo=file3|768|tumor(file3.vcf)"]
         with self.assertRaises(SystemExit) as cm:
-            value = validate_samples_for_callers(context)
+            value = validate_samples_for_callers(context, False)
             
         self.assertEqual(cm.exception.code, 1)
+    
+    def test_validateSamplesForCallers_invalidAllow(self):
+        context = ["jacquard.foo=file1|13523|tumor(file1.vcf)", "jacquard.foo=file2|23|tumor(file2.vcf)", "jacquard.foo=file3|768|tumor(file3.vcf)"]
+        value = validate_samples_for_callers(context, True)
+        self.assertEqual(1, value)
         
 class CombineFormatTestCase(unittest.TestCase):
     def test_createDict(self):
