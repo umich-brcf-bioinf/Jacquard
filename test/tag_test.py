@@ -9,7 +9,7 @@ from stat import *
 import testfixtures
 from testfixtures import TempDirectory
 import unittest
-from bin.tag import Varscan, Mutect, Unknown, Varscan_AlleleFreqTag, Varscan_DepthTag, Varscan_SomaticTag, Mutect_AlleleFreqTag, Mutect_DepthTag, Mutect_SomaticTag, LineProcessor, FileProcessor, tag_files, determine_file_types, print_file_types
+from bin.tag import Varscan, Mutect, Unknown, Varscan_AlleleFreqTag, Varscan_DepthTag, Varscan_SomaticTag, Mutect_AlleleFreqTag, Mutect_DepthTag, Mutect_SomaticTag, Strelka_AlleleFreqTag, Strelka_DepthTag, Strelka_SomaticTag, LineProcessor, FileProcessor, tag_files, determine_file_types, print_file_types
 from bin.jacquard_utils import __version__
 
 class Varscan_AlleleFreqTagTestCase(unittest.TestCase):
@@ -22,36 +22,36 @@ class Varscan_AlleleFreqTagTestCase(unittest.TestCase):
         format_param_string = "A:B"
         format_value_string = "1:2"
         format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format(info_string, format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("alt", "filter", info_string, format_dict, 0))
                 
     def test_format_rounds(self):
         tag = Varscan_AlleleFreqTag()
         format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:20%".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20%'), ('JQ_AF_VS', '0.2')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20%'), ('JQ_AF_VS', '0.2')]), tag.format("alt", "filter", "", format_dict, 0))
         
         format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:20.0%".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.0%'), ('JQ_AF_VS', '0.2')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.0%'), ('JQ_AF_VS', '0.2')]), tag.format("alt", "filter", "", format_dict, 0))
         
         format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:20.4%".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.4%'), ('JQ_AF_VS', '0.2')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.4%'), ('JQ_AF_VS', '0.2')]), tag.format("alt", "filter", "", format_dict, 0))
         
         format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:20.5%".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.5%'), ('JQ_AF_VS', '0.21')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.5%'), ('JQ_AF_VS', '0.21')]), tag.format("alt", "filter", "", format_dict, 0))
         
         format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:20.6%".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.6%'), ('JQ_AF_VS', '0.21')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.6%'), ('JQ_AF_VS', '0.21')]), tag.format("alt", "filter", "", format_dict, 0))
         
         format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:100%".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '100%'), ('JQ_AF_VS', '1.0')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '100%'), ('JQ_AF_VS', '1.0')]), tag.format("alt", "filter", "", format_dict, 0))
         
         format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:100.0%".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '100.0%'), ('JQ_AF_VS', '1.0')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '100.0%'), ('JQ_AF_VS', '1.0')]), tag.format("alt", "filter", "", format_dict, 0))
         
         format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:20.4%,38.075%".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.4%,38.075%'), ('JQ_AF_VS', '0.2,0.38')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.4%,38.075%'), ('JQ_AF_VS', '0.2,0.38')]), tag.format("alt", "filter", "", format_dict, 0))
         
         format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:20.4%,38.075%,27.843%".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.4%,38.075%,27.843%'), ('JQ_AF_VS', '0.2,0.38,0.28')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.4%,38.075%,27.843%'), ('JQ_AF_VS', '0.2,0.38,0.28')]), tag.format("alt", "filter", "", format_dict, 0))
         
 class Varscan_DepthTagTestCase(unittest.TestCase):
     def test_metaheader(self):
@@ -62,12 +62,12 @@ class Varscan_DepthTagTestCase(unittest.TestCase):
         format_param_string = "A:B"
         format_value_string = "1:2"
         format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("alt", "filter", "", format_dict, 0))
                 
     def test_format(self):
         tag = Varscan_DepthTag()
         format_dict = OrderedDict(zip("A:DP".split(":"), "1:42".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('DP', '42'), ('JQ_DP_VS', '42')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('DP', '42'), ('JQ_DP_VS', '42')]), tag.format("alt", "filter", "", format_dict, 0))
 
 class Varscan_SomaticTagTestCase(unittest.TestCase):
     def test_metaheader(self):
@@ -78,18 +78,18 @@ class Varscan_SomaticTagTestCase(unittest.TestCase):
         format_param_string = "A:B"
         format_value_string = "1:2"
         format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-        self.assertEqual(["A", "B"], tag.format("INFO", format_dict, 0).keys())
-        self.assertEqual(["1", "2"], tag.format("INFO", format_dict, 0).values())
+        self.assertEqual(["A", "B"], tag.format("alt", "filter", "INFO", format_dict, 0).keys())
+        self.assertEqual(["1", "2"], tag.format("alt", "filter", "INFO", format_dict, 0).values())
                 
     def test_format(self):
         tag = Varscan_SomaticTag()
         format_dict = OrderedDict([("A", "1")])
-        self.assertEqual(OrderedDict([("A", "1"), ("JQ_SOM_VS", "0")]), tag.format("INFO;SS=2", format_dict, 0))
-        self.assertEqual(OrderedDict([("A", "1"), ("JQ_SOM_VS", "1")]), tag.format("INFO;SS=2", format_dict, 1))
+        self.assertEqual(OrderedDict([("A", "1"), ("JQ_SOM_VS", "0")]), tag.format("alt", "filter", "INFO;SS=2", format_dict, 0))
+        self.assertEqual(OrderedDict([("A", "1"), ("JQ_SOM_VS", "1")]), tag.format("alt", "filter", "INFO;SS=2", format_dict, 1))
         
         format_dict = OrderedDict([("A", "1")])
-        self.assertEqual(OrderedDict([("A", "1")]), tag.format("INFO", format_dict, 0))
-        self.assertEqual(OrderedDict([("A", "1")]), tag.format("INFO", format_dict, 1))
+        self.assertEqual(OrderedDict([("A", "1")]), tag.format("alt", "filter", "INFO", format_dict, 0))
+        self.assertEqual(OrderedDict([("A", "1")]), tag.format("alt", "filter", "INFO", format_dict, 1))
 
 class Mutect_AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
@@ -100,36 +100,36 @@ class Mutect_AlleleFreqTagTestCase(unittest.TestCase):
         format_param_string = "A:B"
         format_value_string = "1:2"
         format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("alt", "filter", "", format_dict, 0))
                 
     def test_format_rounds(self):
         tag = Mutect_AlleleFreqTag()
         format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.2".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.2'), ('JQ_AF_MT', '0.2')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.2'), ('JQ_AF_MT', '0.2')]), tag.format("alt", "filter", "", format_dict, 0))
         
         format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.20".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.20'), ('JQ_AF_MT', '0.20')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.20'), ('JQ_AF_MT', '0.20')]), tag.format("alt", "filter", "", format_dict, 0))
         
         format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.204".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.204'), ('JQ_AF_MT', '0.2')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.204'), ('JQ_AF_MT', '0.2')]), tag.format("alt", "filter", "", format_dict, 0))
         
         format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.205".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.205'), ('JQ_AF_MT', '0.21')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.205'), ('JQ_AF_MT', '0.21')]), tag.format("alt", "filter", "", format_dict, 0))
         
         format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.206".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.206'), ('JQ_AF_MT', '0.21')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.206'), ('JQ_AF_MT', '0.21')]), tag.format("alt", "filter", "", format_dict, 0))
         
         format_dict = OrderedDict(zip("A:FA".split(":"), "1:1.0".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FA', '1.0'), ('JQ_AF_MT', '1.0')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('FA', '1.0'), ('JQ_AF_MT', '1.0')]), tag.format("alt", "filter", "", format_dict, 0))
         
         format_dict = OrderedDict(zip("A:FA".split(":"), "1:1.00".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FA', '1.00'), ('JQ_AF_MT', '1.00')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('FA', '1.00'), ('JQ_AF_MT', '1.00')]), tag.format("alt", "filter", "", format_dict, 0))
 
         format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.204,0.3807".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.204,0.3807'), ('JQ_AF_MT', '0.2,0.38')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.204,0.3807'), ('JQ_AF_MT', '0.2,0.38')]), tag.format("alt", "filter", "", format_dict, 0))
  
         format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.204,0.3807,0.2784".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.204,0.3807,0.2784'), ('JQ_AF_MT', '0.2,0.38,0.28')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.204,0.3807,0.2784'), ('JQ_AF_MT', '0.2,0.38,0.28')]), tag.format("alt", "filter", "", format_dict, 0))
 
 class Mutect_DepthTagTestCase(unittest.TestCase):
     def test_metaheader(self):
@@ -140,12 +140,12 @@ class Mutect_DepthTagTestCase(unittest.TestCase):
         format_param_string = "A:B"
         format_value_string = "1:2"
         format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("alt", "filter", "", format_dict, 0))
                 
     def test_format(self):
         tag = Mutect_DepthTag()
         format_dict = OrderedDict(zip("A:DP".split(":"), "1:42".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('DP', '42'), ('JQ_DP_MT', '42')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('DP', '42'), ('JQ_DP_MT', '42')]), tag.format("alt", "filter", "", format_dict, 0))
 
 class Mutect_SomaticTagTestCase(unittest.TestCase):
     def test_metaheader(self):
@@ -156,15 +156,82 @@ class Mutect_SomaticTagTestCase(unittest.TestCase):
         format_param_string = "A:B"
         format_value_string = "1:2"
         format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("alt", "filter", "", format_dict, 0))
                 
     def test_format(self):
         tag = Mutect_SomaticTag()
         format_dict = OrderedDict(zip( "A:SS".split(":"), "1:2".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('SS', '2'), ('JQ_SOM_MT', '1')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('SS', '2'), ('JQ_SOM_MT', '1')]), tag.format("alt", "filter", "", format_dict, 0))
         
         format_dict = OrderedDict(zip( "A:SS".split(":"), "1:1".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('SS', '1'), ('JQ_SOM_MT', '0')]), tag.format("", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('SS', '1'), ('JQ_SOM_MT', '0')]), tag.format("alt", "filter", "", format_dict, 0))
+
+class Strelka_AlleleFreqTagTestCase(unittest.TestCase):
+    def test_metaheader(self):
+        self.assertEqual('##FORMAT=<ID=JQ_AF_MT,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA),Source="Jacquard",Version={0}>\n'.format(__version__), Mutect_AlleleFreqTag().metaheader)
+                
+    def test_format_missingAFTag(self):
+        tag = Strelka_AlleleFreqTag()
+        format_param_string = "A:B"
+        format_value_string = "1:2"
+        format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
+        self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("C", "filter", "", format_dict, 0))
+                
+    def test_format_rounds(self):
+        tag = Strelka_AlleleFreqTag()
+        format_dict = OrderedDict(zip("A:AU:CU:GU:TU".split(":"), "1:0.2,0.5:0.2,0.5:0.2,0.5:0.2,0.5:".split(":")))
+        self.assertEqual(OrderedDict([('A', '1'), ('AU', '0.2,0.5'), ('CU', '0.2,0.5'), ('GU', '0.2,0.5'), ('TU', '0.2,0.5'), ('JQ_AF_SK', '0.25')]), tag.format("C", "filter", "", format_dict, 0))
+#         
+        format_dict = OrderedDict(zip("A:AU:CU:GU:TU".split(":"), "1:0.2,0.6:0.2,0.6:0.2,0.5:0.2,0.5:".split(":")))
+        self.assertEqual(OrderedDict([('A', '1'), ('AU', '0.2,0.6'), ('CU', '0.2,0.6'), ('GU', '0.2,0.5'), ('TU', '0.2,0.5'), ('JQ_AF_SK', '0.27')]), tag.format("C", "filter", "", format_dict, 0))
+#         
+        format_dict = OrderedDict(zip("A:AU:CU:GU:TU".split(":"), "1:0.2,0.6:0.2,0.8:0.2,0.5:0.2,0.5:".split(":")))
+        self.assertEqual(OrderedDict([('A', '1'), ('AU', '0.2,0.6'), ('CU', '0.2,0.8'), ('GU', '0.2,0.5'), ('TU', '0.2,0.5'), ('JQ_AF_SK', '0.33,0.21')]), tag.format("C,T", "filter", "", format_dict, 0))
+#         
+        format_dict = OrderedDict(zip("A:TAR:DP2".split(":"), "1:13,32:53".split(":")))
+        self.assertEqual(OrderedDict([('A', '1'), ('TAR', '13,32'), ('DP2', '53'), ('JQ_AF_SK', '0.6')]), tag.format("C", "filter", "", format_dict, 0))
+        
+        format_dict = OrderedDict(zip("A:TAR:DP2".split(":"), "1:13,50:53".split(":")))
+        self.assertEqual(OrderedDict([('A', '1'), ('TAR', '13,50'), ('DP2', '53'), ('JQ_AF_SK', '0.94')]), tag.format("C", "filter", "", format_dict, 0))
+
+class Strelka_DepthTagTestCase(unittest.TestCase):
+    def test_metaheader(self):
+        self.assertEqual('##FORMAT=<ID=JQ_DP_MT,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP),Source="Jacquard",Version={0}>\n'.format(__version__), Mutect_DepthTag().metaheader)
+                
+    def test_format_missingDP2AUTags(self):
+        tag = Strelka_DepthTag()
+        format_param_string = "A:B"
+        format_value_string = "1:2"
+        format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
+        self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("C", "filter", "", format_dict, 0))
+                
+    def test_format(self):
+        tag = Strelka_DepthTag()
+        format_dict = OrderedDict(zip("A:DP2".split(":"), "1:42".split(":")))
+        self.assertEqual(OrderedDict([('A', '1'), ('DP2', '42'), ('JQ_DP_SK', '42')]), tag.format("C", "filter", "", format_dict, 0))
+        
+        format_dict = OrderedDict(zip("A:AU:CU:GU:TU".split(":"), "1:42,42:5,5:13,13:4,4".split(":")))
+        self.assertEqual(OrderedDict([('A', '1'), ('AU', '42,42'), ('CU', '5,5'), ('GU', '13,13'), ('TU', '4,4'), ('JQ_DP_SK', '64')]), tag.format("C", "filter", "", format_dict, 0))
+
+class Strelka_SomaticTagTestCase(unittest.TestCase):
+    def test_metaheader(self):
+        self.assertEqual('##FORMAT=<ID=JQ_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag),Source="Jacquard",Version={0}>\n'.format(__version__), Mutect_SomaticTag().metaheader)
+                
+    def test_format_missingPASSTag(self):
+        tag = Strelka_SomaticTag()
+        format_param_string = "A:B"
+        format_value_string = "1:2"
+        format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
+        self.assertEqual(OrderedDict([('A', '1'), ('B', '2'), ('JQ_SOM_SK', '0')]), tag.format("C", "reject", "", format_dict, 0))
+        self.assertEqual(OrderedDict([('A', '1'), ('B', '2'), ('JQ_SOM_SK', '0')]), tag.format("C", "PASS;foo", "", format_dict, 0))
+                
+    def test_format(self):
+        tag = Strelka_SomaticTag()
+        format_dict = OrderedDict(zip( "A:SS".split(":"), "1:2".split(":")))
+        self.assertEqual(OrderedDict([('A', '1'), ('SS', '2'), ('JQ_SOM_SK', '1')]), tag.format("C", "PASS", "", format_dict, 0))
+        
+        format_dict = OrderedDict(zip( "A:SS".split(":"), "1:1".split(":")))
+        self.assertEqual(OrderedDict([('A', '1'), ('SS', '1'), ('JQ_SOM_SK', '1')]), tag.format("C", "PASS", "", format_dict, 0))
 
 class LineProcessorTestCase(unittest.TestCase):
     def test_process_line_singleSample(self):
@@ -439,7 +506,7 @@ class MockLowerTag():
     def __init__(self, metaheader=""):
         self.metaheader = metaheader
 
-    def format(self, info, format_dict, count):
+    def format(self, alt, filter, info, format_dict, count):
         str_keys = ",".join(format_dict.keys())
         new_keys = str_keys.lower()
         
@@ -456,7 +523,7 @@ class MockAddTag():
         self.tag= tag
         self.value = value
 
-    def format(self, info, format_dict, count):
+    def format(self, alt, filter, info, format_dict, count):
         new_keys = format_dict.keys()
         new_keys.append(self.tag)
         new_vals = format_dict.values()

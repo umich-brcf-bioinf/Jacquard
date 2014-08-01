@@ -38,6 +38,21 @@ class Mutect():
                 break
         return (self.name, valid)
      
+class Strelka():
+    def __init__(self):
+        self.name = "Strelka"
+        
+    def validate_input_file(self, input_file):
+        valid = 0
+        for line in input_file:
+            if line.startswith("##source=strelka"):
+                valid = 1
+            elif line.startswith("##"):
+                continue
+            else:
+                break
+        return (self.name, valid)
+     
 class Unknown():
     def __init__(self):
         self.name = "Unknown"
@@ -51,7 +66,7 @@ class Varscan_AlleleFreqTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID=JQ_AF_VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
 
-    def format(self, info_string, format_dict, count):
+    def format(self, alt, filter, info_string, format_dict, count):
         if "FREQ" in format_dict.keys():
             freq = format_dict["FREQ"].split(",")
             format_dict["JQ_AF_VS"] = self.roundTwoDigits(freq)
@@ -79,7 +94,7 @@ class Varscan_DepthTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
 
-    def format(self, info_string, format_dict, count):
+    def format(self, alt, filter, info_string, format_dict, count):
         if "DP" in format_dict.keys():
             format_dict["JQ_DP_VS"] = format_dict["DP"]
 
@@ -89,7 +104,7 @@ class Varscan_SomaticTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID=JQ_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
 #  
-    def format(self, info_string, format_dict, count):
+    def format(self, alt, filter, info_string, format_dict, count):
         info_array = info_string.split(";")
 
         if "SS=2" in info_array:
@@ -106,7 +121,7 @@ class Mutect_AlleleFreqTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID=JQ_AF_MT,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
 
-    def format(self, info, format_dict, count):
+    def format(self, alt, filter, info, format_dict, count):
         if "FA" in format_dict.keys():
             freq = format_dict["FA"].split(",")
             format_dict["JQ_AF_MT"] = self.roundTwoDigits(freq)
@@ -132,7 +147,7 @@ class Mutect_DepthTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID=JQ_DP_MT,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
 
-    def format(self, info, format_dict, count):
+    def format(self, alt, filter, info, format_dict, count):
         if "DP" in format_dict.keys():
             format_dict["JQ_DP_MT"] = format_dict["DP"]
             
@@ -142,7 +157,7 @@ class Mutect_SomaticTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID=JQ_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
 
-    def format(self, info, format_dict, count):
+    def format(self, alt, filter, info, format_dict, count):
         if "SS" in format_dict.keys():
             format_dict["JQ_SOM_MT"] = self.somatic_status(format_dict["SS"])
             
@@ -154,6 +169,75 @@ class Mutect_SomaticTag():
         else:
             return "0"
 
+class Strelka_AlleleFreqTag():
+    def __init__(self):
+        self.metaheader = '##FORMAT=<ID=JQ_AF_SK,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
+
+    def format(self, alt, filter, info, format_dict, count):
+        afs = []
+        if alt == ".":
+            afs = ["."]
+        else:
+            split_alt = alt.split(",")
+            for alt_allele in split_alt:
+                if "AU" in format_dict.keys(): #if it's an snv
+                    numerator = float(format_dict[alt_allele + "U"].split(",")[1])
+                    tags = ["AU", "CU", "TU", "GU"]
+                    denominator = 0
+                    for tag in tags:
+                        denominator += float(format_dict[tag].split(",")[1])
+                    af = numerator/denominator
+                    
+                elif "TAR" in format_dict.keys(): #if it's an indel
+                    numerator = float(format_dict["TAR"].split(",")[1])
+                    denominator = float(format_dict["DP2"])
+                    af = numerator/denominator
+                else:
+                    continue
+                
+                rounded_af = self.roundTwoDigits(str(af))
+                afs.append(rounded_af)
+        
+        if afs != []:
+            format_dict["JQ_AF_SK"] = ",".join(afs)
+           
+        return format_dict
+
+    def roundTwoDigits(self, value): 
+        if len(value.split(".")[1]) <= 2:
+            return value
+        else:
+            return str(round(100 * float(value))/100) 
+
+class Strelka_DepthTag():
+    def __init__(self):
+        self.metaheader = '##FORMAT=<ID=JQ_DP_SK,Number=1,Type=Float,Description="Jacquard depth for Strelka (based on DP2),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
+ 
+    def format(self, alt, filter, info, format_dict, count):
+        if "DP2" in format_dict.keys():
+            format_dict["JQ_DP_SK"] = format_dict["DP2"]
+        elif "AU" in format_dict.keys():
+            tags = ["AU", "CU", "TU", "GU"]
+            denominator = 0
+            for tag in tags:
+                denominator += int(format_dict[tag].split(",")[1])
+            format_dict["JQ_DP_SK"] = str(denominator)
+             
+        return format_dict
+
+class Strelka_SomaticTag():
+    def __init__(self):
+        self.metaheader = '##FORMAT=<ID=JQ_SOM_SK,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1= somatic (based on PASS in FILTER column),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
+ 
+    def format(self, alt, filter, info, format_dict, count):
+        if filter == "PASS":
+            format_dict["JQ_SOM_SK"] = "1"
+        else:
+            format_dict["JQ_SOM_SK"] = "0"
+             
+        return format_dict
+        
+        
 class LineProcessor():
     def __init__(self, tags):
         self.tags = tags
@@ -162,6 +246,8 @@ class LineProcessor():
         no_newline_line = input_line.rstrip("\n")
         original_vcf_fields = no_newline_line.split("\t")
         new_vcf_fields = original_vcf_fields[:8]
+        alt = original_vcf_fields[4]
+        filter = original_vcf_fields[6]
         info = original_vcf_fields[7]
         format = original_vcf_fields[8]
         samples = original_vcf_fields[9:]
@@ -170,7 +256,7 @@ class LineProcessor():
         for sample in samples:
             format_dict = OrderedDict(zip(format.split(":"), sample.split(":")))
             for tag in self.tags:
-                format_dict = tag.format(info, format_dict, count)
+                format_dict = tag.format(alt, filter, info, format_dict, count)
                 
             if count < 1: ##only add format column once
                 new_vcf_fields.append(":".join(format_dict.keys()))
@@ -204,7 +290,7 @@ class FileProcessor():
                     else:
                         print "Unexpected VarScan VCF structure - missing NORMAL\t and TUMOR\n headers."
                         exit(1)
-                elif caller == "MuTect":
+                else:
                     writer.write(self._metaheader)
                     writer.write(line)
             else:
@@ -255,7 +341,7 @@ def tag_files(input_dir, output_dir, callers, execution_context=[]):
     file_types, inferred_callers = determine_file_types(input_dir, in_files, callers)
     print_file_types(file_types)
 
-    processors = {"VarScan" : FileProcessor(tags=[Varscan_AlleleFreqTag(), Varscan_DepthTag(), Varscan_SomaticTag()], execution_context_metadataheaders=execution_context), "MuTect": FileProcessor(tags=[Mutect_AlleleFreqTag(), Mutect_DepthTag(), Mutect_SomaticTag()], execution_context_metadataheaders=execution_context + inferred_callers)}
+    processors = {"VarScan" : FileProcessor(tags=[Varscan_AlleleFreqTag(), Varscan_DepthTag(), Varscan_SomaticTag()], execution_context_metadataheaders=execution_context), "MuTect": FileProcessor(tags=[Mutect_AlleleFreqTag(), Mutect_DepthTag(), Mutect_SomaticTag()], execution_context_metadataheaders=execution_context + inferred_callers), "Strelka": FileProcessor(tags=[Strelka_AlleleFreqTag(), Strelka_DepthTag(), Strelka_SomaticTag()], execution_context_metadataheaders=execution_context + inferred_callers)}
     
     for file in in_files:
         fname, extension = os.path.splitext(os.path.basename(file))
@@ -281,5 +367,5 @@ def execute(args, execution_context):
     
     jacquard_utils.validate_directories(input_dir, output_dir)
     
-    callers = [Mutect(), Varscan(), Unknown()]
+    callers = [Mutect(), Varscan(), Strelka(), Unknown()]
     tag_files(input_dir, output_dir, callers, execution_context)
