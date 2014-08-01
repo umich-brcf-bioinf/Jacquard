@@ -29,14 +29,18 @@ class VariantPivoter():
         self._rows = rows
         self._combined_df = combined_df
  
-    def add_file(self, sample_file, header_index, file_name, caller):
+    def add_file(self, sample_file, header_index, caller, file_name=""):
+        if file_name == "":
+            file_name = sample_file
+            
         initial_df  = create_initial_df(sample_file, header_index)
-
+        
         if "#CHROM" in initial_df.columns:
             initial_df.rename(columns={"#CHROM": "CHROM"}, inplace=True)
 
         unpivoted_df = self.is_compatible(initial_df)
         fname_df, sample_columns = append_fname_to_samples(initial_df, file_name, self._rows, caller)
+        validated_df = validate_sample_caller_vcfs(fname_df)
         self._combined_df = merge_samples(fname_df, self._combined_df, self._rows)
         
         return sample_columns
@@ -139,8 +143,8 @@ def build_pivoter(sample_file, input_keys, header_index):
     return pivoter
 
 def create_initial_df(sample_file, header_index):
-    initial_df = pd.read_csv(sample_file, sep="\t", header=header_index, dtype='str')
-
+    initial_df = pd.read_csv(sample_file, sep="\t", header=header_index, dtype='str', mangle_dupe_cols=False)
+    
     return initial_df
   
 def append_fname_to_samples(df, file_name, rows, caller):
@@ -153,6 +157,27 @@ def append_fname_to_samples(df, file_name, rows, caller):
     
     return reset_df, sample_columns
   
+def validate_sample_caller_vcfs(fname_df):
+    columns = {}
+    for col in fname_df.columns.values:
+        if col in columns.keys():
+            columns[col] += 1
+        else:
+            columns[col] = 1
+    error = 0
+    for key, val in columns.items():
+        caller = key.split("|")[0]
+        sample = "|".join(key.split("|")[1:])
+        if val > 1:
+            print "ERROR: Sample [{0}] appears to be called by [{1}] in multiple files.".format(sample, caller)
+            error = 1
+    if error == 1:
+        print "ERROR: Some samples have calls for the same caller in more than one file. Adjust or move problem input files and try again."
+        exit(1)
+        
+    return fname_df
+    
+    
 def merge_samples(reduced_df, combined_df, rows):
     if combined_df.empty:
         combined_df = reduced_df
@@ -301,15 +326,50 @@ def print_new_execution_context(execution_context, out_file):
     out_file.write("\n".join(execution_context))
     out_file.close()
     
-def determine_caller(reader, unknown_callers):
+def create_new_line(alt_allele_number, fields):
+    alt = fields[4].split(",")[alt_allele_number]
+    format = fields[8]
+    samples = fields[9:]
+    new_samples = []
+    for sample in samples:
+        tags, format_sample_dict = combine_format_values(format + "=" + sample)
+        new_dict = OrderedDict()
+        for key, val in format_sample_dict.items():
+            if re.search("JQ_", key): #only care about splitting jacquard tags
+                split_val = val.split(",")
+                if len(split_val) > 1:
+                    new_dict[key] = split_val[alt_allele_number]
+                else:
+                    new_dict[key] = val
+            else:
+                new_dict[key] = val
+        new_samples.append(":".join(new_dict.values()))
+
+    new_line = fields[0:4] + [alt] + fields[5:9] + new_samples
+    
+    return "\t".join(new_line)
+    
+def determine_caller_and_split_mult_alts(reader, writer, unknown_callers):
     caller = "unknown"
     for line in reader:
         if line.startswith("##jacquard.tag.caller="):
             caller = line.split("=")[1].strip("\n")
+            writer.write(line)
         elif line.startswith("#"):
-            continue
+            writer.write(line)
         else:
-            break
+            fields = line.split("\t")
+            alt = fields[4]
+            alts = alt.split(",")
+            if len(alts) > 1: #there's a mult-alt
+                count = 0
+                for alt_allele in alts:
+                    new_line = create_new_line(count, fields)
+                    writer.write(new_line)
+                    count += 1
+            else:
+                writer.write(line)
+
     if caller == "unknown":
         print "ERROR: unable to determine variant caller for file [{0}]".format(reader)
         unknown_callers += 1
@@ -317,8 +377,7 @@ def determine_caller(reader, unknown_callers):
     return caller, unknown_callers
 
 def validate_samples_for_callers(all_merge_column_context, all_inconsistent_sample_sets):
-    consistent_sample_dict = defaultdict(list)
-    duplicate_sample_dict = defaultdict(list)
+    sample_dict = defaultdict(list)
     samples = []
     for message in all_merge_column_context:
         message_info = message.split("=")[1]
@@ -329,13 +388,11 @@ def validate_samples_for_callers(all_merge_column_context, all_inconsistent_samp
         sample_column = column.split("|")[2]
         
         samples.append(sample)
-        consistent_sample_dict[caller].append(sample)
-        duplicate_sample_dict["{0}|{1}".format(sample, sample_column)].append("{0}|{1}".format(caller, fname))
-    print "Detected VCFs from {0}".format(consistent_sample_dict.keys())
-    print duplicate_sample_dict
+        sample_dict[caller].append(sample)
+    print "Detected VCFs from {0}".format(sample_dict.keys())
     
     warn = 0
-    for key, val in consistent_sample_dict.items():
+    for key, val in sample_dict.items():
         missing = []
         for sample in samples:
             if sample not in val:
@@ -369,16 +426,27 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
     all_merge_column_context = []
     unknown_callers = 0
     
+    output_dir = os.path.dirname(output_path)
+    new_dir = os.path.join(output_dir, "splitMultAlts", ) 
+    if not os.path.isdir(new_dir):
+        os.mkdir(new_dir)
+    print "Splitting mult-alts in input files. Using [{0}] as input directory.".format(new_dir)
+    
     for sample_file in sample_file_readers:
 #         print "{0} - reading ({1}/{2}): {3}".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'), count + 1, len(sample_file_readers), sample_file)
-        reader = open(sample_file, "r")
-        caller, unknown_callers = determine_caller(reader, unknown_callers)
-        reader.close()
+        fname, extension = os.path.splitext(os.path.basename(sample_file))
+        new_sample_file = os.path.join(new_dir, fname + ".splitMultAlts" + extension)
         
-        sample_columns = pivoter.add_file(sample_file, headers[count], sample_file, caller)
+        reader = open(sample_file, "r")
+        writer = open(new_sample_file, "w")
+        caller, unknown_callers = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
+        reader.close()
+        writer.close()
+
+        sample_columns = pivoter.add_file(new_sample_file, headers[count], caller)
         count += 1
         
-        all_merge_context, all_merge_column_context = determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, sample_file, count)
+        all_merge_context, all_merge_column_context = determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, new_sample_file, count)
     
     if unknown_callers != 0:
         print "ERROR: unable to determine variant caller for [{0}] input files. Run (jacquard tag) first.".format(unknown_callers)

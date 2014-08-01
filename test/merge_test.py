@@ -11,7 +11,7 @@ import pprint
 import os
 from os import listdir
 from os.path import isfile, join
-from bin.merge import PivotError, VariantPivoter, merge_samples, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller, validate_samples_for_callers
+from bin.merge import PivotError, VariantPivoter, merge_samples, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller_and_split_mult_alts, validate_samples_for_callers, validate_sample_caller_vcfs
 
 def dataframe(input_data, sep="\t", index_col=None):
     def tupelizer(thing):
@@ -43,8 +43,8 @@ class MergeTestCase(unittest.TestCase):
 3\tDP:ESAF\t74:0.2
 4\tDP:ESAF\t25:0.2'''
     
-        pivoter.add_file(StringIO(sample_A_file), 0, "file1", "MuTect")
-        pivoter.add_file(StringIO(sample_B_file), 0, "file2", "MuTect")
+        pivoter.add_file(StringIO(sample_A_file), 0, "MuTect", "file1")
+        pivoter.add_file(StringIO(sample_B_file), 0, "MuTect", "file2")
         
         actual_df = pivoter._combined_df
         actual_df.columns.names = [""]
@@ -58,6 +58,19 @@ class MergeTestCase(unittest.TestCase):
         expected_df.columns.names = [""]
 
         tm.assert_frame_equal(expected_df, actual_df)
+        
+    def test_validateSampleCallerVcfs(self):
+        dataString1 = \
+'''COORDINATE\tVarScan|foo|FORMAT\tVarScan|sample_A\tVarScan|sample_B\tMuTect|foo|FORMAT\tMuTect|foo|sample_A\tMuTect|foo|sample_A
+1\tGT:ESAF\t10:0.2\t100:0.2
+2\tGT:ESAF\t20:0.2\t200:0.2
+3\tGT:ESAF\t30:0.2\t300:0.2
+4\tGT:ESAF\t40:0.2\t400:0.2'''
+        df = pd.read_csv(StringIO(dataString1), sep="\t", header=False, dtype='str', mangle_dupe_cols=False)
+        with self.assertRaises(SystemExit) as cm:
+            validate_sample_caller_vcfs(df)
+
+        self.assertEqual(cm.exception.code, 1)
         
     def test_isCompatible_raiseIfMissingRequiredColumns(self): 
         rows = ['COORDINATE', 'foo']
@@ -292,16 +305,18 @@ class PivotTestCase(unittest.TestCase):
         tm.assert_frame_equal(expected_df, actual_df)
     
     def test_determineCaller_valid(self):
-        reader = MockReader("##foo\n##jacquard.tag.caller=MuTect\n#CHROM\n1234\n322")
+        reader = MockReader("##foo\n##jacquard.tag.caller=MuTect\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2\n1\t2324\t.\tA\tG,T\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.234,0.124:78:25,312")
+        writer = MockWriter()
         unknown_callers = 0
-        caller, unknown_callers = determine_caller(reader, unknown_callers)
+        caller, unknown_callers = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
         self.assertEquals("MuTect", caller)
         self.assertEquals(0, unknown_callers)
      
     def test_determineCaller_invalid(self):
-        reader = MockReader("##foo\n##jacquard.tag.foo\n#CHROM\n1234\n322")
+        reader = MockReader("##foo\n##jacquard.tag.foo\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2\n1\t2324\t.\tA\tG,T\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.234,0.124:78:25,312")
+        writer = MockWriter()
         unknown_callers = 2
-        caller, unknown_callers = determine_caller(reader, unknown_callers)
+        caller, unknown_callers = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
         self.assertEquals("unknown", caller)
         self.assertEquals(3, unknown_callers)
         

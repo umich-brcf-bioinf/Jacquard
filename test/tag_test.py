@@ -14,7 +14,7 @@ from bin.jacquard_utils import __version__
 
 class Varscan_AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_AF_VS,Number=1,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={0}>\n'.format(__version__), Varscan_AlleleFreqTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_AF_VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={0}>\n'.format(__version__), Varscan_AlleleFreqTag().metaheader)
                 
     def test_format_missingAFTag(self):
         tag = Varscan_AlleleFreqTag()
@@ -46,7 +46,13 @@ class Varscan_AlleleFreqTagTestCase(unittest.TestCase):
         
         format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:100.0%".split(":")))
         self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '100.0%'), ('JQ_AF_VS', '1.0')]), tag.format("", format_dict, 0))
-
+        
+        format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:20.4%,38.075%".split(":")))
+        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.4%,38.075%'), ('JQ_AF_VS', '0.2,0.38')]), tag.format("", format_dict, 0))
+        
+        format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:20.4%,38.075%,27.843%".split(":")))
+        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.4%,38.075%,27.843%'), ('JQ_AF_VS', '0.2,0.38,0.28')]), tag.format("", format_dict, 0))
+        
 class Varscan_DepthTagTestCase(unittest.TestCase):
     def test_metaheader(self):
         self.assertEqual('##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP),Source="Jacquard",Version={0}>\n'.format(__version__), Varscan_DepthTag().metaheader)
@@ -87,7 +93,7 @@ class Varscan_SomaticTagTestCase(unittest.TestCase):
 
 class Mutect_AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_AF_MT,Number=1,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA),Source="Jacquard",Version={0}>\n'.format(__version__), Mutect_AlleleFreqTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_AF_MT,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA),Source="Jacquard",Version={0}>\n'.format(__version__), Mutect_AlleleFreqTag().metaheader)
                 
     def test_format_missingAFTag(self):
         tag = Mutect_AlleleFreqTag()
@@ -118,6 +124,12 @@ class Mutect_AlleleFreqTagTestCase(unittest.TestCase):
         
         format_dict = OrderedDict(zip("A:FA".split(":"), "1:1.00".split(":")))
         self.assertEqual(OrderedDict([('A', '1'), ('FA', '1.00'), ('JQ_AF_MT', '1.00')]), tag.format("", format_dict, 0))
+
+        format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.204,0.3807".split(":")))
+        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.204,0.3807'), ('JQ_AF_MT', '0.2,0.38')]), tag.format("", format_dict, 0))
+ 
+        format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.204,0.3807,0.2784".split(":")))
+        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.204,0.3807,0.2784'), ('JQ_AF_MT', '0.2,0.38,0.28')]), tag.format("", format_dict, 0))
 
 class Mutect_DepthTagTestCase(unittest.TestCase):
     def test_metaheader(self):
@@ -308,7 +320,7 @@ class TagVarScanTestCase(unittest.TestCase):
                 result = open(output_dir.path + "/" + actual_file).read()
                 split_result = result.split("\n")
                 self.assertEqual('##source=VarScan2', split_result[0])
-                self.assertEqual('##FORMAT=<ID=JQ_AF_VS,Number=1,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={0}>'.format(__version__), split_result[1])
+                self.assertEqual('##FORMAT=<ID=JQ_AF_VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={0}>'.format(__version__), split_result[1])
                 self.assertEqual('##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP),Source="Jacquard",Version={0}>'.format(__version__), split_result[2])
                 self.assertEqual('##FORMAT=<ID=JQ_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={0}>'.format(__version__), split_result[3])
                 self.assertEqual('#CHROM\tNORMAL\tTUMOR', split_result[4])

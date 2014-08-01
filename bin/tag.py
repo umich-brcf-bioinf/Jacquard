@@ -49,20 +49,31 @@ class Unknown():
     
 class Varscan_AlleleFreqTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_AF_VS,Number=1,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID=JQ_AF_VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
 
     def format(self, info_string, format_dict, count):
         if "FREQ" in format_dict.keys():
-            format_dict["JQ_AF_VS"] = self.roundTwoDigits(format_dict["FREQ"])
+            freq = format_dict["FREQ"].split(",")
+            format_dict["JQ_AF_VS"] = self.roundTwoDigits(freq)
             
         return format_dict
 
     def roundTwoDigits(self, value): 
-        value = str(float(value.strip("%"))/100)
-        if len(value.split(".")[1]) <= 2:
-            return value
+        if len(value) == 1:
+            new_value = str(float(value[0].strip("%"))/100)
+            if len(new_value.split(".")[1]) <= 2:
+                return new_value
+            else:
+                return str(round(100 * float(new_value))/100) 
         else:
-            return str(round(100 * float(value))/100) 
+            new_values = []
+            for val in value:
+                new_val = str(float(val.strip("%"))/100)
+                if len(new_val.split(".")[1]) <= 2:
+                    new_values.append(new_val)
+                else:
+                    new_values.append(str(round(100 * float(new_val))/100))
+            return ",".join(new_values) 
         
 class Varscan_DepthTag():
     def __init__(self):
@@ -93,19 +104,29 @@ class Varscan_SomaticTag():
 
 class Mutect_AlleleFreqTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_AF_MT,Number=1,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID=JQ_AF_MT,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
 
     def format(self, info, format_dict, count):
         if "FA" in format_dict.keys():
-            format_dict["JQ_AF_MT"] = self.roundTwoDigits(format_dict["FA"])
+            freq = format_dict["FA"].split(",")
+            format_dict["JQ_AF_MT"] = self.roundTwoDigits(freq)
             
         return format_dict
 
     def roundTwoDigits(self, value): 
-        if len(value.split(".")[1]) <= 2:
-            return value
+        if len(value) == 1:
+            if len(value[0].split(".")[1]) <= 2:
+                return value[0]
+            else:
+                return str(round(100 * float(value[0]))/100) 
         else:
-            return str(round(100 * float(value))/100) 
+            new_values = []
+            for val in value:
+                if len(val.split(".")[1]) <= 2:
+                    new_values.append(val)
+                else:
+                    new_values.append(str(round(100 * float(val))/100))
+            return ",".join(new_values)
         
 class Mutect_DepthTag():
     def __init__(self):
