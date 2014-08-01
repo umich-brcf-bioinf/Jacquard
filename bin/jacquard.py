@@ -16,7 +16,7 @@ def main(modules, arguments):
     formatter_class=argparse.RawDescriptionHelpFormatter, 
     description='''type 'Jacquard -h <subcommand>' for help on a specific subcommand''', 
     epilog="authors: Jessica Bene, Chris Gates 07/2014")
-    parser.add_argument("-v", "--version", action='version', version="Jacquard v{0}\nSupported variant callers: \n\t{1}".format(jacquard_utils.__version__, "\n\t".join([key + " " + value for key, value in jacquard_utils.caller_versions.items()])))
+    parser.add_argument("-v", "--version", action='version', version="Jacquard v{0}\nSupported variant callers:\n\t{1}".format(jacquard_utils.__version__, "\n\t".join([key + " " + value for key, value in jacquard_utils.caller_versions.items()])))
     subparsers = parser.add_subparsers(title="subcommands", dest="subparser_name")
     
     module_dispatch = {}
@@ -35,4 +35,3 @@ def main(modules, arguments):
 
 if __name__ == "__main__":
     main([pivot_variants, rollup_genes, tag, normalize_varscan, filter_somatic, merge], sys.argv[1:])
-
