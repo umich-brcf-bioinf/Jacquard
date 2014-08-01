@@ -6,6 +6,8 @@ from operator import itemgetter, attrgetter
 import os
 from os import listdir
 
+global caller_versions
+caller_versions = {"VarScan":"v2.3", "MuTect": "v1.1.4", "Strelka": "v2.0.15"}
 
 def validate_directories(input_dir, output_dir):    
     if not os.path.isdir(input_dir):
