@@ -335,7 +335,7 @@ def create_new_line(alt_allele_number, fields):
         tags, format_sample_dict = combine_format_values(format + "=" + sample)
         new_dict = OrderedDict()
         for key, val in format_sample_dict.items():
-            if re.search("JQ_", key): #only care about splitting jacquard tags
+            if re.search("JQ_AF", key): #only care about splitting jacquard tags
                 split_val = val.split(",")
                 if len(split_val) > 1:
                     new_dict[key] = split_val[alt_allele_number]
@@ -450,6 +450,7 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
     
     if unknown_callers != 0:
         print "ERROR: unable to determine variant caller for [{0}] input files. Run (jacquard tag) first.".format(unknown_callers)
+        os.rmdir(new_dir)
         exit(1)
         
     validate_samples_for_callers(all_merge_column_context, all_inconsistent_sample_sets)

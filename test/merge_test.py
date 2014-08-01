@@ -11,7 +11,7 @@ import pprint
 import os
 from os import listdir
 from os.path import isfile, join
-from bin.merge import PivotError, VariantPivoter, merge_samples, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller_and_split_mult_alts, validate_samples_for_callers, validate_sample_caller_vcfs
+from bin.merge import PivotError, VariantPivoter, merge_samples, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller_and_split_mult_alts, validate_samples_for_callers, validate_sample_caller_vcfs, create_new_line
 
 def dataframe(input_data, sep="\t", index_col=None):
     def tupelizer(thing):
@@ -321,6 +321,19 @@ class PivotTestCase(unittest.TestCase):
         self.assertEquals("unknown", caller)
         self.assertEquals(3, unknown_callers)
         self.assertEquals(["##foo", "##jacquard.tag.foo", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
+        
+    def test_createNewLine(self):
+        fields = ["1", "42", ".", "A", "G,CT", ".", ".", "foo", "DP:JQ_AF_VS:AF", "23:0.24,0.32:0.2354,0.324", "23:0.25,0.36:0.254,0.3456"]
+        
+        alt_allele_number = 0
+        actual_line = create_new_line(alt_allele_number, fields)
+        expected_line = "\t".join(["1", "42", ".", "A", "G", ".", ".", "foo", "DP:JQ_AF_VS:AF", "23:0.24:0.2354,0.324", "23:0.25:0.254,0.3456"])
+        self.assertEquals(expected_line, actual_line)
+        
+        alt_allele_number = 1
+        actual_line = create_new_line(alt_allele_number, fields)
+        expected_line = "\t".join(["1", "42", ".", "A", "CT", ".", ".", "foo", "DP:JQ_AF_VS:AF", "23:0.32:0.2354,0.324", "23:0.36:0.254,0.3456"])
+        self.assertEquals(expected_line, actual_line)
         
     def test_validateSamplesForCallers_valid(self):
         context = ["jacquard.foo=file1|13523|tumor(file1.vcf)", "jacquard.foo=file2|13523|tumor(file2.vcf)", "jacquard.foo=file3|13523|tumor(file3.vcf)"]
