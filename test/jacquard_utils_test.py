@@ -1,11 +1,12 @@
 #!/usr/bin/python2.7
+from collections import OrderedDict
 import os
 import unittest
 import subprocess
 import sys
 import testfixtures
 from testfixtures import TempDirectory
-from bin.jacquard_utils import validate_directories, write_output, sort_headers, sort_data, change_pos_to_int
+from bin.jacquard_utils import validate_directories, write_output, sort_headers, sort_data, change_pos_to_int, combine_format_values
 
 class ValidateDirectoriesTestCase(unittest.TestCase):
     def test_validateDirectories_inputDirectoryDoesntExist(self):
@@ -56,6 +57,15 @@ class WriteOutputTestCase(unittest.TestCase):
         self.assertEqual("#bar", actualLines[1])
         self.assertEqual("123", actualLines[2])
         self.assertEqual("456", actualLines[3])
+        
+class CombineFormatValuesTestCase(unittest.TestCase):
+    def test_combineFormatValues(self):
+        format = "DP:AF:FOO"
+        sample = "23:0.32:1"
+        actual_dict = combine_format_values(format, sample)
+        expected_dict = OrderedDict([("DP", "23"), ("AF", "0.32"), ("FOO", "1")])
+        self.assertEquals(expected_dict, actual_dict)
+
         
 class SortTestCase(unittest.TestCase):
     def test_sort_sortHeaders(self):

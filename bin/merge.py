@@ -214,9 +214,9 @@ def create_dict(df, row, columns):
             sample_column = str(df.ix[row, column])
             format_column += ":sample_name"
             sample_column += ":" + column
-            format_sample = "{0}={1}".format(format_column, sample_column)
-            tags, format_sample_dict = combine_format_values(format_sample)
-            
+#             format_sample = "{0}={1}".format(format_column, sample_column)
+            format_sample_dict = jacquard_utils.combine_format_values(format_column, sample_column)
+            tags = format_column.split(":")
             key = "{0}|{1}".format(caller, fname)
             file_dict[key].append(format_sample_dict)
             for tag in tags:
@@ -227,10 +227,10 @@ def create_dict(df, row, columns):
                         all_tags.append(tag)
     return file_dict, all_tags
 
-def combine_format_values(aggregate_col):
-    pairs = aggregate_col.split("=")
-    tags = pairs[0].split(":")
-    return tags, OrderedDict(zip(pairs[0].split(":"), pairs[1].split(":")))
+# def combine_format_values(aggregate_col):
+#     pairs = aggregate_col.split("=")
+#     tags = pairs[0].split(":")
+#     return tags, OrderedDict(zip(pairs[0].split(":"), pairs[1].split(":")))
 
 def add_all_tags(file_dict, sample_keys):
     for sample_list in file_dict.values():
@@ -332,7 +332,7 @@ def create_new_line(alt_allele_number, fields):
     samples = fields[9:]
     new_samples = []
     for sample in samples:
-        tags, format_sample_dict = combine_format_values(format + "=" + sample)
+        format_sample_dict = jacquard_utils.combine_format_values(format, sample)
         new_dict = OrderedDict()
         for key, val in format_sample_dict.items():
             if re.search("JQ_AF", key): #only care about splitting jacquard tags
@@ -347,7 +347,7 @@ def create_new_line(alt_allele_number, fields):
 
     new_line = fields[0:4] + [alt] + fields[5:9] + new_samples
     
-    return "\t".join(new_line)
+    return "\t".join(new_line) + "\n"
     
 def determine_caller_and_split_mult_alts(reader, writer, unknown_callers):
     caller = "unknown"

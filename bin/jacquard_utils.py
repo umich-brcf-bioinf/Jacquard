@@ -74,3 +74,7 @@ def change_pos_to_int(split_line):
         except:
             new_line.append(field)
     return new_line
+
+def combine_format_values(format, sample):
+    return OrderedDict(zip(format.split(":"), sample.strip("\n").split(":")))
+

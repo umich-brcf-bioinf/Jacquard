@@ -9,6 +9,7 @@ import tag
 import normalize_varscan
 import filter_somatic
 import merge
+import consensus
 import jacquard_utils
 
 def main(modules, arguments):
@@ -34,4 +35,4 @@ def main(modules, arguments):
 
 
 if __name__ == "__main__":
-    main([pivot_variants, rollup_genes, tag, normalize_varscan, filter_somatic, merge], sys.argv[1:])
+    main([pivot_variants, rollup_genes, tag, normalize_varscan, filter_somatic, merge, consensus], sys.argv[1:])

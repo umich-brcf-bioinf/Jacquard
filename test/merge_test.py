@@ -327,12 +327,12 @@ class PivotTestCase(unittest.TestCase):
         
         alt_allele_number = 0
         actual_line = create_new_line(alt_allele_number, fields)
-        expected_line = "\t".join(["1", "42", ".", "A", "G", ".", ".", "foo", "DP:JQ_AF_VS:AF", "23:0.24:0.2354,0.324", "23:0.25:0.254,0.3456"])
+        expected_line = "\t".join(["1", "42", ".", "A", "G", ".", ".", "foo", "DP:JQ_AF_VS:AF", "23:0.24:0.2354,0.324", "23:0.25:0.254,0.3456\n"])
         self.assertEquals(expected_line, actual_line)
         
         alt_allele_number = 1
         actual_line = create_new_line(alt_allele_number, fields)
-        expected_line = "\t".join(["1", "42", ".", "A", "CT", ".", ".", "foo", "DP:JQ_AF_VS:AF", "23:0.32:0.2354,0.324", "23:0.36:0.254,0.3456"])
+        expected_line = "\t".join(["1", "42", ".", "A", "CT", ".", ".", "foo", "DP:JQ_AF_VS:AF", "23:0.32:0.2354,0.324", "23:0.36:0.254,0.3456\n"])
         self.assertEquals(expected_line, actual_line)
         
     def test_validateSamplesForCallers_valid(self):
