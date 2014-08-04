@@ -74,21 +74,14 @@ class Varscan_AlleleFreqTag():
         return format_dict
 
     def roundTwoDigits(self, value): 
-        if len(value) == 1:
-            new_value = str(float(value[0].strip("%"))/100)
-            if len(new_value.split(".")[1]) <= 2:
-                return new_value
+        new_values = []
+        for val in value:
+            new_val = str(float(val.strip("%"))/100)
+            if len(new_val.split(".")[1]) <= 2:
+                new_values.append(new_val)
             else:
-                return str(round(100 * float(new_value))/100) 
-        else:
-            new_values = []
-            for val in value:
-                new_val = str(float(val.strip("%"))/100)
-                if len(new_val.split(".")[1]) <= 2:
-                    new_values.append(new_val)
-                else:
-                    new_values.append(str(round(100 * float(new_val))/100))
-            return ",".join(new_values) 
+                new_values.append(str(round(100 * float(new_val))/100))
+        return ",".join(new_values) 
         
 class Varscan_DepthTag():
     def __init__(self):
@@ -129,19 +122,13 @@ class Mutect_AlleleFreqTag():
         return format_dict
 
     def roundTwoDigits(self, value): 
-        if len(value) == 1:
-            if len(value[0].split(".")[1]) <= 2:
-                return value[0]
+        new_values = []
+        for val in value:
+            if len(val.split(".")[1]) <= 2:
+                new_values.append(val)
             else:
-                return str(round(100 * float(value[0]))/100) 
-        else:
-            new_values = []
-            for val in value:
-                if len(val.split(".")[1]) <= 2:
-                    new_values.append(val)
-                else:
-                    new_values.append(str(round(100 * float(val))/100))
-            return ",".join(new_values)
+                new_values.append(str(round(100 * float(val))/100))
+        return ",".join(new_values)
         
 class Mutect_DepthTag():
     def __init__(self):
