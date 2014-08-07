@@ -35,4 +35,4 @@ def main(modules, arguments):
 
 
 if __name__ == "__main__":
-    main([pivot_variants, rollup_genes, tag, normalize_varscan, filter_somatic, merge, consensus], sys.argv[1:])
+    main([normalize_varscan, tag, filter_somatic, merge, consensus, rollup_genes, pivot_variants], sys.argv[1:])

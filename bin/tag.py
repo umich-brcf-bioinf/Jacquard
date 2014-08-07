@@ -100,8 +100,11 @@ class Varscan_SomaticTag():
     def format(self, alt, filter, info_string, format_dict, count):
         info_array = info_string.split(";")
 
-        if "SS=2" in info_array:
+        if "SS=2" in info_array and "JQ_HC_VS" in info_array:
             format_dict["JQ_SOM_VS"] = self.somatic_status(count)
+        else:
+            format_dict["JQ_SOM_VS"] = "0"
+            
         return format_dict
 #  
     def somatic_status(self, count):
@@ -147,7 +150,8 @@ class Mutect_SomaticTag():
     def format(self, alt, filter, info, format_dict, count):
         if "SS" in format_dict.keys():
             format_dict["JQ_SOM_MT"] = self.somatic_status(format_dict["SS"])
-            
+        else:
+            format_dict["JQ_SOM_MT"] = "0"
         return format_dict
 
     def somatic_status(self, ss_value):
@@ -183,7 +187,8 @@ class Strelka_AlleleFreqTag():
                     continue
                 
                 rounded_af = self.roundTwoDigits(str(af))
-                afs.append(rounded_af)
+                capped_af = min(rounded_af, "1.00")
+                afs.append(capped_af)
         
         if afs != []:
             format_dict["JQ_AF_SK"] = ",".join(afs)
@@ -218,12 +223,17 @@ class Strelka_SomaticTag():
  
     def format(self, alt, filter, info, format_dict, count):
         if filter == "PASS":
-            format_dict["JQ_SOM_SK"] = "1"
+            format_dict["JQ_SOM_SK"] = self.somatic_status(count)
         else:
             format_dict["JQ_SOM_SK"] = "0"
              
         return format_dict
         
+    def somatic_status(self, count):
+        if count == 0: #it's NORMAL
+            return "0"
+        else: #it's TUMOR
+            return "1"
         
 class LineProcessor():
     def __init__(self, tags):
