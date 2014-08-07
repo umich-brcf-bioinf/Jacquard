@@ -6,8 +6,8 @@ import subprocess
 import sys
 import testfixtures
 from testfixtures import TempDirectory
-from bin.normalize_varscan import identify_merge_candidates, get_headers, merge_data, validate_split_line, identify_hc_variants, mark_hc_variants, validate_file_set
-
+from bin.normalize_utils import identify_merge_candidates, get_headers, merge_data, validate_split_line, identify_hc_variants, mark_hc_variants, validate_file_set
+        
 class IdentifyMergeCandidatesTestCase(unittest.TestCase):
     def test_indentifyMergeCandidates_missingFiles(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -16,7 +16,7 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
         output_dir = script_dir + "/normalize_varscan_test/output"
         
         with self.assertRaises(SystemExit) as cm:
-            merge_candidates = identify_merge_candidates(in_files, output_dir)
+            merge_candidates = identify_merge_candidates(in_files, output_dir, "varscan")
         self.assertEqual(cm.exception.code, 1)
         
     def test_indentifyMergeCandidates_HC(self):
@@ -24,7 +24,7 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
         input_dir = script_dir + "/normalize_varscan_test/input/"
         in_files = [input_dir + "tiny_indel.vcf", input_dir + "tiny_snp.vcf", input_dir + "tiny_indel.Germline.hc", input_dir + "tiny_indel.LOH.hc", input_dir + "tiny_indel.Somatic.hc", input_dir + "tiny_snp.Germline.hc", input_dir + "tiny_snp.LOH.hc", input_dir + "tiny_snp.Somatic.hc"]
         output_dir = script_dir + "/normalize_varscan_test/output/"
-        merge_candidates, hc_candidates = identify_merge_candidates(in_files, output_dir)
+        merge_candidates, hc_candidates = identify_merge_candidates(in_files, output_dir, "varscan")
         
         self.assertEqual([output_dir + "tiny_merged.vcf"], merge_candidates.keys())
         self.assertEqual([[input_dir + "tiny_indel.vcf", input_dir + "tiny_snp.vcf"]], merge_candidates.values())
@@ -83,8 +83,9 @@ class MergeTestCase(unittest.TestCase):
             input_dir.write("A.vcf","##source=VarScan2\n##foobarbaz\n#CHROM\tNORMAL\tTUMOR\n123\n456\n")
 
             file = os.path.join(input_dir.path, "A.vcf")
-            headers = get_headers(file)
-            self.assertEqual(["##source=VarScan2\n", "##foobarbaz\n", "#CHROM\tNORMAL\tTUMOR\n"], headers)
+            meta_headers, header = get_headers(file)
+            self.assertEqual(["##source=VarScan2\n", "##foobarbaz\n"], meta_headers)
+            self.assertEqual("#CHROM\tNORMAL\tTUMOR\n", header)
             
         input_dir.cleanup()
     

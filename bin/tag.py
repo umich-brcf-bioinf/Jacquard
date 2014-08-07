@@ -101,9 +101,9 @@ class Varscan_SomaticTag():
         info_array = info_string.split(";")
 
         if "SS=2" in info_array and "JQ_HC_VS" in info_array:
-            format_dict["JQ_SOM_VS"] = self.somatic_status(count)
+            format_dict["JQ_HC_SOM_VS"] = self.somatic_status(count)
         else:
-            format_dict["JQ_SOM_VS"] = "0"
+            format_dict["JQ_HC_SOM_VS"] = "0"
             
         return format_dict
 #  
@@ -149,9 +149,9 @@ class Mutect_SomaticTag():
 
     def format(self, alt, filter, info, format_dict, count):
         if "SS" in format_dict.keys():
-            format_dict["JQ_SOM_MT"] = self.somatic_status(format_dict["SS"])
+            format_dict["JQ_HC_SOM_MT"] = self.somatic_status(format_dict["SS"])
         else:
-            format_dict["JQ_SOM_MT"] = "0"
+            format_dict["JQ_HC_SOM_MT"] = "0"
         return format_dict
 
     def somatic_status(self, ss_value):
@@ -223,9 +223,9 @@ class Strelka_SomaticTag():
  
     def format(self, alt, filter, info, format_dict, count):
         if filter == "PASS":
-            format_dict["JQ_SOM_SK"] = self.somatic_status(count)
+            format_dict["JQ_HC_SOM_SK"] = self.somatic_status(count)
         else:
-            format_dict["JQ_SOM_SK"] = "0"
+            format_dict["JQ_HC_SOM_SK"] = "0"
              
         return format_dict
         
