@@ -1,5 +1,5 @@
 #!/usr/bin/python2.7
-from collections import OrderedDict
+from collections import defaultdict, OrderedDict
 import glob
 import pandas as pd
 from pandas import *
@@ -11,7 +11,7 @@ import pprint
 import os
 from os import listdir
 from os.path import isfile, join
-from bin.merge import PivotError, VariantPivoter, merge_samples, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller_and_split_mult_alts, validate_samples_for_callers, validate_sample_caller_vcfs, create_new_line
+from bin.merge import PivotError, VariantPivoter, merge_samples, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller_and_split_mult_alts, validate_samples_for_callers, validate_sample_caller_vcfs, create_new_line, create_merging_dict, remove_old_columns
 
 def dataframe(input_data, sep="\t", index_col=None):
     def tupelizer(thing):
@@ -43,8 +43,8 @@ class MergeTestCase(unittest.TestCase):
 3\tDP:ESAF\t74:0.2
 4\tDP:ESAF\t25:0.2'''
     
-        pivoter.add_file(StringIO(sample_A_file), 0, "MuTect", "file1")
-        pivoter.add_file(StringIO(sample_B_file), 0, "MuTect", "file2")
+        pivoter.add_file(StringIO(sample_A_file), 0, "MuTect", {}, "file1")
+        pivoter.add_file(StringIO(sample_B_file), 0, "MuTect", {}, "file2")
         
         actual_df = pivoter._combined_df
         actual_df.columns.names = [""]
@@ -308,7 +308,7 @@ class PivotTestCase(unittest.TestCase):
         reader = MockReader("##foo\n##jacquard.tag.caller=MuTect\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2\n1\t2324\t.\tA\tG,T\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.234,0.124:78:25,312")
         writer = MockWriter()
         unknown_callers = 0
-        caller, unknown_callers = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
+        caller, unknown_callers, mutect_dict = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
         self.assertEquals("MuTect", caller)
         self.assertEquals(0, unknown_callers)
         self.assertEquals(["##foo", "##jacquard.tag.caller=MuTect", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
@@ -317,7 +317,7 @@ class PivotTestCase(unittest.TestCase):
         reader = MockReader("##foo\n##jacquard.tag.foo\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2\n1\t2324\t.\tA\tG,T\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.234,0.124:78:25,312")
         writer = MockWriter()
         unknown_callers = 2
-        caller, unknown_callers = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
+        caller, unknown_callers, mutect_dict = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
         self.assertEquals("unknown", caller)
         self.assertEquals(3, unknown_callers)
         self.assertEquals(["##foo", "##jacquard.tag.foo", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
@@ -438,6 +438,62 @@ class CombineFormatTestCase(unittest.TestCase):
         expected_df = dataframe(expected_string)
         tm.assert_frame_equal(expected_df, actual_df)
         
+    def test_createMergingDict(self):
+        input_string = \
+'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B
+1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP\t57\t57
+1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tJQ_DP\t58\t57
+8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tJQ_DP\t59\t57
+13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tJQ_DP\t60\t57
+13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tnan\tnan\tnan
+'''
+        df = dataframe(input_string)
+        row = 0
+        col = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", "MuTect|file1|sample_A", "MuTect|file1|sample_B"]
+        file_dict = create_merging_dict(df, row, col)
+        expected_file_dict = {'file1|sample_A': [OrderedDict([('JQ_DP', '57')])], 'file1|sample_B': [OrderedDict([('JQ_DP', '57')])]}
+        self.assertEquals(expected_file_dict, file_dict)
+    
+    def test_createMergingDict_multipleCallers(self):
+        input_string = \
+'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tVarScan|file1|sample_A\tVarScan|file1|sample_B
+1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP_VS:JQ_DP_MT\t.:57\t.:57\t57:.\t57:.
+1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\JQ_DP_VS:JQ_DP_MT\t.:58\t.:57\t57:.\t57:.
+8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\JQ_DP_VS:JQ_DP_MT\t.:59\t.:57\t57:.\t57:.
+13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\JQ_DP_VS:JQ_DP_MT\t.:60\t.:57\t57:.\t57:.
+13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tnan:JQ_DP_MT\t.:nan\t.:nan\t57:.\t57:.
+'''
+        df = dataframe(input_string)
+        row = 0
+        col = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", "MuTect|file1|sample_A", "MuTect|file1|sample_B", "VarScan|file1|sample_A", "VarScan|file1|sample_B"]
+        file_dict = create_merging_dict(df, row, col)
+        expected_file_dict = {'file1|sample_A': [OrderedDict([('JQ_DP_MT', '57')]), OrderedDict([('JQ_DP_VS', '57')])], 'file1|sample_B': [OrderedDict([('JQ_DP_MT', '57')]), OrderedDict([('JQ_DP_VS', '57')])]}
+        self.assertEquals(expected_file_dict, file_dict)
+    
+    def test_removeOldColumns(self):
+        input_string = \
+'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tfile1|sample_A\tfile1|sample_B
+1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t57\t57\t57\t57
+1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t58\t57\t57\t57
+8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t59\t57\t57\t57
+13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t60\t57\t57\t57
+13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\tnan\tnan\t57\t57
+'''
+        df = dataframe(input_string)
+        actual_df = remove_old_columns(df)
+        
+        expected_string = \
+'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
+1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t57\t57
+1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t57\t57
+8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t57\t57
+13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t57\t57
+13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t57\t57
+'''
+        expected_df = dataframe(expected_string)
+        
+        tm.assert_frame_equal(expected_df, actual_df)
+        
     def test_combineFormatColumns(self):
         input_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B
@@ -451,17 +507,39 @@ class CombineFormatTestCase(unittest.TestCase):
         actual_df = combine_format_columns(df)
         
         expected_string = \
-        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tFORMAT
-1\t2\t.\tA\tG\t.\t.\tfoo\t57\t57\tJQ_DP
-1\t3\t.\tC\tG\t.\t.\tfoo\t58\t57\tJQ_DP
-8\t4\t.\tA\tT\t.\t.\tfoo\t59\t57\tJQ_DP
-13\t5\t.\tT\tAA\t.\t.\tfoo\t60\t57\tJQ_DP
-13\t5\t.\tT\tAAAA\t.\t.\tfoo\t.\t.\t.
+        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
+1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_DP\t57\t57
+1\t3\t.\tC\tG\t.\t.\tfoo\tJQ_DP\t58\t57
+8\t4\t.\tA\tT\t.\t.\tfoo\tJQ_DP\t59\t57
+13\t5\t.\tT\tAA\t.\t.\tfoo\tJQ_DP\t60\t57
+13\t5\t.\tT\tAAAA\t.\t.\tfoo\t.\tnan\tnan
 '''
         expected_df = dataframe(expected_string)
-                
-        print expected_df
-        print actual_df
+
+        tm.assert_frame_equal(expected_df, actual_df)
+        
+    def test_combineFormatColumns_validateOrder(self):
+        input_string = \
+'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tVarScan|file1|FORMAT\tVarScan|file1|sample_A\tVarScan|file1|sample_B
+1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t1\t20\tJQ_DP_VS\t6\t25
+1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t2\t21\tJQ_DP_VS\t7\t26
+8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t3\t22\tJQ_DP_VS\t8\t27
+13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t4\t23\tJQ_DP_VS\t9\t28
+13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t5\t24\tJQ_DP_VS\t10\t29
+'''
+        df = dataframe(input_string)
+        actual_df = combine_format_columns(df)
+        
+        expected_string = \
+        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
+1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t1:6\t20:25
+1\t3\t.\tC\tG\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t2:7\t21:26
+8\t4\t.\tA\tT\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t3:8\t22:27
+13\t5\t.\tT\tAA\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t4:9\t23:28
+13\t5\t.\tT\tAAAA\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t5:10\t24:29
+'''
+        expected_df = dataframe(expected_string)
+
         tm.assert_frame_equal(expected_df, actual_df)
         
     def test_combineFormatColumns_addTags(self):
@@ -478,12 +556,12 @@ class CombineFormatTestCase(unittest.TestCase):
         actual_df = combine_format_columns(df)
         
         expected_string = \
-        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tMuTect|file2|sample_A\tMuTect|file2|sample_B\tFORMAT
-1\t2\t.\tA\tG\t.\t.\tfoo\t0/1\t0/1\t0/1\t0/1\tJQ_GT
-1\t3\t.\tC\tG\t.\t.\tfoo\t0/1\t0/1\t0/1\t0/1\tJQ_GT
-8\t4\t.\tA\tT\t.\t.\tfoo\t0/1\t0/1\t0/1\t0/1\tJQ_GT
-13\t5\t.\tT\tAA\t.\t.\tfoo\t0/1\t0/1\t0/1\t0/1\tJQ_GT
-13\t5\t.\tT\tAAAA\t.\t.\tfoo\t.\t.\t0/1\t0/1\tJQ_GT
+        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_A\tfile2|sample_B\tfile1|sample_A\tfile1|sample_B
+1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
+1\t3\t.\tC\tG\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
+8\t4\t.\tA\tT\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
+13\t5\t.\tT\tAA\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
+13\t5\t.\tT\tAAAA\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\tnan\tnan
 '''
         expected_df = dataframe(expected_string)
         tm.assert_frame_equal(expected_df, actual_df)

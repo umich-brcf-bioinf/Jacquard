@@ -29,7 +29,7 @@ class VariantPivoter():
         self._rows = rows
         self._combined_df = combined_df
  
-    def add_file(self, sample_file, header_index, caller, file_name=""):
+    def add_file(self, sample_file, header_index, caller, mutect_dict, file_name=""):
         if file_name == "":
             file_name = sample_file
             
@@ -39,7 +39,7 @@ class VariantPivoter():
             initial_df.rename(columns={"#CHROM": "CHROM"}, inplace=True)
 
         unpivoted_df = self.is_compatible(initial_df)
-        fname_df, sample_columns = append_fname_to_samples(initial_df, file_name, self._rows, caller)
+        fname_df, sample_columns = append_fname_to_samples(initial_df, file_name, self._rows, caller, mutect_dict)
         validated_df = validate_sample_caller_vcfs(fname_df)
         self._combined_df = merge_samples(fname_df, self._combined_df, self._rows)
         
@@ -147,14 +147,23 @@ def create_initial_df(sample_file, header_index):
     
     return initial_df
   
-def append_fname_to_samples(df, file_name, rows, caller):
+def append_fname_to_samples(df, file_name, rows, caller, mutect_dict):
     indexed_df = df.set_index(rows)
+    
+    if caller == "MuTect":
+        for key, val in mutect_dict.items():
+            if val in df.columns.values:
+                if key == "normal_sample_name":
+                    indexed_df.rename(columns={val : "NORMAL"}, inplace=True)
+                elif key == "tumor_sample_name":
+                    indexed_df.rename(columns={val : "TUMOR"}, inplace=True)
+
     basename = os.path.basename(file_name)
     fname_prefix = basename.split(".")[0]
     new_df = indexed_df.rename(columns=lambda x: "|".join([caller, fname_prefix, x]))
     sample_columns = new_df.columns.values
     reset_df = new_df.reset_index()
-    
+
     return reset_df, sample_columns
   
 def validate_sample_caller_vcfs(fname_df):
@@ -227,11 +236,6 @@ def create_dict(df, row, columns):
                         all_tags.append(tag)
     return file_dict, all_tags
 
-# def combine_format_values(aggregate_col):
-#     pairs = aggregate_col.split("=")
-#     tags = pairs[0].split(":")
-#     return tags, OrderedDict(zip(pairs[0].split(":"), pairs[1].split(":")))
-
 def add_all_tags(file_dict, sample_keys):
     for sample_list in file_dict.values():
         for sample in sample_list:
@@ -285,19 +289,69 @@ def cleanup_df(df, file_dict):
 
     return df
 
+def create_merging_dict(df, row, columns):
+    file_dict = defaultdict(list)
+    sample_names = []
+    format_column = ""
+    sample_columns = []
+    
+    format_column = str(df.ix[row, "FORMAT"])
+
+    for column in columns:
+        if re.search("\|", column) and not re.search("\|FORMAT", column):
+            fname = column.split("|")[1]
+            sample = column.split("|")[2]
+            sample_column = str(df.ix[row, column])
+            sample_columns.append(sample_column)
+            sample_names.append(column)
+            
+            format_sample_dict = jacquard_utils.combine_format_values(format_column, sample_column)
+            for key, val in format_sample_dict.items():
+                if val == ".":
+                    del format_sample_dict[key]
+            file_key = "{0}|{1}".format(fname, sample)
+            if format_sample_dict != OrderedDict():
+                file_dict[file_key].append(format_sample_dict)
+
+    return file_dict
+
+def remove_old_columns(df):
+    columns_to_remove = []
+    for row, col in df.T.iteritems():
+        columns = col.index.values
+        for column in columns:
+            if re.search("\|", column) and len(column.split("|")) == 3:
+                if column not in columns_to_remove:
+                    columns_to_remove.append(column)
+
+    for col in columns_to_remove:
+        del df[col]
+
+    return df
+
 def combine_format_columns(df):
     for row, col in df.T.iteritems():
         columns = col.index.values
         file_dict, all_tags = create_dict(df, row, columns)
-#         file_dict = get_consensus_format_sample(file_dict, all_tags)
         file_dict = remove_non_jq_tags(file_dict)
-        
+
         for key, val in file_dict.items():
             for thing in val:
                 df.ix[row, "FORMAT"] = ":".join(thing.keys())
                 df.ix[row, thing["sample_name"]] = ":".join(thing.values())
             
     df = cleanup_df(df, file_dict)
+    
+    for row, col in df.T.iteritems():
+        columns = col.index.values
+        file_dict = create_merging_dict(df, row, columns)
+        
+        for key, vals in file_dict.items():
+            new_data = []
+            for val in vals:
+                new_data.extend(val.values())
+            df.ix[row, key] = ":".join(new_data)
+    df = remove_old_columns(df)
 
     return df
     
@@ -351,10 +405,21 @@ def create_new_line(alt_allele_number, fields):
     
 def determine_caller_and_split_mult_alts(reader, writer, unknown_callers):
     caller = "unknown"
+    mutect_dict = {}
     for line in reader:
         if line.startswith("##jacquard.tag.caller="):
             caller = line.split("=")[1].strip("\n")
             writer.write(line)
+        elif line.startswith("##MuTect="):
+            split_line = line.split(" ")
+            for item in split_line:
+                split_item = item.split("=")
+                try:
+                    mutect_dict[split_item[0]] = split_item[1]
+                except:
+                    pass
+            writer.write(line)
+            
         elif line.startswith("#"):
             writer.write(line)
         else:
@@ -373,8 +438,8 @@ def determine_caller_and_split_mult_alts(reader, writer, unknown_callers):
     if caller == "unknown":
         print "ERROR: unable to determine variant caller for file [{0}]".format(reader)
         unknown_callers += 1
-        
-    return caller, unknown_callers
+    
+    return caller, unknown_callers, mutect_dict
 
 def validate_samples_for_callers(all_merge_column_context, all_inconsistent_sample_sets):
     sample_dict = defaultdict(list)
@@ -439,11 +504,11 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
         
         reader = open(sample_file, "r")
         writer = open(new_sample_file, "w")
-        caller, unknown_callers = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
+        caller, unknown_callers, mutect_dict = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
         reader.close()
         writer.close()
 
-        sample_columns = pivoter.add_file(new_sample_file, headers[count], caller)
+        sample_columns = pivoter.add_file(new_sample_file, headers[count], caller, mutect_dict)
         count += 1
         
         all_merge_context, all_merge_column_context = determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, new_sample_file, count)
@@ -472,6 +537,7 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
         
     sorted_df = sorted_df.fillna(".")
     
+    sorted_df.rename(columns={"CHROM": "#CHROM"}, inplace=True)
     with open(output_path, "a") as f:
         sorted_df.to_csv(f, index=False, sep="\t")  
 
