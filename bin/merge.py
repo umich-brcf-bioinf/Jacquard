@@ -529,9 +529,15 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
 # 
     pivoter.validate_sample_data()
     formatted_df = combine_format_columns(pivoter._combined_df)
+    
     rearranged_df = rearrange_columns(formatted_df)
+    rearranged_df.ix[:, "CHROM"] = rearranged_df.ix[:, "CHROM"].apply(lambda x: int(x.strip("chr")))
+    rearranged_df.ix[:, "POS"] = rearranged_df.ix[:, "POS"].apply(lambda x: int(x))
+    
     sorted_df = pivoter.sort_rows(rearranged_df)
-
+    sorted_df.ix[:, "CHROM"] = sorted_df.ix[:, "CHROM"].apply(lambda x: "chr" + str(x))
+    sorted_df.ix[:, "POS"] = sorted_df.ix[:, "POS"].apply(lambda x: str(x))
+    
     if "index" in sorted_df:
         del sorted_df["index"]
         
