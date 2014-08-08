@@ -26,6 +26,8 @@ class VarScan():
     def final_steps(self, hc_candidates, merge_candidates, output_dir):
         hc_variants = identify_hc_variants(hc_candidates)
         marked_as_hc = mark_hc_variants(hc_variants, merge_candidates, output_dir)
+
+        return marked_as_hc
     
     def handle_hc_files(self, in_file, out_dir, hc_candidates):
         merged_fname = re.sub("snp|indel", "merged", os.path.join(out_dir, os.path.basename(in_file)))
@@ -74,6 +76,8 @@ class Strelka():
     
     def final_steps(self, hc_candidates, merge_candidates, output_dir):
         print "Wrote [{0}] VCF files to [{1}]".format(len(merge_candidates.keys()), output_dir)
+        
+        return merge_candidates
     
     def handle_hc_files(self, in_file, out_dir, hc_candidates):
         return hc_candidates
@@ -244,8 +248,9 @@ def identify_merge_candidates(in_files, out_dir, caller):
 
     return merge_candidates, hc_candidates
 
-def validate_callers(in_file, validated_callers, callers):
+def validate_callers(in_file_name, validated_callers, callers):
     for caller in callers:
+        in_file = open(in_file_name, "r")
         caller_name, valid = caller.validate_input_file(in_file)
         if valid == 1:
             if caller_name == "Unknown":
@@ -253,7 +258,8 @@ def validate_callers(in_file, validated_callers, callers):
                 exit(1)
             if caller_name not in validated_callers:
                 validated_callers.append(caller_name)
-        break
+            break
+        in_file.close()
     
     return validated_callers
 
@@ -263,9 +269,9 @@ def merge_and_sort(input_dir, output_dir, callers, execution_context=[]):
     in_files = sorted(glob.glob(os.path.join(input_dir,"*")))
     validated_callers = []
     for in_file_name in in_files:
-        in_file = open(in_file_name, "r")
-        validated_callers = validate_callers(in_file, validated_callers, callers)
-        in_file.close()
+        fname, extension = os.path.splitext(in_file_name)
+        if extension == ".vcf":
+            validated_callers = validate_callers(in_file_name, validated_callers, callers)
 
     if len(validated_callers) == 1:
         for initial_caller in callers:
@@ -287,7 +293,7 @@ def merge_and_sort(input_dir, output_dir, callers, execution_context=[]):
     caller.final_steps(hc_candidates, merge_candidates, output_dir)
         
 def add_subparser(subparser):
-    parser_normalize_vs = subparser.add_parser("normalize_utils", help="Accepts a directory containing VarScan VCF snp/indel results or Strelka VCF snvs/indels results and creates a new directory of merged, sorted VCFs with added high confidence tags")
+    parser_normalize_vs = subparser.add_parser("normalize", help="Accepts a directory containing VarScan VCF snp/indel results or Strelka VCF snvs/indels results and creates a new directory of merged, sorted VCFs with added high confidence tags")
     parser_normalize_vs.add_argument("input_dir", help="Path to directory containing VCFs. Each sample must have exactly two files matching these patterns: <sample>.indel.vcf, <sample>.snp.vcf, <sample>.indel.Germline.hc, <sample>.snp.Germline.hc, <sample>.indel.LOH.hc, <sample>.snp.LOH.hc, <sample>.indel.Somatic.hc, <sample>.snp.somatic.hc, <sample>.indel.*.hc, <sample>.snp.*.hc ")
     parser_normalize_vs.add_argument("output_dir", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
 

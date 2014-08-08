@@ -8,8 +8,122 @@ import testfixtures
 from testfixtures import TempDirectory
 from bin.normalize_utils import VarScan, Strelka, Unknown, identify_merge_candidates, get_headers, merge_data, validate_split_line, identify_hc_variants, mark_hc_variants
         
+class VarScanTestCase(unittest.TestCase):
+    def test_validateInputFile_valid(self):
+        varscan = VarScan()
+        input_file = ["##source=VarScan2", "foo"]
+        name, valid = varscan.validate_input_file(input_file)
+        
+        self.assertEquals("VarScan", name)
+        self.assertEquals(1, valid)
+        
+    def test_validateInputFile_invalid(self):
+        varscan = VarScan()
+        input_file = ["##bar", "foo"]
+        name, valid = varscan.validate_input_file(input_file)
+        
+        self.assertEquals("VarScan", name)
+        self.assertEquals(0, valid)
+        
+    def test_finalSteps(self):
+        varscan = VarScan()
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        hc_candidates  = {os.path.join(script_dir, 'normalize_varscan_test/input/tiny_merged.Somatic.hc'): [os.path.join(script_dir, 'normalize_varscan_test/input/tiny_indel.Somatic.hc'), os.path.join(script_dir, 'normalize_varscan_test/input/tiny_snp.Somatic.hc')], os.path.join(script_dir, 'normalize_varscan_test/input/tiny_merged.LOH.hc'): [os.path.join(script_dir, 'normalize_varscan_test/input/tiny_indel.LOH.hc'), os.path.join(script_dir, 'normalize_varscan_test/input/tiny_snp.LOH.hc')], os.path.join(script_dir, 'normalize_varscan_test/input/tiny_merged.Germline.hc'): [os.path.join(script_dir, 'normalize_varscan_test/input/tiny_indel.Germline.hc'), os.path.join(script_dir, 'normalize_varscan_test/input/tiny_snp.Germline.hc')]}
+        merge_candidates = {os.path.join(script_dir, 'normalize_varscan_test/output/tiny_merged.vcf'): [os.path.join(script_dir, 'normalize_varscan_test/input/tiny_indel.vcf'), os.path.join(script_dir, 'normalize_varscan_test/input/tiny_snp.vcf')]}
+        output_dir = os.path.join(script_dir, "normalize_varscan_test/output")
+        marked_as_hc = varscan.final_steps(hc_candidates, merge_candidates, output_dir)
+        
+        self.assertEquals(['chr1^14397^CTGT^C'], marked_as_hc)
+        
+    def test_handleHCFiles(self):
+        varscan = VarScan()
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        in_file = os.path.join(script_dir, "normalize_varscan_test\input\tiny_indel.Germline.hc")
+        out_dir = os.path.join(script_dir, "normalize_varscan_test\output")
+        hc_candidates = defaultdict(list)
+        hc_candidates = varscan.handle_hc_files(in_file, out_dir, hc_candidates)
+        
+        expected_hc_candidates = {os.path.join(script_dir, "normalize_varscan_test\\output\\input\tiny_merged.Germline.hc"): [os.path.join(script_dir, "normalize_varscan_test\\input\tiny_indel.Germline.hc")]}
+        self.assertEquals(expected_hc_candidates, hc_candidates)
+            
+    def test_validateFileSet(self):
+        varscan = VarScan()
+        all_keys = ["foo_merged.vcf", "foo_merged.Somatic.hc", "foo_merged.Germline.hc", "foo_merged.LOH.hc"]
+        sample_files = varscan.validate_file_set(all_keys)
+        
+        self.assertEqual({'foo': ['.vcf', '.Somatic.hc', '.Germline.hc', '.LOH.hc']}, sample_files)
+        
+    def test_validateFileSet_invalid(self):
+        varscan = VarScan()
+        all_keys = ["foo_merged.vcf", "foo_merged.hc", "foo_merged.Germline.hc", "foo_merged.LOH.hc"]
+        
+        with self.assertRaises(SystemExit) as cm:
+            sample_files = varscan.validate_file_set(all_keys)
+        self.assertEqual(cm.exception.code, 1)
+    
+    def test_validateFileSet_extraFiles(self):
+        varscan = VarScan()
+        all_keys = ["foo_merged.bar.hc", "foo_merged.vcf", "foo_merged.Somatic.hc", "foo_merged.Germline.hc", "foo_merged.LOH.hc"]
+        sample_files = varscan.validate_file_set(all_keys)
+        
+        self.assertEqual({'foo': ['.bar.hc', '.vcf', '.Somatic.hc', '.Germline.hc', '.LOH.hc']}, sample_files)
+        
+class StrelkaTestCase(unittest.TestCase):
+    def test_validateInputFile_valid(self):
+        strelka = Strelka()
+        input_file = ["##source=strelka", "foo"]
+        name, valid = strelka.validate_input_file(input_file)
+        
+        self.assertEquals("Strelka", name)
+        self.assertEquals(1, valid)
+        
+    def test_validateInputFile_invalid(self):
+        strelka = Strelka()
+        input_file = ["##bar", "foo"]
+        name, valid = strelka.validate_input_file(input_file)
+        
+        self.assertEquals("Strelka", name)
+        self.assertEquals(0, valid)
+        
+    def test_finalSteps(self):
+        strelka = Strelka()
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        hc_candidates  = {os.path.join(script_dir, 'normalize_varscan_test/input/tiny_merged.Somatic.hc'): [os.path.join(script_dir, 'normalize_varscan_test/input/tiny_indel.Somatic.hc'), os.path.join(script_dir, 'normalize_varscan_test/input/tiny_snp.Somatic.hc')], os.path.join(script_dir, 'normalize_varscan_test/input/tiny_merged.LOH.hc'): [os.path.join(script_dir, 'normalize_varscan_test/input/tiny_indel.LOH.hc'), os.path.join(script_dir, 'normalize_varscan_test/input/tiny_snp.LOH.hc')], os.path.join(script_dir, 'normalize_varscan_test/input/tiny_merged.Germline.hc'): [os.path.join(script_dir, 'normalize_varscan_test/input/tiny_indel.Germline.hc'), os.path.join(script_dir, 'normalize_varscan_test/input/tiny_snp.Germline.hc')]}
+        merge_candidates = {os.path.join(script_dir, 'normalize_varscan_test/output/tiny_merged.vcf'): [os.path.join(script_dir, 'normalize_varscan_test/input/tiny_indel.vcf'), os.path.join(script_dir, 'normalize_varscan_test/input/tiny_snp.vcf')]}
+        output_dir = os.path.join(script_dir, "normalize_varscan_test/output")
+        actual_merge_candidates = strelka.final_steps(hc_candidates, merge_candidates, output_dir)
+        
+        self.assertEquals(merge_candidates, actual_merge_candidates)
+        
+    def test_handleHCFiles(self):
+        strelka = Strelka()
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        in_file = os.path.join(script_dir, "normalize_varscan_test\input\tiny_indel.Germline.hc")
+        out_dir = os.path.join(script_dir, "normalize_varscan_test\output")
+        hc_candidates = defaultdict(list)
+        hc_candidates = strelka.handle_hc_files(in_file, out_dir, hc_candidates)
+        
+        self.assertEquals(defaultdict(list), hc_candidates)
+            
+    def test_validateFileSet(self):
+        strelka = Strelka()
+        all_keys = ["foo_merged.vcf", "foo_merged.Somatic.hc", "foo_merged.Germline.hc", "foo_merged.LOH.hc"]
+        sample_files = strelka.validate_file_set(all_keys)
+        
+        self.assertEqual(None, sample_files)
+    
 class IdentifyMergeCandidatesTestCase(unittest.TestCase):
-    def test_indentifyMergeCandidates_missingFiles(self):
+    def test_indentifyMergeCandidates_Strelka(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        input_dir = script_dir + "/normalize_strelka_test/input/"
+        in_files = [input_dir + "tiny_strelka.indels.vcf", input_dir + "tiny_strelka.snvs.vcf"]
+        output_dir = script_dir + "/normalize_strelka_test/output/"
+        merge_candidates, hc_candidates = identify_merge_candidates(in_files, output_dir, Strelka())
+        
+        self.assertEqual([output_dir + "tiny_strelka.merged.vcf"], merge_candidates.keys())
+        self.assertEqual([[input_dir + "tiny_strelka.indels.vcf", input_dir + "tiny_strelka.snvs.vcf"]], merge_candidates.values())
+        
+    def test_indentifyMergeCandidates_missingFiles_VarScan(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/normalize_varscan_test/input/"
         in_files = [input_dir + "foo_indel.vcf", input_dir + "tiny_indel.vcf", input_dir + "tiny_snp.vcf", input_dir + "tiny_indel.Germline.hc", input_dir + "tiny_indel.LOH.hc", input_dir + "tiny_indel.Somatic.hc", input_dir + "tiny_snp.Germline.hc", input_dir + "tiny_snp.LOH.hc", input_dir + "tiny_snp.Somatic.hc"]
@@ -19,7 +133,7 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
             merge_candidates = identify_merge_candidates(in_files, output_dir, VarScan())
         self.assertEqual(cm.exception.code, 1)
         
-    def test_indentifyMergeCandidates_HC(self):
+    def test_indentifyMergeCandidates_VarScan(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/normalize_varscan_test/input/"
         in_files = [input_dir + "tiny_indel.vcf", input_dir + "tiny_snp.vcf", input_dir + "tiny_indel.Germline.hc", input_dir + "tiny_indel.LOH.hc", input_dir + "tiny_indel.Somatic.hc", input_dir + "tiny_snp.Germline.hc", input_dir + "tiny_snp.LOH.hc", input_dir + "tiny_snp.Somatic.hc"]
@@ -29,7 +143,7 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
         self.assertEqual([output_dir + "tiny_merged.vcf"], merge_candidates.keys())
         self.assertEqual([[input_dir + "tiny_indel.vcf", input_dir + "tiny_snp.vcf"]], merge_candidates.values())
         
-    def test_identifyHcVariants(self):
+    def test_identifyHcVariants_VarScan(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/normalize_varscan_test/input/"
         hc_candidates = {"tiny_merged.vcf" : [input_dir + "tiny_indel.Germline.hc", input_dir + "tiny_indel.LOH.hc", input_dir + "tiny_indel.Somatic.hc", input_dir + "tiny_snp.Germline.hc", input_dir + "tiny_snp.LOH.hc", input_dir + "tiny_snp.Somatic.hc"]}
@@ -52,7 +166,7 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
                                 'chr1^16748087^G^A': 1, 'chr1^248801778^A^T': 1, 'chr2^243504^C^T': 1, 'chr1^51061718^T^-A': 1, 'chr7^91627046^C^G': 1, 'chr4^166964590^T^A': 1, 'chr4^88536899^A^G': 1, 'chr2^279705^C^T': 1}
         self.assertEqual(expected_hc_variants, hc_variants)
         
-    def test_markHcCandidates(self):
+    def test_markHcCandidates_VarScan(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/normalize_varscan_test/merged_vcf/"
         output_dir = script_dir + "/normalize_varscan_test/output/"
@@ -78,7 +192,48 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
         self.assertEqual(['chr1^14397^CTGT^C'], marked_as_hc)
         
 class MergeTestCase(unittest.TestCase):
-    def test_merge_getHeaders(self):
+    def test_merge_getHeaders_Strelka(self):
+        with TempDirectory() as input_dir:
+            input_dir.write("A.vcf","##source=strelka\n##foobarbaz\n#CHROM\tNORMAL\tTUMOR\n123\n456\n")
+ 
+            file = os.path.join(input_dir.path, "A.vcf")
+            meta_headers, header = get_headers(file)
+            self.assertEqual(["##source=strelka\n", "##foobarbaz\n"], meta_headers)
+            self.assertEqual("#CHROM\tNORMAL\tTUMOR\n", header)
+             
+        input_dir.cleanup()
+#     
+    def test_merge_mergeData_Strelka(self):
+        with TempDirectory() as input_dir:
+            input_dir.write("A.snvs.vcf","##source=strelka\n#CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tSAMPLE\n1\t2352\tA\tG\tfoo\tDP\t234\n1\t235234\tA\tG\tfoo\tDP\t234\n2\t2352\tA\tG\tfoo\tDP\t234\n")
+            input_dir.write("A.indels.vcf","##source=strelka\n#CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tSAMPLE\n1\t2700\tA\tG\tfoo\tDP\t345\n10\t2352\tA\tG\tfoo\tDP\t234\n1\t2\tA\tG\tfoo\tDP\t234\n")
+ 
+            file1 = os.path.join(input_dir.path, "A.snvs.vcf")
+            file2 = os.path.join(input_dir.path, "A.indels.vcf")
+            all_variants = merge_data([file1, file2])
+ 
+            self.assertEqual('1\t2352\tA\tG\tfoo\tDP\t234\n', all_variants[0])
+            self.assertEqual('1\t235234\tA\tG\tfoo\tDP\t234\n', all_variants[1])
+            self.assertEqual('2\t2352\tA\tG\tfoo\tDP\t234\n', all_variants[2])
+            self.assertEqual('1\t2700\tA\tG\tfoo\tDP\t345\n', all_variants[3])
+            self.assertEqual('10\t2352\tA\tG\tfoo\tDP\t234\n', all_variants[4])
+            self.assertEqual('1\t2\tA\tG\tfoo\tDP\t234\n', all_variants[5])
+        input_dir.cleanup()
+         
+    def test_merge_mergeDataSamePos_Strelka(self):
+        with TempDirectory() as input_dir:
+            input_dir.write("A.snvs.vcf","##source=strelka\n#CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tSAMPLE\n1\t2352\tA\tG\tfoo\tDP\t234\n")
+            input_dir.write("A.indels.vcf","##source=strelka\n#CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tSAMPLE\n1\t2352\tA\tGT\tfoo\tDP\t234\n")
+ 
+            file1 = os.path.join(input_dir.path, "A.snvs.vcf")
+            file2 = os.path.join(input_dir.path, "A.indels.vcf")
+            all_variants = merge_data([file1, file2])
+ 
+            self.assertEqual('1\t2352\tA\tG\tfoo\tDP\t234\n', all_variants[0])
+            self.assertEqual('1\t2352\tA\tGT\tfoo\tDP\t234\n', all_variants[1])
+        input_dir.cleanup()
+        
+    def test_merge_getHeaders_VarScan(self):
         with TempDirectory() as input_dir:
             input_dir.write("A.vcf","##source=VarScan2\n##foobarbaz\n#CHROM\tNORMAL\tTUMOR\n123\n456\n")
 
@@ -89,7 +244,7 @@ class MergeTestCase(unittest.TestCase):
             
         input_dir.cleanup()
     
-    def test_merge_mergeData(self):
+    def test_merge_mergeData_VarScan(self):
         with TempDirectory() as input_dir:
             input_dir.write("A.snp.vcf","##source=VarScan2\n#CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tSAMPLE\n1\t2352\tA\tG\tfoo\tDP\t234\n1\t235234\tA\tG\tfoo\tDP\t234\n2\t2352\tA\tG\tfoo\tDP\t234\n")
             input_dir.write("A.indel.vcf","##source=VarScan2\n#CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tSAMPLE\n1\t2700\tA\tG\tfoo\tDP\t345\n10\t2352\tA\tG\tfoo\tDP\t234\n1\t2\tA\tG\tfoo\tDP\t234\n")
@@ -106,7 +261,7 @@ class MergeTestCase(unittest.TestCase):
             self.assertEqual('1\t2\tA\tG\tfoo\tDP\t234\n', all_variants[5])
         input_dir.cleanup()
         
-    def test_merge_mergeDataSamePos(self):
+    def test_merge_mergeDataSamePos_VarScan(self):
         with TempDirectory() as input_dir:
             input_dir.write("A.snp.vcf","##source=VarScan2\n#CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tSAMPLE\n1\t2352\tA\tG\tfoo\tDP\t234\n")
             input_dir.write("A.indel.vcf","##source=VarScan2\n#CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tSAMPLE\n1\t2352\tA\tGT\tfoo\tDP\t234\n")
@@ -118,29 +273,22 @@ class MergeTestCase(unittest.TestCase):
             self.assertEqual('1\t2352\tA\tG\tfoo\tDP\t234\n', all_variants[0])
             self.assertEqual('1\t2352\tA\tGT\tfoo\tDP\t234\n', all_variants[1])
         input_dir.cleanup()
-        
-    def xtest_merge_validateFileSet(self):
-        all_keys = ["foo_merged.vcf", "foo_merged.Somatic.hc", "foo_merged.Germline.hc", "foo_merged.LOH.hc"]
-        sample_files = validate_file_set(all_keys)
-        
-        self.assertEqual({'foo': ['.vcf', '.Somatic.hc', '.Germline.hc', '.LOH.hc']}, sample_files)
-        
-    def xtest_merge_validateFileSet_invalid(self):
-        all_keys = ["foo_merged.vcf", "foo_merged.hc", "foo_merged.Germline.hc", "foo_merged.LOH.hc"]
-        
-        with self.assertRaises(SystemExit) as cm:
-            sample_files = validate_file_set(all_keys)
-        self.assertEqual(cm.exception.code, 1)
-    
-    def xtest_merge_validateFileSet_extraFiles(self):
-        all_keys = ["foo_merged.bar.hc", "foo_merged.vcf", "foo_merged.Somatic.hc", "foo_merged.Germline.hc", "foo_merged.LOH.hc"]
-        sample_files = validate_file_set(all_keys)
-        
-        self.assertEqual({'foo': ['.bar.hc', '.vcf', '.Somatic.hc', '.Germline.hc', '.LOH.hc']}, sample_files)
-        
 
 class ValidateSplitLine(unittest.TestCase):
-    def test_validateSplitLine_valid(self):
+    def test_validateSplitLine_valid_Strelka(self):
+        split_line = ["chr1", "234", ".", "A", "G", ".", "PASS", "SS=5", "DP", "345"]
+        invalid, warn, line = validate_split_line(split_line, 0, 0)
+        self.assertEqual(0, invalid)
+        self.assertEqual(0, warn)
+        self.assertEqual(split_line, line)
+         
+        split_line = ["chr1", "234", ".", "A", "G", ".", "PASS", "SS=2", "DP", "345"]
+        invalid, warn, line = validate_split_line(split_line, 0, 0)
+        self.assertEqual(0, invalid)
+        self.assertEqual(0, warn)
+        self.assertEqual(split_line, line)
+        
+    def test_validateSplitLine_valid_VarScan(self):
         split_line = ["chr1", "234", ".", "A", "G", ".", "PASS", "SS=5", "DP", "345"]
         invalid, warn, line = validate_split_line(split_line, 0, 0)
         self.assertEqual(0, invalid)
@@ -153,7 +301,7 @@ class ValidateSplitLine(unittest.TestCase):
         self.assertEqual(0, warn)
         self.assertEqual(split_line, line)
         
-    def test_validateSplitLine_invalidAltOkaySS(self):
+    def test_validateSplitLine_invalidAltOkaySS_VarScan(self):
         split_line = ["chr1", "234", ".", "A", "G/C", ".", "PASS", "SS=5", "DP", "345"]
         invalid, warn, line = validate_split_line(split_line, 0, 0)
         self.assertEqual(0, invalid)
@@ -172,7 +320,7 @@ class ValidateSplitLine(unittest.TestCase):
         self.assertEqual(1, warn)
         self.assertEqual([], line)
         
-    def test_validateSplitLine_invalidRefOkaySS(self):
+    def test_validateSplitLine_invalidRefOkaySS_VarScan(self):
         split_line = ["chr1", "234", ".", "A/C", "G", ".", "PASS", "SS=5", "DP", "345"]
         invalid, warn, line = validate_split_line(split_line, 0, 0)
         self.assertEqual(0, invalid)
@@ -191,7 +339,7 @@ class ValidateSplitLine(unittest.TestCase):
         self.assertEqual(1, warn)
         self.assertEqual([], line)
         
-    def test_validateSplitLine_invalidAltBadSS(self):
+    def test_validateSplitLine_invalidAltBadSS_VarScan(self):
         split_line = ["chr1", "234", ".", "A", "G/C", ".", "PASS", "SS=2", "DP", "345"]
         invalid, warn, line = validate_split_line(split_line, 0, 0)
         self.assertEqual(1, invalid)
@@ -210,7 +358,7 @@ class ValidateSplitLine(unittest.TestCase):
         self.assertEqual(0, warn)
         self.assertEqual([], line)
         
-    def test_validateSplitLine_invalidRefBadSS(self):
+    def test_validateSplitLine_invalidRefBadSS_VarScan(self):
         split_line = ["chr1", "234", ".", "A/C", "G", ".", "PASS", "SS=2", "DP", "345"]
         invalid, warn, line = validate_split_line(split_line, 0, 0)
         self.assertEqual(1, invalid)
