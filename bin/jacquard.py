@@ -6,8 +6,9 @@ import sys
 import pivot_variants
 import rollup_genes
 import tag 
-import normalize_varscan
-import normalize_strelka
+import normalize_utils
+# import normalize_varscan
+# import normalize_strelka
 import filter_hc_somatic
 import merge
 import consensus
@@ -37,5 +38,6 @@ def main(modules, arguments):
 
 
 if __name__ == "__main__":
-    main([normalize_varscan, normalize_strelka, tag, filter_hc_somatic, merge, consensus, format, rollup_genes, pivot_variants], sys.argv[1:])
+#     main([normalize_varscan, normalize_strelka, tag, filter_hc_somatic, merge, consensus, format, rollup_genes, pivot_variants], sys.argv[1:])
+    main([normalize_utils, tag, filter_hc_somatic, merge, consensus, format, rollup_genes, pivot_variants], sys.argv[1:])
     

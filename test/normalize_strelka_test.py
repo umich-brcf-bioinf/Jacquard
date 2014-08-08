@@ -6,7 +6,7 @@ import subprocess
 import sys
 import testfixtures
 from testfixtures import TempDirectory
-from bin.normalize_utils import identify_merge_candidates, get_headers, merge_data, validate_split_line, identify_hc_variants, mark_hc_variants, validate_file_set
+from bin.normalize_utils import VarScan, Strelka, Unknown, identify_merge_candidates, get_headers, merge_data, validate_split_line, identify_hc_variants, mark_hc_variants
         
 class IdentifyMergeCandidatesTestCase(unittest.TestCase):
     def test_indentifyMergeCandidates_HC(self):
@@ -14,7 +14,7 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
         input_dir = script_dir + "/normalize_strelka_test/input/"
         in_files = [input_dir + "tiny_strelka.indels.vcf", input_dir + "tiny_strelka.snvs.vcf"]
         output_dir = script_dir + "/normalize_strelka_test/output/"
-        merge_candidates, hc_candidates = identify_merge_candidates(in_files, output_dir, "strelka")
+        merge_candidates, hc_candidates = identify_merge_candidates(in_files, output_dir, Strelka())
         
         self.assertEqual([output_dir + "tiny_strelka.merged.vcf"], merge_candidates.keys())
         self.assertEqual([[input_dir + "tiny_strelka.indels.vcf", input_dir + "tiny_strelka.snvs.vcf"]], merge_candidates.values())

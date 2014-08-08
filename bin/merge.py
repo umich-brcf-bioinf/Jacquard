@@ -433,7 +433,7 @@ def determine_caller_and_split_mult_alts(reader, writer, unknown_callers):
                     writer.write(new_line)
                     count += 1
             else:
-            	new_line = fields[:7] + ["."] + fields[8:]
+                new_line = fields[:7] + ["."] + fields[8:]
                 writer.write("\t".join(new_line))
 
     if caller == "unknown":

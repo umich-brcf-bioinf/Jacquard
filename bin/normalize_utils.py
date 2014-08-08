@@ -6,6 +6,89 @@ from os import listdir
 import re
 import jacquard_utils
 
+class VarScan():
+    def __init__(self):
+        self.name = "VarScan"
+        self.meta_header = "##jacquard.normalize_varscan.sources={0},{1}\n"
+        self.file_name_search = "snp|indel"
+        
+    def validate_input_file(self, input_file):
+        valid = 0
+        for line in input_file:
+            if line.startswith("##source=VarScan2"):
+                valid = 1
+            elif line.startswith("##"):
+                continue
+            else:
+                break
+        return (self.name, valid)
+    
+    def final_steps(self, hc_candidates, merge_candidates, output_dir):
+        hc_variants = identify_hc_variants(hc_candidates)
+        marked_as_hc = mark_hc_variants(hc_variants, merge_candidates, output_dir)
+    
+    def handle_hc_files(self, in_file, out_dir, hc_candidates):
+        merged_fname = re.sub("snp|indel", "merged", os.path.join(out_dir, os.path.basename(in_file)))
+        hc_candidates[merged_fname].append(in_file)
+        
+        return hc_candidates
+        
+    def validate_file_set(self, all_keys):
+        sample_files = defaultdict(list)
+        for key in all_keys:
+            prefix = key.split("merged")[0]
+            suffix = key.split("merged")[1]
+            sample_files[prefix.strip("_")].append(suffix)
+    
+        required_vals = [".Germline.hc", ".LOH.hc", ".Somatic.hc", ".vcf"]
+        missing = 0
+        added = 0
+        for key, val in sample_files.items():
+            missing_files, missing = check_for_missing(required_vals, val, key, missing)
+            added_files, added = check_for_unknown(required_vals, val, key, added)
+            
+        if missing == 1:
+            print "ERROR: Some required files were missing. Review input directory and try again"
+            exit(1)
+        if added == 1:
+            print "WARNING: Some samples had unknown .hc files"
+            
+        return sample_files
+    
+class Strelka():
+    def __init__(self):
+        self.name = "Strelka"
+        self.meta_header = "##jacquard.normalize_strelka.sources={0},{1}\n"
+        self.file_name_search = "snvs|indels"
+    
+    def validate_input_file(self, input_file):
+        valid = 0
+        for line in input_file:
+            if line.startswith("##source=strelka"):
+                valid = 1
+            elif line.startswith("##"):
+                continue
+            else:
+                break
+        return (self.name, valid)
+    
+    def final_steps(self, hc_candidates, merge_candidates, output_dir):
+        print "Wrote [{0}] VCF files to [{1}]".format(len(merge_candidates.keys()), output_dir)
+    
+    def handle_hc_files(self, in_file, out_dir, hc_candidates):
+        return hc_candidates
+        
+    def validate_file_set(self, all_keys):
+        pass
+        
+class Unknown():
+    def __init__(self):
+        self.name = "Unknown"
+        
+    def validate_input_file(self, input_file):
+        valid = 1
+        return (self.name, valid)
+    
 def identify_hc_variants(hc_candidates):
     hc_variants = {}
     for key, vals in hc_candidates.items():
@@ -101,7 +184,6 @@ def merge_data(files):
                 invalid, warn, valid_line = validate_split_line(split_line, invalid, warn)
                 if valid_line != []:
                     all_variants.append("\t".join(valid_line))
-#                 all_variants.append("\t".join(split_line))
         f.close()
         
     return all_variants
@@ -110,11 +192,7 @@ def merge(merge_candidates, output_dir, caller):
     for merge_file in merge_candidates.keys():
         pair = merge_candidates[merge_file]
         meta_headers, header = get_headers(pair[0])
-        
-        if caller == "strelka":
-            sample_sources = "##jacquard.normalize_strelka.sources={0},{1}\n".format(os.path.basename(pair[0]), os.path.basename(pair[1]))
-        elif caller == "varscan":
-            sample_sources = "##jacquard.normalize_varscan.sources={0},{1}\n".format(os.path.basename(pair[0]), os.path.basename(pair[1]))
+        sample_sources = caller.meta_header.format(os.path.basename(pair[0]), os.path.basename(pair[1]))
         print os.path.basename(merge_file) + ": " + sample_sources
         
         meta_headers.append(sample_sources)
@@ -149,28 +227,6 @@ def check_for_unknown(required_vals, val, key, added):
      
     return added_files, added
 
-def validate_file_set(all_keys):
-    sample_files = defaultdict(list)
-    for key in all_keys:
-        prefix = key.split("merged")[0]
-        suffix = key.split("merged")[1]
-        sample_files[prefix.strip("_")].append(suffix)
-
-    required_vals = [".Germline.hc", ".LOH.hc", ".Somatic.hc", ".vcf"]
-    missing = 0
-    added = 0
-    for key, val in sample_files.items():
-        missing_files, missing = check_for_missing(required_vals, val, key, missing)
-        added_files, added = check_for_unknown(required_vals, val, key, added)
-        
-    if missing == 1:
-        print "ERROR: Some required files were missing. Review input directory and try again"
-        exit(1)
-    if added == 1:
-        print "WARNING: Some samples had unknown .hc files"
-        
-    return sample_files
-
 def identify_merge_candidates(in_files, out_dir, caller):
     merge_candidates = defaultdict(list)
     hc_candidates = defaultdict(list)
@@ -178,27 +234,47 @@ def identify_merge_candidates(in_files, out_dir, caller):
     for in_file in in_files:
         fname, extension = os.path.splitext(in_file)
         if extension == ".vcf":
-            if caller == "strelka":
-                merged_fname = re.sub("snvs|indels", "merged", os.path.join(out_dir, os.path.basename(in_file)))
-            elif caller == "varscan":
-                merged_fname = re.sub("snp|indel", "merged", os.path.join(out_dir, os.path.basename(in_file)))
+            merged_fname = re.sub(caller.file_name_search, "merged", os.path.join(out_dir, os.path.basename(in_file)))
             merge_candidates[merged_fname].append(in_file)
-            
-        elif extension == ".hc" and caller == "varscan":
-            merged_fname = re.sub("snp|indel", "merged", os.path.join(out_dir, os.path.basename(in_file)))
-            hc_candidates[merged_fname].append(in_file)
+        elif extension == ".hc":
+            hc_candidates = caller.handle_hc_files(in_file, out_dir, hc_candidates)
     
-    if caller == "varscan":
-        all_keys = hc_candidates.keys() + merge_candidates.keys()
-        sample_files = validate_file_set(all_keys)
+    all_keys = hc_candidates.keys() + merge_candidates.keys()
+    caller.validate_file_set(all_keys)
 
     return merge_candidates, hc_candidates
 
-def merge_and_sort(input_dir, output_dir, caller, execution_context=[]):
+def validate_callers(in_file, validated_callers, callers):
+    for caller in callers:
+        caller_name, valid = caller.validate_input_file(in_file)
+        if valid == 1:
+            if caller_name == "Unknown":
+                print "ERROR: Unknown input file type"
+                exit(1)
+            if caller_name not in validated_callers:
+                validated_callers.append(caller_name)
+        break
+    
+    return validated_callers
+
+def merge_and_sort(input_dir, output_dir, callers, execution_context=[]):
     print "\n".join(execution_context)
 
     in_files = sorted(glob.glob(os.path.join(input_dir,"*")))
-    
+    validated_callers = []
+    for in_file_name in in_files:
+        in_file = open(in_file_name, "r")
+        validated_callers = validate_callers(in_file, validated_callers, callers)
+        in_file.close()
+
+    if len(validated_callers) == 1:
+        for initial_caller in callers:
+            if validated_callers[0] == initial_caller.name:
+                caller = initial_caller
+    else:
+        print "ERROR: It appears that input directory contains files called with different variant callers. Input directory should only have files for one caller. Review input and try again."
+        exit(1)
+
     merge_candidates, hc_candidates = identify_merge_candidates(in_files, output_dir, caller)
 
     total_files = 0
@@ -208,8 +284,20 @@ def merge_and_sort(input_dir, output_dir, caller, execution_context=[]):
     
     merge(merge_candidates, output_dir, caller)
     
-    if caller == "strelka":
-        print "Wrote [{0}] VCF files to [{1}]".format(len(merge_candidates.keys()), output_dir)
-    elif caller == "varscan":
-        hc_variants = identify_hc_variants(hc_candidates)
-        marked_as_hc = mark_hc_variants(hc_variants, merge_candidates, output_dir)
+    caller.final_steps(hc_candidates, merge_candidates, output_dir)
+        
+def add_subparser(subparser):
+    parser_normalize_vs = subparser.add_parser("normalize_utils", help="Accepts a directory containing VarScan VCF snp/indel results or Strelka VCF snvs/indels results and creates a new directory of merged, sorted VCFs with added high confidence tags")
+    parser_normalize_vs.add_argument("input_dir", help="Path to directory containing VCFs. Each sample must have exactly two files matching these patterns: <sample>.indel.vcf, <sample>.snp.vcf, <sample>.indel.Germline.hc, <sample>.snp.Germline.hc, <sample>.indel.LOH.hc, <sample>.snp.LOH.hc, <sample>.indel.Somatic.hc, <sample>.snp.somatic.hc, <sample>.indel.*.hc, <sample>.snp.*.hc ")
+    parser_normalize_vs.add_argument("output_dir", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
+
+def execute(args, execution_context): 
+    input_dir = os.path.abspath(args.input_dir)
+    output_dir = os.path.abspath(args.output_dir)
+    
+    jacquard_utils.validate_directories(input_dir, output_dir)
+
+    callers = [Strelka(), VarScan(), Unknown()]
+    merge_and_sort(input_dir, output_dir, callers, execution_context)
+    
+        
