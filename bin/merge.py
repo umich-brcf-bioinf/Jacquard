@@ -126,7 +126,7 @@ def validate_parameters(input_keys, first_line, header_names):
     return raise_err, message
 
 def project_prepivot(df):
-    remove_columns = set(["ID", "QUAL", "FILTER", "INFO"])
+    remove_columns = set(["ID", "QUAL", "FILTER"])
 
     for col in df.columns:
         if col in remove_columns:
@@ -148,7 +148,7 @@ def create_initial_df(sample_file, header_index):
     return initial_df
   
 def append_fname_to_samples(df, file_name, rows, caller, mutect_dict):
-    indexed_df = df.set_index(rows)
+    indexed_df = df.set_index(rows + ["INFO"])
     
     if caller == "MuTect":
         for key, val in mutect_dict.items():
@@ -191,7 +191,7 @@ def merge_samples(reduced_df, combined_df, rows):
     if combined_df.empty:
         combined_df = reduced_df
     else:
-        combined_df = merge(combined_df, reduced_df, how="outer", on=rows)
+        combined_df = merge(combined_df, reduced_df, how="outer", on=rows+["INFO"])
         
     return combined_df    
     
@@ -399,8 +399,8 @@ def create_new_line(alt_allele_number, fields):
                 new_dict[key] = val
         new_samples.append(":".join(new_dict.values()))
 
-    new_line = fields[0:4] + [alt] + fields[5:9] + new_samples
-    
+    new_line = fields[0:4] + [alt] + fields[5:7] + ["Mult_Alt"] + [fields[8]] + new_samples
+
     return "\t".join(new_line) + "\n"
     
 def determine_caller_and_split_mult_alts(reader, writer, unknown_callers):
@@ -433,7 +433,8 @@ def determine_caller_and_split_mult_alts(reader, writer, unknown_callers):
                     writer.write(new_line)
                     count += 1
             else:
-                writer.write(line)
+            	new_line = fields[:7] + ["."] + fields[8:]
+                writer.write("\t".join(new_line))
 
     if caller == "unknown":
         print "ERROR: unable to determine variant caller for file [{0}]".format(reader)

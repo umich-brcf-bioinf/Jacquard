@@ -366,7 +366,7 @@ def get_headers(input_file):
     for line in f:
         count += 1
         if line.startswith("##") or line.startswith("#Epee"):
-            meta_headers.append("#")
+            meta_headers.append(line)
         elif line.startswith("#"):
             headers.append(count)
             header_names.append(line)

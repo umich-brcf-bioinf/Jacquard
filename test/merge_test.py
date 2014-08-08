@@ -31,17 +31,17 @@ class MergeTestCase(unittest.TestCase):
 
         pivoter = VariantPivoter(rows)
         sample_A_file = \
-'''COORDINATE\tFORMAT\tSamp1
-1\tDP:ESAF\t1:0.2
-2\tDP:ESAF\t12:0.2
-3\tDP:ESAF\t31:0.2
-4\tDP:ESAF\t6:0.2'''
+'''COORDINATE\tINFO\tFORMAT\tSamp1
+1\tfoo\tDP:ESAF\t1:0.2
+2\tfoo\tDP:ESAF\t12:0.2
+3\tfoo\tDP:ESAF\t31:0.2
+4\tfoo\tDP:ESAF\t6:0.2'''
         sample_B_file = \
-'''COORDINATE\tFORMAT\tSamp2
-1\tDP:ESAF\t5:0.2
-2\tDP:ESAF\t2:0.2
-3\tDP:ESAF\t74:0.2
-4\tDP:ESAF\t25:0.2'''
+'''COORDINATE\tINFO\tFORMAT\tSamp2
+1\tfoo\tDP:ESAF\t5:0.2
+2\tfoo\tDP:ESAF\t2:0.2
+3\tfoo\tDP:ESAF\t74:0.2
+4\tfoo\tDP:ESAF\t25:0.2'''
     
         pivoter.add_file(StringIO(sample_A_file), 0, "MuTect", {}, "file1")
         pivoter.add_file(StringIO(sample_B_file), 0, "MuTect", {}, "file2")
@@ -49,11 +49,11 @@ class MergeTestCase(unittest.TestCase):
         actual_df = pivoter._combined_df
         actual_df.columns.names = [""]
         expected_string = \
-'''COORDINATE\tMuTect|file1|FORMAT\tMuTect|file1|Samp1\tMuTect|file2|FORMAT\tMuTect|file2|Samp2
-1\tDP:ESAF\t1:0.2\tDP:ESAF\t5:0.2
-2\tDP:ESAF\t12:0.2\tDP:ESAF\t2:0.2
-3\tDP:ESAF\t31:0.2\tDP:ESAF\t74:0.2
-4\tDP:ESAF\t6:0.2\tDP:ESAF\t25:0.2'''
+'''COORDINATE\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|Samp1\tMuTect|file2|FORMAT\tMuTect|file2|Samp2
+1\tfoo\tDP:ESAF\t1:0.2\tDP:ESAF\t5:0.2
+2\tfoo\tDP:ESAF\t12:0.2\tDP:ESAF\t2:0.2
+3\tfoo\tDP:ESAF\t31:0.2\tDP:ESAF\t74:0.2
+4\tfoo\tDP:ESAF\t6:0.2\tDP:ESAF\t25:0.2'''
         expected_df = dataframe(expected_string)
         expected_df.columns.names = [""]
 
@@ -251,30 +251,30 @@ class PivotTestCase(unittest.TestCase):
     
     def test_mergeSamples_populatedCombinedDf(self): 
         dataString1 = \
-'''COORDINATE\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B
-1\tGT:ESAF\t10:0.2\t100:0.2
-2\tGT:ESAF\t20:0.2\t200:0.2
-3\tGT:ESAF\t30:0.2\t300:0.2
-4\tGT:ESAF\t40:0.2\t400:0.2'''
+'''COORDINATE\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B
+1\tfoo\tGT:ESAF\t10:0.2\t100:0.2
+2\tfoo\tGT:ESAF\t20:0.2\t200:0.2
+3\tfoo\tGT:ESAF\t30:0.2\t300:0.2
+4\tfoo\tGT:ESAF\t40:0.2\t400:0.2'''
         df1 = pd.read_csv(StringIO(dataString1), sep="\t", header=False, dtype='str')
         
         dataString2 = \
-'''COORDINATE\tfile2|FORMAT\tfile2|sample_C\tfile2|sample_D
-1\tGT:ESAF\t10:0.2\t100:0.2
-2\tGT:ESAF\t20:0.2\t200:0.2
-3\tGT:ESAF\t30:0.2\t300:0.2
-4\tGT:ESAF\t40:0.2\t400:0.2'''
+'''COORDINATE\tINFO\tfile2|FORMAT\tfile2|sample_C\tfile2|sample_D
+1\tfoo\tGT:ESAF\t10:0.2\t100:0.2
+2\tfoo\tGT:ESAF\t20:0.2\t200:0.2
+3\tfoo\tGT:ESAF\t30:0.2\t300:0.2
+4\tfoo\tGT:ESAF\t40:0.2\t400:0.2'''
         df2 = pd.read_csv(StringIO(dataString2), sep="\t", header=False, dtype='str')
 
         combined_df = df2
         actual_df = merge_samples(combined_df, df1, ["COORDINATE"])
 
         expected_data = StringIO(
-'''COORDINATE\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|FORMAT\tfile2|sample_C\tfile2|sample_D
-1\tGT:ESAF\t10:0.2\t100:0.2\tGT:ESAF\t10:0.2\t100:0.2
-2\tGT:ESAF\t20:0.2\t200:0.2\tGT:ESAF\t20:0.2\t200:0.2
-3\tGT:ESAF\t30:0.2\t300:0.2\tGT:ESAF\t30:0.2\t300:0.2
-4\tGT:ESAF\t40:0.2\t400:0.2\tGT:ESAF\t40:0.2\t400:0.2''')
+'''COORDINATE\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|FORMAT\tfile2|sample_C\tfile2|sample_D
+1\tfoo\tGT:ESAF\t10:0.2\t100:0.2\tGT:ESAF\t10:0.2\t100:0.2
+2\tfoo\tGT:ESAF\t20:0.2\t200:0.2\tGT:ESAF\t20:0.2\t200:0.2
+3\tfoo\tGT:ESAF\t30:0.2\t300:0.2\tGT:ESAF\t30:0.2\t300:0.2
+4\tfoo\tGT:ESAF\t40:0.2\t400:0.2\tGT:ESAF\t40:0.2\t400:0.2''')
         expected_df = pd.read_csv(expected_data, sep="\t", header=False, dtype='str')
 
         tm.assert_frame_equal(expected_df, actual_df)
@@ -311,7 +311,7 @@ class PivotTestCase(unittest.TestCase):
         caller, unknown_callers, mutect_dict = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
         self.assertEquals("MuTect", caller)
         self.assertEquals(0, unknown_callers)
-        self.assertEquals(["##foo", "##jacquard.tag.caller=MuTect", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
+        self.assertEquals(["##foo", "##jacquard.tag.caller=MuTect", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\tMult_Alt\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\tMult_Alt\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
      
     def test_determineCaller_invalid(self):
         reader = MockReader("##foo\n##jacquard.tag.foo\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2\n1\t2324\t.\tA\tG,T\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.234,0.124:78:25,312")
@@ -320,19 +320,19 @@ class PivotTestCase(unittest.TestCase):
         caller, unknown_callers, mutect_dict = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
         self.assertEquals("unknown", caller)
         self.assertEquals(3, unknown_callers)
-        self.assertEquals(["##foo", "##jacquard.tag.foo", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
+        self.assertEquals(["##foo", "##jacquard.tag.foo", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\tMult_Alt\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\tMult_Alt\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
         
     def test_createNewLine(self):
         fields = ["1", "42", ".", "A", "G,CT", ".", ".", "foo", "DP:JQ_AF_VS:AF", "23:0.24,0.32:0.2354,0.324", "23:0.25,0.36:0.254,0.3456"]
         
         alt_allele_number = 0
         actual_line = create_new_line(alt_allele_number, fields)
-        expected_line = "\t".join(["1", "42", ".", "A", "G", ".", ".", "foo", "DP:JQ_AF_VS:AF", "23:0.24:0.2354,0.324", "23:0.25:0.254,0.3456\n"])
+        expected_line = "\t".join(["1", "42", ".", "A", "G", ".", ".", "Mult_Alt", "DP:JQ_AF_VS:AF", "23:0.24:0.2354,0.324", "23:0.25:0.254,0.3456\n"])
         self.assertEquals(expected_line, actual_line)
         
         alt_allele_number = 1
         actual_line = create_new_line(alt_allele_number, fields)
-        expected_line = "\t".join(["1", "42", ".", "A", "CT", ".", ".", "foo", "DP:JQ_AF_VS:AF", "23:0.32:0.2354,0.324", "23:0.36:0.254,0.3456\n"])
+        expected_line = "\t".join(["1", "42", ".", "A", "CT", ".", ".", "Mult_Alt", "DP:JQ_AF_VS:AF", "23:0.32:0.2354,0.324", "23:0.36:0.254,0.3456\n"])
         self.assertEquals(expected_line, actual_line)
         
     def test_validateSamplesForCallers_valid(self):
