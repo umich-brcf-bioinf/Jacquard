@@ -191,6 +191,17 @@ def add_subparser(subparser):
 def execute(args, execution_context): 
     input_file = os.path.abspath(args.input_file)
     output_file = os.path.abspath(args.output_file)
+    
+    fname, extension = os.path.splitext(os.path.basename(input_file))
+    if not os.path.isfile(input_file) or extension != ".vcf":
+        print "ERROR: Input file [{0}] must be a VCF file.".format(input_file)
+        exit(1)
+        
+    fname, extension = os.path.splitext(os.path.basename(output_file))
+    if extension != ".vcf":
+        print "ERROR: Output file [{0}] must be a VCF file.".format(output_file)
+        exit(1)
+        
     print "\n".join(execution_context)
     
     af_range = []
@@ -200,6 +211,7 @@ def execute(args, execution_context):
     input_file_reader = open(input_file, "r")
     tmp_file_writer = open(tmp_file, "w")
 
+    print "Adding consensus values to temporary file [{0}]".format(tmp_file)
     meta_headers, header, lines = iterate_file(input_file_reader, tmp_file_writer, tmp_file, af_range, dp_range, "consensus")
     add_consensus(meta_headers, header, lines, tmp_file_writer, tmp_file)
     
@@ -209,6 +221,7 @@ def execute(args, execution_context):
     tmp_file_reader = open(tmp_file, "r")
     output_file_writer = open(output_file, "w")
     
+    print "Adding z-scores to [{0}]".format(output_file)
     meta_headers, header, lines = iterate_file(tmp_file_reader, output_file_writer, output_file, af_range, dp_range, "zscore")
     add_zscore(meta_headers, header, lines, output_file_writer, output_file, af_range, dp_range)
     

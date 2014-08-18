@@ -425,11 +425,10 @@ class TagVarScanTestCase(unittest.TestCase):
             
             output_list = self.output.getvalue().splitlines()
 
-            self.assertEqual(8, len(output_list))
-
+            self.assertEqual(10, len(output_list))
             self.assertEqual(True, output_list[0].startswith("execution"))
             self.assertEqual(True, output_list[1].startswith("Processing [2]"))
-            self.assertEqual(True, output_list[7].startswith("Wrote [2]"))
+            self.assertEqual(True, output_list[9].startswith("Wrote [2]"))
             
     def test_tagVarScanFilestest_tagMutectFiles_inputDirectoryNoVCFs(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))

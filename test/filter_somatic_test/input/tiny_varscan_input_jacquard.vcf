@@ -1,38 +1,38 @@
-##fileformat=VCFv4.1
-##source=VarScan2
-##INFO=<ID=DP,Number=1,Type=Integer,Description="Total depth of quality bases">
-##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description="Indicates if record is a somatic mutation">
-##INFO=<ID=SS,Number=1,Type=String,Description="Somatic status of variant (0=Reference,1=Germline,2=Somatic,3=LOH, or 5=Unknown)">
-##INFO=<ID=SSC,Number=1,Type=String,Description="Somatic score in Phred scale (0-255) derived from somatic p-value">
-##INFO=<ID=GPV,Number=1,Type=Float,Description="Fisher's Exact Test P-value of tumor+normal versus no variant for Germline calls">
-##INFO=<ID=SPV,Number=1,Type=Float,Description="Fisher's Exact Test P-value of tumor versus normal for Somatic/LOH calls">
-##FILTER=<ID=str10,Description="Less than 10% or more than 90% of variant supporting reads on one strand">
-##FILTER=<ID=indelError,Description="Likely artifact due to indel reads at this position">
-##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
-##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
-##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
-##FORMAT=<ID=RD,Number=1,Type=Integer,Description="Depth of reference-supporting bases (reads1)">
-##FORMAT=<ID=AD,Number=1,Type=Integer,Description="Depth of variant-supporting bases (reads2)">
-##FORMAT=<ID=FREQ,Number=1,Type=String,Description="Variant allele frequency">
-##FORMAT=<ID=DP4,Number=1,Type=String,Description="Strand read counts: ref/fwd, ref/rev, var/fwd, var/rev">
-####jacquard.version=0.1
-####jacquard.command=tag C:\Users\jebene\git\ExomeSeqPipeline\test\tag_varscan_test\input C:\Users\jebene\git\ExomeSeqPipeline\test\tag_varscan_test\output
-####jacquard.cwd=C:\Users\jebene\git
-##FORMAT=<ID=JQ_AF_VS,Number=1,Type=Float, Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ).">
-##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float, Description="Jacquard depth for VarScan (based on DP).">
-##FORMAT=<ID=JQ_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR).">
+##fileformat=VCFv4.1										
+##source=VarScan2										
+"##INFO=<ID=DP,Number=1,Type=Integer,Description=""Total depth of quality bases"">"										
+"##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description=""Indicates if record is a somatic mutation"">"										
+"##INFO=<ID=SS,Number=1,Type=String,Description=""Somatic status of variant (0=Reference,1=Germline,2=Somatic,3=LOH, or 5=Unknown)"">"										
+"##INFO=<ID=SSC,Number=1,Type=String,Description=""Somatic score in Phred scale (0-255) derived from somatic p-value"">"										
+"##INFO=<ID=GPV,Number=1,Type=Float,Description=""Fisher's Exact Test P-value of tumor+normal versus no variant for Germline calls"">"										
+"##INFO=<ID=SPV,Number=1,Type=Float,Description=""Fisher's Exact Test P-value of tumor versus normal for Somatic/LOH calls"">"										
+"##FILTER=<ID=str10,Description=""Less than 10% or more than 90% of variant supporting reads on one strand"">"										
+"##FILTER=<ID=indelError,Description=""Likely artifact due to indel reads at this position"">"										
+"##FORMAT=<ID=GT,Number=1,Type=String,Description=""Genotype"">"										
+"##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=""Genotype Quality"">"										
+"##FORMAT=<ID=DP,Number=1,Type=Integer,Description=""Read Depth"">"										
+"##FORMAT=<ID=RD,Number=1,Type=Integer,Description=""Depth of reference-supporting bases (reads1)"">"										
+"##FORMAT=<ID=AD,Number=1,Type=Integer,Description=""Depth of variant-supporting bases (reads2)"">"										
+"##FORMAT=<ID=FREQ,Number=1,Type=String,Description=""Variant allele frequency"">"										
+"##FORMAT=<ID=DP4,Number=1,Type=String,Description=""Strand read counts: ref/fwd, ref/rev, var/fwd, var/rev"">"										
+####jacquard.version=0.1										
+####jacquard.command=tag C:\Users\jebene\git\ExomeSeqPipeline\test\tag_varscan_test\input C:\Users\jebene\git\ExomeSeqPipeline\test\tag_varscan_test\output										
+####jacquard.cwd=C:\Users\jebene\git										
+"##FORMAT=<ID=JQ_AF_VS,Number=1,Type=Float, Description=""Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)."">"										
+"##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float, Description=""Jacquard depth for VarScan (based on DP)."">"										
+"##FORMAT=<ID=JQ_SOM_VS,Number=1,Type=Integer,Description=""Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR)."">"										
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NORMAL	TUMOR
-chr1	14397	.	CTGT	C	.	PASS	DP=30;SS=1;SSC=6;GPV=1.186E-2;SPV=2.035E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	0/1:.:17:15:2:11.76%:8,7,0,2:0.12:17	0/1:.:13:9:4:30.77%:7,2,1,3:0.31:13
-chr1	15903	.	G	GC	.	PASS	DP=40;SS=1;SSC=0;GPV=5.85E-16;SPV=8.1946E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	1/1:.:8:1:7:87.5%:0,1,4,3:0.88:8	1/1:.:32:6:26:81.25%:0,6,15,11:0.81:32
-chr1	136255	.	A	AG	.	PASS	DP=53;SS=1;SSC=3;GPV=9.6403E-6;SPV=4.9988E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	0/1:.:30:22:8:26.67%:5,17,0,8:0.27:30	0/1:.:23:16:7:30.43%:2,14,1,6:0.3:23
-chr1	701779	.	GAATA	G	.	PASS	DP=43;SS=1;SSC=8;GPV=1.8298E-8;SPV=1.4528E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	0/1:.:25:15:10:40%:4,11,3,7:0.4:25	0/1:.:18:7:11:61.11%:2,5,5,6:0.61:18
-chr1	761957	.	A	AT	.	PASS	DP=57;SS=1;SSC=4;GPV=3.7452E-32;SPV=3.8596E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	1/1:.:22:1:21:95.45%:1,0,21,0:0.95:22	1/1:.:35:0:35:100%:0,0,35,0:1.0:35
-chr1	866511	.	C	CCCCT	.	PASS	DP=96;SS=1;SSC=3;GPV=1.2528E-22;SPV=4.5903E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	0/1:.:51:22:29:56.86%:9,13,5,24:0.57:51	0/1:.:45:18:27:60%:5,13,3,24:0.6:45
-chr1	874816	.	C	CT	.	PASS	DP=70;SS=1;SSC=11;GPV=2.9687E-5;SPV=6.6718E-2	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	0/1:.:35:31:4:11.43%:7,24,0,4:0.11:35	0/1:.:35:25:10:28.57%:4,21,2,8:0.29:35
-chr1	900717	.	CTTAT	C	.	PASS	DP=97;SS=1;SSC=0;GPV=7.8319E-26;SPV=9.4345E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	0/1:.:56:17:39:69.64%:0,17,1,38:0.7:56	0/1:.:41:18:23:56.1%:0,18,0,23:0.56:41
-chr1	948846	.	T	TA	.	PASS	DP=48;SS=1;SSC=1;GPV=7.6145E-27;SPV=6.4583E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	1/1:.:17:0:17:100%:0,0,15,2:1.0:17	1/1:.:31:1:30:96.77%:1,0,30,0:0.97:31
-chr1	978603	.	CCT	C	.	PASS	DP=113;SS=1;SSC=0;GPV=1.7491E-67;SPV=1E0	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	1/1:.:47:0:47:100%:0,0,36,11:1.0:47	1/1:.:66:0:66:100%:0,0,45,21:1.0:66
-chr1	984147	.	CAAAAAAAAAAA	C	.	PASS	DP=24;SS=1;SSC=0;GPV=3.8123E-3;SPV=8.8348E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	0/1:.:9:3:3:50%:3,0,3,0:0.5:9	0/1:.:15:8:4:33.33%:8,0,4,0:0.33:15
-chr1	17087541	.	GGTGCT	G	.	PASS	DP=299;SOMATIC;SS=2;SSC=14;GPV=1E0;SPV=3.9449E-2	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS:JQ_SOM_VS	0/0:.:132:119:12:9.16%:27,92,3,9:0.09:132:0	0/1:.:167:139:28:16.77%:38,101,14,14:0.17:167:1
-chr1	21502724	.	TGCC	T	.	PASS	DP=27;SOMATIC;SS=2;SSC=17;GPV=1E0;SPV=1.7544E-2	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS:JQ_SOM_VS	1/1:.:12:11:1:8.33%:10,1,1,0:0.08:12:0	0/1:.:15:7:8:53.33%:4,3,5,3:0.53:15:1
-chr1	984171	.	CAG	C	.	PASS	DP=25;SS=1;SSC=0;GPV=7.9107E-15;SPV=1E0	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	1/1:.:13:0:13:100%:0,0,11,2:1.0:13	1/1:.:12:0:12:100%:0,0,12,0:1.0:12
+chr1	14397	.	CTGT	C	.	PASS	DP=30;SS=1;SSC=6;GPV=1.186E-2;SPV=2.035E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	"0/1:.:17:15:2:11.76%:8,7,0,2:0.12:17"	"0/1:.:13:9:4:30.77%:7,2,1,3:0.31:13"
+chr1	15903	.	G	GC	.	PASS	DP=40;SS=1;SSC=0;GPV=5.85E-16;SPV=8.1946E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	"1/1:.:8:1:7:87.5%:0,1,4,3:0.88:8"	"1/1:.:32:6:26:81.25%:0,6,15,11:0.81:32"
+chr1	136255	.	A	AG	.	PASS	DP=53;SS=1;SSC=3;GPV=9.6403E-6;SPV=4.9988E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	"0/1:.:30:22:8:26.67%:5,17,0,8:0.27:30"	"0/1:.:23:16:7:30.43%:2,14,1,6:0.3:23"
+chr1	701779	.	GAATA	G	.	PASS	DP=43;SS=1;SSC=8;GPV=1.8298E-8;SPV=1.4528E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	"0/1:.:25:15:10:40%:4,11,3,7:0.4:25"	"0/1:.:18:7:11:61.11%:2,5,5,6:0.61:18"
+chr1	761957	.	A	AT	.	PASS	DP=57;SS=1;SSC=4;GPV=3.7452E-32;SPV=3.8596E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	"1/1:.:22:1:21:95.45%:1,0,21,0:0.95:22"	"1/1:.:35:0:35:100%:0,0,35,0:1.0:35"
+chr1	866511	.	C	CCCCT	.	PASS	DP=96;SS=1;SSC=3;GPV=1.2528E-22;SPV=4.5903E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	"0/1:.:51:22:29:56.86%:9,13,5,24:0.57:51"	"0/1:.:45:18:27:60%:5,13,3,24:0.6:45"
+chr1	874816	.	C	CT	.	PASS	DP=70;SS=1;SSC=11;GPV=2.9687E-5;SPV=6.6718E-2	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	"0/1:.:35:31:4:11.43%:7,24,0,4:0.11:35"	"0/1:.:35:25:10:28.57%:4,21,2,8:0.29:35"
+chr1	900717	.	CTTAT	C	.	PASS	DP=97;SS=1;SSC=0;GPV=7.8319E-26;SPV=9.4345E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	"0/1:.:56:17:39:69.64%:0,17,1,38:0.7:56"	"0/1:.:41:18:23:56.1%:0,18,0,23:0.56:41"
+chr1	948846	.	T	TA	.	PASS	DP=48;SS=1;SSC=1;GPV=7.6145E-27;SPV=6.4583E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	"1/1:.:17:0:17:100%:0,0,15,2:1.0:17"	"1/1:.:31:1:30:96.77%:1,0,30,0:0.97:31"
+chr1	978603	.	CCT	C	.	PASS	DP=113;SS=1;SSC=0;GPV=1.7491E-67;SPV=1E0	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	"1/1:.:47:0:47:100%:0,0,36,11:1.0:47"	"1/1:.:66:0:66:100%:0,0,45,21:1.0:66"
+chr1	984147	.	CAAAAAAAAAAA	C	.	PASS	DP=24;SS=1;SSC=0;GPV=3.8123E-3;SPV=8.8348E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	"0/1:.:9:3:3:50%:3,0,3,0:0.5:9"	"0/1:.:15:8:4:33.33%:8,0,4,0:0.33:15"
+chr1	17087541	.	GGTGCT	G	.	PASS	DP=299;SOMATIC;SS=2;SSC=14;GPV=1E0;SPV=3.9449E-2	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS:JQ_HC_SOM_VS	"0/0:.:132:119:12:9.16%:27,92,3,9:0.09:132:0"	"0/1:.:167:139:28:16.77%:38,101,14,14:0.17:167:1"
+chr1	21502724	.	TGCC	T	.	PASS	DP=27;SOMATIC;SS=2;SSC=17;GPV=1E0;SPV=1.7544E-2	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS:JQ_HC_SOM_VS	"1/1:.:12:11:1:8.33%:10,1,1,0:0.08:12:0"	"0/1:.:15:7:8:53.33%:4,3,5,3:0.53:15:1"
+chr1	984171	.	CAG	C	.	PASS	DP=25;SS=1;SSC=0;GPV=7.9107E-15;SPV=1E0	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_AF_VS:JQ_DP_VS	"1/1:.:13:0:13:100%:0,0,11,2:1.0:13"	"1/1:.:12:0:12:100%:0,0,12,0:1.0:12"

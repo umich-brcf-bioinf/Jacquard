@@ -1,0 +1,45 @@
+##jacquard.version=0.1
+##jacquard.command=merge C:\Users\jebene\git\ExomeSeqPipeline\merge_in_files C:\Users\jebene\git\ExomeSeqPipeline\foo.vcf
+##jacquard.cwd=C:\Users\jebene\git
+##FORMAT=<ID=JQ_AF_MT,Number=1,Type=Float, Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA).">
+##FORMAT=<ID=JQ_DP_MT,Number=1,Type=Float, Description="Jacquard depth for MuTect (based on DP).">
+##FORMAT=<ID=JQ_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag).">
+##FORMAT=<ID=JQ_AF_VS,Number=1,Type=Float, Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ).">
+##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float, Description="Jacquard depth for VarScan (based on DP).">
+##FORMAT=<ID=JQ_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR).">
+##fileformat=VCFv4.2
+##jacquard.merge.file1=42.tiny_mutect_input_jacquard.splitMultAlts.vcf(['TUMOR', 'NORMAL'])
+##jacquard.merge.file2=42.tiny_varscan_input_jacquard.splitMultAlts.vcf(['NORMAL', 'TUMOR'])
+##jacquard.merge.sample_column1=MuTect|42|TUMOR(42.tiny_mutect_input_jacquard.splitMultAlts.vcf)
+##jacquard.merge.sample_column2=MuTect|42|NORMAL(42.tiny_mutect_input_jacquard.splitMultAlts.vcf)
+##jacquard.merge.sample_column1=VarScan|42|NORMAL(42.tiny_varscan_input_jacquard.splitMultAlts.vcf)
+##jacquard.merge.sample_column2=VarScan|42|TUMOR(42.tiny_varscan_input_jacquard.splitMultAlts.vcf)
+##FORMAT=<ID=JQ_SOM_SUM,Number=1,Type=Integer,Description="Jacquard consensus somatic call = sum(JQ_SOM_MT, JQ_SOM_SK, JQ_SOM_VS)">
+##FORMAT=<ID=JQ_AF_AVERAGE,Number=A,Type=Integer,Description="Jacquard consensus somatic call = average(JQ_AF_MT, JQ_AF_SK, JQ_AF_VS)">
+##FORMAT=<ID=JQ_DP_AVERAGE,Number=1,Type=Integer,Description="Jacquard consensus depth = average(JQ_DP_MT, JQ_DP_SK, JQ_DP_VS)">
+##FORMAT=<ID= JQ_AF_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of allele frequencies among callers = (sample AF range - population mean AF range)/standard dev(population AF range)">
+##jacquard.consensus.JQ_AF_RANGE_ZSCORE.mean_AF_range=0.01
+##jacquard.consensus.JQ_AF_RANGE_ZSCORE.standard_deviation=0.04
+##FORMAT=<ID= JQ_DP_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of depth among callers = (sample DP range - population mean DP range)/standard dev(population DP range)">
+##jacquard.consensus.JQ_DP_RANGE_ZSCORE.mean_DP_range=0.53
+##jacquard.consensus.JQ_DP_RANGE_ZSCORE.standard deviation_DP_range=2.28
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	42|NORMAL	42|TUMOR
+chr1	14397	.	CTGT	C	.	.	.	JQ_AF_VS:JQ_DP_VS:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE	0.12:17:0.12:0:17.0:0:0:-0.22:-0.23	0.31:13:0.31:0:13.0:0:0:-0.22:-0.23
+chr1	15820	.	G	T	.	.	.	JQ_AF_MT:JQ_DP_MT:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE	0.3:79:0.3:0:79.0:0:0:-0.22:-0.23	0.21:108:0.21:0:108.0:0:0:-0.22:-0.23
+chr1	15903	.	G	GC	.	.	.	JQ_AF_VS:JQ_DP_VS:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE	0.88:8:0.88:0:8.0:0:0:-0.22:-0.23	0.81:32:0.81:0:32.0:0:0:-0.22:-0.23
+chr1	15996	.	C	A	.	.	Mult_Alt	JQ_AF_MT:JQ_DP_MT:JQ_SOM_MT:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE	0.00:24:0:0.0:0:24.0:0:0:-0.22:-0.23	0.1:39:1:0.1:1:39.0:0:0:-0.22:-0.23
+chr1	15996	.	C	G	.	.	Mult_Alt	JQ_AF_MT:JQ_DP_MT:JQ_SOM_MT:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE	0.01:24:0:0.01:0:24.0:0:0:-0.22:-0.23	0.32:39:1:0.32:1:39.0:0:0:-0.22:-0.23
+chr1	16571	.	G	A	.	.	.	JQ_AF_MT:JQ_DP_MT:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE	0.56:76:0.56:0:76.0:0:0:-0.22:-0.23	0.74:77:0.74:0:77.0:0:0:-0.22:-0.23
+chr1	16580	.	C	G	.	.	.	JQ_AF_MT:JQ_DP_MT:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE	0.07:81:0.07:0:81.0:0:0:-0.22:-0.23	0.07:83:0.07:0:83.0:0:0:-0.22:-0.23
+chr1	136255	.	A	AG	.	.	.	JQ_AF_MT:JQ_DP_MT:JQ_AF_VS:JQ_DP_VS:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE	0.17:22:0.27:30:0.22:0:26.0:0.1:8.0:2.49:3.28	0.09:35:0.3:23:0.195:0:29.0:0.21:12.0:5.48:5.03
+chr1	701779	.	GAATA	G	.	.	.	JQ_AF_VS:JQ_DP_VS:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE	0.4:25:0.4:0:25.0:0:0:-0.22:-0.23	0.61:18:0.61:0:18.0:0:0:-0.22:-0.23
+chr1	761957	.	A	AT	.	.	.	JQ_AF_VS:JQ_DP_VS:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE	0.95:22:0.95:0:22.0:0:0:-0.22:-0.23	1.0:35:1.0:0:35.0:0:0:-0.22:-0.23
+chr1	866511	.	C	CCCCT	.	.	.	JQ_AF_VS:JQ_DP_VS:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE	0.57:51:0.57:0:51.0:0:0:-0.22:-0.23	0.6:45:0.6:0:45.0:0:0:-0.22:-0.23
+chr1	874816	.	C	CT	.	.	.	JQ_AF_VS:JQ_DP_VS:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE	0.11:35:0.11:0:35.0:0:0:-0.22:-0.23	0.29:35:0.29:0:35.0:0:0:-0.22:-0.23
+chr1	900717	.	CTTAT	C	.	.	.	JQ_AF_VS:JQ_DP_VS:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE	0.7:56:0.7:0:56.0:0:0:-0.22:-0.23	0.56:41:0.56:0:41.0:0:0:-0.22:-0.23
+chr1	948846	.	T	TA	.	.	.	JQ_AF_VS:JQ_DP_VS:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE	1.0:17:1.0:0:17.0:0:0:-0.22:-0.23	0.97:31:0.97:0:31.0:0:0:-0.22:-0.23
+chr1	978603	.	CCT	C	.	.	.	JQ_AF_VS:JQ_DP_VS:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE	1.0:47:1.0:0:47.0:0:0:-0.22:-0.23	1.0:66:1.0:0:66.0:0:0:-0.22:-0.23
+chr1	984147	.	CAAAAAAAAAAA	C	.	.	.	JQ_AF_VS:JQ_DP_VS:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE	0.5:9:0.5:0:9.0:0:0:-0.22:-0.23	0.33:15:0.33:0:15.0:0:0:-0.22:-0.23
+chr1	984171	.	CAG	C	.	.	.	JQ_AF_VS:JQ_DP_VS:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE	1.0:13:1.0:0:13.0:0:0:-0.22:-0.23	1.0:12:1.0:0:12.0:0:0:-0.22:-0.23
+chr1	17087541	.	GGTGCT	G	.	.	.	JQ_AF_VS:JQ_DP_VS:JQ_SOM_VS:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE	0.09:132:0:0.09:0:132.0:0:0:-0.22:-0.23	0.17:167:1:0.17:1:167.0:0:0:-0.22:-0.23
+chr1	21502724	.	TGCC	T	.	.	.	JQ_AF_VS:JQ_DP_VS:JQ_SOM_VS:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE	0.08:12:0:0.08:0:12.0:0:0:-0.22:-0.23	0.53:15:1:0.53:1:15.0:0:0:-0.22:-0.23

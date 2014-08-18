@@ -5,6 +5,7 @@ import os
 from os import listdir
 from os.path import isfile, join
 import shutil
+import sys
 
 import jacquard_utils
 
@@ -341,7 +342,10 @@ def tag_files(input_dir, output_dir, callers, execution_context=[]):
 
     processors = {"VarScan" : FileProcessor(tags=[Varscan_AlleleFreqTag(), Varscan_DepthTag(), Varscan_SomaticTag()], execution_context_metadataheaders=execution_context), "MuTect": FileProcessor(tags=[Mutect_AlleleFreqTag(), Mutect_DepthTag(), Mutect_SomaticTag()], execution_context_metadataheaders=execution_context), "Strelka": FileProcessor(tags=[Strelka_AlleleFreqTag(), Strelka_DepthTag(), Strelka_SomaticTag()], execution_context_metadataheaders=execution_context)}
     
+    total_number_of_files = len(in_files)
+    count = 1
     for file in in_files:
+        print "Reading [{0}] ({1}/{2})".format(os.path.basename(file), count, total_number_of_files)
         fname, extension = os.path.splitext(os.path.basename(file))
         new_file = fname + "_jacquard" + extension
         
@@ -354,7 +358,9 @@ def tag_files(input_dir, output_dir, callers, execution_context=[]):
         
         in_file.close()
         out_file.close()
-
+        
+        count += 1
+    
     out_files = sorted(glob.glob(os.path.join(output_dir,"*.vcf")))
     
     print "Wrote [{0}] VCF file(s) to [{1}]".format(len(out_files), output_dir)
@@ -367,3 +373,4 @@ def execute(args, execution_context):
     
     callers = [Mutect(), Varscan(), Strelka(), Unknown()]
     tag_files(input_dir, output_dir, callers, execution_context)
+    

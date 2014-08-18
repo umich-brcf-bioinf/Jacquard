@@ -324,7 +324,10 @@ def process_files(input_file, output_path, input_keys, pivot_values, headers, he
     insert_links(joined_df)
 
     rearranged_df = rearrange_columns(joined_df)
-    rearranged_df.ix[:, "CHROM"] = rearranged_df.ix[:, "CHROM"].apply(lambda x: int(x.strip("chr")))
+    try:
+        rearranged_df.ix[:, "CHROM"] = rearranged_df.ix[:, "CHROM"].apply(lambda x: int(x.strip("chr")))
+    except:
+        rearranged_df.ix[:, "CHROM"] = rearranged_df.ix[:, "CHROM"].apply(lambda x: x.strip("chr"))
     rearranged_df.ix[:, "POS"] = rearranged_df.ix[:, "POS"].apply(lambda x: int(x))
     
     sorted_df = pivoter.sort_rows(rearranged_df)
