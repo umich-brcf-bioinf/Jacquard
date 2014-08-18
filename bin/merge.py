@@ -497,7 +497,7 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
         os.mkdir(new_dir)
     print "Splitting mult-alts in input files. Using [{0}] as input directory.".format(new_dir)
     
-    total_number_of_files = len(in_files)
+    total_number_of_files = len(sample_file_readers)
     count = 1
     for sample_file in sample_file_readers:
         print "Reading [{0}] ({1}/{2})".format(os.path.basename(sample_file), count, total_number_of_files)
