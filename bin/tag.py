@@ -176,9 +176,8 @@ class Strelka_AlleleFreqTag():
                     tags = ["AU", "CU", "TU", "GU"]
                     denominator = 0
                     for tag in tags:
-                        print format_dict[tag]
                         denominator += float(format_dict[tag].split(",")[1])
-                    af = numerator/denominator
+                    af = numerator/denominator if denominator != 0 else 0
                     
                 elif "TAR" in format_dict.keys(): #if it's an indel
                     numerator = float(format_dict["TAR"].split(",")[1])
