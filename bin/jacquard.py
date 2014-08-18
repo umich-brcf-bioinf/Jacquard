@@ -6,12 +6,12 @@ import sys
 import pivot_variants
 import rollup_genes
 import tag 
-import normalize
-import filter_hc_somatic
+import normalize_varscan
+import filter_somatic
 import merge
 import consensus
-import format
 import jacquard_utils
+import style
 
 def main(modules, arguments):
     parser = argparse.ArgumentParser(
@@ -36,6 +36,4 @@ def main(modules, arguments):
 
 
 if __name__ == "__main__":
-#     main([normalize_varscan, normalize_strelka, tag, filter_hc_somatic, merge, consensus, format, rollup_genes, pivot_variants], sys.argv[1:])
-    main([normalize, tag, filter_hc_somatic, merge, consensus, format, rollup_genes, pivot_variants], sys.argv[1:])
-    
+    main([pivot_variants, rollup_genes, tag, normalize_varscan, filter_somatic, merge, consensus, style], sys.argv[1:])
