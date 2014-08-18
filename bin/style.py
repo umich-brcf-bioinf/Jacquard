@@ -41,7 +41,7 @@ def style_workbook(input_file, output_file):
             fill_cell(col, "C0C0C0")   
 
         if col[0].style.fill.start_color.index == "FFFFFFFF":
-            fill_cell(col, "C9F2C9")
+            fill_cell(col, "D7E8F0")
         if col[0].value == "Mult_Alt":
             fill_mults(ws, col)
         if col[0].value == "Mult_Gene":

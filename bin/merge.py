@@ -48,11 +48,12 @@ class VariantPivoter():
     def validate_sample_data(self):
         grouped = self._combined_df.groupby(self._rows)
         group = grouped.groups
-
-        for key, val in group.items():
-            if len(val) != 1:
-                for column in self._combined_df:
-                    self.find_non_unique_rows(grouped, column, key, val)
+        
+#        it wouldn't get to this point and have non-unique rows because there would have been an error about duplicate keys in pivot step
+#         for key, val in group.items():
+#             if len(val) != 1:
+#                 for column in self._combined_df:
+#                     self.find_non_unique_rows(grouped, column, key, val)
         for column in self._combined_df:
             self.find_non_unique_cells(column)
         
@@ -501,18 +502,25 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
     for sample_file in sample_file_readers:
 #         print "{0} - reading ({1}/{2}): {3}".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'), count + 1, len(sample_file_readers), sample_file)
         fname, extension = os.path.splitext(os.path.basename(sample_file))
-        new_sample_file = os.path.join(new_dir, fname + ".splitMultAlts" + extension)
+        if re.search(".splitMultAlts", fname):
+            sample_columns = pivoter.add_file(sample_file, headers[count], caller, mutect_dict)
+            count += 1
+            
+            all_merge_context, all_merge_column_context = determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, new_sample_file, count)
         
-        reader = open(sample_file, "r")
-        writer = open(new_sample_file, "w")
-        caller, unknown_callers, mutect_dict = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
-        reader.close()
-        writer.close()
-
-        sample_columns = pivoter.add_file(new_sample_file, headers[count], caller, mutect_dict)
-        count += 1
-        
-        all_merge_context, all_merge_column_context = determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, new_sample_file, count)
+        else:
+            new_sample_file = os.path.join(new_dir, fname + ".splitMultAlts" + extension)
+            
+            reader = open(sample_file, "r")
+            writer = open(new_sample_file, "w")
+            caller, unknown_callers, mutect_dict = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
+            reader.close()
+            writer.close()
+    
+            sample_columns = pivoter.add_file(new_sample_file, headers[count], caller, mutect_dict)
+            count += 1
+            
+            all_merge_context, all_merge_column_context = determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, new_sample_file, count)
     
     if unknown_callers != 0:
         print "ERROR: unable to determine variant caller for [{0}] input files. Run (jacquard tag) first.".format(unknown_callers)
