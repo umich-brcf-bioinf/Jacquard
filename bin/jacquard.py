@@ -11,6 +11,7 @@ import filter_hc_somatic
 import merge
 import consensus
 import format
+import style
 import jacquard_utils
 
 def main(modules, arguments):
@@ -37,5 +38,5 @@ def main(modules, arguments):
 
 if __name__ == "__main__":
 #     main([normalize_varscan, normalize_strelka, tag, filter_hc_somatic, merge, consensus, format, rollup_genes, pivot_variants], sys.argv[1:])
-    main([normalize, tag, filter_hc_somatic, merge, consensus, format, rollup_genes, pivot_variants], sys.argv[1:])
+    main([normalize, tag, filter_hc_somatic, merge, consensus, format, style, rollup_genes, pivot_variants], sys.argv[1:])
     
