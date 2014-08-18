@@ -338,7 +338,7 @@ def tag_files(input_dir, output_dir, callers, execution_context=[]):
     file_types, inferred_callers = determine_file_types(input_dir, in_files, callers)
     print_file_types(file_types)
 
-    processors = {"VarScan" : FileProcessor(tags=[Varscan_AlleleFreqTag(), Varscan_DepthTag(), Varscan_SomaticTag()], execution_context_metadataheaders=execution_context), "MuTect": FileProcessor(tags=[Mutect_AlleleFreqTag(), Mutect_DepthTag(), Mutect_SomaticTag()], execution_context_metadataheaders=execution_context + inferred_callers), "Strelka": FileProcessor(tags=[Strelka_AlleleFreqTag(), Strelka_DepthTag(), Strelka_SomaticTag()], execution_context_metadataheaders=execution_context + inferred_callers)}
+    processors = {"VarScan" : FileProcessor(tags=[Varscan_AlleleFreqTag(), Varscan_DepthTag(), Varscan_SomaticTag()], execution_context_metadataheaders=execution_context + inferred_callers), "MuTect": FileProcessor(tags=[Mutect_AlleleFreqTag(), Mutect_DepthTag(), Mutect_SomaticTag()], execution_context_metadataheaders=execution_context + inferred_callers), "Strelka": FileProcessor(tags=[Strelka_AlleleFreqTag(), Strelka_DepthTag(), Strelka_SomaticTag()], execution_context_metadataheaders=execution_context + inferred_callers)}
     
     for file in in_files:
         fname, extension = os.path.splitext(os.path.basename(file))
