@@ -404,6 +404,26 @@ def create_new_line(alt_allele_number, fields):
 
     return "\t".join(new_line) + "\n"
     
+def determine_caller(reader, unknown_callers):
+    caller = "unknown"
+    mutect_dict = {}
+    for line in reader:
+        if line.startswith("##jacquard.tag.caller="):
+            caller = line.split("=")[1].strip("\n")
+        elif line.startswith("##MuTect="):
+            split_line = line.split(" ")
+            for item in split_line:
+                split_item = item.split("=")
+                try:
+                    mutect_dict[split_item[0]] = split_item[1]
+                except:
+                    pass
+    if caller == "unknown":
+        print "ERROR: unable to determine variant caller for file [{0}]".format(reader)
+        unknown_callers += 1
+    
+    return caller, unknown_callers, mutect_dict
+
 def determine_caller_and_split_mult_alts(reader, writer, unknown_callers):
     caller = "unknown"
     mutect_dict = {}
@@ -503,10 +523,14 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
 #         print "{0} - reading ({1}/{2}): {3}".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'), count + 1, len(sample_file_readers), sample_file)
         fname, extension = os.path.splitext(os.path.basename(sample_file))
         if re.search(".splitMultAlts", fname):
+            reader = open(sample_file, "r")
+            caller, unknown_callers, mutect_dict = determine_caller(reader, unknown_callers)
+            reader.close()
+            
             sample_columns = pivoter.add_file(sample_file, headers[count], caller, mutect_dict)
             count += 1
             
-            all_merge_context, all_merge_column_context = determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, new_sample_file, count)
+            all_merge_context, all_merge_column_context = determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, sample_file, count)
         
         else:
             new_sample_file = os.path.join(new_dir, fname + ".splitMultAlts" + extension)
