@@ -66,7 +66,7 @@ class FilterSomaticTestCase(unittest.TestCase):
         
         excluded_variants = write_somatic(in_files, output_dir, somatic_positions)
         
-        self.assertEqual("##jacquard.filterHCSomatic.excluded_variants=14\n", excluded_variants)
+        self.assertEqual("##jacquard.filterHCSomatic.excluded_variants=32\n", excluded_variants)
         shutil.rmtree(output_dir)
 
             

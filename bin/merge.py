@@ -48,8 +48,6 @@ class VariantPivoter():
     def validate_sample_data(self):
         grouped = self._combined_df.groupby(self._rows)
         group = grouped.groups
-        
-#        it wouldn't get to this point and have non-unique rows because there would have been an error about duplicate keys in pivot step
 #         for key, val in group.items():
 #             if len(val) != 1:
 #                 for column in self._combined_df:
@@ -499,8 +497,10 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
         os.mkdir(new_dir)
     print "Splitting mult-alts in input files. Using [{0}] as input directory.".format(new_dir)
     
+    total_number_of_files = len(in_files)
+    count = 1
     for sample_file in sample_file_readers:
-#         print "{0} - reading ({1}/{2}): {3}".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'), count + 1, len(sample_file_readers), sample_file)
+        print "Reading [{0}] ({1}/{2})".format(os.path.basename(sample_file), count, total_number_of_files)
         fname, extension = os.path.splitext(os.path.basename(sample_file))
 
         new_sample_file = os.path.join(new_dir, fname + ".splitMultAlts" + extension)
@@ -534,7 +534,10 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
     formatted_df = combine_format_columns(pivoter._combined_df)
     
     rearranged_df = rearrange_columns(formatted_df)
-    rearranged_df.ix[:, "CHROM"] = rearranged_df.ix[:, "CHROM"].apply(lambda x: int(x.strip("chr")))
+    try:
+        rearranged_df.ix[:, "CHROM"] = rearranged_df.ix[:, "CHROM"].apply(lambda x: int(x.strip("chr")))
+    except:
+        rearranged_df.ix[:, "CHROM"] = rearranged_df.ix[:, "CHROM"].apply(lambda x: x.strip("chr"))
     rearranged_df.ix[:, "POS"] = rearranged_df.ix[:, "POS"].apply(lambda x: int(x))
     
     sorted_df = pivoter.sort_rows(rearranged_df)
