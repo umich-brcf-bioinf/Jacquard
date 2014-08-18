@@ -182,7 +182,7 @@ class Strelka_AlleleFreqTag():
                 elif "TAR" in format_dict.keys(): #if it's an indel
                     numerator = float(format_dict["TAR"].split(",")[1])
                     denominator = float(format_dict["DP2"])
-                    af = numerator/denominator
+                    af = numerator/denominator if denominator != 0 else 0.0
                 else:
                     continue
                 
