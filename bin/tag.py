@@ -176,6 +176,7 @@ class Strelka_AlleleFreqTag():
                     tags = ["AU", "CU", "TU", "GU"]
                     denominator = 0
                     for tag in tags:
+                        print format_dict[tag]
                         denominator += float(format_dict[tag].split(",")[1])
                     af = numerator/denominator
                     
