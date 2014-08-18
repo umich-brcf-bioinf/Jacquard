@@ -48,11 +48,12 @@ class VariantPivoter():
     def validate_sample_data(self):
         grouped = self._combined_df.groupby(self._rows)
         group = grouped.groups
-
-        for key, val in group.items():
-            if len(val) != 1:
-                for column in self._combined_df:
-                    self.find_non_unique_rows(grouped, column, key, val)
+        
+#        it wouldn't get to this point and have non-unique rows because there would have been an error about duplicate keys in pivot step
+#         for key, val in group.items():
+#             if len(val) != 1:
+#                 for column in self._combined_df:
+#                     self.find_non_unique_rows(grouped, column, key, val)
         for column in self._combined_df:
             self.find_non_unique_cells(column)
         

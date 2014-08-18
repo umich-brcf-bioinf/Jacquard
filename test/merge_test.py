@@ -119,7 +119,7 @@ class MergeTestCase(unittest.TestCase):
 
         self.assertRaises(PivotError, pivoter._check_pivot_is_unique, df)
         
-    def test_validateSampleData_nonUniqueRows(self):
+    def xtest_validateSampleData_nonUniqueRows(self):
         rows = ["CHROM", "POS", "REF", "ALT"]
 
         input_string = \
