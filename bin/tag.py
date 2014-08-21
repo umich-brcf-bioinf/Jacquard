@@ -291,6 +291,7 @@ class FileProcessor():
                         exit(1)
                 else:
                     writer.write(self._metaheader)
+                    writer.write("##jacquard.tag.caller={0}\n".format(caller))
                     writer.write(line)
             else:
                 edited_line = self._lineProcessor.add_tags(line)
