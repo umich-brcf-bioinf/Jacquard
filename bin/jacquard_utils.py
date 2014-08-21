@@ -78,3 +78,6 @@ def change_pos_to_int(split_line):
 def combine_format_values(format, sample):
     return OrderedDict(zip(format.split(":"), sample.strip("\n").split(":")))
 
+def combine_format_dict(format, sample):
+    return OrderedDict(zip(format, sample))
+

@@ -614,15 +614,23 @@ class CombineFormatTestCase(unittest.TestCase):
         tm.assert_frame_equal(expected_df, actual_df)
         
     def test_removeNonJQTags(self):
+        fake_string = \
+        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_A\tfile2|sample_B\tfile1|sample_A\tfile1|sample_B
+1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1'''
+        df = dataframe(fake_string)
         file_dict = {'file2': [OrderedDict([('DP', '57'), ('JQ_foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('DP', '57'), ('JQ_foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_B')])]}
-        actual_file_dict = remove_non_jq_tags(file_dict)
+        actual_file_dict = remove_non_jq_tags(df, file_dict)
         expected_file_dict = {'file2': [OrderedDict([('JQ_foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('JQ_foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('JQ_foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('JQ_foo', '.'), ('sample_name', 'file1|sample_B')])]}
        
         self.assertEquals(expected_file_dict, actual_file_dict)
     
     def test_removeNonJQTags_noTags(self):
+        fake_string = \
+        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_A\tfile2|sample_B\tfile1|sample_A\tfile1|sample_B
+1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1'''
+        df = dataframe(fake_string)
         file_dict = {'file2': [OrderedDict([('DP', '57'), ('foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('DP', '57'), ('foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('DP', '57'), ('foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('DP', '57'), ('foo', '.'), ('sample_name', 'file1|sample_B')])]}
-        actual_file_dict = remove_non_jq_tags(file_dict)
+        actual_file_dict = remove_non_jq_tags(df, file_dict)
         expected_file_dict = {'file2': [OrderedDict([('sample_name', 'file2|sample_A')]), OrderedDict([('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('sample_name', 'file1|sample_A')]), OrderedDict([('sample_name', 'file1|sample_B')])]}
        
         self.assertEquals(expected_file_dict, actual_file_dict)
