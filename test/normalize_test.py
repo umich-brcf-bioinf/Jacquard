@@ -38,12 +38,12 @@ class VarScanTestCase(unittest.TestCase):
     def test_handleHCFiles(self):
         varscan = VarScan()
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        in_file = os.path.join(script_dir, "normalize_varscan_test\input\tiny_indel.Germline.hc")
+        in_file = os.path.join(script_dir, "normalize_varscan_test", "input", "tiny_indel.Germline.hc")
         out_dir = os.path.join(script_dir, "normalize_varscan_test")
         hc_candidates = defaultdict(list)
         hc_candidates = varscan.handle_hc_files(in_file, out_dir, hc_candidates)
         
-        expected_hc_candidates = {os.path.join(script_dir, "normalize_varscan_test\input\tiny_merged.Germline.hc"): [os.path.join(script_dir, "normalize_varscan_test\\input\tiny_indel.Germline.hc")]}
+        expected_hc_candidates = {os.path.join(script_dir, "normalize_varscan_test", "tiny_merged.Germline.hc"): [os.path.join(script_dir, "normalize_varscan_test", "input", "tiny_indel.Germline.hc")]}
         self.assertEquals(expected_hc_candidates, hc_candidates)
             
     def test_validateFileSet(self):
