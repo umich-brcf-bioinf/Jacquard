@@ -34,7 +34,7 @@ class VariantPivoter():
             file_name = sample_file
             
         initial_df  = create_initial_df(sample_file, header_index)
-        
+
         if "#CHROM" in initial_df.columns:
             initial_df.rename(columns={"#CHROM": "CHROM"}, inplace=True)
 
@@ -191,7 +191,7 @@ def merge_samples(reduced_df, combined_df, rows):
         combined_df = reduced_df
     else:
         combined_df = merge(combined_df, reduced_df, how="outer", on=rows+["INFO"])
-        
+
     return combined_df    
     
 def rearrange_columns(output_df):
@@ -224,6 +224,9 @@ def create_dict(df, row, columns):
             sample_column += ":" + column
 #             format_sample = "{0}={1}".format(format_column, sample_column)
             format_sample_dict = jacquard_utils.combine_format_values(format_column, sample_column)
+#             for k in format_sample_dict.keys():
+#                 if k.startswith("JQ_"):
+#                     del format_sample_dict[k]
             tags = format_column.split(":")
             key = "{0}|{1}".format(caller, fname)
             file_dict[key].append(format_sample_dict)
@@ -264,7 +267,7 @@ def remove_non_jq_tags(file_dict):
                 else:
                     if key not in sample_keys:
                         sample_keys.append(key)
-                        
+                         
     file_dict = add_all_tags(file_dict, sample_keys)
     sort_format_tags(file_dict)
     return file_dict
@@ -332,13 +335,14 @@ def combine_format_columns(df):
     for row, col in df.T.iteritems():
         columns = col.index.values
         file_dict, all_tags = create_dict(df, row, columns)
+
         file_dict = remove_non_jq_tags(file_dict)
 
         for key, val in file_dict.items():
             for thing in val:
                 df.ix[row, "FORMAT"] = ":".join(thing.keys())
                 df.ix[row, thing["sample_name"]] = ":".join(thing.values())
-            
+    
     df = cleanup_df(df, file_dict)
     
     for row, col in df.T.iteritems():
@@ -350,6 +354,7 @@ def combine_format_columns(df):
             for val in vals:
                 new_data.extend(val.values())
             df.ix[row, key] = ":".join(new_data)
+
     df = remove_old_columns(df)
 
     return df
@@ -511,7 +516,7 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
         reader.close()
         writer.close()
 
-        sample_columns = pivoter.add_file(new_sample_file, headers[count], caller, mutect_dict)
+        sample_columns = pivoter.add_file(new_sample_file, headers[count - 1], caller, mutect_dict)
         count += 1
         
         all_merge_context, all_merge_column_context = determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, new_sample_file, count)
@@ -529,7 +534,7 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
     execution_context.extend(new_execution_context)
     writer = open(output_path, "w")
     print_new_execution_context(execution_context, writer)
-# 
+    
     pivoter.validate_sample_data()
     formatted_df = combine_format_columns(pivoter._combined_df)
     
@@ -633,7 +638,7 @@ def execute(args, execution_context):
         exit(1)
         
     sample_file_readers, headers, header_names, first_line, meta_headers = get_headers_and_readers(in_files)
-            
+
     print "\n".join(execution_context) 
     execution_context.extend(meta_headers + ["##fileformat=VCFv4.2"])
     process_files(sample_file_readers, input_dir, output_path, input_keys, headers, header_names, first_line, all_inconsistent_sample_sets, execution_context)
