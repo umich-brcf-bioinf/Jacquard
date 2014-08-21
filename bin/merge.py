@@ -595,13 +595,13 @@ def get_headers_and_readers(in_files):
                 first_line.append(line)
                 break
         if invalid == 1:
-            invalid_files.append(file)
+            invalid_files.append(in_file)
 
         f.close()
         sample_file_readers.append(in_file)
 
     if invalid_files != []:
-        print "ERROR: VCF file(s) [{0}] have no Jacquard tags. Run [jacard tag] on these files and try again.".format(invalid_files)
+        print "ERROR: VCF file(s) [{0}] have no Jacquard tags. Run [jacquard tag] on these files and try again.".format(invalid_files)
         exit(1)
 
     header_names = header_names[0]
