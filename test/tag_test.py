@@ -374,9 +374,9 @@ class TagVarScanTestCase(unittest.TestCase):
             actual_files = sorted(listdir(output_dir.path))
             
             self.assertEqual(3, len(actual_files))
-            self.assertEqual("A_jacquard.vcf", actual_files[0])
-            self.assertEqual("B_jacquard.vcf", actual_files[1])
-            self.assertEqual("C_jacquard.vcf", actual_files[2])
+            self.assertEqual("A.jacquardTags.vcf", actual_files[0])
+            self.assertEqual("B.jacquardTags.vcf", actual_files[1])
+            self.assertEqual("C.jacquardTags.vcf", actual_files[2])
              
             input_dir.cleanup()
             output_dir.cleanup()

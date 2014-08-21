@@ -6,7 +6,7 @@ import subprocess
 import sys
 import testfixtures
 from testfixtures import TempDirectory
-from bin.normalize_utils import VarScan, Strelka, Unknown, identify_merge_candidates, get_headers, merge_data, validate_split_line, identify_hc_variants, mark_hc_variants
+from bin.normalize import VarScan, Strelka, Unknown, identify_merge_candidates, get_headers, merge_data, validate_split_line, identify_hc_variants, mark_hc_variants
         
 class VarScanTestCase(unittest.TestCase):
     def test_validateInputFile_valid(self):

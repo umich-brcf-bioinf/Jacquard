@@ -347,7 +347,7 @@ def tag_files(input_dir, output_dir, callers, execution_context=[]):
     for file in in_files:
         print "Reading [{0}] ({1}/{2})".format(os.path.basename(file), count, total_number_of_files)
         fname, extension = os.path.splitext(os.path.basename(file))
-        new_file = fname + "_jacquard" + extension
+        new_file = fname + ".jacquardTags" + extension
         
         in_file = open(os.path.join(input_dir, file), "r")
         out_file = open(os.path.join(output_dir, new_file), "w")

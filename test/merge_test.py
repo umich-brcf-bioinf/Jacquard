@@ -518,6 +518,53 @@ class CombineFormatTestCase(unittest.TestCase):
 
         tm.assert_frame_equal(expected_df, actual_df)
         
+    def xtest_combineFormatColumns_differentSampleNames(self):
+        input_string = \
+'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tVarScan|file1|FORMAT\tVarScan|file1|sample_a\tVarScan|file1|sample_b
+1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t1\t20\tJQ_DP_VS\t6\t25
+1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t2\t21\tJQ_DP_VS\t7\t26
+8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t3\t22\tJQ_DP_VS\t8\t27
+13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t4\t23\tJQ_DP_VS\t9\t28
+13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t5\t24\tJQ_DP_VS\t10\t29
+'''
+        df = dataframe(input_string)
+        actual_df = combine_format_columns(df)
+        
+        expected_string = \
+        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A|sample_a\tfile1|sample_B|sample_b
+1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t1:6\t20:25
+1\t3\t.\tC\tG\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t2:7\t21:26
+8\t4\t.\tA\tT\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t3:8\t22:27
+13\t5\t.\tT\tAA\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t4:9\t23:28
+13\t5\t.\tT\tAAAA\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t5:10\t24:29
+'''
+        expected_df = dataframe(expected_string)
+        print actual_df
+        tm.assert_frame_equal(expected_df, actual_df)
+        
+    def test_combineFormatColumns_missingTags(self):
+        input_string = \
+'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tVarScan|file1|FORMAT\tVarScan|file1|sample_A\tVarScan|file1|sample_B
+1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t1\t20\t.\t.\t.
+1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t2\t21\tJQ_DP_VS\t7\t26
+8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\t.\t.\t.\tJQ_DP_VS\t8\t27
+13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t4\t23\tJQ_DP_VS\t9\t28
+13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t5\t24\tJQ_DP_VS\t10\t29
+'''
+        df = dataframe(input_string)
+        actual_df = combine_format_columns(df)
+        
+        expected_string = \
+        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
+1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_DP_MT\t1\t20
+1\t3\t.\tC\tG\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t2:7\t21:26
+8\t4\t.\tA\tT\t.\t.\tfoo\tJQ_DP_VS\t8\t27
+13\t5\t.\tT\tAA\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t4:9\t23:28
+13\t5\t.\tT\tAAAA\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t5:10\t24:29
+'''
+        expected_df = dataframe(expected_string)
+        tm.assert_frame_equal(expected_df, actual_df)
+        
     def test_combineFormatColumns_validateOrder(self):
         input_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tVarScan|file1|FORMAT\tVarScan|file1|sample_A\tVarScan|file1|sample_B
