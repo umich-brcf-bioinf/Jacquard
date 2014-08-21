@@ -10,7 +10,7 @@ from bin.normalize import VarScan, Strelka, Unknown, identify_merge_candidates, 
         
 class VarScanTestCase(unittest.TestCase):
     def test_validateInputFile_valid(self):
-        varscan = VarScan()
+        varscan = VarScan() 
         input_file = ["##source=VarScan2", "foo"]
         name, valid = varscan.validate_input_file(input_file)
         
@@ -29,7 +29,7 @@ class VarScanTestCase(unittest.TestCase):
         varscan = VarScan()
         script_dir = os.path.dirname(os.path.abspath(__file__))
         hc_candidates  = {os.path.join(script_dir, 'normalize_varscan_test/input/tiny_merged.Somatic.hc'): [os.path.join(script_dir, 'normalize_varscan_test/input/tiny_indel.Somatic.hc'), os.path.join(script_dir, 'normalize_varscan_test/input/tiny_snp.Somatic.hc')], os.path.join(script_dir, 'normalize_varscan_test/input/tiny_merged.LOH.hc'): [os.path.join(script_dir, 'normalize_varscan_test/input/tiny_indel.LOH.hc'), os.path.join(script_dir, 'normalize_varscan_test/input/tiny_snp.LOH.hc')], os.path.join(script_dir, 'normalize_varscan_test/input/tiny_merged.Germline.hc'): [os.path.join(script_dir, 'normalize_varscan_test/input/tiny_indel.Germline.hc'), os.path.join(script_dir, 'normalize_varscan_test/input/tiny_snp.Germline.hc')]}
-        merge_candidates = {os.path.join(script_dir, 'normalize_varscan_test/output/tiny_merged.vcf'): [os.path.join(script_dir, 'normalize_varscan_test/input/tiny_indel.vcf'), os.path.join(script_dir, 'normalize_varscan_test/input/tiny_snp.vcf')]}
+        merge_candidates = {os.path.join(script_dir, 'normalize_varscan_test/tiny_merged.vcf'): [os.path.join(script_dir, 'normalize_varscan_test/input/tiny_indel.vcf'), os.path.join(script_dir, 'normalize_varscan_test/input/tiny_snp.vcf')]}
         output_dir = os.path.join(script_dir, "normalize_varscan_test/output")
         marked_as_hc = varscan.final_steps(hc_candidates, merge_candidates, output_dir)
         
