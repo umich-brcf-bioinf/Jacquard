@@ -214,19 +214,18 @@ def rearrange_columns(output_df):
 def create_dict(df, row, columns):
     file_dict = defaultdict(list)
     all_tags = []
+
     for column in columns:
         if re.search("\|", column) and not re.search("\|FORMAT", column):
             caller = column.split("|")[0]
             fname = column.split("|")[1]
+
             format_column = str(df.ix[row, "{0}|{1}|FORMAT".format(caller, fname)])
             sample_column = str(df.ix[row, column])
             format_column += ":sample_name"
             sample_column += ":" + column
 #             format_sample = "{0}={1}".format(format_column, sample_column)
             format_sample_dict = jacquard_utils.combine_format_values(format_column, sample_column)
-#             for k in format_sample_dict.keys():
-#                 if k.startswith("JQ_"):
-#                     del format_sample_dict[k]
             tags = format_column.split(":")
             key = "{0}|{1}".format(caller, fname)
             file_dict[key].append(format_sample_dict)
@@ -236,6 +235,7 @@ def create_dict(df, row, columns):
                 except:
                     if tag not in all_tags:
                         all_tags.append(tag)
+
     return file_dict, all_tags
 
 def add_all_tags(file_dict, sample_keys):
@@ -257,17 +257,18 @@ def sort_format_tags(file_dict):
 #     
     return sorted_file_dict
 
-def remove_non_jq_tags(file_dict):
+def remove_non_jq_tags(df, file_dict):
     sample_keys = []
+    sample_names = {}
     for sample_list in file_dict.values():
         for sample in sample_list:
             for key, val in sample.items():
+                sample_names[sample["sample_name"]] = 1
                 if not re.search("JQ_", key) and key != "sample_name":
                     del sample[key]
                 else:
                     if key not in sample_keys:
                         sample_keys.append(key)
-                         
     file_dict = add_all_tags(file_dict, sample_keys)
     sort_format_tags(file_dict)
     return file_dict
@@ -306,11 +307,11 @@ def create_merging_dict(df, row, columns):
             sample_column = str(df.ix[row, column])
             sample_columns.append(sample_column)
             sample_names.append(column)
-            
+
             format_sample_dict = jacquard_utils.combine_format_values(format_column, sample_column)
-            for key, val in format_sample_dict.items():
-                if val == ".":
-                    del format_sample_dict[key]
+#             for key, val in format_sample_dict.items():
+#                 if val == ".":
+#                     del format_sample_dict[key]
             file_key = "{0}|{1}".format(fname, sample)
             if format_sample_dict != OrderedDict():
                 file_dict[file_key].append(format_sample_dict)
@@ -336,26 +337,44 @@ def combine_format_columns(df):
         columns = col.index.values
         file_dict, all_tags = create_dict(df, row, columns)
 
-        file_dict = remove_non_jq_tags(file_dict)
+        file_dict = remove_non_jq_tags(df, file_dict)
 
         for key, val in file_dict.items():
-            for thing in val:
-                df.ix[row, "FORMAT"] = ":".join(thing.keys())
-                df.ix[row, thing["sample_name"]] = ":".join(thing.values())
-    
+            for samp_dict in val:
+                format = []
+                sample = []
+                sorted_dict = OrderedDict(sorted(samp_dict.items()))
+
+                for sorted_key, sorted_val in sorted_dict.items():
+                    format.append(sorted_key)
+                    sample.append(sorted_val)
+
+#             new_dict = jacquard_utils.combine_format_dict(format, sample)
+                df.ix[row, "FORMAT"] = ":".join(format)
+                df.ix[row, samp_dict["sample_name"]] = ":".join(sample)
+
     df = cleanup_df(df, file_dict)
-    
+
     for row, col in df.T.iteritems():
         columns = col.index.values
         file_dict = create_merging_dict(df, row, columns)
-        
+
         for key, vals in file_dict.items():
             new_data = []
             for val in vals:
                 new_data.extend(val.values())
+#             print new_data
             df.ix[row, key] = ":".join(new_data)
 
     df = remove_old_columns(df)
+    for row, col in df.T.iteritems():
+        format = df.ix[row, "FORMAT"].split(":")
+        for column in col.index.values:
+            if re.search("\|", column):
+                sample = df.ix[row, column].split(":")
+                if len(format) != len(sample):
+                    sample[:] = [x for x in sample if x != "."]
+                df.ix[row, column] = ":".join(sample)
 
     return df
     
@@ -535,6 +554,7 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
     writer = open(output_path, "w")
     print_new_execution_context(execution_context, writer)
     
+    print "Aggregating sample data (this may take a while)"
     pivoter.validate_sample_data()
     formatted_df = combine_format_columns(pivoter._combined_df)
     

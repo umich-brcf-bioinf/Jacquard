@@ -312,7 +312,7 @@ class FileProcessorTestCase(unittest.TestCase):
         processor = FileProcessor(tags=[], execution_context_metadataheaders=input_metaheaders)
         processor.process(reader=["#CHROM\tNORMAL\tTUMOR\n"], writer=mockWriter, caller="MuTect")
         actualLines = mockWriter.lines()
-        self.assertEqual(3, len(actualLines))
+        self.assertEqual(4, len(actualLines))
         self.assertEqual("##jacquard.version=X", actualLines[0])
         self.assertEqual("##jacquard.tagMutect.command=foo", actualLines[1])
 
@@ -334,7 +334,7 @@ class FileProcessorTestCase(unittest.TestCase):
         mockTag = MockLowerTag("##mockMetaHeader")
         processor = FileProcessor(tags=[mockTag])
         processor.process(reader=["#CHROM\tNORMAL\tTUMOR\n"], writer=mockWriter, caller="MuTect")
-        self.assertEqual(2, len(mockWriter.lines()))
+        self.assertEqual(3, len(mockWriter.lines()))
         self.assertEqual("##mockMetaHeader", mockWriter.lines()[0])
 
     def test_process_adjustsVcfRecords(self):
@@ -347,11 +347,12 @@ class FileProcessorTestCase(unittest.TestCase):
                   ]
         processor = FileProcessor(tags=[mockTag])
         processor.process(reader, mockWriter, "MuTect")
-        self.assertEqual(4, len(mockWriter.lines()))
+        self.assertEqual(5, len(mockWriter.lines()))
         self.assertEqual("##mockMetaHeader", mockWriter.lines()[0])
-        self.assertEqual(recordHeader.strip("\n"), mockWriter.lines()[1])
-        self.assertEqual("chr1\t1\t.\tref\talt\tqual\tfilter\tINFO\ta:b:c\ta1:b1:c1\ta2:b2:c2", mockWriter.lines()[2])
-        self.assertEqual("chr2\t10\t.\tref\talt\tqual\tfilter\tINFO\ta:b:c\ta10:b10:c10\ta20:b20:c20", mockWriter.lines()[3])
+        self.assertEqual("##jacquard.tag.caller=MuTect", mockWriter.lines()[1])
+        self.assertEqual(recordHeader.strip("\n"), mockWriter.lines()[2])
+        self.assertEqual("chr1\t1\t.\tref\talt\tqual\tfilter\tINFO\ta:b:c\ta1:b1:c1\ta2:b2:c2", mockWriter.lines()[3])
+        self.assertEqual("chr2\t10\t.\tref\talt\tqual\tfilter\tINFO\ta:b:c\ta10:b10:c10\ta20:b20:c20", mockWriter.lines()[4])
 
 class TagVarScanTestCase(unittest.TestCase):
     def setUp(self):

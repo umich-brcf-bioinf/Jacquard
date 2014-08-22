@@ -467,7 +467,7 @@ class CombineFormatTestCase(unittest.TestCase):
         row = 0
         col = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", "MuTect|file1|sample_A", "MuTect|file1|sample_B", "VarScan|file1|sample_A", "VarScan|file1|sample_B"]
         file_dict = create_merging_dict(df, row, col)
-        expected_file_dict = {'file1|sample_A': [OrderedDict([('JQ_DP_MT', '57')]), OrderedDict([('JQ_DP_VS', '57')])], 'file1|sample_B': [OrderedDict([('JQ_DP_MT', '57')]), OrderedDict([('JQ_DP_VS', '57')])]}
+        expected_file_dict = {'file1|sample_A': [OrderedDict([('JQ_DP_VS', '.'), ('JQ_DP_MT', '57')]), OrderedDict([('JQ_DP_VS', '57'), ('JQ_DP_MT', '.')])], 'file1|sample_B': [OrderedDict([('JQ_DP_VS', '.'), ('JQ_DP_MT', '57')]), OrderedDict([('JQ_DP_VS', '57'), ('JQ_DP_MT', '.')])]}
         self.assertEquals(expected_file_dict, file_dict)
     
     def test_removeOldColumns(self):
@@ -512,13 +512,13 @@ class CombineFormatTestCase(unittest.TestCase):
 1\t3\t.\tC\tG\t.\t.\tfoo\tJQ_DP\t58\t57
 8\t4\t.\tA\tT\t.\t.\tfoo\tJQ_DP\t59\t57
 13\t5\t.\tT\tAA\t.\t.\tfoo\tJQ_DP\t60\t57
-13\t5\t.\tT\tAAAA\t.\t.\tfoo\t.\tnan\tnan
+13\t5\t.\tT\tAAAA\t.\t.\tfoo\t.\t.\t.
 '''
         expected_df = dataframe(expected_string)
 
         tm.assert_frame_equal(expected_df, actual_df)
         
-    def xtest_combineFormatColumns_differentSampleNames(self):
+    def test_combineFormatColumns_differentSampleNames(self):
         input_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tVarScan|file1|FORMAT\tVarScan|file1|sample_a\tVarScan|file1|sample_b
 1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t1\t20\tJQ_DP_VS\t6\t25
@@ -531,15 +531,15 @@ class CombineFormatTestCase(unittest.TestCase):
         actual_df = combine_format_columns(df)
         
         expected_string = \
-        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A|sample_a\tfile1|sample_B|sample_b
-1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t1:6\t20:25
-1\t3\t.\tC\tG\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t2:7\t21:26
-8\t4\t.\tA\tT\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t3:8\t22:27
-13\t5\t.\tT\tAA\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t4:9\t23:28
-13\t5\t.\tT\tAAAA\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t5:10\t24:29
+        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_b\tfile1|sample_A\tfile1|sample_B\tfile1|sample_a
+1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t.:25\t1:.\t20:.\t.:6
+1\t3\t.\tC\tG\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t.:26\t2:.\t21:.\t.:7
+8\t4\t.\tA\tT\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t.:27\t3:.\t22:.\t.:8
+13\t5\t.\tT\tAA\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t.:28\t4:.\t23:.\t.:9
+13\t5\t.\tT\tAAAA\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t.:29\t5:.\t24:.\t.:10
 '''
-        expected_df = dataframe(expected_string)
-        print actual_df
+        expected_df = dataframe(expected_string, "\t", False)
+
         tm.assert_frame_equal(expected_df, actual_df)
         
     def test_combineFormatColumns_missingTags(self):
@@ -608,21 +608,29 @@ class CombineFormatTestCase(unittest.TestCase):
 1\t3\t.\tC\tG\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
 8\t4\t.\tA\tT\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
 13\t5\t.\tT\tAA\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
-13\t5\t.\tT\tAAAA\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\tnan\tnan
+13\t5\t.\tT\tAAAA\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t.\t.
 '''
         expected_df = dataframe(expected_string)
         tm.assert_frame_equal(expected_df, actual_df)
         
     def test_removeNonJQTags(self):
+        fake_string = \
+        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_A\tfile2|sample_B\tfile1|sample_A\tfile1|sample_B
+1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1'''
+        df = dataframe(fake_string)
         file_dict = {'file2': [OrderedDict([('DP', '57'), ('JQ_foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('DP', '57'), ('JQ_foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_B')])]}
-        actual_file_dict = remove_non_jq_tags(file_dict)
+        actual_file_dict = remove_non_jq_tags(df, file_dict)
         expected_file_dict = {'file2': [OrderedDict([('JQ_foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('JQ_foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('JQ_foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('JQ_foo', '.'), ('sample_name', 'file1|sample_B')])]}
        
         self.assertEquals(expected_file_dict, actual_file_dict)
     
     def test_removeNonJQTags_noTags(self):
+        fake_string = \
+        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_A\tfile2|sample_B\tfile1|sample_A\tfile1|sample_B
+1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1'''
+        df = dataframe(fake_string)
         file_dict = {'file2': [OrderedDict([('DP', '57'), ('foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('DP', '57'), ('foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('DP', '57'), ('foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('DP', '57'), ('foo', '.'), ('sample_name', 'file1|sample_B')])]}
-        actual_file_dict = remove_non_jq_tags(file_dict)
+        actual_file_dict = remove_non_jq_tags(df, file_dict)
         expected_file_dict = {'file2': [OrderedDict([('sample_name', 'file2|sample_A')]), OrderedDict([('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('sample_name', 'file1|sample_A')]), OrderedDict([('sample_name', 'file1|sample_B')])]}
        
         self.assertEquals(expected_file_dict, actual_file_dict)
