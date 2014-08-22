@@ -507,7 +507,7 @@ class PivotTestCase(unittest.TestCase):
     
     ##determine input keys
     def test_determine_input_keys_txt(self):
-        input_dir = "test/test_input/test_input_keys_txt"
+        input_dir = "test/reference_files/test_input/test_input_keys_txt"
         actual_lst = determine_input_keys(input_dir)
         
         expected_lst = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL", "SnpEff_WARNING/ERROR"]
@@ -515,7 +515,7 @@ class PivotTestCase(unittest.TestCase):
         self.assertEquals(expected_lst, actual_lst)
         
     def test_determine_input_keys_vcf(self):
-        input_dir = "test/test_input/test_input_keys_vcf"
+        input_dir = "test/reference_files/test_input/test_input_keys_vcf"
         actual_lst = determine_input_keys(input_dir)
         
         expected_lst = ["CHROM", "POS", "REF", "ALT"]
@@ -523,13 +523,13 @@ class PivotTestCase(unittest.TestCase):
         self.assertEquals(expected_lst, actual_lst)
         
     def test_determine_input_keys_invalid(self):
-        input_dir = "test/test_input/test_input_keys_invalid"
+        input_dir = "test/reference_files/test_input/test_input_keys_invalid"
         
         self.assertRaises(PivotError, determine_input_keys, input_dir)
     
     ##get headers, readers
     def test_get_headers_and_readers(self):
-        input_dir = "test/test_input/test_input_keys_txt"
+        input_dir = "test/reference_files/test_input/test_input_keys_txt"
         sample_file_readers, headers, header_names, first_line = get_headers_and_readers(input_dir)
         
         self.assertEquals([input_dir + "/foo1.txt", input_dir + "/foo2.txt"], sample_file_readers)
@@ -830,12 +830,12 @@ chr1	4	A	T'''
         script_dir = os.path.dirname(os.path.abspath(__file__))
         annot_df = pd.DataFrame()
         
-        file_list = [script_dir + "/test_input/P2_test_input.txt", script_dir + "/test_input/P5_test_input.txt"]
+        file_list = [script_dir + "/reference_files/test_input/P2_test_input.txt", script_dir + "/reference_files/test_input/P5_test_input.txt"]
         for file in file_list:
             df = pd.read_csv(file, sep="\t", header=1, dtype='str', index_col=False)
             annot_df = append_to_annot_df(df, annot_df)
 
-        expected_df = pd.read_csv(script_dir + "/test_annotation/P2P5_combined_annotation.txt", sep="\t", header=False, dtype='str', index_col=False)
+        expected_df = pd.read_csv(script_dir + "/reference_files/test_annotation/P2P5_combined_annotation.txt", sep="\t", header=False, dtype='str', index_col=False)
 
         try:
             expected_df["CHROM"] = expected_df["CHROM"].apply(lambda x: x.replace("chr", ""))
@@ -865,8 +865,8 @@ chr1	4	A	T'''
         if "index" in sorted_annot_df:
             del sorted_annot_df["index"]
 
-        sorted_annot_df.to_csv(script_dir + "/test_output/sorted_annot.txt", sep="\t")
-        sorted_expected_df.to_csv(script_dir + "/test_output/sorted_expected.txt", sep="\t")
+        sorted_annot_df.to_csv(script_dir + "/reference_files/test_output/sorted_annot.txt", sep="\t")
+        sorted_expected_df.to_csv(script_dir + "/reference_files/test_output/sorted_expected.txt", sep="\t")
         
         tm.assert_frame_equal(sorted_expected_df, sorted_annot_df, check_names=False)
         

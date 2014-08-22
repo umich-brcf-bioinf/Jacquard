@@ -165,7 +165,7 @@ class PivotTestCase(unittest.TestCase):
         self.assertEqual("Invalid input parameter(s) ['foo']", message)
         
     def test_determineInputKeysVcf(self):
-        input_dir = "test/test_input/test_input_keys_vcf"
+        input_dir = "test/reference_files/test_input/test_input_keys_vcf"
         actual_lst = determine_input_keys(input_dir)
         
         expected_lst = ["CHROM", "POS", "REF", "ALT"]
@@ -173,13 +173,13 @@ class PivotTestCase(unittest.TestCase):
         self.assertEquals(expected_lst, actual_lst)
         
     def test_determineInputKeysInvalid(self):
-        input_dir = "test/test_input/test_input_keys_invalid"
+        input_dir = "test/reference_files/test_input/test_input_keys_invalid"
         
         self.assertRaises(PivotError, determine_input_keys, input_dir)
     
     ##get headers, readers
     def test_getHeadersAndReaders(self):
-        input_dir = "test/test_input/test_input_valid"
+        input_dir = "test/reference_files/test_input/test_input_valid"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*")))
         sample_file_readers, headers, header_names, first_line, meta_headers = get_headers_and_readers(in_files)
         
@@ -190,7 +190,7 @@ class PivotTestCase(unittest.TestCase):
         self.assertEquals(['##FORMAT=<ID=JQ_FOO'], meta_headers)
         
     def test_getHeadersAndReaders_invalid(self):
-        input_dir = "test/test_input/test_input_keys_txt"
+        input_dir = "test/reference_files/test_input/test_input_keys_txt"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*")))
         
         with self.assertRaises(SystemExit) as cm:

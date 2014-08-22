@@ -433,9 +433,9 @@ class TagVarScanTestCase(unittest.TestCase):
             
     def test_tagVarScanFilestest_tagMutectFiles_inputDirectoryNoVCFs(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/tag_varscan_test/noVCFs"
+        input_dir = script_dir + "/reference_files/tag_varscan_test/noVCFs"
         os.mkdir(input_dir)
-        output_dir = script_dir + "/tag_varscan_test/output"
+        output_dir = script_dir + "/reference_files/tag_varscan_test/output"
         with self.assertRaises(SystemExit) as cm:
             tag_files(input_dir, output_dir, [Mutect(), Varscan(), Unknown()])
         os.rmdir(input_dir)
@@ -462,7 +462,7 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
         
     def test_determineFileTypes_withUnknown(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/multi_caller_input/withUnknowns"
+        input_dir = script_dir + "/reference_files/multi_caller_input/withUnknowns"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
         callers = [Mutect(), Varscan(), Unknown()]
         file_types, inferred_callers = determine_file_types(input_dir, in_files, callers)
@@ -489,7 +489,7 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
         
     def test_determineFileTypes_noUnknown(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/multi_caller_input/"
+        input_dir = script_dir + "/reference_files/multi_caller_input/"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
         
         callers = [Mutect(), Varscan(), Unknown()]

@@ -8,7 +8,7 @@ from pandas.util.testing import assert_frame_equal
 import pandas.util.testing as tm
 from StringIO import StringIO
 
-from bin.format import PivotError, VariantPivoter, pivot, expand_format, create_initial_df, project_prepivot, build_pivoter, append_to_annot_df, melt_samples, validate_parameters, validate_format_tags, rearrange_columns, change_order, determine_input_keys, get_headers
+from bin.expand import PivotError, VariantPivoter, pivot, expand_format, create_initial_df, project_prepivot, build_pivoter, append_to_annot_df, melt_samples, validate_parameters, validate_format_tags, rearrange_columns, change_order, determine_input_keys, get_headers, expand_info_column
 
 pd.set_option('chained_assignment', None)
 
@@ -199,19 +199,19 @@ class PivotTestCase(unittest.TestCase):
         
     def test_validate_parameters_invalid_pivot(self):
         input_keys = ["CHROM", "POS", "REF"]
-        first_line = ["1\t24\tA\tC\tGT:DP\tfoo;bar\t1/1:258"]
+        meta_headers = ["##bar", "##FORMAT=<ID=GT>"]
         header_names = "CHROM\tPOS\tREF\tALT\tFORMAT\tINFO\tsample2"
         pivot_values = ["foo", "GT"]
-        output, message = validate_parameters(input_keys, first_line, header_names, pivot_values)
+        output, message = validate_parameters(input_keys, meta_headers, header_names, pivot_values)
         
         self.assertEqual(1, output)
         self.assertEqual("Invalid input parameter(s) ['foo']", message)
 
     def test_validate_format_tags_invalid(self):
-        first_line = ["1\t24\tA\tC\tGT:DP\tfoo;bar\t1/1:258"]
+        meta_headers = ["##bar"]
         pivot_values = ["foo"]
         fields = ["CHROM", "POS", "REF", "ALT", "FORMAT", "INFO", "sample2"]
-        actual_invalid_tags = validate_format_tags(first_line, pivot_values, fields)
+        actual_invalid_tags = validate_format_tags(meta_headers, pivot_values, fields)
         
         expected_invalid_tags = ["foo"]
         
@@ -245,13 +245,13 @@ class PivotTestCase(unittest.TestCase):
         self.assertEquals(expected_lst, actual_lst)
         
     def test_determine_input_keys_invalid(self):
-        input_dir = "test/test_input/test_input_keys_invalid"
+        input_dir = "test/reference_files/test_input/test_input_keys_invalid"
         
         self.assertRaises(PivotError, determine_input_keys, input_dir)
     
     ##get headers, readers
     def test_get_headers_and_readers(self):
-        input_file = "test/test_input/test_input_keys_txt/foo1.txt"
+        input_file = "test/reference_files/test_input/test_input_keys_txt/foo1.txt"
         meta_headers, headers, header_names, first_line = get_headers(input_file)
         
         self.assertEquals(["##foo\n","##bar\n" ,"##FORMAT=<ID=JQ_FOO\n"], meta_headers)
@@ -448,6 +448,26 @@ chr1	4	A	T	GT:DP:ESAF	foo	foo_Sample_2	0/1:15:0.2'''
 
         tm.assert_frame_equal(expected_df, actual_df)
     
+    def test_expand_info_column(self):
+        input_string = \
+'''SAMPLE_NAME	CHROM	POS	REF	ALT	INFO	FORMAT	Sample1	Sample2
+sample1	chr1	1	A	T	blah;foo=bar	GT:DP	0/1:.	1/1:23
+sample2	chr1	2	A	T	blah;foo=.	GT:DP	0/1:.	1/1:25
+sample3	chr1	3	A	T	foo=bar	DP	67	.
+sample6	chr1	4	A	T	blah;foo=bar	GT	1/1	.'''
+        df = dataframe(input_string)
+        expanded_df = expand_info_column(df)
+
+        expected_string = \
+'''SAMPLE_NAME	CHROM	POS	REF	ALT	INFO	FORMAT	Sample1	Sample2	blah	foo
+sample1	chr1	1	A	T	blah;foo=bar	GT:DP	0/1:.	1/1:23	blah	bar
+sample2	chr1	2	A	T	blah;foo=.	GT:DP	0/1:.	1/1:25	blah	.
+sample3	chr1	3	A	T	foo=bar	DP	67	.	.	bar
+sample6	chr1	4	A	T	blah;foo=bar	GT	1/1	.	blah	bar'''
+        expected_df = dataframe(expected_string)
+
+        tm.assert_frame_equal(expected_df, expanded_df)
+        
     def test_change_order(self):
         lst = ["CHROM", "POS", "REF", "ALT", "FORMAT", "INFO", "DP_fname1_sample1", "DP_fname2_sample2"]
         pivot_columns = ["DP_fname1_sample1", "DP_fname2_sample2"]
@@ -494,12 +514,12 @@ chr1	4	A	T'''
         script_dir = os.path.dirname(os.path.abspath(__file__))
         annot_df = pd.DataFrame()
         
-        file_list = [script_dir + "/test_input/P2_test_input.txt", script_dir + "/test_input/P5_test_input.txt"]
+        file_list = [script_dir + "/reference_files/test_input/P2_test_input.txt", script_dir + "/reference_files/test_input/P5_test_input.txt"]
         for file in file_list:
             df = pd.read_csv(file, sep="\t", header=1, dtype='str', index_col=False)
             annot_df = append_to_annot_df(df, annot_df)
 
-        expected_df = pd.read_csv(script_dir + "/test_annotation/P2P5_combined_annotation.txt", sep="\t", header=False, dtype='str', index_col=False)
+        expected_df = pd.read_csv(script_dir + "/reference_files/test_annotation/P2P5_combined_annotation.txt", sep="\t", header=False, dtype='str', index_col=False)
 
         try:
             expected_df["CHROM"] = expected_df["CHROM"].apply(lambda x: x.replace("chr", ""))
@@ -528,8 +548,8 @@ chr1	4	A	T'''
         if "index" in sorted_annot_df:
             del sorted_annot_df["index"]
 
-        sorted_annot_df.to_csv(script_dir + "/test_output/sorted_annot.txt", sep="\t")
-        sorted_expected_df.to_csv(script_dir + "/test_output/sorted_expected.txt", sep="\t")
+        sorted_annot_df.to_csv(script_dir + "/reference_files/test_output/sorted_annot.txt", sep="\t")
+        sorted_expected_df.to_csv(script_dir + "/reference_files/test_output/sorted_expected.txt", sep="\t")
         
         tm.assert_frame_equal(sorted_expected_df, sorted_annot_df, check_names=False)
         

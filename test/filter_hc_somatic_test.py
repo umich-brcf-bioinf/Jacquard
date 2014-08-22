@@ -39,9 +39,9 @@ class FilterSomaticTestCase(unittest.TestCase):
             
     def test_writeSomatic(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/filter_somatic_test/input/"
+        input_dir = script_dir + "/reference_files/filter_somatic_test/input/"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
-        output_dir = script_dir + "/filter_somatic_test/output"
+        output_dir = script_dir + "/reference_files/filter_somatic_test/output"
         try:
             os.mkdir(output_dir)
         except:
@@ -55,9 +55,9 @@ class FilterSomaticTestCase(unittest.TestCase):
         
     def test_writeSomatic(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/filter_somatic_test/input/"
+        input_dir = script_dir + "/reference_files/filter_somatic_test/input/"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
-        output_dir = script_dir + "/filter_somatic_test/output"
+        output_dir = script_dir + "/reference_files/filter_somatic_test/output"
         try:
             os.mkdir(output_dir)
         except:

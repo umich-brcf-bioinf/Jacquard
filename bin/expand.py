@@ -103,7 +103,7 @@ class VariantPivoter():
             print "not unique"
             raise PivotError("Duplicate keys would result in an invalid pivot; contact sysadmin.")
 
-def validate_parameters(input_keys, first_line, header_names, pivot_values):
+def validate_parameters(input_keys, meta_headers, header_names, pivot_values):
     invalid_fields = []
 
     fields = header_names.split("\t")
@@ -116,7 +116,7 @@ def validate_parameters(input_keys, first_line, header_names, pivot_values):
             else:
                 invalid_fields.append(key)
     
-    invalid_tags = validate_format_tags(first_line, pivot_values, fields)
+    invalid_tags = validate_format_tags(meta_headers, pivot_values, fields)
     
     message = "Invalid input parameter(s) "
     raise_err = 0
@@ -129,23 +129,17 @@ def validate_parameters(input_keys, first_line, header_names, pivot_values):
     
     return raise_err, message
 
-def validate_format_tags(first_line, pivot_values, fields):
+def validate_format_tags(meta_headers, pivot_values, fields):
     invalid_tags = []
     all_format_tags ={}
     
-    for line in first_line:
-        my_line = line.split("\t")
-        for index, field in enumerate(fields):
-            if field == "FORMAT":
-                format = my_line[index]
-                format_tags = format.split(":")
-                
-                for tag in format_tags:
-                    all_format_tags[tag] = 0
-
-    for val in pivot_values:
-        if val not in all_format_tags:
-            invalid_tags.append(val)
+    for pivot_value in pivot_values:
+        valid = 0
+        for meta_header in meta_headers:
+            if re.search(pivot_value, meta_header):
+                valid = 1
+        if valid == 0:
+            invalid_tags.append(pivot_value)
 
     return invalid_tags
 
@@ -308,8 +302,23 @@ def insert_links(joined_output):
         joined_output.loc[row, "dbSNP"] = '=hyperlink("http://www.ncbi.nlm.nih.gov/projects/SNP/snp_ref.cgi?rs=&' + joined_output.loc[row, "ID"] + '", "dbSNP")' if joined_output.loc[row, "ID"] != "." else ""
     del joined_output["ID"]
         
-def process_files(input_file, output_path, input_keys, pivot_values, headers, header_names, first_line, pivot_builder=build_pivoter):
-    raise_err, message = validate_parameters(input_keys, first_line, header_names, pivot_values)  
+def expand_info_column(df):
+    for row, col in df.T.iteritems():
+        info_column = df.ix[row,"INFO"]
+        info_tags = info_column.split(";")
+        for info_tag in info_tags:
+            key = info_tag.split("=")[0]
+            try:
+                value = info_tag.split("=")[1] 
+                df.ix[row, key] = value
+            except:
+                df.ix[row, key] = key
+    df.fillna(".", inplace=True)
+    
+    return df
+        
+def process_files(input_file, output_path, input_keys, pivot_values, headers, header_names, meta_headers, first_line, pivot_builder=build_pivoter):
+    raise_err, message = validate_parameters(input_keys, meta_headers, header_names, pivot_values)  
     if raise_err == 1:
         raise PivotError(message)
         
@@ -339,7 +348,9 @@ def process_files(input_file, output_path, input_keys, pivot_values, headers, he
          
     if "WARNING/ERROR" in sorted_df.columns.values:
         sorted_df.rename(columns={"WARNING/ERROR":"SnpEff_WARNING/ERROR"}, inplace=True)
-     
+    
+    expanded_df = expand_info_column(sorted_df)
+    
     writer = ExcelWriter(output_path)
     sorted_df.to_excel(writer, "Variant_output", index=False, merge_cells=0)  
     writer.save() 
@@ -413,5 +424,5 @@ def execute(args, execution_context):
     meta_headers, headers, header_names, first_line = get_headers(input_file)
     print "\n".join(execution_context) 
     execution_context.extend(meta_headers + ["##fileformat=VCFv4.2"])
-    process_files(input_file, output_path, input_keys, pivot_values, headers, header_names, first_line)
+    process_files(input_file, output_path, input_keys, pivot_values, headers, header_names, meta_headers, first_line)
     
