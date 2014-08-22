@@ -385,7 +385,7 @@ def get_headers(input_file):
     return meta_headers, headers, header_names, first_line
 
 def add_subparser(subparser):
-    parser_pivot = subparser.add_parser("format", help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
+    parser_pivot = subparser.add_parser("expand", help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
     parser_pivot.add_argument("input_file", help="Path to annotated VCF. Other file types ignored")
     parser_pivot.add_argument("output_file", help="Path to output variant-level XLSX file")
     parser_pivot.add_argument("-k", "--keys",
