@@ -7,6 +7,8 @@ import testfixtures
 from testfixtures import TempDirectory
 from bin.filter_hc_somatic import filter_somatic_positions, write_somatic, find_somatic_positions
 
+VCF_HEADER="#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsampleA\tsampleB\n"
+
 class FilterSomaticTestCase(unittest.TestCase):
     def test_findSomaticPositions(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
@@ -37,7 +39,19 @@ class FilterSomaticTestCase(unittest.TestCase):
             input_dir.cleanup()
             output_dir.cleanup()
             
-    def test_writeSomatic(self):
+    def test_writeSomatic_outputFileForEachInputFile(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input1 = input_dir.write('mutect.vcf', "##MuTect\n"+VCF_HEADER)
+            input2 = input_dir.write('varscan.vcf', "##source=VarScan2\n"+VCF_HEADER)
+            
+            in_files = [input1, input2]
+            somatic_positions = {}
+            
+            excluded_variants = write_somatic(in_files, output_dir.path, somatic_positions)
+            self.assertEqual(["mutect_HCsomatic.vcf", "varscan_HCsomatic.vcf"], output_dir.actual())
+
+    
+    def Xtest_writeSomatic5(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/reference_files/filter_somatic_test/input/"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
@@ -53,7 +67,7 @@ class FilterSomaticTestCase(unittest.TestCase):
         self.assertEqual("##jacquard.filterHCSomatic.excluded_variants=5\n", excluded_variants)
         shutil.rmtree(output_dir)
         
-    def test_writeSomatic(self):
+    def Xtest_writeSomatic32(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/reference_files/filter_somatic_test/input/"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
