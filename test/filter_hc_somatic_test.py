@@ -47,8 +47,8 @@ class FilterSomaticTestCase(unittest.TestCase):
             
             in_files = [input1, input2]
             somatic_positions = {}
-            
-            excluded_variants = write_somatic(in_files, output_dir.path, somatic_positions)
+            execution_context = ["##foo", "##bar"]
+            excluded_variants = write_somatic(in_files, output_dir.path, somatic_positions, execution_context)
             self.assertEqual(["mutect_HCsomatic.vcf", "varscan_HCsomatic.vcf"], output_dir.actual())
 
     
