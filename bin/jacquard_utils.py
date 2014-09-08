@@ -19,14 +19,14 @@ def validate_directories(input_dir, output_dir):
     try:
         listdir(input_dir)
     except:
-        print "ERROR: Specified input directory [{0}] cannot be read. Check permissions and try again.".format(input_dir)
+        print "ERROR. Specified input directory [{0}] cannot be read. Check permissions and try again.".format(input_dir)
         exit(1)
         
     if not os.path.isdir(output_dir):
         try:
             os.makedirs(output_dir)
         except:
-            print "ERROR: Output directory could not be created. Check parameters and try again"
+            print "ERROR. Output directory could not be created. Check parameters and try again"
             exit(1)
             
 def write_output(writer, headers, variants):

@@ -266,9 +266,10 @@ class LineProcessor():
         return "\t".join(new_vcf_fields) + "\n"
 
 class FileProcessor():
-    def __init__(self, tags=[], execution_context_metadataheaders = []):
+    def __init__(self, output_dir, tags=[], execution_context_metadataheaders = []):
         self._tags = tags
         self._metaheader = self._metaheader_handler(execution_context_metadataheaders)
+        self._output_dir = output_dir
         
         for tag in self._tags:
             self._metaheader += tag.metaheader
@@ -290,6 +291,7 @@ class FileProcessor():
                         writer.write(line)
                     else:
                         print "Unexpected VarScan VCF structure - missing NORMAL\t and TUMOR\n headers."
+                        shutil.rmtree(self._output_dir)
                         exit(1)
                 else:
                     writer.write(self._metaheader)
@@ -324,26 +326,28 @@ def determine_file_types(input_dir, in_files, callers):
                 break
     return file_types, inferred_callers
     
-def print_file_types(file_types):
+def print_file_types(output_dir, file_types):
     for key, vals in file_types.items():
         print "Recognized [{0}] {1} file(s)".format(len(vals), key)
     if "Unknown" in file_types.keys():
         print "ERROR. Unable to determine which caller was used on [{0}]. Check input files and try again.".format(file_types["Unknown"])
+        shutil.rmtree(output_dir)
         exit(1)
     
 def tag_files(input_dir, output_dir, callers, execution_context=[]):
     in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
     if len(in_files) < 1:
         print "ERROR. Specified input directory [{0}] contains no VCF files. Check parameters and try again."
+        shutil.rmtree(output_dir)
         exit(1)
 
     print "\n".join(execution_context)
     print "Processing [{0}] VCF file(s) from [{1}]".format(len(in_files), input_dir)
     
     file_types, inferred_callers = determine_file_types(input_dir, in_files, callers)
-    print_file_types(file_types)
+    print_file_types(output_dir, file_types)
 
-    processors = {"VarScan" : FileProcessor(tags=[Varscan_AlleleFreqTag(), Varscan_DepthTag(), Varscan_SomaticTag()], execution_context_metadataheaders=execution_context), "MuTect": FileProcessor(tags=[Mutect_AlleleFreqTag(), Mutect_DepthTag(), Mutect_SomaticTag()], execution_context_metadataheaders=execution_context), "Strelka": FileProcessor(tags=[Strelka_AlleleFreqTag(), Strelka_DepthTag(), Strelka_SomaticTag()], execution_context_metadataheaders=execution_context)}
+    processors = {"VarScan" : FileProcessor(output_dir, tags=[Varscan_AlleleFreqTag(), Varscan_DepthTag(), Varscan_SomaticTag()], execution_context_metadataheaders=execution_context), "MuTect": FileProcessor(output_dir, tags=[Mutect_AlleleFreqTag(), Mutect_DepthTag(), Mutect_SomaticTag()], execution_context_metadataheaders=execution_context), "Strelka": FileProcessor(output_dir, tags=[Strelka_AlleleFreqTag(), Strelka_DepthTag(), Strelka_SomaticTag()], execution_context_metadataheaders=execution_context)}
     
     total_number_of_files = len(in_files)
     count = 1

@@ -300,8 +300,12 @@ class LineProcessorTestCase(unittest.TestCase):
 class FileProcessorTestCase(unittest.TestCase):
     def test_process_diesIfMissingNormalTumorHeaders(self):
         mockWriter = MockWriter()
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        output_dir = script_dir+ "/reference_files/fake_output/"
+        os.mkdir(output_dir)
+        
         input_metaheaders = ["jacquard.version=X","jacquard.tagMutect.command=foo"]
-        processor = FileProcessor(tags=[], execution_context_metadataheaders=input_metaheaders)
+        processor = FileProcessor(output_dir, tags=[], execution_context_metadataheaders=input_metaheaders)
         with self.assertRaises(SystemExit) as cm:
             processor.process(reader=["#CHROM\n"], writer=mockWriter, caller="VarScan")
         self.assertEqual(cm.exception.code, 1)
@@ -309,7 +313,7 @@ class FileProcessorTestCase(unittest.TestCase):
     def test_process_prependsExecutionContext(self):
         mockWriter = MockWriter()
         input_metaheaders = ["##jacquard.version=X","##jacquard.tagMutect.command=foo"]
-        processor = FileProcessor(tags=[], execution_context_metadataheaders=input_metaheaders)
+        processor = FileProcessor("foo_output_dir", tags=[], execution_context_metadataheaders=input_metaheaders)
         processor.process(reader=["#CHROM\tNORMAL\tTUMOR\n"], writer=mockWriter, caller="MuTect")
         actualLines = mockWriter.lines()
         self.assertEqual(4, len(actualLines))
@@ -317,14 +321,14 @@ class FileProcessorTestCase(unittest.TestCase):
         self.assertEqual("##jacquard.tagMutect.command=foo", actualLines[1])
 
     def test_prependsExecutionContextWhenBlank(self):
-        processor = FileProcessor()
+        processor = FileProcessor("foo_output_dir")
         mockWriter = MockWriter()
         processor.process(reader=[], writer=mockWriter, caller="MuTect")
         self.assertEqual(0, len(mockWriter.lines()))
 
     def test_process_passthroughExistingMetaHeaders(self):
         mockWriter = MockWriter()
-        processor = FileProcessor()
+        processor = FileProcessor("foo_output_dir")
         reader = ["##Hello\n","##World\n"]
         processor.process(reader, mockWriter, "MuTect")
         self.assertEqual(["##Hello", "##World"], mockWriter.lines())
@@ -332,7 +336,7 @@ class FileProcessorTestCase(unittest.TestCase):
     def test_process_addsNewMetaHeaders(self):
         mockWriter = MockWriter()
         mockTag = MockLowerTag("##mockMetaHeader")
-        processor = FileProcessor(tags=[mockTag])
+        processor = FileProcessor("foo_output_dir", tags=[mockTag])
         processor.process(reader=["#CHROM\tNORMAL\tTUMOR\n"], writer=mockWriter, caller="MuTect")
         self.assertEqual(3, len(mockWriter.lines()))
         self.assertEqual("##mockMetaHeader", mockWriter.lines()[0])
@@ -345,7 +349,7 @@ class FileProcessorTestCase(unittest.TestCase):
                   "chr1|1|.|ref|alt|qual|filter|INFO|A:B:C|A1:B1:C1|A2:B2:C2".replace("|","\t"),
                   "chr2|10|.|ref|alt|qual|filter|INFO|A:B:C|A10:B10:C10|A20:B20:C20".replace("|","\t")
                   ]
-        processor = FileProcessor(tags=[mockTag])
+        processor = FileProcessor("foo_output_dir", tags=[mockTag])
         processor.process(reader, mockWriter, "MuTect")
         self.assertEqual(5, len(mockWriter.lines()))
         self.assertEqual("##mockMetaHeader", mockWriter.lines()[0])
@@ -434,17 +438,19 @@ class TagVarScanTestCase(unittest.TestCase):
     def test_tagVarScanFilestest_tagMutectFiles_inputDirectoryNoVCFs(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/reference_files/tag_varscan_test/noVCFs"
-        os.mkdir(input_dir)
+
         output_dir = script_dir + "/reference_files/tag_varscan_test/output"
+        os.mkdir(output_dir)
         with self.assertRaises(SystemExit) as cm:
             tag_files(input_dir, output_dir, [Mutect(), Varscan(), Unknown()])
-        os.rmdir(input_dir)
+        
         self.assertEqual(cm.exception.code, 1)
         
     def test_tagVarScanFiles_noHeaders(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/test_input/unknownCaller"
-        output_dir = script_dir + "/test_output"
+        input_dir = script_dir + "/reference_files/test_input/unknownCaller"
+        output_dir = script_dir + "/reference_files/invalid_output"
+        os.mkdir(output_dir)
         with self.assertRaises(SystemExit) as cm:
            tag_files(input_dir, output_dir, [Mutect(), Varscan(), Unknown()])
 
@@ -463,6 +469,9 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
     def test_determineFileTypes_withUnknown(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/reference_files/multi_caller_input/withUnknowns"
+        output_dir = script_dir + "/reference_files/multi_caller_output/"
+        os.mkdir(output_dir)
+        
         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
         callers = [Mutect(), Varscan(), Unknown()]
         file_types, inferred_callers = determine_file_types(input_dir, in_files, callers)
@@ -473,7 +482,7 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
         self.assertEqual('tiny_mutect_input2.vcf', os.path.basename(file_types.values()[2][1]))
         
         with self.assertRaises(SystemExit) as cm:
-            print_file_types(file_types)
+            print_file_types(output_dir, file_types)
         self.assertEqual(cm.exception.code, 1)
         
         output_list = self.output.getvalue().splitlines()
@@ -490,6 +499,7 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
     def test_determineFileTypes_noUnknown(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/reference_files/multi_caller_input/"
+        output_dir = script_dir + "/reference_files/multi_caller_output/"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
         
         callers = [Mutect(), Varscan(), Unknown()]
@@ -499,7 +509,7 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
         self.assertEqual('tiny_mutect_input.vcf', os.path.basename(file_types.values()[1][0]))
         self.assertEqual('tiny_mutect_input2.vcf', os.path.basename(file_types.values()[1][1]))
 
-        print_file_types(file_types)
+        print_file_types(output_dir, file_types)
         output_list = self.output.getvalue().splitlines()
         
         self.assertEqual("tiny_mutect_input.vcf: ##jacquard.tag.handler=MuTect", output_list[0])
