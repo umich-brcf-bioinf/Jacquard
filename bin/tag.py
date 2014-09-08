@@ -316,7 +316,7 @@ def determine_file_types(input_dir, in_files, callers):
                 file_types[caller_name].append(file)
                 if caller_name == "Unknown":
                     print "ERROR. {0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller_name)
-                else:
+                else:  
                     print "{0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller_name)
                     inferred_caller = "##jacquard.tag.caller={0}".format(caller_name)
                     inferred_callers.append(inferred_caller)
