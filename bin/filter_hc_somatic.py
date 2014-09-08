@@ -21,7 +21,7 @@ def find_somatic_positions(in_files, output_dir):
             else:
                 split_line = line.split("\t")
                 key = "^".join([split_line[0], split_line[1]])
-                if "JQ_HC_SOM_" in split_line[8]:
+                if jacquard_utils.jq_filter_tag in split_line[8]:
                     somatic_positions[key] = 1
                     somatic = 1
         if somatic == 0:
@@ -37,11 +37,12 @@ def find_somatic_positions(in_files, output_dir):
         exit(1)
         
     print "Found [{0}] high-confidence somatic positions".format(len(somatic_positions.keys()))
-    print "##jacquard.filterHCSomatic.total_highConfidence_somatic_positions={0}\n".format(len(somatic_positions.keys()))
+    somatic_positions_header = "##jacquard.filterHCSomatic.total_highConfidence_somatic_positions={0}\n".format(len(somatic_positions.keys()))
+    print somatic_positions_header
     
-    return somatic_positions
+    return somatic_positions, somatic_positions_header
 
-def write_somatic(in_files, output_dir, somatic_positions):
+def write_somatic(in_files, output_dir, somatic_positions, execution_context):
     for file in in_files:
         non_somatic = 0
         headers = []
@@ -67,6 +68,7 @@ def write_somatic(in_files, output_dir, somatic_positions):
         excluded_variants = "##jacquard.filterHCSomatic.excluded_variants={0}\n".format(non_somatic)
         print os.path.basename(file) + ": " + excluded_variants
         headers.append(excluded_variants)
+        headers.extend(execution_context)
         
         sorted_headers = jacquard_utils.sort_headers(headers)
         jacquard_utils.write_output(out_file, sorted_headers, variants)
@@ -88,8 +90,10 @@ def filter_somatic_positions(input_dir, output_dir, execution_context=[]):
     print "Processing [{0}] VCF file(s) from [{1}]".format(len(in_files), input_dir)
     
     
-    somatic_positions = find_somatic_positions(in_files, output_dir)
-    write_somatic(in_files, output_dir, somatic_positions)
+    somatic_positions, somatic_positions_header = find_somatic_positions(in_files, output_dir)
+    execution_context.append(somatic_positions_header)
+    
+    write_somatic(in_files, output_dir, somatic_positions, execution_context)
 
 def add_subparser(subparser):
     parser_normalize_vs = subparser.add_parser("filter_hc_somatic", help="Accepts a directory of Jacquard-tagged VCF results from one or more callers and creates a new directory of VCFs, where rows have been filtered to contain only positions that were called high-confidence somatic in any VCF.")

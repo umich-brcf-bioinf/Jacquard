@@ -71,7 +71,7 @@ class Varscan_DepthTagTestCase(unittest.TestCase):
 
 class Varscan_SomaticTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={0}>\n'.format(__version__), Varscan_SomaticTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_HC_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={0}>\n'.format(__version__), Varscan_SomaticTag().metaheader)
                 
     def test_format_missingSSInfoTag(self):
         tag = Varscan_SomaticTag()
@@ -86,7 +86,7 @@ class Varscan_SomaticTagTestCase(unittest.TestCase):
         format_dict = OrderedDict([("A", "1")])
         self.assertEqual(OrderedDict([("A", "1"), ("JQ_HC_SOM_VS", "0")]), tag.format("alt", "filter", "INFO;SS=2", format_dict, 0))
         self.assertEqual(OrderedDict([("A", "1"), ("JQ_HC_SOM_VS", "0")]), tag.format("alt", "filter", "INFO;SS=2", format_dict, 1))
-        self.assertEqual(OrderedDict([("A", "1"), ("JQ_HC_SOM_VS", "1")]), tag.format("alt", "filter", "INFO;SS=2;JQ_HC_VS", format_dict, 1))
+        self.assertEqual(OrderedDict([("A", "1"), ("JQ_HC_SOM_VS", "1")]), tag.format("alt", "filter", "INFO;SS=2;JQ_HC_SOM_VS", format_dict, 1))
         
         format_dict = OrderedDict([("A", "1")])
         self.assertEqual(OrderedDict([("A", "1",), ("JQ_HC_SOM_VS", "0")]), tag.format("alt", "filter", "INFO", format_dict, 0))
@@ -150,7 +150,7 @@ class Mutect_DepthTagTestCase(unittest.TestCase):
 
 class Mutect_SomaticTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag),Source="Jacquard",Version={0}>\n'.format(__version__), Mutect_SomaticTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_HC_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag),Source="Jacquard",Version={0}>\n'.format(__version__), Mutect_SomaticTag().metaheader)
                 
     def test_format_missingSSTag(self):
         tag = Mutect_SomaticTag()
@@ -219,7 +219,7 @@ class Strelka_DepthTagTestCase(unittest.TestCase):
 
 class Strelka_SomaticTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag),Source="Jacquard",Version={0}>\n'.format(__version__), Mutect_SomaticTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_HC_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag),Source="Jacquard",Version={0}>\n'.format(__version__), Mutect_SomaticTag().metaheader)
                 
     def test_format_missingPASSTag(self):
         tag = Strelka_SomaticTag()
@@ -396,7 +396,7 @@ class TagVarScanTestCase(unittest.TestCase):
                 self.assertEqual('##source=VarScan2', split_result[0])
                 self.assertEqual('##FORMAT=<ID=JQ_AF_VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={0}>'.format(__version__), split_result[1])
                 self.assertEqual('##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP),Source="Jacquard",Version={0}>'.format(__version__), split_result[2])
-                self.assertEqual('##FORMAT=<ID=JQ_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={0}>'.format(__version__), split_result[3])
+                self.assertEqual('##FORMAT=<ID=JQ_HC_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={0}>'.format(__version__), split_result[3])
                 self.assertEqual('##jacquard.tag.caller=VarScan'.format(__version__), split_result[4])
                 self.assertEqual('#CHROM\tNORMAL\tTUMOR', split_result[5])
             
@@ -480,7 +480,7 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
                 
         self.assertEqual("tiny_mutect_input.vcf: ##jacquard.tag.handler=MuTect", output_list[0])
         self.assertEqual("tiny_mutect_input2.vcf: ##jacquard.tag.handler=MuTect", output_list[2])
-        self.assertEqual("ERROR: tiny_unknown_input.vcf: ##jacquard.tag.handler=Unknown", output_list[4])
+        self.assertEqual("ERROR. tiny_unknown_input.vcf: ##jacquard.tag.handler=Unknown", output_list[4])
         self.assertEqual("tiny_varscan_input.vcf: ##jacquard.tag.handler=VarScan", output_list[5])
         self.assertEqual("Recognized [1] Unknown file(s)", output_list[7])
         self.assertEqual("Recognized [1] VarScan file(s)", output_list[8])

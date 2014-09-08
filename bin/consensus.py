@@ -74,6 +74,7 @@ def add_consensus(meta_headers, header, lines, writer, output_file):
 def roundTwoDigits(value): 
     new_values = []
     for val in value:
+    	print val
         if len(val.split(".")[1]) <= 2:
             new_values.append(val)
         else:

@@ -16,8 +16,9 @@ class FilterSomaticTestCase(unittest.TestCase):
             file1 = os.path.join(input_dir.path, "A.snp.vcf")
             file2 = os.path.join(input_dir.path, "A.indel.vcf")
             
-            somatic_positions = find_somatic_positions([file1, file2], output_dir.path)
+            somatic_positions, somatic_positions_header  = find_somatic_positions([file1, file2], output_dir.path)
             self.assertEqual({'1^2353': 1, '1^2352': 1}, somatic_positions)
+            self.assertEqual("##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=2\n", somatic_positions_header)
             
             input_dir.cleanup()
             output_dir.cleanup()
@@ -47,8 +48,8 @@ class FilterSomaticTestCase(unittest.TestCase):
         except:
             pass
         somatic_positions = {'1^2353': 1, '1^2352': 1}
-        
-        excluded_variants = write_somatic(in_files, output_dir, somatic_positions)
+        execution_context = ["##foo.version=0.1", "##bar"]
+        excluded_variants = write_somatic(in_files, output_dir, somatic_positions, execution_context)
         
         self.assertEqual("##jacquard.filterHCSomatic.excluded_variants=5\n", excluded_variants)
         shutil.rmtree(output_dir)
@@ -63,8 +64,8 @@ class FilterSomaticTestCase(unittest.TestCase):
         except:
             pass
         somatic_positions = {'1^15996': 1, '1^2352': 1}
-        
-        excluded_variants = write_somatic(in_files, output_dir, somatic_positions)
+        execution_context = ["##foo.version=0.1", "##bar"]
+        excluded_variants = write_somatic(in_files, output_dir, somatic_positions, execution_context)
         
         self.assertEqual("##jacquard.filterHCSomatic.excluded_variants=32\n", excluded_variants)
         shutil.rmtree(output_dir)

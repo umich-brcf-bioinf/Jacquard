@@ -367,6 +367,9 @@ def combine_format_columns(df):
             df.ix[row, key] = ":".join(new_data)
 
     df = remove_old_columns(df)
+    
+    ###this doesn't work quite right....fix!
+    ###it works for inconsistent sets, but not for consistent sets
     for row, col in df.T.iteritems():
         format = df.ix[row, "FORMAT"].split(":")
         for column in col.index.values:

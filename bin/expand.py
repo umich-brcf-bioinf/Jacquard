@@ -401,8 +401,10 @@ def add_subparser(subparser):
     parser_pivot.add_argument("output_file", help="Path to output variant-level XLSX file")
     parser_pivot.add_argument("-k", "--keys",
         help="Columns to be used as keys for the pivoting. Default keys for VCF are CHROM,POS,REF,ALT. Default keys for Epee TXT are CHROM,POS,REF,ANNOTATED_ALLELE,GENE_SYMBOL")
-    parser_pivot.add_argument("-t", "--tags",
-        help="Format tags to be fielded out in the pivoting.")
+    parser_pivot.add_argument("-f", "--format_tags",
+        help="FORMAT tags to be fielded out in the pivoting.")
+    parser_pivot.add_argument("-i", "--info_tags",
+        help="INFO tags to be fielded out in the pivoting.")
         
 def execute(args, execution_context):
     input_file = os.path.abspath(args.input_file)
