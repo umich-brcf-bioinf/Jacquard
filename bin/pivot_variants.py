@@ -284,17 +284,16 @@ def validate_format_tags(first_line, pivot_values, fields):
 
     return invalid_tags
     
-def build_pivoter(path, reader, input_keys, pivot_values, header_index):
-    initial_df  = create_initial_df(path, reader, header_index)
+def build_pivoter(input_keys, pivot_values, initial_df):
 
     if "SnpEff_WARNING/ERROR" in initial_df.columns.values or "WARNING/ERROR" in initial_df.columns.values:
         initial_df.rename(columns={"WARNING/ERROR": "SnpEff_WARNING/ERROR"}, inplace=True)
-        initial_df = _exclude_errors_and_warnings(initial_df)
+#         initial_df = _exclude_errors_and_warnings(initial_df)
     
     pivoter = VariantPivoter(input_keys, ["SAMPLE_NAME"], pivot_values)
     pivoter.is_compatible(initial_df)
     
-    return pivoter
+    return pivoter,initial_df
   
 def _exclude_errors_and_warnings(df):
     try:
@@ -473,7 +472,9 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, pivot
         raise PivotError(message)
         
     print "{0} - determining file type".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
-    pivoter  = pivot_builder(first_path, first_reader, input_keys, pivot_values, headers[0])
+        
+    input_df  = create_initial_df(first_path, first_reader, headers[0])
+    pivoter,output_df  = pivot_builder(input_keys, pivot_values, input_df)
     
     count = 0
     for file_reader in sample_file_readers:
@@ -597,7 +598,7 @@ def execute(args, execution_context):
     jacquard_utils.validate_directories(input_dir, output_dir)
         
     fname, extension = os.path.splitext(outfile_name)
-    if extension != ".xlsx": 
+    if extension != ".csv": 
         print "Error. Specified output {0} must have a .xlsx extension".format(output_path)
         exit(1)
     
