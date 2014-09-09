@@ -1,4 +1,3 @@
-#!/usr/bin/python2.7
 from collections import OrderedDict
 import glob
 import os
@@ -9,8 +8,8 @@ from stat import *
 import testfixtures
 from testfixtures import TempDirectory
 import unittest
-from bin.tag import Varscan, Mutect, Unknown, Varscan_AlleleFreqTag, Varscan_DepthTag, Varscan_SomaticTag, Mutect_AlleleFreqTag, Mutect_DepthTag, Mutect_SomaticTag, Strelka_AlleleFreqTag, Strelka_DepthTag, Strelka_SomaticTag, LineProcessor, FileProcessor, tag_files, determine_file_types, print_file_types
-from bin.jacquard_utils import __version__
+from jacquard.tag import Varscan, Mutect, Unknown, Varscan_AlleleFreqTag, Varscan_DepthTag, Varscan_SomaticTag, Mutect_AlleleFreqTag, Mutect_DepthTag, Mutect_SomaticTag, Strelka_AlleleFreqTag, Strelka_DepthTag, Strelka_SomaticTag, LineProcessor, FileProcessor, tag_files, determine_file_types, print_file_types
+from jacquard.jacquard_utils import __version__
 
 class Varscan_AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):

@@ -1,11 +1,10 @@
-#!/usr/bin/python2.7
 import glob
 import os
 import unittest
 import shutil
 import testfixtures
 from testfixtures import TempDirectory
-from bin.filter_hc_somatic import filter_somatic_positions, write_somatic, find_somatic_positions
+from jacquard.filter_hc_somatic import filter_somatic_positions, write_somatic, find_somatic_positions
 
 VCF_HEADER="#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsampleA\tsampleB\n"
 

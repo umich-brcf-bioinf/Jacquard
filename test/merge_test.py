@@ -1,4 +1,3 @@
-#!/usr/bin/python2.7
 from collections import defaultdict, OrderedDict
 import glob
 import pandas as pd
@@ -11,7 +10,7 @@ import pprint
 import os
 from os import listdir
 from os.path import isfile, join
-from bin.merge import PivotError, VariantPivoter, merge_samples, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller_and_split_mult_alts, validate_samples_for_callers, validate_sample_caller_vcfs, create_new_line, create_merging_dict, remove_old_columns
+from jacquard.merge import PivotError, VariantPivoter, merge_samples, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller_and_split_mult_alts, validate_samples_for_callers, validate_sample_caller_vcfs, create_new_line, create_merging_dict, remove_old_columns
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 

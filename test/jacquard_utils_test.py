@@ -6,7 +6,7 @@ import subprocess
 import sys
 import testfixtures
 from testfixtures import TempDirectory
-from bin.jacquard_utils import validate_directories, write_output, sort_headers, sort_data, change_pos_to_int, combine_format_values
+from jacquard.jacquard_utils import validate_directories, write_output, sort_headers, sort_data, change_pos_to_int, combine_format_values
 
 class ValidateDirectoriesTestCase(unittest.TestCase):
     def test_validateDirectories_inputDirectoryDoesntExist(self):

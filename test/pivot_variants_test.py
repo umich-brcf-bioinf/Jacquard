@@ -1,4 +1,3 @@
-#!/usr/bin/python2.7
 import ast
 import pandas as pd
 from pandas import *
@@ -10,7 +9,7 @@ import pprint
 import os
 from os import listdir
 from os.path import isfile, join
-from bin.pivot_variants import PivotError, VariantPivoter, pivot, expand_format, merge_samples, create_initial_df, project_prepivot, build_pivoter, append_to_annot_df, melt_samples, validate_parameters, validate_format_tags, rearrange_columns, change_order, determine_input_keys, get_headers_and_readers
+from jacquard.pivot_variants import PivotError, VariantPivoter, pivot, expand_format, merge_samples, create_initial_df, project_prepivot, build_pivoter, append_to_annot_df, melt_samples, validate_parameters, validate_format_tags, rearrange_columns, change_order, determine_input_keys, get_headers_and_readers
 
 pd.set_option('chained_assignment', None)
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
