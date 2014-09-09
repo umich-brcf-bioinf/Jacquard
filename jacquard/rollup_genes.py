@@ -69,7 +69,7 @@ def gene_rollup_highest_impact(initial_df, samples, cols):
 
     filtered_df = melted_df[melted_df["Sample_Data"] != "."]
 
-    pivoted_df = pd.pivot_table(filtered_df, index=["GENE_SYMBOL", "Sample"], columns=["HIGHEST_IMPACT"], values=["Sample_Data"], aggfunc=np.count_nonzero, fill_value=0)
+    pivoted_df = pd.pivot_table(filtered_df, rows=["GENE_SYMBOL", "Sample"], columns=["HIGHEST_IMPACT"], values=["Sample_Data"], aggfunc=np.count_nonzero, fill_value=0)
 
     pivoted_df = pivoted_df["Sample_Data"]
 
@@ -122,9 +122,9 @@ def gene_rollup_damaging_impact(initial_df, samples, cols):
 
     try:
         filtered_df["dbNSFP_Impact_Damaging"] = filtered_df["dbNSFP_Impact_Damaging"].apply(lambda x: int(x))
-        df_impact = pd.pivot_table(filtered_df, index=["GENE_SYMBOL"], columns=["Sample"], values=["dbNSFP_Impact_Damaging"], aggfunc=np.sum)
+        df_impact = pd.pivot_table(filtered_df, rows=["GENE_SYMBOL"], columns=["Sample"], values=["dbNSFP_Impact_Damaging"], aggfunc=np.sum)
     except:
-        df_impact = pd.pivot_table(filtered_df, index=["GENE_SYMBOL"], columns=["Sample"], values=["dbNSFP_Impact_Damaging"], aggfunc=lambda x: "*")
+        df_impact = pd.pivot_table(filtered_df, rows=["GENE_SYMBOL"], columns=["Sample"], values=["dbNSFP_Impact_Damaging"], aggfunc=lambda x: "*")
     
     return df_impact
     
