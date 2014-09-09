@@ -12,6 +12,8 @@ from bin.expand import PivotError, VariantPivoter, pivot, expand_format, create_
 
 pd.set_option('chained_assignment', None)
 
+TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
+
 def dataframe(input_data, sep="\t", index_col=None):
     def tupelizer(thing):
         if isinstance(thing, str) and thing.startswith("(") and thing.endswith(")"):
@@ -245,13 +247,13 @@ class PivotTestCase(unittest.TestCase):
         self.assertEquals(expected_lst, actual_lst)
         
     def test_determine_input_keys_invalid(self):
-        input_dir = "test/reference_files/test_input/test_input_keys_invalid"
+        input_dir = TEST_DIRECTORY + "/reference_files/test_input/test_input_keys_invalid"
         
         self.assertRaises(PivotError, determine_input_keys, input_dir)
     
     ##get headers, readers
     def test_get_headers_and_readers(self):
-        input_file = "test/reference_files/test_input/test_input_keys_txt/foo1.txt"
+        input_file = TEST_DIRECTORY + "/reference_files/test_input/test_input_keys_txt/foo1.txt"
         meta_headers, headers, header_names, first_line = get_headers(input_file)
         
         self.assertEquals(["##foo\n","##bar\n" ,"##FORMAT=<ID=JQ_FOO\n"], meta_headers)

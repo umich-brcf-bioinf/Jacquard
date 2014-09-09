@@ -13,6 +13,8 @@ from os.path import isfile, join
 from bin.pivot_variants import PivotError, VariantPivoter, pivot, expand_format, merge_samples, create_initial_df, project_prepivot, build_pivoter, append_to_annot_df, melt_samples, validate_parameters, validate_format_tags, rearrange_columns, change_order, determine_input_keys, get_headers_and_readers
 
 pd.set_option('chained_assignment', None)
+TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
+
 
 def dataframe(input_data, sep="\t", index_col=None):
     def tupelizer(thing):
@@ -507,7 +509,7 @@ class PivotTestCase(unittest.TestCase):
     
     ##determine input keys
     def test_determine_input_keys_txt(self):
-        input_dir = "test/reference_files/test_input/test_input_keys_txt"
+        input_dir = TEST_DIRECTORY + "/reference_files/test_input/test_input_keys_txt"
         actual_lst = determine_input_keys(input_dir)
         
         expected_lst = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL", "SnpEff_WARNING/ERROR"]
@@ -515,7 +517,7 @@ class PivotTestCase(unittest.TestCase):
         self.assertEquals(expected_lst, actual_lst)
         
     def test_determine_input_keys_vcf(self):
-        input_dir = "test/reference_files/test_input/test_input_keys_vcf"
+        input_dir = TEST_DIRECTORY + "/reference_files/test_input/test_input_keys_vcf"
         actual_lst = determine_input_keys(input_dir)
         
         expected_lst = ["CHROM", "POS", "REF", "ALT"]
@@ -523,13 +525,13 @@ class PivotTestCase(unittest.TestCase):
         self.assertEquals(expected_lst, actual_lst)
         
     def test_determine_input_keys_invalid(self):
-        input_dir = "test/reference_files/test_input/test_input_keys_invalid"
+        input_dir = TEST_DIRECTORY + "/reference_files/test_input/test_input_keys_invalid"
         
         self.assertRaises(PivotError, determine_input_keys, input_dir)
     
     ##get headers, readers
     def test_get_headers_and_readers(self):
-        input_dir = "test/reference_files/test_input/test_input_keys_txt"
+        input_dir = TEST_DIRECTORY + "/reference_files/test_input/test_input_keys_txt"
         sample_file_readers, headers, header_names, first_line = get_headers_and_readers(input_dir)
         
         self.assertEquals([input_dir + "/foo1.txt", input_dir + "/foo2.txt"], sample_file_readers)
