@@ -556,14 +556,14 @@ class PivotTestCase(unittest.TestCase):
         input_string = \
 '''COORDINATE	FORMAT	sample_A	sample_B	WARNING/ERROR
 1	GT:ESAF	10:0.2	100:0.2	.
-2	GT:ESAF	20:0.2	200:0.2	blah
+2	GT:ESAF	20:0.2	200:0.2	warning error line
 3	GT:ESAF	30:0.2	300:0.2	.
 4	GT:ESAF	40:0.2	400:0.2	.'''
         input_df = dataframe(input_string)
         expected_string = \
 '''COORDINATE	FORMAT	_sample_A	_sample_B	SnpEff_WARNING/ERROR
 1	GT:ESAF	10:0.2	100:0.2	.
-2	GT:ESAF	20:0.2	200:0.2	blah
+2	GT:ESAF	20:0.2	200:0.2	warning error line
 3	GT:ESAF	30:0.2	300:0.2	.
 4	GT:ESAF	40:0.2	400:0.2	.'''
         expected_df = dataframe(expected_string)
