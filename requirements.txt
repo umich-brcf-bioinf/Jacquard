@@ -1,4 +1,4 @@
 numpy==1.7.1
-pandas==0.13.1
+pandas==0.14.0
 openpyxl==1.8.6
 testfixtures==3.0.2
