@@ -1,4 +1,4 @@
 #!/bin/bash
 
-/usr/bin/python2.7 `dirname $0`/../jacquard/jacquard.py $@
+python `dirname $0`/../jacquard/jacquard.py $@
 
