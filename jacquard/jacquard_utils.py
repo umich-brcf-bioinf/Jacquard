@@ -9,21 +9,24 @@ from os import listdir
 global caller_versions
 caller_versions = {"VarScan":"v2.3", "MuTect": "v1.1.4", "Strelka": "v2.0.15"}
 
+global jq_filter_tag
+jq_filter_tag = "JQ_HC_SOM_"
+
 def validate_directories(input_dir, output_dir):    
     if not os.path.isdir(input_dir):
-        print "Error. Specified input directory {0} does not exist".format(input_dir)
+        print "ERROR. Specified input directory {0} does not exist".format(input_dir)
         exit(1)
     try:
         listdir(input_dir)
     except:
-        print "Error: Specified input directory [{0}] cannot be read. Check permissions and try again.".format(input_dir)
+        print "ERROR. Specified input directory [{0}] cannot be read. Check permissions and try again.".format(input_dir)
         exit(1)
         
     if not os.path.isdir(output_dir):
         try:
             os.makedirs(output_dir)
         except:
-            print "Error: Output directory could not be created. Check parameters and try again"
+            print "ERROR. Output directory could not be created. Check parameters and try again"
             exit(1)
             
 def write_output(writer, headers, variants):

@@ -1,6 +1,9 @@
+
 ExomeSeqPipeline
 ================
 Collection of utilities used for secondary and tertiary analysis of Exome Seq data.
+
+[![Build Status](https://travis-ci.org/umich-brcf-bioinf/ExomeSeqPipeline.svg?branch=develop)](https://travis-ci.org/umich-brcf-bioinf/ExomeSeqPipeline)
 
 ## Directory List
 * bin

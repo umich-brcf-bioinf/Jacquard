@@ -1,4 +1,3 @@
-#!/usr/bin/python2.7
 from collections import defaultdict, OrderedDict
 import glob
 import pandas as pd
@@ -11,7 +10,9 @@ import pprint
 import os
 from os import listdir
 from os.path import isfile, join
-from bin.merge import PivotError, VariantPivoter, merge_samples, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller_and_split_mult_alts, validate_samples_for_callers, validate_sample_caller_vcfs, create_new_line, create_merging_dict, remove_old_columns
+from jacquard.merge import PivotError, VariantPivoter, merge_samples, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller_and_split_mult_alts, validate_samples_for_callers, validate_sample_caller_vcfs, create_new_line, create_merging_dict, remove_old_columns
+
+TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
 def dataframe(input_data, sep="\t", index_col=None):
     def tupelizer(thing):
@@ -165,7 +166,7 @@ class PivotTestCase(unittest.TestCase):
         self.assertEqual("Invalid input parameter(s) ['foo']", message)
         
     def test_determineInputKeysVcf(self):
-        input_dir = "test/test_input/test_input_keys_vcf"
+        input_dir = TEST_DIRECTORY + "/reference_files/test_input/test_input_keys_vcf"
         actual_lst = determine_input_keys(input_dir)
         
         expected_lst = ["CHROM", "POS", "REF", "ALT"]
@@ -173,13 +174,13 @@ class PivotTestCase(unittest.TestCase):
         self.assertEquals(expected_lst, actual_lst)
         
     def test_determineInputKeysInvalid(self):
-        input_dir = "test/test_input/test_input_keys_invalid"
+        input_dir = TEST_DIRECTORY + "/reference_files/test_input/test_input_keys_invalid"
         
         self.assertRaises(PivotError, determine_input_keys, input_dir)
     
     ##get headers, readers
     def test_getHeadersAndReaders(self):
-        input_dir = "test/test_input/test_input_valid"
+        input_dir = TEST_DIRECTORY + "/reference_files/test_input/test_input_valid"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*")))
         sample_file_readers, headers, header_names, first_line, meta_headers = get_headers_and_readers(in_files)
         
@@ -190,7 +191,7 @@ class PivotTestCase(unittest.TestCase):
         self.assertEquals(['##FORMAT=<ID=JQ_FOO'], meta_headers)
         
     def test_getHeadersAndReaders_invalid(self):
-        input_dir = "test/test_input/test_input_keys_txt"
+        input_dir = TEST_DIRECTORY + "/reference_files/test_input/test_input_keys_txt"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*")))
         
         with self.assertRaises(SystemExit) as cm:

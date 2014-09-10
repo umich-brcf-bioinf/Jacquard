@@ -1,8 +1,7 @@
-#!/usr/bin/python2.7
 from collections import OrderedDict
 import unittest
 
-from bin.consensus import iterate_file, add_consensus, process_line, calculate_consensus, create_consensus_dict, get_consensus_som, get_consensus, add_zscore, calculate_zscore
+from jacquard.consensus import iterate_file, add_consensus, process_line, calculate_consensus, create_consensus_dict, get_consensus_som, get_consensus, add_zscore, calculate_zscore
 
 class ConsensusTestCase(unittest.TestCase):
     def test_iterateFile_consensus(self):

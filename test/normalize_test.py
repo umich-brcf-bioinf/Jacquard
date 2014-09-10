@@ -1,4 +1,3 @@
-#!/usr/bin/python2.7
 from collections import defaultdict
 import os
 import unittest
@@ -6,7 +5,7 @@ import subprocess
 import sys
 import testfixtures
 from testfixtures import TempDirectory
-from bin.normalize import VarScan, Strelka, Unknown, identify_merge_candidates, get_headers, merge_data, validate_split_line, identify_hc_variants, mark_hc_variants
+from jacquard.normalize import VarScan, Strelka, Unknown, identify_merge_candidates, get_headers, merge_data, validate_split_line, identify_hc_variants, mark_hc_variants
         
 class VarScanTestCase(unittest.TestCase):
     def test_validateInputFile_valid(self):
@@ -28,9 +27,9 @@ class VarScanTestCase(unittest.TestCase):
     def test_finalSteps(self):
         varscan = VarScan()
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        hc_candidates  = {os.path.join(script_dir, 'normalize_varscan_test/input/tiny_merged.Somatic.hc'): [os.path.join(script_dir, 'normalize_varscan_test/input/tiny_indel.Somatic.hc'), os.path.join(script_dir, 'normalize_varscan_test/input/tiny_snp.Somatic.hc')], os.path.join(script_dir, 'normalize_varscan_test/input/tiny_merged.LOH.hc'): [os.path.join(script_dir, 'normalize_varscan_test/input/tiny_indel.LOH.hc'), os.path.join(script_dir, 'normalize_varscan_test/input/tiny_snp.LOH.hc')], os.path.join(script_dir, 'normalize_varscan_test/input/tiny_merged.Germline.hc'): [os.path.join(script_dir, 'normalize_varscan_test/input/tiny_indel.Germline.hc'), os.path.join(script_dir, 'normalize_varscan_test/input/tiny_snp.Germline.hc')]}
-        merge_candidates = {os.path.join(script_dir, 'normalize_varscan_test/tiny_merged.vcf'): [os.path.join(script_dir, 'normalize_varscan_test/input/tiny_indel.vcf'), os.path.join(script_dir, 'normalize_varscan_test/input/tiny_snp.vcf')]}
-        output_dir = os.path.join(script_dir, "normalize_varscan_test/output")
+        hc_candidates  = {os.path.join(script_dir, 'reference_files/normalize_varscan_test/input/tiny_merged.Somatic.hc'): [os.path.join(script_dir, 'reference_files/normalize_varscan_test/input/tiny_indel.Somatic.hc'), os.path.join(script_dir, 'reference_files/normalize_varscan_test/input/tiny_snp.Somatic.hc')], os.path.join(script_dir, 'reference_files/normalize_varscan_test/input/tiny_merged.LOH.hc'): [os.path.join(script_dir, 'reference_files/normalize_varscan_test/input/tiny_indel.LOH.hc'), os.path.join(script_dir, 'reference_files/normalize_varscan_test/input/tiny_snp.LOH.hc')], os.path.join(script_dir, 'reference_files/normalize_varscan_test/input/tiny_merged.Germline.hc'): [os.path.join(script_dir, 'reference_files/normalize_varscan_test/input/tiny_indel.Germline.hc'), os.path.join(script_dir, 'reference_files/normalize_varscan_test/input/tiny_snp.Germline.hc')]}
+        merge_candidates = {os.path.join(script_dir, 'reference_files/normalize_varscan_test/tiny_merged.vcf'): [os.path.join(script_dir, 'reference_files/normalize_varscan_test/input/tiny_indel.vcf'), os.path.join(script_dir, 'reference_files/normalize_varscan_test/input/tiny_snp.vcf')]}
+        output_dir = os.path.join(script_dir, "reference_files/normalize_varscan_test/output")
         marked_as_hc = varscan.final_steps(hc_candidates, merge_candidates, output_dir)
         
         self.assertEquals(['chr1^14397^CTGT^C'], marked_as_hc)
@@ -145,7 +144,7 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
         
     def test_identifyHcVariants_VarScan(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/normalize_varscan_test/input/"
+        input_dir = script_dir + "/reference_files/normalize_varscan_test/input/"
         hc_candidates = {"tiny_merged.vcf" : [input_dir + "tiny_indel.Germline.hc", input_dir + "tiny_indel.LOH.hc", input_dir + "tiny_indel.Somatic.hc", input_dir + "tiny_snp.Germline.hc", input_dir + "tiny_snp.LOH.hc", input_dir + "tiny_snp.Somatic.hc"]}
         
         hc_variants = identify_hc_variants(hc_candidates)
@@ -168,8 +167,8 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
         
     def test_markHcCandidates_VarScan(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/normalize_varscan_test/merged_vcf/"
-        output_dir = script_dir + "/normalize_varscan_test/output/"
+        input_dir = script_dir + "/reference_files/normalize_varscan_test/merged_vcf/"
+        output_dir = script_dir + "/reference_files/normalize_varscan_test/output/"
         hc_variants = {'chr1^161332554^A^G': 1, 'chr9^33794812^G^T': 1, 'chr2^27015610^C^-CA': 1, 'chr3^156746013^T^C': 1, 'chr1^153773150^C^+T': 1, 'chr11^48387683^G^-T': 1, 
                         'chr11^1651198^G^-AGGCTGTGGGGGCTGTGGCTCCGGCTGTGC': 1, 'chr11^1651585^C^-CTGCTGCCAGTCCAGCTGCTGTAAGCCTTA': 1, 'chr2^32843743^A^+T': 1, 'chr9^33796627^T^C': 1, 
                         'chr2^33764141^G^+T': 1, 'chr1^16862212^C^T': 1, 'chr9^118950132^G^A': 1, 'chr1^2422614^G^A': 1, 'chr6^34004006^G^A': 1, 'chr5^139909358^A^C': 1, 

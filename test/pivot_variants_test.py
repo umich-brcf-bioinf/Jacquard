@@ -1,4 +1,3 @@
-#!/usr/bin/python2.7
 import ast
 import pandas as pd
 from pandas import *
@@ -10,9 +9,11 @@ import pprint
 import os
 from os import listdir
 from os.path import isfile, join
-from bin.pivot_variants import PivotError, VariantPivoter, pivot, expand_format, merge_samples, create_initial_df, project_prepivot, build_pivoter, append_to_annot_df, melt_samples, validate_parameters, validate_format_tags, rearrange_columns, change_order, determine_input_keys, get_headers_and_readers
+from jacquard.pivot_variants import PivotError, VariantPivoter, pivot, expand_format, merge_samples, create_initial_df, project_prepivot, build_pivoter, append_to_annot_df, melt_samples, validate_parameters, validate_format_tags, rearrange_columns, change_order, determine_input_keys, get_headers_and_readers
 
 pd.set_option('chained_assignment', None)
+TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
+
 
 def dataframe(input_data, sep="\t", index_col=None):
     def tupelizer(thing):
@@ -507,7 +508,7 @@ class PivotTestCase(unittest.TestCase):
     
     ##determine input keys
     def test_determine_input_keys_txt(self):
-        input_dir = "test/test_input/test_input_keys_txt"
+        input_dir = TEST_DIRECTORY + "/reference_files/test_input/test_input_keys_txt"
         actual_lst = determine_input_keys(input_dir)
         
         expected_lst = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL", "SnpEff_WARNING/ERROR"]
@@ -515,7 +516,7 @@ class PivotTestCase(unittest.TestCase):
         self.assertEquals(expected_lst, actual_lst)
         
     def test_determine_input_keys_vcf(self):
-        input_dir = "test/test_input/test_input_keys_vcf"
+        input_dir = TEST_DIRECTORY + "/reference_files/test_input/test_input_keys_vcf"
         actual_lst = determine_input_keys(input_dir)
         
         expected_lst = ["CHROM", "POS", "REF", "ALT"]
@@ -523,13 +524,13 @@ class PivotTestCase(unittest.TestCase):
         self.assertEquals(expected_lst, actual_lst)
         
     def test_determine_input_keys_invalid(self):
-        input_dir = "test/test_input/test_input_keys_invalid"
+        input_dir = TEST_DIRECTORY + "/reference_files/test_input/test_input_keys_invalid"
         
         self.assertRaises(PivotError, determine_input_keys, input_dir)
     
     ##get headers, readers
     def test_get_headers_and_readers(self):
-        input_dir = "test/test_input/test_input_keys_txt"
+        input_dir = TEST_DIRECTORY + "/reference_files/test_input/test_input_keys_txt"
         sample_file_readers, headers, header_names, first_line = get_headers_and_readers(input_dir)
         
         self.assertEquals([input_dir + "/foo1.txt", input_dir + "/foo2.txt"], sample_file_readers)
@@ -544,12 +545,35 @@ class PivotTestCase(unittest.TestCase):
 2	GT:ESAF	20:0.2	200:0.2
 3	GT:ESAF	30:0.2	300:0.2
 4	GT:ESAF	40:0.2	400:0.2'''
+        
+        input_df = dataframe(input_string)
         input_keys = ['CHROM', 'POS']
         pivot_values = ["GT"]
             
-        self.assertRaises(PivotError, build_pivoter, "sampleA", StringIO(input_string), input_keys, pivot_values, 0)
+        self.assertRaises(PivotError, build_pivoter, input_keys, pivot_values, input_df)
 
     ##create_initial_df
+    def test_build_pivoter_keepWarnings(self):
+        input_string = \
+'''COORDINATE	FORMAT	sample_A	sample_B	WARNING/ERROR
+1	GT:ESAF	10:0.2	100:0.2	.
+2	GT:ESAF	20:0.2	200:0.2	warning error line
+3	GT:ESAF	30:0.2	300:0.2	.
+4	GT:ESAF	40:0.2	400:0.2	.'''
+        input_df = dataframe(input_string)
+        expected_string = \
+'''COORDINATE	FORMAT	_sample_A	_sample_B	SnpEff_WARNING/ERROR
+1	GT:ESAF	10:0.2	100:0.2	.
+2	GT:ESAF	20:0.2	200:0.2	warning error line
+3	GT:ESAF	30:0.2	300:0.2	.
+4	GT:ESAF	40:0.2	400:0.2	.'''
+        expected_df = dataframe(expected_string)
+        input_keys = ["COORDINATE"]
+        pivot_values = ["GT"]
+        pivoter,actual_df = build_pivoter(input_keys, pivot_values, input_df)
+
+        tm.assert_frame_equal(expected_df, actual_df)
+        
     def test_create_initial_df(self):
         reader = StringIO( 
 '''#CHROM	POS	REF
@@ -830,12 +854,12 @@ chr1	4	A	T'''
         script_dir = os.path.dirname(os.path.abspath(__file__))
         annot_df = pd.DataFrame()
         
-        file_list = [script_dir + "/test_input/P2_test_input.txt", script_dir + "/test_input/P5_test_input.txt"]
+        file_list = [script_dir + "/reference_files/test_input/P2_test_input.txt", script_dir + "/reference_files/test_input/P5_test_input.txt"]
         for file in file_list:
             df = pd.read_csv(file, sep="\t", header=1, dtype='str', index_col=False)
             annot_df = append_to_annot_df(df, annot_df)
 
-        expected_df = pd.read_csv(script_dir + "/test_annotation/P2P5_combined_annotation.txt", sep="\t", header=False, dtype='str', index_col=False)
+        expected_df = pd.read_csv(script_dir + "/reference_files/test_annotation/P2P5_combined_annotation.txt", sep="\t", header=False, dtype='str', index_col=False)
 
         try:
             expected_df["CHROM"] = expected_df["CHROM"].apply(lambda x: x.replace("chr", ""))
@@ -865,8 +889,8 @@ chr1	4	A	T'''
         if "index" in sorted_annot_df:
             del sorted_annot_df["index"]
 
-        sorted_annot_df.to_csv(script_dir + "/test_output/sorted_annot.txt", sep="\t")
-        sorted_expected_df.to_csv(script_dir + "/test_output/sorted_expected.txt", sep="\t")
+        sorted_annot_df.to_csv(script_dir + "/reference_files/test_output/sorted_annot.txt", sep="\t")
+        sorted_expected_df.to_csv(script_dir + "/reference_files/test_output/sorted_expected.txt", sep="\t")
         
         tm.assert_frame_equal(sorted_expected_df, sorted_annot_df, check_names=False)
         

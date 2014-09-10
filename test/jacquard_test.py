@@ -1,7 +1,6 @@
-#!/usr/bin/python2.7
 import argparse
 import unittest
-from bin.jacquard import main
+from jacquard.jacquard import main
 import mock_module
 
 class JacquardTestCase(unittest.TestCase):

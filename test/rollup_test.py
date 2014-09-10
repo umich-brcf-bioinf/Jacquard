@@ -1,10 +1,9 @@
-#!/usr/bin/python2.7
 import pandas as pd
 from pandas import *
 import unittest 
 from pandas.util.testing import assert_frame_equal
 import pandas.util.testing as tm
-from bin.rollup_genes import RollupError, gene_rollup_highest_impact, gene_rollup_damaging_impact, combine_dfs 
+from jacquard.rollup_genes import RollupError, gene_rollup_highest_impact, gene_rollup_damaging_impact, combine_dfs 
 from StringIO import StringIO
 import pprint
 import os

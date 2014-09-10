@@ -96,15 +96,15 @@ class Varscan_DepthTag():
     
 class Varscan_SomaticTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
-#  
+        self.metaheader = '##FORMAT=<ID={0}VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_filter_tag, jacquard_utils.__version__)
+
     def format(self, alt, filter, info_string, format_dict, count):
         info_array = info_string.split(";")
-
-        if "SS=2" in info_array and "JQ_HC_VS" in info_array:
-            format_dict["JQ_HC_SOM_VS"] = self.somatic_status(count)
+        varscan_tag = jacquard_utils.jq_filter_tag + "VS"
+        if "SS=2" in info_array and varscan_tag in info_array:
+            format_dict[varscan_tag] = self.somatic_status(count)
         else:
-            format_dict["JQ_HC_SOM_VS"] = "0"
+            format_dict[varscan_tag] = "0"
             
         return format_dict
 #  
@@ -146,13 +146,14 @@ class Mutect_DepthTag():
     
 class Mutect_SomaticTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_filter_tag, jacquard_utils.__version__)
 
     def format(self, alt, filter, info, format_dict, count):
+        mutect_tag = jacquard_utils.jq_filter_tag + "MT"
         if "SS" in format_dict.keys():
-            format_dict["JQ_HC_SOM_MT"] = self.somatic_status(format_dict["SS"])
+            format_dict[mutect_tag] = self.somatic_status(format_dict["SS"])
         else:
-            format_dict["JQ_HC_SOM_MT"] = "0"
+            format_dict[mutect_tag] = "0"
         return format_dict
 
     def somatic_status(self, ss_value):
@@ -220,13 +221,14 @@ class Strelka_DepthTag():
 
 class Strelka_SomaticTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_SOM_SK,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1= somatic (based on PASS in FILTER column),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}SK,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1= somatic (based on PASS in FILTER column),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_filter_tag, jacquard_utils.__version__)
  
     def format(self, alt, filter, info, format_dict, count):
+        strelka_tag = jacquard_utils.jq_filter_tag + "SK"
         if filter == "PASS":
-            format_dict["JQ_HC_SOM_SK"] = self.somatic_status(count)
+            format_dict[strelka_tag] = self.somatic_status(count)
         else:
-            format_dict["JQ_HC_SOM_SK"] = "0"
+            format_dict[strelka_tag] = "0"
              
         return format_dict
         
@@ -264,9 +266,10 @@ class LineProcessor():
         return "\t".join(new_vcf_fields) + "\n"
 
 class FileProcessor():
-    def __init__(self, tags=[], execution_context_metadataheaders = []):
+    def __init__(self, output_dir, tags=[], execution_context_metadataheaders = []):
         self._tags = tags
         self._metaheader = self._metaheader_handler(execution_context_metadataheaders)
+        self._output_dir = output_dir
         
         for tag in self._tags:
             self._metaheader += tag.metaheader
@@ -288,6 +291,7 @@ class FileProcessor():
                         writer.write(line)
                     else:
                         print "Unexpected VarScan VCF structure - missing NORMAL\t and TUMOR\n headers."
+                        shutil.rmtree(self._output_dir)
                         exit(1)
                 else:
                     writer.write(self._metaheader)
@@ -313,8 +317,8 @@ def determine_file_types(input_dir, in_files, callers):
             if valid == 1:
                 file_types[caller_name].append(file)
                 if caller_name == "Unknown":
-                    print "ERROR: {0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller_name)
-                else:
+                    print "ERROR. {0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller_name)
+                else:  
                     print "{0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller_name)
                     inferred_caller = "##jacquard.tag.caller={0}".format(caller_name)
                     inferred_callers.append(inferred_caller)
@@ -322,26 +326,28 @@ def determine_file_types(input_dir, in_files, callers):
                 break
     return file_types, inferred_callers
     
-def print_file_types(file_types):
+def print_file_types(output_dir, file_types):
     for key, vals in file_types.items():
         print "Recognized [{0}] {1} file(s)".format(len(vals), key)
     if "Unknown" in file_types.keys():
-        print "Error: unable to determine which caller was used on [{0}]. Check input files and try again.".format(file_types["Unknown"])
+        print "ERROR. Unable to determine which caller was used on [{0}]. Check input files and try again.".format(file_types["Unknown"])
+        shutil.rmtree(output_dir)
         exit(1)
     
 def tag_files(input_dir, output_dir, callers, execution_context=[]):
     in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
     if len(in_files) < 1:
-        print "Error: Specified input directory [{0}] contains no VCF files. Check parameters and try again."
+        print "ERROR. Specified input directory [{0}] contains no VCF files. Check parameters and try again."
+        shutil.rmtree(output_dir)
         exit(1)
 
     print "\n".join(execution_context)
     print "Processing [{0}] VCF file(s) from [{1}]".format(len(in_files), input_dir)
     
     file_types, inferred_callers = determine_file_types(input_dir, in_files, callers)
-    print_file_types(file_types)
+    print_file_types(output_dir, file_types)
 
-    processors = {"VarScan" : FileProcessor(tags=[Varscan_AlleleFreqTag(), Varscan_DepthTag(), Varscan_SomaticTag()], execution_context_metadataheaders=execution_context), "MuTect": FileProcessor(tags=[Mutect_AlleleFreqTag(), Mutect_DepthTag(), Mutect_SomaticTag()], execution_context_metadataheaders=execution_context), "Strelka": FileProcessor(tags=[Strelka_AlleleFreqTag(), Strelka_DepthTag(), Strelka_SomaticTag()], execution_context_metadataheaders=execution_context)}
+    processors = {"VarScan" : FileProcessor(output_dir, tags=[Varscan_AlleleFreqTag(), Varscan_DepthTag(), Varscan_SomaticTag()], execution_context_metadataheaders=execution_context), "MuTect": FileProcessor(output_dir, tags=[Mutect_AlleleFreqTag(), Mutect_DepthTag(), Mutect_SomaticTag()], execution_context_metadataheaders=execution_context), "Strelka": FileProcessor(output_dir, tags=[Strelka_AlleleFreqTag(), Strelka_DepthTag(), Strelka_SomaticTag()], execution_context_metadataheaders=execution_context)}
     
     total_number_of_files = len(in_files)
     count = 1
