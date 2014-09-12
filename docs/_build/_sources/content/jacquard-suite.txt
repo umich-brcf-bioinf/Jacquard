@@ -1,0 +1,17 @@
+=================
+Jacquard suite
+=================
+
+===========================      =========================================================================================================================================================
+Utility                          Description
+===========================      =========================================================================================================================================================
+**normalize**                    concatenate snp and indel VCF files into a single VCF (VarScan/Strelka)
+**tag**                          add new Jacquard FORMAT tags based on input INFO/ FORMAT tags 
+**filter_hc_somatic**            remove variants (rows) that are not somatic high confidence
+**merge**                        combine input VCFs into a single, unified VCF file; Jacquard FORMAT tag/values preserved
+**consensus**                    add new Jacquard FORMAT tags for each variant/sample
+**expand**                       field INFO tags into separate columns, output is not VCF format
+**style**                        add formatting to the Jacquard output
+**rollup_genes**                 rank genes based on structural and functional impact of variants for each sample
+**[pivot_variants]**             legacy module that merges input VCFs into a single file with INFO tags expanded
+===========================      =========================================================================================================================================================

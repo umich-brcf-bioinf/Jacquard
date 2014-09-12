@@ -1,0 +1,10 @@
+=================
+Installation
+=================
+Requirements
+	Python2.7
+	Numpy 1.7.1
+	Pandas 0.14.0
+	Openpyxl 1.8.6
+	Testfixtures 3.0.2
+Install Python2.7 and the four dependencies. The source code can be found at https://github.com/umich-brcf-bioinf/ExomeSeqPipeline.
