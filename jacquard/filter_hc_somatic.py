@@ -1,7 +1,7 @@
 #!/usr/bin/python2.7
 import glob
 import os
-
+import re
 import jacquard_utils
 
 def find_somatic_positions(in_files, output_dir):
@@ -20,10 +20,18 @@ def find_somatic_positions(in_files, output_dir):
                 continue
             else:
                 split_line = line.split("\t")
-                key = "^".join([split_line[0], split_line[1]])
-                if jacquard_utils.jq_filter_tag in split_line[8]:
-                    somatic_positions[key] = 1
-                    somatic = 1
+                format_col = split_line[8]
+                sample_cols = split_line[9:]
+                
+                for sample_col in sample_cols:
+                    format_sample_dict = jacquard_utils.combine_format_values(format_col, sample_col)
+                    for key in format_sample_dict.keys():
+                        if re.search(jacquard_utils.jq_filter_tag, key):
+                            if format_sample_dict[key] == "1":
+                                somatic_key = "^".join([split_line[0], split_line[1]])
+                                somatic_positions[somatic_key] = 1
+                                somatic = 1
+
         if somatic == 0:
             no_jq_tags.append(file)
             print "ERROR: input file [{0}] has no Jaquard tags.".format(os.path.basename(file))
