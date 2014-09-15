@@ -498,18 +498,18 @@ class CombineFormatTestCase(unittest.TestCase):
     def test_combineFormatColumns(self):
         input_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B
-1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP\t57\t57
+1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP:JQ_AF\t57:0.23\t57:0.4
 1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tJQ_DP\t58\t57
 8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tJQ_DP\t59\t57
 13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tJQ_DP\t60\t57
 13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tnan\tnan\tnan
 '''
         df = dataframe(input_string)
-        actual_df = combine_format_columns(df)
+        actual_df = combine_format_columns(df, 0)
         
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
-1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_DP\t57\t57
+1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_AF:JQ_DP\t0.23:57\t0.4:57
 1\t3\t.\tC\tG\t.\t.\tfoo\tJQ_DP\t58\t57
 8\t4\t.\tA\tT\t.\t.\tfoo\tJQ_DP\t59\t57
 13\t5\t.\tT\tAA\t.\t.\tfoo\tJQ_DP\t60\t57
@@ -529,7 +529,8 @@ class CombineFormatTestCase(unittest.TestCase):
 13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t5\t24\tJQ_DP_VS\t10\t29
 '''
         df = dataframe(input_string)
-        actual_df = combine_format_columns(df)
+        print df
+        actual_df = combine_format_columns(df, 1)
         
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_b\tfile1|sample_A\tfile1|sample_B\tfile1|sample_a
@@ -553,7 +554,7 @@ class CombineFormatTestCase(unittest.TestCase):
 13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t5\t24\tJQ_DP_VS\t10\t29
 '''
         df = dataframe(input_string)
-        actual_df = combine_format_columns(df)
+        actual_df = combine_format_columns(df, 0)
         
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
@@ -576,7 +577,7 @@ class CombineFormatTestCase(unittest.TestCase):
 13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t5\t24\tJQ_DP_VS\t10\t29
 '''
         df = dataframe(input_string)
-        actual_df = combine_format_columns(df)
+        actual_df = combine_format_columns(df, 0)
         
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
@@ -600,8 +601,7 @@ class CombineFormatTestCase(unittest.TestCase):
 13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tnan\tnan\tnan\tDP:AF:JQ_GT\t57:0.2:0/1\t57:0.2:0/1
 '''
         df = dataframe(input_string)
-
-        actual_df = combine_format_columns(df)
+        actual_df = combine_format_columns(df, 0)
         
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_A\tfile2|sample_B\tfile1|sample_A\tfile1|sample_B
