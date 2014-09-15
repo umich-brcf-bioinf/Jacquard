@@ -101,7 +101,8 @@ class Varscan_SomaticTag():
     def format(self, alt, filter, info_string, format_dict, count):
         info_array = info_string.split(";")
         varscan_tag = jacquard_utils.jq_filter_tag + "VS"
-        if "SS=2" in info_array and varscan_tag in info_array:
+
+        if "SS=2" in info_array:
             format_dict[varscan_tag] = self.somatic_status(count)
         else:
             format_dict[varscan_tag] = "0"

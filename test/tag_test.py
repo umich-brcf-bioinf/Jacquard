@@ -84,7 +84,7 @@ class Varscan_SomaticTagTestCase(unittest.TestCase):
         tag = Varscan_SomaticTag()
         format_dict = OrderedDict([("A", "1")])
         self.assertEqual(OrderedDict([("A", "1"), ("JQ_HC_SOM_VS", "0")]), tag.format("alt", "filter", "INFO;SS=2", format_dict, 0))
-        self.assertEqual(OrderedDict([("A", "1"), ("JQ_HC_SOM_VS", "0")]), tag.format("alt", "filter", "INFO;SS=2", format_dict, 1))
+        self.assertEqual(OrderedDict([("A", "1"), ("JQ_HC_SOM_VS", "1")]), tag.format("alt", "filter", "INFO;SS=2", format_dict, 1))
         self.assertEqual(OrderedDict([("A", "1"), ("JQ_HC_SOM_VS", "1")]), tag.format("alt", "filter", "INFO;SS=2;JQ_HC_SOM_VS", format_dict, 1))
         
         format_dict = OrderedDict([("A", "1")])
