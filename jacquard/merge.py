@@ -218,22 +218,27 @@ def create_dict(df, row, columns):
         if re.search("\|", column) and not re.search("\|FORMAT", column):
             caller = column.split("|")[0]
             fname = column.split("|")[1]
-            
+
             format_column = str(df.ix[row, "{0}|{1}|FORMAT".format(caller, fname)])
             sample_column = str(df.ix[row, column])
+            
             format_column += ":sample_name"
             sample_column += ":" + column
+
 #             format_sample = "{0}={1}".format(format_column, sample_column)
             format_sample_dict = jacquard_utils.combine_format_values(format_column, sample_column)
             tags = format_column.split(":")
             key = "{0}|{1}".format(caller, fname)
+
             file_dict[key].append(format_sample_dict)
+            
             for tag in tags:
                 try: 
                     float(tag)
                 except:
                     if tag not in all_tags:
                         all_tags.append(tag)
+
     return file_dict, all_tags
 
 def add_all_tags(file_dict, all_sample_keys):
@@ -274,6 +279,7 @@ def remove_non_jq_tags(df, file_dict):
     return file_dict
 
 def cleanup_df(df, file_dict):
+
     for key in file_dict.keys():
         try:
             del df[key + "|FORMAT"]
@@ -335,10 +341,9 @@ def remove_old_columns(df):
 def combine_format_columns(df, all_inconsistent_sample_sets):
     for row, col in df.T.iteritems():
         columns = col.index.values
+
         file_dict, all_tags = create_dict(df, row, columns)
- 
         file_dict = remove_non_jq_tags(df, file_dict)
-         
         for key, val in file_dict.items():
             for samp_dict in val:
                 format = []
@@ -351,9 +356,8 @@ def combine_format_columns(df, all_inconsistent_sample_sets):
 
                 df.ix[row, "FORMAT"] = ":".join(format)
                 df.ix[row, samp_dict["sample_name"]] = ":".join(sample)
-    
     df = cleanup_df(df, file_dict)
-    print df
+
     for row, col in df.T.iteritems():
         columns = col.index.values
         file_dict = create_merging_dict(df, row, columns)
@@ -373,7 +377,7 @@ def combine_format_columns(df, all_inconsistent_sample_sets):
             sorted_complete_dict = OrderedDict(sorted(complete_dict.items()))
             
             df.ix[row, key] = ":".join(sorted_complete_dict.values())
-    print df
+
     df = remove_old_columns(df)
 
     return df
@@ -548,11 +552,9 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
     validate_samples_for_callers(all_merge_column_context, all_inconsistent_sample_sets)
 
     new_execution_context = all_merge_context + all_merge_column_context
-    print "\n".join(new_execution_context)
     
     execution_context.extend(new_execution_context)
     writer = open(output_path, "w")
-    print_new_execution_context(execution_context, writer)
     
     print "Aggregating sample data (this may take a while)"
     pivoter.validate_sample_data()
