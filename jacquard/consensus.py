@@ -48,10 +48,10 @@ def add_zscore(meta_headers, header, lines, writer, output_file, af_range, dp_ra
     rounded_std_af = roundTwoDigits([str(numpy.std(af_range))])
     rounded_std_dp = roundTwoDigits([str(numpy.std(dp_range))])
     
-    consensus_meta_headers = ['##FORMAT=<ID= JQ_AF_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of allele frequencies among callers = (sample AF range - population mean AF range)/standard dev(population AF range)">\n',
+    consensus_meta_headers = ['##FORMAT=<ID=JQ_AF_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of allele frequencies among callers = (sample AF range - population mean AF range)/standard dev(population AF range)">\n',
                               '##jacquard.consensus.JQ_AF_RANGE_ZSCORE.mean_AF_range={0}\n'.format(rounded_mean_af),
                               '##jacquard.consensus.JQ_AF_RANGE_ZSCORE.standard_deviation={0}\n'.format(rounded_std_af),
-                              '##FORMAT=<ID= JQ_DP_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of depth among callers = (sample DP range - population mean DP range)/standard dev(population DP range)">\n',
+                              '##FORMAT=<ID=JQ_DP_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of depth among callers = (sample DP range - population mean DP range)/standard dev(population DP range)">\n',
                               '##jacquard.consensus.JQ_DP_RANGE_ZSCORE.mean_DP_range={0}\n'.format(rounded_mean_dp),
                               '##jacquard.consensus.JQ_DP_RANGE_ZSCORE.standard deviation_DP_range={0}\n'.format(rounded_std_dp)]
     meta_headers.extend(consensus_meta_headers)

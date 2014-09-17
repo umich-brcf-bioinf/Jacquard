@@ -410,7 +410,7 @@ def execute(args, execution_context):
     input_file = os.path.abspath(args.input_file)
     output_path = os.path.abspath(args.output_file)
     input_keys = args.keys.split(",") if args.keys else determine_input_keys(input_file)
-    pivot_values = args.tags.split(",") if args.tags else ["GT"]
+    pivot_values = args.format_tags.split(",") if args.format_tags else ["GT"]
     
     output_dir, outfile_name = os.path.split(output_path)
     try:

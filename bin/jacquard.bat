@@ -1,3 +1,4 @@
+@echo off
 REM   Copyright 2014 Bioinformatics Core, University of Michigan
 REM
 REM   Licensed under the Apache License, Version 2.0 (the "License");
