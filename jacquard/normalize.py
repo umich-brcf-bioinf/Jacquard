@@ -4,6 +4,8 @@ import glob
 import os
 from os import listdir
 import re
+
+# import variant_callers.varscan, variant_callers.strelka, variant_callers.mutect
 import jacquard_utils
 
 class VarScan():

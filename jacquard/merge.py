@@ -218,7 +218,6 @@ def create_dict(df, row, columns):
         if re.search("\|", column) and not re.search("\|FORMAT", column):
             caller = column.split("|")[0]
             fname = column.split("|")[1]
-
             format_column = str(df.ix[row, "{0}|{1}|FORMAT".format(caller, fname)])
             sample_column = str(df.ix[row, column])
             
@@ -341,7 +340,7 @@ def remove_old_columns(df):
 def combine_format_columns(df, all_inconsistent_sample_sets):
     for row, col in df.T.iteritems():
         columns = col.index.values
-
+    
         file_dict, all_tags = create_dict(df, row, columns)
         file_dict = remove_non_jq_tags(df, file_dict)
         for key, val in file_dict.items():
@@ -367,12 +366,12 @@ def combine_format_columns(df, all_inconsistent_sample_sets):
             
             for val_dict in vals:               
                 for format_key, format_val in val_dict.items():
-                    if not all_inconsistent_sample_sets:
-                        if format_val != "^":
+                    if format_val == "^":
+                        format_val = "."
+                    if format_key in complete_dict:
+                        if complete_dict[format_key]==".":
                             complete_dict[format_key] = format_val
                     else:
-                        if format_val == "^":
-                            format_val = "."
                         complete_dict[format_key] = format_val
             sorted_complete_dict = OrderedDict(sorted(complete_dict.items()))
             

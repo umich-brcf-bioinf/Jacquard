@@ -552,9 +552,10 @@ class CombineFormatTestCase(unittest.TestCase):
 13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t4\t23\tJQ_DP_VS\t9\t28
 13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t5\t24\tJQ_DP_VS\t10\t29
 '''
-        df = dataframe(input_string)
-        actual_df = combine_format_columns(df, 0)
         
+        df = dataframe(input_string)
+
+        actual_df = combine_format_columns(df, 0)
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
 1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_DP_MT\t1\t20
@@ -563,7 +564,9 @@ class CombineFormatTestCase(unittest.TestCase):
 13\t5\t.\tT\tAA\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t4:9\t23:28
 13\t5\t.\tT\tAAAA\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t5:10\t24:29
 '''
+
         expected_df = dataframe(expected_string)
+
         tm.assert_frame_equal(expected_df, actual_df)
         
     def test_combineFormatColumns_validateOrder(self):
@@ -600,12 +603,9 @@ class CombineFormatTestCase(unittest.TestCase):
 13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tnan\tnan\tnan\tDP:AF:JQ_GT\t57:0.2:0/1\t57:0.2:0/1
 '''
         df = dataframe(input_string)
-#         print input_string
-#         print "##################"
-#         print df
+
         actual_df = combine_format_columns(df, 1)
-#         print "##################"
-#         print df
+
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_A\tfile2|sample_B\tfile1|sample_A\tfile1|sample_B
 1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
@@ -617,10 +617,6 @@ class CombineFormatTestCase(unittest.TestCase):
         
         expected_df = dataframe(expected_string)
 
-#         print "##################"
-#         print actual_df
-#         print "##################"
-#         print expected_df
         tm.assert_frame_equal(expected_df, actual_df)
 
     def test_combineFormatColumns_consistentSampleSets(self):
@@ -633,12 +629,9 @@ class CombineFormatTestCase(unittest.TestCase):
 13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tDP:JQ_GT\t61:0/1\t57:0/1\tDP:AF:JQ_GT\t57:0.2:0/1\t57:0.2:0/1
 '''
         df = dataframe(input_string)
-#         print input_string
-#         print "##################"
-#         print df
+
         actual_df = combine_format_columns(df, 0)
-#         print "##################"
-#         print df
+
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_A\tfile2|sample_B\tfile1|sample_A\tfile1|sample_B
 1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
@@ -650,10 +643,30 @@ class CombineFormatTestCase(unittest.TestCase):
         
         expected_df = dataframe(expected_string)
 
-#         print "##################"
-#         print actual_df
-#         print "##################"
-#         print expected_df
+        tm.assert_frame_equal(expected_df, actual_df)
+
+    def test_combineFormatColumns_differingVariants(self):
+        input_string = \
+'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file2|FORMAT\tMuTect|file2|sample_B
+1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tnan\tnan\tJQ_DP:JQ_GT\t57:0/1
+1\t3\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP:JQ_GT\t58:0/1\tnan\tnan
+'''
+        df = dataframe(input_string)
+
+        actual_df = combine_format_columns(df, 0)
+
+        expected_string = \
+'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_B\tfile1|sample_A
+1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_DP:JQ_GT\t57:0/1\t.:.
+1\t3\t.\tA\tG\t.\t.\tfoo\tJQ_DP:JQ_GT\t.:.\t58:0/1
+'''
+        
+        expected_df = dataframe(expected_string)
+
+        print "##################"
+        print actual_df
+        print "##################"
+        print expected_df
         tm.assert_frame_equal(expected_df, actual_df)
         
     def test_removeNonJQTags(self):
@@ -683,9 +696,7 @@ class CombineFormatTestCase(unittest.TestCase):
         sample_keys = ["JQ_DP", "JQ_foo"]
         
         actual_file_dict = add_all_tags(file_dict, sample_keys)
-        print actual_file_dict
         expected_file_dict = {'file2': [OrderedDict([('JQ_DP', '57'), ('JQ_foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('JQ_foo', '1'), ('sample_name', 'file2|sample_B'), ('JQ_DP', '^')])], 'file1': [OrderedDict([('JQ_DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('JQ_DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_B')])]}
-        print expected_file_dict
         self.assertEquals(expected_file_dict, actual_file_dict)
         
     def test_sortFormatTags(self):

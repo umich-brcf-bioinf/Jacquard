@@ -140,10 +140,10 @@ class ConsensusTestCase(unittest.TestCase):
         af_range = [0.1, 1.2, 1.0]
         dp_range = [10.0, 1.0, 3.0]
         add_zscore(meta_headers, header, lines, writer, output_file, af_range, dp_range)
-        self.assertEquals(['##FORMAT=<ID= JQ_AF_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of allele frequencies among callers = (sample AF range - population mean AF range)/standard dev(population AF range)">',
+        self.assertEquals(['##FORMAT=<ID=JQ_AF_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of allele frequencies among callers = (sample AF range - population mean AF range)/standard dev(population AF range)">',
                            '##jacquard.consensus.JQ_AF_RANGE_ZSCORE.mean_AF_range=0.77',
                             '##jacquard.consensus.JQ_AF_RANGE_ZSCORE.standard_deviation=0.48', 
-                            '##FORMAT=<ID= JQ_DP_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of depth among callers = (sample DP range - population mean DP range)/standard dev(population DP range)">', 
+                            '##FORMAT=<ID=JQ_DP_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of depth among callers = (sample DP range - population mean DP range)/standard dev(population DP range)">', 
                             '##jacquard.consensus.JQ_DP_RANGE_ZSCORE.mean_DP_range=4.67', 
                             '##jacquard.consensus.JQ_DP_RANGE_ZSCORE.standard deviation_DP_range=3.86', 
                             '#CHROM', 
