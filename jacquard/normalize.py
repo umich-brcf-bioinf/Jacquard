@@ -7,7 +7,7 @@ import re
 
 # import variant_callers.varscan, variant_callers.strelka, variant_callers.mutect
 import jacquard_utils
-from sphinx.ext.todo import Todo
+# from sphinx.ext.todo import Todo
 
 class VarScan():
     def __init__(self):
