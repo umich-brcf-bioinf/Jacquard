@@ -7,6 +7,7 @@ import re
 
 # import variant_callers.varscan, variant_callers.strelka, variant_callers.mutect
 import jacquard_utils
+from sphinx.ext.todo import Todo
 
 class VarScan():
     def __init__(self):
@@ -94,8 +95,9 @@ class Unknown():
     def validate_input_file(self, input_file):
         valid = 1
         return (self.name, valid)
-    
-def identify_hc_variants(hc_candidates):
+
+#TODO: Don't forget to remove this after the migration of the caller classes.    
+def identify_hc_variants(hc_candidates): 
     hc_variants = {}
     for key, vals in hc_candidates.items():
         for file in vals:
@@ -110,6 +112,7 @@ def identify_hc_variants(hc_candidates):
             
     return hc_variants
 
+#TODO: Don't forget to remove this after the migration of the caller classes.    
 def write_to_merged_file(new_lines, headers, key):
     sorted_variants = jacquard_utils.sort_data(new_lines)
     
@@ -117,6 +120,7 @@ def write_to_merged_file(new_lines, headers, key):
     jacquard_utils.write_output(writer, headers, sorted_variants)
     writer.close()
 
+#TODO: Don't forget to remove this after the migration of the caller classes.    
 def mark_hc_variants(hc_variants, merge_candidates, output_dir):
     marked_as_hc = []
 
@@ -211,6 +215,7 @@ def merge(merge_candidates, output_dir, caller):
         jacquard_utils.write_output(out_file, meta_headers, sorted_variants)
         out_file.close()
 
+#TODO: Don't forget to remove this after the migration of the caller classes.    
 def check_for_missing(required_vals, val, key, missing):
     missing_files = []
     for item in required_vals:
@@ -222,6 +227,7 @@ def check_for_missing(required_vals, val, key, missing):
      
     return missing_files, missing
  
+#TODO: Don't forget to remove this after the migration of the caller classes.    
 def check_for_unknown(required_vals, val, key, added):
     added_files = []
     for thing in val:
