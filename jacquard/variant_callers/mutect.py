@@ -3,7 +3,7 @@ import glob
 import os
 from os import listdir
 import re
-import jacquard.jacquard_utils as jacquard_utils
+import jacquard_utils
 
 class Mutect():
     def __init__(self):
