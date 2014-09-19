@@ -9,8 +9,8 @@ import testfixtures
 from testfixtures import TempDirectory
 import unittest
 
-import jacquard.variant_callers.strelka as strelka
-from jacquard.jacquard_utils import __version__
+import strelka
+from jacquard_utils import __version__
 
 class StrelkaTestCase(unittest.TestCase):
     def test_validateInputFile_valid(self):

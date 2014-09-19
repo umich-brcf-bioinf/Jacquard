@@ -8,235 +8,10 @@ from stat import *
 import testfixtures
 from testfixtures import TempDirectory
 import unittest
-from jacquard.tag import Varscan, Mutect, Unknown, Varscan_AlleleFreqTag, Varscan_DepthTag, Varscan_SomaticTag, Mutect_AlleleFreqTag, Mutect_DepthTag, Mutect_SomaticTag, Strelka_AlleleFreqTag, Strelka_DepthTag, Strelka_SomaticTag, LineProcessor, FileProcessor, tag_files, determine_file_types, print_file_types
-from jacquard.jacquard_utils import __version__
-
-class Varscan_AlleleFreqTagTestCase(unittest.TestCase):
-    def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_AF_VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={0}>\n'.format(__version__), Varscan_AlleleFreqTag().metaheader)
-                
-    def test_format_missingAFTag(self):
-        tag = Varscan_AlleleFreqTag()
-        info_string = ""
-        format_param_string = "A:B"
-        format_value_string = "1:2"
-        format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("alt", "filter", info_string, format_dict, 0))
-                
-    def test_format_rounds(self):
-        tag = Varscan_AlleleFreqTag()
-        format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:20%".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20%'), ('JQ_AF_VS', '0.2')]), tag.format("alt", "filter", "", format_dict, 0))
-        
-        format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:20.0%".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.0%'), ('JQ_AF_VS', '0.2')]), tag.format("alt", "filter", "", format_dict, 0))
-        
-        format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:20.4%".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.4%'), ('JQ_AF_VS', '0.2')]), tag.format("alt", "filter", "", format_dict, 0))
-        
-        format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:20.5%".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.5%'), ('JQ_AF_VS', '0.21')]), tag.format("alt", "filter", "", format_dict, 0))
-        
-        format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:20.6%".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.6%'), ('JQ_AF_VS', '0.21')]), tag.format("alt", "filter", "", format_dict, 0))
-        
-        format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:100%".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '100%'), ('JQ_AF_VS', '1.0')]), tag.format("alt", "filter", "", format_dict, 0))
-        
-        format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:100.0%".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '100.0%'), ('JQ_AF_VS', '1.0')]), tag.format("alt", "filter", "", format_dict, 0))
-        
-        format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:20.4%,38.075%".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.4%,38.075%'), ('JQ_AF_VS', '0.2,0.38')]), tag.format("alt", "filter", "", format_dict, 0))
-        
-        format_dict = OrderedDict(zip("A:FREQ".split(":"), "1:20.4%,38.075%,27.843%".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FREQ', '20.4%,38.075%,27.843%'), ('JQ_AF_VS', '0.2,0.38,0.28')]), tag.format("alt", "filter", "", format_dict, 0))
-        
-class Varscan_DepthTagTestCase(unittest.TestCase):
-    def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP),Source="Jacquard",Version={0}>\n'.format(__version__), Varscan_DepthTag().metaheader)
-                
-    def test_format_missingDPTag(self):
-        tag = Varscan_DepthTag()
-        format_param_string = "A:B"
-        format_value_string = "1:2"
-        format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("alt", "filter", "", format_dict, 0))
-                
-    def test_format(self):
-        tag = Varscan_DepthTag()
-        format_dict = OrderedDict(zip("A:DP".split(":"), "1:42".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('DP', '42'), ('JQ_DP_VS', '42')]), tag.format("alt", "filter", "", format_dict, 0))
-
-class Varscan_SomaticTagTestCase(unittest.TestCase):
-    def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_HC_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={0}>\n'.format(__version__), Varscan_SomaticTag().metaheader)
-                
-    def test_format_missingSSInfoTag(self):
-        tag = Varscan_SomaticTag()
-        format_param_string = "A:B"
-        format_value_string = "1:2"
-        format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-        self.assertEqual(["A", "B", "JQ_HC_SOM_VS"], tag.format("alt", "filter", "INFO", format_dict, 0).keys())
-        self.assertEqual(["1", "2", "0"], tag.format("alt", "filter", "INFO", format_dict, 0).values())
-                
-    def test_format(self):
-        tag = Varscan_SomaticTag()
-        format_dict = OrderedDict([("A", "1")])
-        self.assertEqual(OrderedDict([("A", "1"), ("JQ_HC_SOM_VS", "0")]), tag.format("alt", "filter", "INFO;SS=2", format_dict, 0))
-        self.assertEqual(OrderedDict([("A", "1"), ("JQ_HC_SOM_VS", "1")]), tag.format("alt", "filter", "INFO;SS=2", format_dict, 1))
-        self.assertEqual(OrderedDict([("A", "1"), ("JQ_HC_SOM_VS", "1")]), tag.format("alt", "filter", "INFO;SS=2;JQ_HC_SOM_VS", format_dict, 1))
-        
-        format_dict = OrderedDict([("A", "1")])
-        self.assertEqual(OrderedDict([("A", "1",), ("JQ_HC_SOM_VS", "0")]), tag.format("alt", "filter", "INFO", format_dict, 0))
-        self.assertEqual(OrderedDict([("A", "1"), ("JQ_HC_SOM_VS", "0")]), tag.format("alt", "filter", "INFO", format_dict, 1))
-
-class Mutect_AlleleFreqTagTestCase(unittest.TestCase):
-    def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_AF_MT,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA),Source="Jacquard",Version={0}>\n'.format(__version__), Mutect_AlleleFreqTag().metaheader)
-                
-    def test_format_missingAFTag(self):
-        tag = Mutect_AlleleFreqTag()
-        format_param_string = "A:B"
-        format_value_string = "1:2"
-        format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("alt", "filter", "", format_dict, 0))
-                
-    def test_format_rounds(self):
-        tag = Mutect_AlleleFreqTag()
-        format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.2".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.2'), ('JQ_AF_MT', '0.2')]), tag.format("alt", "filter", "", format_dict, 0))
-        
-        format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.20".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.20'), ('JQ_AF_MT', '0.20')]), tag.format("alt", "filter", "", format_dict, 0))
-        
-        format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.204".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.204'), ('JQ_AF_MT', '0.2')]), tag.format("alt", "filter", "", format_dict, 0))
-        
-        format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.205".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.205'), ('JQ_AF_MT', '0.21')]), tag.format("alt", "filter", "", format_dict, 0))
-        
-        format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.206".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.206'), ('JQ_AF_MT', '0.21')]), tag.format("alt", "filter", "", format_dict, 0))
-        
-        format_dict = OrderedDict(zip("A:FA".split(":"), "1:1.0".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FA', '1.0'), ('JQ_AF_MT', '1.0')]), tag.format("alt", "filter", "", format_dict, 0))
-        
-        format_dict = OrderedDict(zip("A:FA".split(":"), "1:1.00".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FA', '1.00'), ('JQ_AF_MT', '1.00')]), tag.format("alt", "filter", "", format_dict, 0))
-
-        format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.204,0.3807".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.204,0.3807'), ('JQ_AF_MT', '0.2,0.38')]), tag.format("alt", "filter", "", format_dict, 0))
- 
-        format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.204,0.3807,0.2784".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.204,0.3807,0.2784'), ('JQ_AF_MT', '0.2,0.38,0.28')]), tag.format("alt", "filter", "", format_dict, 0))
-
-class Mutect_DepthTagTestCase(unittest.TestCase):
-    def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_DP_MT,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP),Source="Jacquard",Version={0}>\n'.format(__version__), Mutect_DepthTag().metaheader)
-                
-    def test_format_missingDPTag(self):
-        tag = Mutect_DepthTag()
-        format_param_string = "A:B"
-        format_value_string = "1:2"
-        format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("alt", "filter", "", format_dict, 0))
-                
-    def test_format(self):
-        tag = Mutect_DepthTag()
-        format_dict = OrderedDict(zip("A:DP".split(":"), "1:42".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('DP', '42'), ('JQ_DP_MT', '42')]), tag.format("alt", "filter", "", format_dict, 0))
-
-class Mutect_SomaticTagTestCase(unittest.TestCase):
-    def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_HC_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag),Source="Jacquard",Version={0}>\n'.format(__version__), Mutect_SomaticTag().metaheader)
-                
-    def test_format_missingSSTag(self):
-        tag = Mutect_SomaticTag()
-        format_param_string = "A:B"
-        format_value_string = "1:2"
-        format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('B', '2'), ("JQ_HC_SOM_MT", "0")]), tag.format("alt", "filter", "", format_dict, 0))
-                
-    def test_format(self):
-        tag = Mutect_SomaticTag()
-        format_dict = OrderedDict(zip( "A:SS".split(":"), "1:2".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('SS', '2'), ('JQ_HC_SOM_MT', '1')]), tag.format("alt", "filter", "", format_dict, 0))
-        
-        format_dict = OrderedDict(zip( "A:SS".split(":"), "1:1".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('SS', '1'), ('JQ_HC_SOM_MT', '0')]), tag.format("alt", "filter", "", format_dict, 0))
-
-class Strelka_AlleleFreqTagTestCase(unittest.TestCase):
-    def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_AF_SK,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth),Source="Jacquard",Version={0}>\n'.format(__version__), Strelka_AlleleFreqTag().metaheader)
-                
-    def test_format_missingAFTag(self):
-        tag = Strelka_AlleleFreqTag()
-        format_param_string = "A:B"
-        format_value_string = "1:2"
-        format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("C", "filter", "", format_dict, 0))
-                
-    def test_format_rounds(self):
-        tag = Strelka_AlleleFreqTag()
-        format_dict = OrderedDict(zip("A:AU:CU:GU:TU".split(":"), "1:0.2,0.5:0.2,0.5:0.2,0.5:0.2,0.5:".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('AU', '0.2,0.5'), ('CU', '0.2,0.5'), ('GU', '0.2,0.5'), ('TU', '0.2,0.5'), ('JQ_AF_SK', '0.25')]), tag.format("C", "filter", "", format_dict, 0))
-#         
-        format_dict = OrderedDict(zip("A:AU:CU:GU:TU".split(":"), "1:0.2,0.6:0.2,0.6:0.2,0.5:0.2,0.5:".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('AU', '0.2,0.6'), ('CU', '0.2,0.6'), ('GU', '0.2,0.5'), ('TU', '0.2,0.5'), ('JQ_AF_SK', '0.27')]), tag.format("C", "filter", "", format_dict, 0))
-#         
-        format_dict = OrderedDict(zip("A:AU:CU:GU:TU".split(":"), "1:0.2,0.6:0.2,0.8:0.2,0.5:0.2,0.5:".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('AU', '0.2,0.6'), ('CU', '0.2,0.8'), ('GU', '0.2,0.5'), ('TU', '0.2,0.5'), ('JQ_AF_SK', '0.33,0.21')]), tag.format("C,T", "filter", "", format_dict, 0))
-#         
-        format_dict = OrderedDict(zip("A:TAR:DP2".split(":"), "1:13,32:53".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('TAR', '13,32'), ('DP2', '53'), ('JQ_AF_SK', '0.6')]), tag.format("C", "filter", "", format_dict, 0))
-        
-        format_dict = OrderedDict(zip("A:TAR:DP2".split(":"), "1:13,50:53".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('TAR', '13,50'), ('DP2', '53'), ('JQ_AF_SK', '0.94')]), tag.format("C", "filter", "", format_dict, 0))
-        
-        format_dict = OrderedDict(zip("A:TAR:DP2".split(":"), "1:13,70:53".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('TAR', '13,70'), ('DP2', '53'), ('JQ_AF_SK', '1.00')]), tag.format("C", "filter", "", format_dict, 0))
-
-class Strelka_DepthTagTestCase(unittest.TestCase):
-    def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_DP_MT,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP),Source="Jacquard",Version={0}>\n'.format(__version__), Mutect_DepthTag().metaheader)
-                
-    def test_format_missingDP2AUTags(self):
-        tag = Strelka_DepthTag()
-        format_param_string = "A:B"
-        format_value_string = "1:2"
-        format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("C", "filter", "", format_dict, 0))
-                
-    def test_format(self):
-        tag = Strelka_DepthTag()
-        format_dict = OrderedDict(zip("A:DP2".split(":"), "1:42".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('DP2', '42'), ('JQ_DP_SK', '42')]), tag.format("C", "filter", "", format_dict, 0))
-        
-        format_dict = OrderedDict(zip("A:AU:CU:GU:TU".split(":"), "1:42,42:5,5:13,13:4,4".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('AU', '42,42'), ('CU', '5,5'), ('GU', '13,13'), ('TU', '4,4'), ('JQ_DP_SK', '64')]), tag.format("C", "filter", "", format_dict, 0))
-
-class Strelka_SomaticTagTestCase(unittest.TestCase):
-    def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_HC_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag),Source="Jacquard",Version={0}>\n'.format(__version__), Mutect_SomaticTag().metaheader)
-                
-    def test_format_missingPASSTag(self):
-        tag = Strelka_SomaticTag()
-        format_param_string = "A:B"
-        format_value_string = "1:2"
-        format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('B', '2'), ('JQ_HC_SOM_SK', '0')]), tag.format("C", "reject", "", format_dict, 0))
-        self.assertEqual(OrderedDict([('A', '1'), ('B', '2'), ('JQ_HC_SOM_SK', '0')]), tag.format("C", "PASS;foo", "", format_dict, 0))
-                
-    def test_format(self):
-        tag = Strelka_SomaticTag()
-        format_dict = OrderedDict(zip( "A:SS".split(":"), "1:2".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('SS', '2'), ('JQ_HC_SOM_SK', '0')]), tag.format("C", "PASS", "", format_dict, 0))
-        self.assertEqual(OrderedDict([('A', '1'), ('SS', '2'), ('JQ_HC_SOM_SK', '1')]), tag.format("C", "PASS", "", format_dict, 1))
-        
-        format_dict = OrderedDict(zip( "A:SS".split(":"), "1:1".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('SS', '1'), ('JQ_HC_SOM_SK', '0')]), tag.format("C", "PASS", "", format_dict, 0))
-        self.assertEqual(OrderedDict([('A', '1'), ('SS', '1'), ('JQ_HC_SOM_SK', '1')]), tag.format("C", "PASS", "", format_dict, 1))
+from tag import LineProcessor, FileProcessor, tag_files, determine_file_types, print_file_types
+import varscan, mutect, strelka, unknown
+from jacquard_utils import __version__
+import jacquard_utils
 
 class LineProcessorTestCase(unittest.TestCase):
     def test_process_line_singleSample(self):
@@ -350,6 +125,7 @@ class FileProcessorTestCase(unittest.TestCase):
                   ]
         processor = FileProcessor("foo_output_dir", tags=[mockTag])
         processor.process(reader, mockWriter, "MuTect")
+        
         self.assertEqual(5, len(mockWriter.lines()))
         self.assertEqual("##mockMetaHeader", mockWriter.lines()[0])
         self.assertEqual("##jacquard.tag.caller=MuTect", mockWriter.lines()[1])
@@ -373,7 +149,7 @@ class TagVarScanTestCase(unittest.TestCase):
             input_dir.write("B.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
             input_dir.write("C.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
 
-            tag_files(input_dir.path, output_dir.path, [Varscan()])
+            tag_files(input_dir.path, output_dir.path, [varscan.Varscan()])
             
             actual_files = sorted(listdir(output_dir.path))
             
@@ -391,7 +167,7 @@ class TagVarScanTestCase(unittest.TestCase):
             input_dir.write("B.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
             input_dir.write("C.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
 
-            tag_files(input_dir.path, output_dir.path, [Mutect(), Varscan(), Unknown()])
+            tag_files(input_dir.path, output_dir.path, [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()])
             actual_files = sorted(listdir(output_dir.path))
             for actual_file in actual_files:
                 result = open(output_dir.path + "/" + actual_file).read()
@@ -412,7 +188,7 @@ class TagVarScanTestCase(unittest.TestCase):
             input_dir.write("B.vcf.bak","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
             input_dir.write("C.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
 
-            tag_files(input_dir.path, output_dir.path, [Mutect(), Varscan(), Unknown()])
+            tag_files(input_dir.path, output_dir.path, [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()])
             
             actual_files = sorted(listdir(output_dir.path))
             self.assertEqual(1, len(actual_files))
@@ -425,10 +201,9 @@ class TagVarScanTestCase(unittest.TestCase):
             input_dir.write("A.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
             input_dir.write("B.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
 
-            tag_files(input_dir.path, output_dir.path, [Mutect(), Varscan(), Unknown()], ["execution metaheaders"])
-            
+            tag_files(input_dir.path, output_dir.path, [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()], ["execution metaheaders"])
             output_list = self.output.getvalue().splitlines()
-
+            
             self.assertEqual(10, len(output_list))
             self.assertEqual(True, output_list[0].startswith("execution"))
             self.assertEqual(True, output_list[1].startswith("Processing [2]"))
@@ -441,7 +216,7 @@ class TagVarScanTestCase(unittest.TestCase):
         output_dir = script_dir + "/reference_files/tag_varscan_test/output"
         os.mkdir(output_dir)
         with self.assertRaises(SystemExit) as cm:
-            tag_files(input_dir, output_dir, [Mutect(), Varscan(), Unknown()])
+            tag_files(input_dir, output_dir, [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()])
         
         self.assertEqual(cm.exception.code, 1)
         
@@ -451,7 +226,7 @@ class TagVarScanTestCase(unittest.TestCase):
         output_dir = script_dir + "/reference_files/invalid_output"
         os.mkdir(output_dir)
         with self.assertRaises(SystemExit) as cm:
-           tag_files(input_dir, output_dir, [Mutect(), Varscan(), Unknown()])
+            tag_files(input_dir, output_dir, [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()])
 
         self.assertEqual(cm.exception.code, 1)
 
@@ -472,7 +247,7 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
         os.mkdir(output_dir)
         
         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
-        callers = [Mutect(), Varscan(), Unknown()]
+        callers = [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()]
         file_types, inferred_callers = determine_file_types(input_dir, in_files, callers)
         self.assertEqual(["Unknown", "VarScan", "MuTect"], file_types.keys())
         self.assertEqual('tiny_unknown_input.vcf', os.path.basename(file_types.values()[0][0]))
@@ -501,7 +276,7 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
         output_dir = script_dir + "/reference_files/multi_caller_output/"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
         
-        callers = [Mutect(), Varscan(), Unknown()]
+        callers = [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()]
         file_types, inferred_callers = determine_file_types(input_dir, in_files, callers)
         self.assertEqual(["VarScan", "MuTect"], file_types.keys())
         self.assertEqual('tiny_varscan_input.vcf', os.path.basename(file_types.values()[0][0]))

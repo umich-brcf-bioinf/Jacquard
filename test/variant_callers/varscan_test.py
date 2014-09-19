@@ -9,8 +9,8 @@ import testfixtures
 from testfixtures import TempDirectory
 import unittest
 
-import jacquard.variant_callers.varscan as varscan
-from jacquard.jacquard_utils import __version__
+import varscan
+from jacquard_utils import __version__
 
 class VarScanTestCase(unittest.TestCase):
     def test_validateInputFile_valid(self):
@@ -72,6 +72,56 @@ class VarScanTestCase(unittest.TestCase):
         sample_files = caller.validate_file_set(all_keys)
          
         self.assertEqual({'foo': ['.bar.hc', '.vcf', '.Somatic.hc', '.Germline.hc', '.LOH.hc']}, sample_files)
+        
+    def test_identifyHcVariants_VarScan(self):
+        caller = varscan.Varscan()
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        input_dir = script_dir + "/../reference_files/normalize_varscan_test/input/"
+        hc_candidates = {"tiny_merged.vcf" : [input_dir + "tiny_indel.Germline.hc", input_dir + "tiny_indel.LOH.hc", input_dir + "tiny_indel.Somatic.hc", input_dir + "tiny_snp.Germline.hc", input_dir + "tiny_snp.LOH.hc", input_dir + "tiny_snp.Somatic.hc"]}
+          
+        hc_variants = caller.identify_hc_variants(hc_candidates)
+        expected_hc_variants = {'chr1^161332554^A^G': 1, 'chr9^33794812^G^T': 1, 'chr2^27015610^C^-CA': 1, 'chr3^156746013^T^C': 1, 'chr1^153773150^C^+T': 1, 'chr11^48387683^G^-T': 1, 
+                                'chr11^1651198^G^-AGGCTGTGGGGGCTGTGGCTCCGGCTGTGC': 1, 'chr11^1651585^C^-CTGCTGCCAGTCCAGCTGCTGTAAGCCTTA': 1, 'chr2^32843743^A^+T': 1, 'chr9^33796627^T^C': 1, 
+                                'chr2^33764141^G^+T': 1, 'chr1^16862212^C^T': 1, 'chr9^118950132^G^A': 1, 'chr1^2422614^G^A': 1, 'chr6^34004006^G^A': 1, 'chr5^139909358^A^C': 1, 
+                                'chr1^180944532^T^+AA': 1, 'chr1^226044489^G^+C': 1, 'chr1^246939610^A^+TATT': 1, 'chr1^1575836^C^G': 1, 'chr2^27656822^G^+A': 1, 'chr2^31351842^A^+AC': 1, 
+                                'chr1^158913532^C^T': 1, 'chr1^86487992^A^+ACAG': 1, 'chr9^33796630^T^C': 1, 'chr1^12856111^C^T': 1, 'chr6^36984880^C^-T': 1, 'chr2^25463303^G^-A': 1, 
+                                'chr1^29446332^A^-T': 1, 'chr2^1133229^C^G': 1, 'chr1^7315580^C^T': 1, 'chr1^161332557^G^A': 1, 'chr1^171085314^A^+T': 1, 'chr1^204586805^G^A': 1, 
+                                'chr2^24110911^G^+A': 1, 'chr1^14397^CTGT^C': 1, 'chr1^16890760^G^A': 1, 'chr2^242800^T^C': 1, 'chr1^172362744^A^+AAG': 1, 'chr1^12942306^C^T': 1, 'chr1^1886859^C^T': 1, 
+                                'chr3^71026162^G^+T': 1, 'chr1^114137013^C^+AT': 1, 'chr2^19551276^T^-A': 1, 'chr1^762601^T^C': 1, 'chr1^149577615^A^G': 1, 'chr2^1442551^A^-T': 1, 'chr1^12898445^C^A': 1, 
+                                'chr2^276942^A^G': 1, 'chr1^108160260^G^-A': 1, 'chr1^67292473^A^+T': 1, 'chr1^27661755^T^+GTA': 1, 'chr7^142498699^A^G': 1, 'chr2^99463179^G^A': 1, 'chr1^146013577^A^C': 1, 
+                                'chr1^3638593^G^A': 1, 'chr9^18753463^G^A': 1, 'chr2^43778857^G^-A': 1, 'chr2^27015141^G^+C': 1, 'chr11^2428307^C^-CTCGGCCTCACCCAGGTGCTCCCGCTTGTG': 1, 'chr2^269352^G^A': 1, 
+                                'chr1^38049373^C^T': 1, 'chr2^39025043^G^-A': 1, 'chr2^234130^T^G': 1, 'chr3^110837677^C^T': 1, 'chr1^15541607^T^C': 1, 'chr2^12877501^G^+A': 1, 'chr1^17020146^A^G': 1, 
+                                'chr2^672745^T^C': 1, 'chr2^25061270^G^-GGGTGGGGT': 1, 'chr1^102462446^G^-TCAGT': 1, 'chr1^16914160^G^A': 1, 'chr2^231115^A^G': 1, 'chr1^45116470^C^T': 1, 'chr2^26678117^T^+A': 1, 
+                                'chr17^79084047^C^-GGACCGCG': 1, 'chr9^33794809^G^A': 1, 'chr1^1647871^T^C': 1, 'chr9^33798170^C^A': 1, 'chr2^27170470^C^+G': 1, 'chr2^11682754^C^+G': 1, 'chr2^1093965^G^A': 1, 
+                                'chr1^3607520^G^A': 1, 'chr1^172378884^G^+T': 1, 'chr1^86146672^G^A': 1, 'chr17^7190430^A^+G': 1, 'chr2^29158317^C^+T': 1, 'chr1^1647814^T^C': 1, 'chr7^45143090^G^+GACAGCC': 1, 
+                                'chr1^16748087^G^A': 1, 'chr1^248801778^A^T': 1, 'chr2^243504^C^T': 1, 'chr1^51061718^T^-A': 1, 'chr7^91627046^C^G': 1, 'chr4^166964590^T^A': 1, 'chr4^88536899^A^G': 1, 'chr2^279705^C^T': 1}
+        self.assertEqual(expected_hc_variants, hc_variants)
+          
+    def test_markHcCandidates_VarScan(self):
+        caller = varscan.Varscan()
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        input_dir = script_dir + "/../reference_files/normalize_varscan_test/merged_vcf/"
+        output_dir = script_dir + "/../reference_files/normalize_varscan_test/output/"
+        hc_variants = {'chr1^161332554^A^G': 1, 'chr9^33794812^G^T': 1, 'chr2^27015610^C^-CA': 1, 'chr3^156746013^T^C': 1, 'chr1^153773150^C^+T': 1, 'chr11^48387683^G^-T': 1, 
+                        'chr11^1651198^G^-AGGCTGTGGGGGCTGTGGCTCCGGCTGTGC': 1, 'chr11^1651585^C^-CTGCTGCCAGTCCAGCTGCTGTAAGCCTTA': 1, 'chr2^32843743^A^+T': 1, 'chr9^33796627^T^C': 1, 
+                        'chr2^33764141^G^+T': 1, 'chr1^16862212^C^T': 1, 'chr9^118950132^G^A': 1, 'chr1^2422614^G^A': 1, 'chr6^34004006^G^A': 1, 'chr5^139909358^A^C': 1, 
+                        'chr1^180944532^T^+AA': 1, 'chr1^226044489^G^+C': 1, 'chr1^246939610^A^+TATT': 1, 'chr1^1575836^C^G': 1, 'chr2^27656822^G^+A': 1, 'chr2^31351842^A^+AC': 1, 
+                        'chr1^158913532^C^T': 1, 'chr1^86487992^A^+ACAG': 1, 'chr9^33796630^T^C': 1, 'chr1^12856111^C^T': 1, 'chr6^36984880^C^-T': 1, 'chr2^25463303^G^-A': 1, 
+                        'chr1^29446332^A^-T': 1, 'chr2^1133229^C^G': 1, 'chr1^7315580^C^T': 1, 'chr1^161332557^G^A': 1, 'chr1^171085314^A^+T': 1, 'chr1^204586805^G^A': 1, 
+                        'chr2^24110911^G^+A': 1, 'chr1^14397^CTGT^C': 1, 'chr1^16890760^G^A': 1, 'chr2^242800^T^C': 1, 'chr1^172362744^A^+AAG': 1, 'chr1^12942306^C^T': 1, 'chr1^1886859^C^T': 1, 
+                        'chr3^71026162^G^+T': 1, 'chr1^114137013^C^+AT': 1, 'chr2^19551276^T^-A': 1, 'chr1^762601^T^C': 1, 'chr1^149577615^A^G': 1, 'chr2^1442551^A^-T': 1, 'chr1^12898445^C^A': 1, 
+                        'chr2^276942^A^G': 1, 'chr1^108160260^G^-A': 1, 'chr1^67292473^A^+T': 1, 'chr1^27661755^T^+GTA': 1, 'chr7^142498699^A^G': 1, 'chr2^99463179^G^A': 1, 'chr1^146013577^A^C': 1, 
+                        'chr1^3638593^G^A': 1, 'chr9^18753463^G^A': 1, 'chr2^43778857^G^-A': 1, 'chr2^27015141^G^+C': 1, 'chr11^2428307^C^-CTCGGCCTCACCCAGGTGCTCCCGCTTGTG': 1, 'chr2^269352^G^A': 1, 
+                        'chr1^38049373^C^T': 1, 'chr2^39025043^G^-A': 1, 'chr2^234130^T^G': 1, 'chr3^110837677^C^T': 1, 'chr1^15541607^T^C': 1, 'chr2^12877501^G^+A': 1, 'chr1^17020146^A^G': 1, 
+                        'chr2^672745^T^C': 1, 'chr2^25061270^G^-GGGTGGGGT': 1, 'chr1^102462446^G^-TCAGT': 1, 'chr1^16914160^G^A': 1, 'chr2^231115^A^G': 1, 'chr1^45116470^C^T': 1, 'chr2^26678117^T^+A': 1, 
+                        'chr17^79084047^C^-GGACCGCG': 1, 'chr9^33794809^G^A': 1, 'chr1^1647871^T^C': 1, 'chr9^33798170^C^A': 1, 'chr2^27170470^C^+G': 1, 'chr2^11682754^C^+G': 1, 'chr2^1093965^G^A': 1, 
+                        'chr1^3607520^G^A': 1, 'chr1^172378884^G^+T': 1, 'chr1^86146672^G^A': 1, 'chr17^7190430^A^+G': 1, 'chr2^29158317^C^+T': 1, 'chr1^1647814^T^C': 1, 'chr7^45143090^G^+GACAGCC': 1, 
+                        'chr1^16748087^G^A': 1, 'chr1^248801778^A^T': 1, 'chr2^243504^C^T': 1, 'chr1^51061718^T^-A': 1, 'chr7^91627046^C^G': 1, 'chr4^166964590^T^A': 1, 'chr4^88536899^A^G': 1, 'chr2^279705^C^T': 1}
+        merge_candidates = {input_dir + "tiny_merged.vcf" : [input_dir + "tiny_snp.vcf", input_dir + "tiny_indel.vcf"]}
+          
+        marked_as_hc = caller.mark_hc_variants(hc_variants, merge_candidates, output_dir)
+          
+        self.assertEqual(['chr1^14397^CTGT^C'], marked_as_hc)
          
 class Varscan_AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
@@ -152,3 +202,5 @@ class Varscan_SomaticTagTestCase(unittest.TestCase):
         format_dict = OrderedDict([("A", "1")])
         self.assertEqual(OrderedDict([("A", "1",), ("JQ_HC_SOM_VS", "0")]), tag.format("alt", "filter", "INFO", format_dict, 0))
         self.assertEqual(OrderedDict([("A", "1"), ("JQ_HC_SOM_VS", "0")]), tag.format("alt", "filter", "INFO", format_dict, 1))
+        
+
