@@ -9,6 +9,7 @@ from jacquard.normalize import identify_merge_candidates, get_headers, merge_dat
 import varscan, mutect, strelka, unknown
 from jacquard_utils import __version__
 import jacquard_utils
+
     
 class IdentifyMergeCandidatesTestCase(unittest.TestCase):
     def test_indentifyMergeCandidates_Strelka(self):
@@ -16,6 +17,7 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
         input_dir = script_dir + "/normalize_strelka_test/input/"
         in_files = [input_dir + "tiny_strelka.indels.vcf", input_dir + "tiny_strelka.snvs.vcf"]
         output_dir = script_dir + "/normalize_strelka_test/output/"
+
         merge_candidates, hc_candidates = identify_merge_candidates(in_files, output_dir, strelka.Strelka())
         
         self.assertEqual([output_dir + "tiny_strelka.merged.vcf"], merge_candidates.keys())
@@ -28,6 +30,7 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
         output_dir = script_dir + "/normalize_varscan_test/output"
         
         with self.assertRaises(SystemExit) as cm:
+
             merge_candidates = identify_merge_candidates(in_files, output_dir, varscan.Varscan())
         self.assertEqual(cm.exception.code, 1)
         
@@ -36,11 +39,12 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
         input_dir = script_dir + "/normalize_varscan_test/input/"
         in_files = [input_dir + "tiny_indel.vcf", input_dir + "tiny_snp.vcf", input_dir + "tiny_indel.Germline.hc", input_dir + "tiny_indel.LOH.hc", input_dir + "tiny_indel.Somatic.hc", input_dir + "tiny_snp.Germline.hc", input_dir + "tiny_snp.LOH.hc", input_dir + "tiny_snp.Somatic.hc"]
         output_dir = script_dir + "/normalize_varscan_test/output/"
+
         merge_candidates, hc_candidates = identify_merge_candidates(in_files, output_dir, varscan.Varscan())
         
         self.assertEqual([output_dir + "tiny_merged.vcf"], merge_candidates.keys())
         self.assertEqual([[input_dir + "tiny_indel.vcf", input_dir + "tiny_snp.vcf"]], merge_candidates.values())
-                 
+
 class MergeTestCase(unittest.TestCase):
     def test_merge_getHeaders_Strelka(self):
         with TempDirectory() as input_dir:

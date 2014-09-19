@@ -8,6 +8,7 @@ import re
 import varscan, strelka, mutect, unknown
 import jacquard_utils
 
+
 def get_headers(file):
     meta_headers = []
     header = ""

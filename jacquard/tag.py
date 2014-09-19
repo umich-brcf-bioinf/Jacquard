@@ -7,6 +7,7 @@ import shutil
 import varscan, strelka, mutect, unknown
 import jacquard_utils
 
+
 class LineProcessor():
     def __init__(self, tags):
         self.tags = tags
@@ -116,6 +117,7 @@ def tag_files(input_dir, output_dir, callers, execution_context=[]):
     file_types, inferred_callers = determine_file_types(input_dir, in_files, callers)
     print_file_types(output_dir, file_types)
 
+
     processors = {"VarScan" : FileProcessor(output_dir, tags=[varscan.AlleleFreqTag(), varscan.DepthTag(), varscan.SomaticTag()], execution_context_metadataheaders=execution_context), "MuTect": FileProcessor(output_dir, tags=[mutect.AlleleFreqTag(), mutect.DepthTag(), mutect.SomaticTag()], execution_context_metadataheaders=execution_context), "Strelka": FileProcessor(output_dir, tags=[strelka.AlleleFreqTag(), strelka.DepthTag(), strelka.SomaticTag()], execution_context_metadataheaders=execution_context)}
     
     total_number_of_files = len(in_files)
@@ -147,6 +149,7 @@ def execute(args, execution_context):
     
     jacquard_utils.validate_directories(input_dir, output_dir)
     
+
     callers = [mutect.Mutect(), varscan.Varscan(), strelka.Strelka(), unknown.Unknown()]
     tag_files(input_dir, output_dir, callers, execution_context)
     

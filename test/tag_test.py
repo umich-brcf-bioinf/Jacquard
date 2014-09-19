@@ -13,6 +13,7 @@ import varscan, mutect, strelka, unknown
 from jacquard_utils import __version__
 import jacquard_utils
 
+
 class LineProcessorTestCase(unittest.TestCase):
     def test_process_line_singleSample(self):
         tag = MockAddTag("JQ", "42")    
@@ -149,6 +150,7 @@ class TagVarScanTestCase(unittest.TestCase):
             input_dir.write("B.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
             input_dir.write("C.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
 
+
             tag_files(input_dir.path, output_dir.path, [varscan.Varscan()])
             
             actual_files = sorted(listdir(output_dir.path))
@@ -166,6 +168,7 @@ class TagVarScanTestCase(unittest.TestCase):
             input_dir.write("A.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
             input_dir.write("B.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
             input_dir.write("C.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
+
 
             tag_files(input_dir.path, output_dir.path, [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()])
             actual_files = sorted(listdir(output_dir.path))
@@ -187,6 +190,7 @@ class TagVarScanTestCase(unittest.TestCase):
             input_dir.write("A.txt","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
             input_dir.write("B.vcf.bak","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
             input_dir.write("C.vcf","##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
+
 
             tag_files(input_dir.path, output_dir.path, [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()])
             
@@ -216,6 +220,7 @@ class TagVarScanTestCase(unittest.TestCase):
         output_dir = script_dir + "/reference_files/tag_varscan_test/output"
         os.mkdir(output_dir)
         with self.assertRaises(SystemExit) as cm:
+
             tag_files(input_dir, output_dir, [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()])
         
         self.assertEqual(cm.exception.code, 1)
@@ -226,6 +231,7 @@ class TagVarScanTestCase(unittest.TestCase):
         output_dir = script_dir + "/reference_files/invalid_output"
         os.mkdir(output_dir)
         with self.assertRaises(SystemExit) as cm:
+
             tag_files(input_dir, output_dir, [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()])
 
         self.assertEqual(cm.exception.code, 1)
@@ -247,6 +253,7 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
         os.mkdir(output_dir)
         
         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
+
         callers = [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()]
         file_types, inferred_callers = determine_file_types(input_dir, in_files, callers)
         self.assertEqual(["Unknown", "VarScan", "MuTect"], file_types.keys())
@@ -276,6 +283,7 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
         output_dir = script_dir + "/reference_files/multi_caller_output/"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
         
+
         callers = [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()]
         file_types, inferred_callers = determine_file_types(input_dir, in_files, callers)
         self.assertEqual(["VarScan", "MuTect"], file_types.keys())
