@@ -64,7 +64,8 @@ def dispatch(modules, arguments):
     module_dispatch = {}
     for module in modules:
         module.add_subparser(subparsers)
-        module_dispatch[module.__name__] = module
+        short_name = module.__name__.split('.')[-1]
+        module_dispatch[short_name] = module
 
     execution_context = [\
         "##jacquard.version={0}".format(jacquard_utils.__version__),
