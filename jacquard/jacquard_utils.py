@@ -8,8 +8,12 @@ from os import listdir
 global caller_versions
 caller_versions = {"VarScan":"v2.3", "MuTect": "v1.1.4", "Strelka": "v2.0.15"}
 
-global jq_filter_tag
-jq_filter_tag = "JQ_HC_SOM_"
+global jq_somatic_tag
+global jq_af_tag
+global jq_dp_tag
+jq_somatic_tag = "JQ_HC_SOM_"
+jq_af_tag = "JQ_AF_"
+jq_dp_tag = "JQ_DP_"
 
 def validate_directories(input_dir, output_dir):    
     if not os.path.isdir(input_dir):

@@ -25,7 +25,7 @@ def find_somatic_positions(in_files, output_dir):
                 for sample_col in sample_cols:
                     format_sample_dict = jacquard_utils.combine_format_values(format_col, sample_col)
                     for key in format_sample_dict.keys():
-                        if re.search(jacquard_utils.jq_filter_tag, key):
+                        if re.search(jacquard_utils.jq_somatic_tag, key):
                             if format_sample_dict[key] == "1":
                                 somatic_key = "^".join([split_line[0], split_line[1]])
                                 somatic_positions[somatic_key] = 1

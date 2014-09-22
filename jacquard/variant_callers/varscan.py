@@ -132,7 +132,7 @@ class Varscan():
     
 class AlleleFreqTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_AF_VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_af_tag, jacquard_utils.__version__)
 
     def format(self, alt, filter, info_string, format_dict, count):
         if "FREQ" in format_dict.keys():
@@ -153,7 +153,7 @@ class AlleleFreqTag():
         
 class DepthTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_dp_tag, jacquard_utils.__version__)
 
     def format(self, alt, filter, info_string, format_dict, count):
         if "DP" in format_dict.keys():
@@ -163,11 +163,11 @@ class DepthTag():
     
 class SomaticTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID={0}VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_filter_tag, jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_somatic_tag, jacquard_utils.__version__)
 
     def format(self, alt, filter, info_string, format_dict, count):
         info_array = info_string.split(";")
-        varscan_tag = jacquard_utils.jq_filter_tag + "VS"
+        varscan_tag = jacquard_utils.jq_somatic_tag + "VS"
 
         if "SS=2" in info_array:
             format_dict[varscan_tag] = self.somatic_status(count)

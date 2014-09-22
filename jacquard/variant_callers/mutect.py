@@ -19,7 +19,7 @@ class Mutect():
 
 class AlleleFreqTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_AF_MT,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}MT,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_af_tag, jacquard_utils.__version__)
 
     def format(self, alt, filter, info, format_dict, count):
         if "FA" in format_dict.keys():
@@ -39,7 +39,7 @@ class AlleleFreqTag():
         
 class DepthTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_DP_MT,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}MT,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_dp_tag, jacquard_utils.__version__)
 
     def format(self, alt, filter, info, format_dict, count):
         if "DP" in format_dict.keys():
@@ -49,10 +49,10 @@ class DepthTag():
     
 class SomaticTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID={0}MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_filter_tag, jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_somatic_tag, jacquard_utils.__version__)
 
     def format(self, alt, filter, info, format_dict, count):
-        mutect_tag = jacquard_utils.jq_filter_tag + "MT"
+        mutect_tag = jacquard_utils.jq_somatic_tag + "MT"
         if "SS" in format_dict.keys():
             format_dict[mutect_tag] = self.somatic_status(format_dict["SS"])
         else:

@@ -31,7 +31,7 @@ class Strelka(object):
 
 class AlleleFreqTag(object):
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_AF_SK,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth)",Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}SK,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth)",Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_af_tag, jacquard_utils.__version__)
 
     def format(self, alt, filter, info, format_dict, count):
         afs = []
@@ -71,7 +71,7 @@ class AlleleFreqTag(object):
 
 class DepthTag(object):
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID=JQ_DP_SK,Number=1,Type=Float,Description="Jacquard depth for Strelka (based on DP2),Source="Jacquard",Version={0}>\n'.format(jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}SK,Number=1,Type=Float,Description="Jacquard depth for Strelka (based on DP2),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_dp_tag, jacquard_utils.__version__)
 
     # pylint: disable=W0613,R0201
     def format(self, alt, filter_field, info, format_dict, count):
@@ -88,12 +88,12 @@ class DepthTag(object):
 class SomaticTag(object):
     #TODO: cgates :Pull tag metaheaders to resource bundle?
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID={0}SK,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1= somatic (based on PASS in FILTER column),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_filter_tag, jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}SK,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1= somatic (based on PASS in FILTER column),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_somatic_tag, jacquard_utils.__version__)
 
     # pylint: disable=W0613,R0201
     #TODO: cgates : Refactor params to record_object?
     def format(self, alt, filter_field, info, format_dict, count):
-        strelka_tag = jacquard_utils.jq_filter_tag + "SK"
+        strelka_tag = jacquard_utils.jq_somatic_tag + "SK"
         if filter_field == "PASS":
             format_dict[strelka_tag] = somatic_status(count)
         else:

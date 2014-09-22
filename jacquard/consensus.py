@@ -61,9 +61,9 @@ def add_zscore(meta_headers, header, lines, writer, output_file, af_range, dp_ra
     print "Wrote consensus-somatic-tagged VCF to [{0}]".format(output_file)
     
 def add_consensus(meta_headers, header, lines, writer, output_file):
-    consensus_meta_headers = ['##FORMAT=<ID=JQ_SOM_SUM,Number=1,Type=Integer,Description="Jacquard consensus somatic call = sum(JQ_SOM_MT, JQ_SOM_SK, JQ_SOM_VS)">\n', 
-                              '##FORMAT=<ID=JQ_AF_AVERAGE,Number=A,Type=Integer,Description="Jacquard consensus somatic call = average(JQ_AF_MT, JQ_AF_SK, JQ_AF_VS)">\n',
-                              '##FORMAT=<ID=JQ_DP_AVERAGE,Number=1,Type=Integer,Description="Jacquard consensus depth = average(JQ_DP_MT, JQ_DP_SK, JQ_DP_VS)">\n']
+    consensus_meta_headers = ['##FORMAT=<ID=JQ_SOM_SUM,Number=1,Type=Integer,Description="Jacquard consensus somatic call = sum({0}*)">\n'.format(jacquard_utils.jq_somatic_tag), 
+                              '##FORMAT=<ID=JQ_AF_AVERAGE,Number=A,Type=Integer,Description="Jacquard consensus somatic call = average({0}*)">\n'.format(jacquard_utils.jq_af_tag),
+                              '##FORMAT=<ID=JQ_DP_AVERAGE,Number=1,Type=Integer,Description="Jacquard consensus depth = average({0}*)">\n'.format(jacquard_utils.jq_dp_tag)]
     print "".join(consensus_meta_headers)
     meta_headers.extend(consensus_meta_headers)
             
@@ -130,15 +130,15 @@ def calculate_consensus(combined_dict, af_range, dp_range):
     somatic = {}
     depth = {}
     for key in combined_dict.keys():
-        if key.startswith("JQ_SOM"):
+        if key.startswith(jacquard_utils.jq_somatic_tag):
             if combined_dict[key] != ".":
                 somatic = create_consensus_dict(key, combined_dict[key], combined_dict, somatic, "int")
-        elif key.startswith("JQ_AF"):
+        elif key.startswith(jacquard_utils.jq_af_tag):
             if combined_dict[key] != ".":
                 new_af = roundTwoDigits(combined_dict[key].split(","))
                 af = create_consensus_dict(key, new_af, combined_dict, af, "float")
                 consensus_af_tags.append(key)
-        elif key.startswith("JQ_DP"):
+        elif key.startswith(jacquard_utils.jq_dp_tag):
             if combined_dict[key] != ".":
                 depth = create_consensus_dict(key, combined_dict[key], combined_dict, depth, "float")
                 consensus_dp_tags.append(key)
