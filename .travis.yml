@@ -4,9 +4,17 @@ language: python
 python:
     - "2.7"
 
-install: "pip install -r requirements.txt"
+install:
+    - pip install -r requirements.txt
  
-script: nosetests
+before_script:
+    - pip install python-coveralls
+
+script: 
+    - nosetests --with-coverage --cover-package=jacquard,variant_callers
+
+after_success:
+    - coveralls
 
 notifications:
     email:
