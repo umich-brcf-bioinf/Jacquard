@@ -53,7 +53,7 @@ class StrelkaTestCase(unittest.TestCase):
 
 class Strelka_AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_AF_SK,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth)",Source="Jacquard",Version={0}>\n'.format(__version__), strelka.AlleleFreqTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_AF_SK,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version={0}>\n'.format(__version__), strelka.AlleleFreqTag().metaheader)
 
     def test_format_missingAFTag(self):
         tag = strelka.AlleleFreqTag()
@@ -84,7 +84,7 @@ class Strelka_AlleleFreqTagTestCase(unittest.TestCase):
 
 class Strelka_DepthTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_DP_SK,Number=1,Type=Float,Description="Jacquard depth for Strelka (based on DP2),Source="Jacquard",Version=0.1>\n'.format(__version__), strelka.DepthTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_DP_SK,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth),Source="Jacquard",Version=0.1>\n'.format(__version__), strelka.DepthTag().metaheader)
 
     def test_format_missingDP2AUTags(self):
         tag = strelka.DepthTag()

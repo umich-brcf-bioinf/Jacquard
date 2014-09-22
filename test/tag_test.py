@@ -74,44 +74,47 @@ class FileProcessorTestCase(unittest.TestCase):
         mockWriter = MockWriter()
         script_dir = os.path.dirname(os.path.abspath(__file__))
         output_dir = script_dir+ "/reference_files/fake_output/"
-        os.mkdir(output_dir)
+        try:
+            os.mkdir(output_dir)
+        except:
+            pass
         
         input_metaheaders = ["jacquard.version=X","jacquard.tagMutect.command=foo"]
         processor = FileProcessor(output_dir, tags=[], execution_context_metadataheaders=input_metaheaders)
         with self.assertRaises(SystemExit) as cm:
-            processor.process(reader=["#CHROM\n"], writer=mockWriter, caller="VarScan")
+            processor.process(reader=["#CHROM\n"], writer=mockWriter, in_file_name="foo", caller="VarScan", handlers={"foo":""})
         self.assertEqual(cm.exception.code, 1)
         
     def test_process_prependsExecutionContext(self):
         mockWriter = MockWriter()
         input_metaheaders = ["##jacquard.version=X","##jacquard.tagMutect.command=foo"]
         processor = FileProcessor("foo_output_dir", tags=[], execution_context_metadataheaders=input_metaheaders)
-        processor.process(reader=["#CHROM\tNORMAL\tTUMOR\n"], writer=mockWriter, caller="MuTect")
+        processor.process(reader=["#CHROM\tNORMAL\tTUMOR\n"], writer=mockWriter, in_file_name="foo", caller="MuTect", handlers={"foo":""})
         actualLines = mockWriter.lines()
-        self.assertEqual(4, len(actualLines))
-        self.assertEqual("##jacquard.version=X", actualLines[0])
-        self.assertEqual("##jacquard.tagMutect.command=foo", actualLines[1])
+        self.assertEqual(5, len(actualLines))
+        self.assertEqual("##jacquard.version=X", actualLines[1])
+        self.assertEqual("##jacquard.tagMutect.command=foo", actualLines[2])
 
     def test_prependsExecutionContextWhenBlank(self):
         processor = FileProcessor("foo_output_dir")
         mockWriter = MockWriter()
-        processor.process(reader=[], writer=mockWriter, caller="MuTect")
-        self.assertEqual(0, len(mockWriter.lines()))
+        processor.process(reader=[], writer=mockWriter, in_file_name="foo", caller="MuTect", handlers={"foo":""})
+        self.assertEqual(1, len(mockWriter.lines()))
 
     def test_process_passthroughExistingMetaHeaders(self):
         mockWriter = MockWriter()
         processor = FileProcessor("foo_output_dir")
         reader = ["##Hello\n","##World\n"]
-        processor.process(reader, mockWriter, "MuTect")
-        self.assertEqual(["##Hello", "##World"], mockWriter.lines())
+        processor.process(reader, mockWriter, "foo", "MuTect", handlers={"foo":""})
+        self.assertEqual(["", "##Hello", "##World"], mockWriter.lines())
 
     def test_process_addsNewMetaHeaders(self):
         mockWriter = MockWriter()
         mockTag = MockLowerTag("##mockMetaHeader")
         processor = FileProcessor("foo_output_dir", tags=[mockTag])
-        processor.process(reader=["#CHROM\tNORMAL\tTUMOR\n"], writer=mockWriter, caller="MuTect")
-        self.assertEqual(3, len(mockWriter.lines()))
-        self.assertEqual("##mockMetaHeader", mockWriter.lines()[0])
+        processor.process(reader=["#CHROM\tNORMAL\tTUMOR\n"], writer=mockWriter, in_file_name="foo", caller="MuTect", handlers={"foo":""})
+        self.assertEqual(4, len(mockWriter.lines()))
+        self.assertEqual("##mockMetaHeader", mockWriter.lines()[1])
 
     def test_process_adjustsVcfRecords(self):
         mockWriter = MockWriter()
@@ -122,14 +125,14 @@ class FileProcessorTestCase(unittest.TestCase):
                   "chr2|10|.|ref|alt|qual|filter|INFO|A:B:C|A10:B10:C10|A20:B20:C20".replace("|","\t")
                   ]
         processor = FileProcessor("foo_output_dir", tags=[mockTag])
-        processor.process(reader, mockWriter, "MuTect")
+        processor.process(reader, mockWriter, "foo", "MuTect", {"foo":""})
         
-        self.assertEqual(5, len(mockWriter.lines()))
-        self.assertEqual("##mockMetaHeader", mockWriter.lines()[0])
-        self.assertEqual("##jacquard.tag.caller=MuTect", mockWriter.lines()[1])
-        self.assertEqual(recordHeader.strip("\n"), mockWriter.lines()[2])
-        self.assertEqual("chr1\t1\t.\tref\talt\tqual\tfilter\tINFO\ta:b:c\ta1:b1:c1\ta2:b2:c2", mockWriter.lines()[3])
-        self.assertEqual("chr2\t10\t.\tref\talt\tqual\tfilter\tINFO\ta:b:c\ta10:b10:c10\ta20:b20:c20", mockWriter.lines()[4])
+        self.assertEqual(6, len(mockWriter.lines()))
+        self.assertEqual("##mockMetaHeader", mockWriter.lines()[1])
+        self.assertEqual("##jacquard.tag.caller=MuTect", mockWriter.lines()[2])
+        self.assertEqual(recordHeader.strip("\n"), mockWriter.lines()[3])
+        self.assertEqual("chr1\t1\t.\tref\talt\tqual\tfilter\tINFO\ta:b:c\ta1:b1:c1\ta2:b2:c2", mockWriter.lines()[4])
+        self.assertEqual("chr2\t10\t.\tref\talt\tqual\tfilter\tINFO\ta:b:c\ta10:b10:c10\ta20:b20:c20", mockWriter.lines()[5])
 
 class TagVarScanTestCase(unittest.TestCase):
     def setUp(self):
@@ -172,12 +175,13 @@ class TagVarScanTestCase(unittest.TestCase):
             for actual_file in actual_files:
                 result = open(output_dir.path + "/" + actual_file).read()
                 split_result = result.split("\n")
-                self.assertEqual('##source=VarScan2', split_result[0])
-                self.assertEqual('##FORMAT=<ID=JQ_AF_VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={0}>'.format(__version__), split_result[1])
-                self.assertEqual('##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP),Source="Jacquard",Version={0}>'.format(__version__), split_result[2])
-                self.assertEqual('##FORMAT=<ID=JQ_HC_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={0}>'.format(__version__), split_result[3])
-                self.assertEqual('##jacquard.tag.caller=VarScan'.format(__version__), split_result[4])
-                self.assertEqual('#CHROM\tNORMAL\tTUMOR', split_result[5])
+                self.assertEqual('##jacquard.tag.handler=VarScan', split_result[0])
+                self.assertEqual('##source=VarScan2', split_result[1])
+                self.assertEqual('##FORMAT=<ID=JQ_AF_VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={0}>'.format(__version__), split_result[2])
+                self.assertEqual('##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP),Source="Jacquard",Version={0}>'.format(__version__), split_result[3])
+                self.assertEqual('##FORMAT=<ID=JQ_HC_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={0}>'.format(__version__), split_result[4])
+                self.assertEqual('##jacquard.tag.caller=VarScan'.format(__version__), split_result[5])
+                self.assertEqual('#CHROM\tNORMAL\tTUMOR', split_result[6])
             
             input_dir.cleanup()
             output_dir.cleanup()
@@ -204,11 +208,13 @@ class TagVarScanTestCase(unittest.TestCase):
 
             tag_files(input_dir.path, output_dir.path, [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()], ["execution metaheaders"])
             output_list = self.output.getvalue().splitlines()
-            
+ 
             self.assertEqual(10, len(output_list))
             self.assertEqual(True, output_list[0].startswith("execution"))
             self.assertEqual(True, output_list[1].startswith("Processing [2]"))
             self.assertEqual(True, output_list[9].startswith("Wrote [2]"))
+            input_dir.cleanup()
+            output_dir.cleanup()
             
     def test_tagVarScanFilestest_tagMutectFiles_inputDirectoryNoVCFs(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -247,12 +253,15 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/reference_files/multi_caller_input/withUnknowns"
         output_dir = script_dir + "/reference_files/multi_caller_output/"
-        os.mkdir(output_dir)
+        try:
+            os.mkdir(output_dir)
+        except:
+            pass
         
         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
 
         callers = [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()]
-        file_types, inferred_callers = determine_file_types(input_dir, in_files, callers)
+        file_types, handlers, inferred_callers = determine_file_types(input_dir, in_files, callers)
         self.assertEqual(["Unknown", "VarScan", "MuTect"], file_types.keys())
         self.assertEqual('tiny_unknown_input.vcf', os.path.basename(file_types.values()[0][0]))
         self.assertEqual('tiny_varscan_input.vcf', os.path.basename(file_types.values()[1][0]))
@@ -282,7 +291,7 @@ class  DetermineFileTypesTestCase(unittest.TestCase):
         
 
         callers = [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()]
-        file_types, inferred_callers = determine_file_types(input_dir, in_files, callers)
+        file_types, handlers, inferred_callers = determine_file_types(input_dir, in_files, callers)
         self.assertEqual(["VarScan", "MuTect"], file_types.keys())
         self.assertEqual('tiny_varscan_input.vcf', os.path.basename(file_types.values()[0][0]))
         self.assertEqual('tiny_mutect_input.vcf', os.path.basename(file_types.values()[1][0]))

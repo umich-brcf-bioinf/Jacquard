@@ -48,7 +48,8 @@ class FileProcessor():
         new_headers = ["{}\n".format(header) for header in metaheaders]
         return ''.join(new_headers)
 
-    def process(self, reader, writer, caller):
+    def process(self, reader, writer, in_file_name, caller, handlers):
+        writer.write(handlers[in_file_name] + "\n")
         for line in reader:
             if line.startswith("##"):
                 writer.write(line)
@@ -78,6 +79,7 @@ def add_subparser(subparser):
 
 def determine_file_types(input_dir, in_files, callers):
     file_types = defaultdict(list)   
+    handlers = {}
     inferred_callers = []                                    
     for file in in_files:
         for caller in callers:
@@ -88,12 +90,14 @@ def determine_file_types(input_dir, in_files, callers):
                 if caller_name == "Unknown":
                     print "ERROR. {0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller_name)
                 else:  
-                    print "{0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller_name)
+                    handler = "{0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller_name)
+                    print handler
+                    handlers[os.path.basename(file)] = "##jacquard.tag.handler={0}".format(caller_name)
                     inferred_caller = "##jacquard.tag.caller={0}".format(caller_name)
                     inferred_callers.append(inferred_caller)
                     print "{0}: {1}".format(os.path.basename(file), inferred_caller)
                 break
-    return file_types, inferred_callers
+    return file_types, handlers, inferred_callers
     
 def print_file_types(output_dir, file_types):
     for key, vals in file_types.items():
@@ -113,28 +117,27 @@ def tag_files(input_dir, output_dir, callers, execution_context=[]):
     print "\n".join(execution_context)
     print "Processing [{0}] VCF file(s) from [{1}]".format(len(in_files), input_dir)
     
-    file_types, inferred_callers = determine_file_types(input_dir, in_files, callers)
+    file_types, handlers, inferred_callers = determine_file_types(input_dir, in_files, callers)
     print_file_types(output_dir, file_types)
-
 
     processors = {"VarScan" : FileProcessor(output_dir, tags=[varscan.AlleleFreqTag(), varscan.DepthTag(), varscan.SomaticTag()], execution_context_metadataheaders=execution_context), "MuTect": FileProcessor(output_dir, tags=[mutect.AlleleFreqTag(), mutect.DepthTag(), mutect.SomaticTag()], execution_context_metadataheaders=execution_context), "Strelka": FileProcessor(output_dir, tags=[strelka.AlleleFreqTag(), strelka.DepthTag(), strelka.SomaticTag()], execution_context_metadataheaders=execution_context)}
     
     total_number_of_files = len(in_files)
     count = 1
-    for file in in_files:
-        print "Reading [{0}] ({1}/{2})".format(os.path.basename(file), count, total_number_of_files)
-        fname, extension = os.path.splitext(os.path.basename(file))
+    for in_file in in_files:
+        print "Reading [{0}] ({1}/{2})".format(os.path.basename(in_file), count, total_number_of_files)
+        fname, extension = os.path.splitext(os.path.basename(in_file))
         new_file = fname + ".jacquardTags" + extension
         
-        in_file = open(os.path.join(input_dir, file), "r")
-        out_file = open(os.path.join(output_dir, new_file), "w")
+        in_file_reader = open(os.path.join(input_dir, in_file), "r")
+        out_file_writer = open(os.path.join(output_dir, new_file), "w")
         
         for key, vals in file_types.items():
-            if file in vals:
-                processors[key].process(in_file, out_file, key)
+            if in_file in vals:
+                processors[key].process(in_file_reader, out_file_writer, os.path.basename(in_file), key, handlers)
         
-        in_file.close()
-        out_file.close()
+        in_file_reader.close()
+        out_file_writer.close()
         
         count += 1
     
