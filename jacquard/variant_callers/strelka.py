@@ -1,5 +1,4 @@
 import jacquard.jacquard_utils as jacquard_utils
-# import jacquard_utils
 
 class Strelka(object):
     def __init__(self):

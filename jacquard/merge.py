@@ -13,6 +13,7 @@ from sets import Set
 import sys 
 import time
 
+# import jacquard.jacquard_utils as jacquard_utils
 import jacquard_utils
 
 class PivotError(Exception):

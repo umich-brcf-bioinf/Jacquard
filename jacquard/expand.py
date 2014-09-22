@@ -226,9 +226,20 @@ def expand_format(df, formats_to_expand, rows, fname):
     s.index = s.index.droplevel(-1)
     s.name = "format_sample"
 
-    unpivoted_format_value_df = s.apply(lambda x: pd.Series(x))
-    unpivoted_format_value_df.columns = ["FORMAT2", "VALUE2"]
+#     s.to_pickle("s.pickle")
+#     unpivoted_format_value_df = s.apply(lambda x: pd.Series(x))
+#     unpivoted_format_value_df.columns = ["FORMAT2", "VALUE2"]
+#     unpivoted_format_value_df.to_pickle("df.pickle")
+    original_index = s.index
     
+    format2=pd.Series([key for key, val  in s])
+    value2=pd.Series([val for key, val  in s])
+    
+    format2.index = original_index
+    value2.index = original_index
+    
+    unpivoted_format_value_df = pd.DataFrame({"FORMAT2": format2, "VALUE2": value2})
+
     joined_df = df.join(unpivoted_format_value_df)
     del joined_df["aggregate_format_sample"]
     
@@ -366,11 +377,13 @@ def process_files(input_file, output_path, input_keys, format_tags, info_tags, h
     
     expanded_df = expand_info_column(sorted_df, info_tags)
     
-    writer = ExcelWriter(output_path)
-    expanded_df.to_excel(writer, "Variant_output", index=False, merge_cells=0)  
-    writer.save() 
+#     writer = ExcelWriter(output_path)
+#     expanded_df.to_excel(writer, "Variant_output", index=False, merge_cells=0)  
+#     writer.save() 
+#     print "Wrote formatted Excel file to [{0}]".format(output_path)
 
-    print "Wrote formatted Excel file to [{0}]".format(output_path)
+    print "writing to csv file: {0}".format(output_path)
+    expanded_df.to_csv(output_path, index=False, sep="\t")  
    
 def determine_input_keys(input_file):
     fname, extension = os.path.splitext(input_file)
@@ -436,10 +449,10 @@ def execute(args, execution_context):
     except:
         pass
     
-    fname, extension = os.path.splitext(outfile_name)
-    if extension != ".xlsx": 
-        print "Error. Specified output {0} must have a .xlsx extension".format(output_path)
-        exit(1)
+#     fname, extension = os.path.splitext(outfile_name)
+#     if extension != ".xlsx": 
+#         print "Error. Specified output {0} must have a .xlsx extension".format(output_path)
+#         exit(1)
     
     meta_headers, headers, header_names, first_line = get_headers(input_file)
     print "\n".join(execution_context) 
