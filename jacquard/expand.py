@@ -25,22 +25,18 @@ class VariantPivoter():
     MISSING_REQUIRED_COLUMNS_ERROR="The columns of specified dataframe do not " +\
         "contain required columns {0}; review input data."
 
-    @staticmethod
-    def _build_transform_method(rows, columns, pivot_values):
-        def transform(df, fname):
-            expanded_df = expand_format(df, pivot_values, rows, fname)
-            
-            return project_prepivot(expanded_df, pivot_values, rows, columns)
-        return transform
-
     def __init__(self, rows, cols, pivot_values, combined_df=pd.DataFrame(), annot_df=pd.DataFrame()):
         self._rows = rows
         self._cols = cols
         self._pivot_values = pivot_values
-        self._transform = VariantPivoter._build_transform_method(self._rows, self._cols, self._pivot_values)
         self._combined_df = combined_df
         self._annot_df = annot_df
         
+    def transform(self, df, fname):
+        expanded_df = expand_format(df, self._pivot_values, self._rows, fname)
+        df, self._pivot_values = project_prepivot(expanded_df, self._pivot_values, self._rows, self._cols)
+        return df
+
     def pivot(self):
         pivoted_df = pd.pivot_table(
             self._combined_df, values=self._pivot_values, rows=self._rows, cols=self._cols, 
@@ -81,7 +77,8 @@ class VariantPivoter():
         return sorted_df
                 
     def is_compatible(self, initial_df, fname=""):   
-        unpivoted_df = self._transform(initial_df, fname)
+#         unpivoted_df = self._transform(initial_df, fname)
+        unpivoted_df = self.transform(initial_df, fname)
 
         self._check_required_columns_present(unpivoted_df)
         self._check_pivot_is_unique(unpivoted_df)  
@@ -157,7 +154,7 @@ def build_pivoter(input_file, input_keys, pivot_values, header_index):
     pivoter = VariantPivoter(input_keys, ["SAMPLE_NAME"], pivot_values)
     unpivoted_df = pivoter.is_compatible(initial_df)
     pivoter._combined_df = unpivoted_df
-    
+
     return pivoter
   
 def _exclude_errors_and_warnings(df):
@@ -255,14 +252,22 @@ def combine_format_values(aggregate_col):
     pairs = aggregate_col.split("=")
     return zip(pairs[0].split(":"), pairs[1].split(":"))
     
-def project_prepivot(df, pivot_values, rows, columns):
+def determine_pivot_values(df, rows, columns):
+    pivot_values = []
+    for col_name in df.columns.values:
+        if col_name not in rows and col_name not in columns:
+            pivot_values.append(col_name)
+    return pivot_values
+    
+def project_prepivot(df, incoming_pivot_values, rows, columns):
+    pivot_values = incoming_pivot_values if incoming_pivot_values != [""] else determine_pivot_values(df, rows, columns)
     required_columns = set(pivot_values + rows + columns)
 
     for col in df.columns:
         if col not in required_columns:
             del df[col]
 
-    return df   
+    return df, pivot_values 
     
 def rearrange_columns(output_df):
     ##change tuples to strings:
@@ -301,27 +306,38 @@ def insert_links(joined_output):
         joined_output.loc[row, "dbSNP"] = '=hyperlink("http://www.ncbi.nlm.nih.gov/projects/SNP/snp_ref.cgi?rs=&' + joined_output.loc[row, "ID"] + '", "dbSNP")' if joined_output.loc[row, "ID"] != "." else ""
     del joined_output["ID"]
         
-def expand_info_column(df):
+def add_info_tag_to_df(df, info_tag, row, key):
+    try:
+        value = info_tag.split("=")[1] 
+        df.ix[row, key] = value
+    except:
+        df.ix[row, key] = key
+    
+    return df
+        
+def expand_info_column(df, specified_info_tags):
+    ##(jebene) : should we remove the INFO column from the output?
     for row, col in df.T.iteritems():
         info_column = df.ix[row,"INFO"]
         info_tags = info_column.split(";")
         for info_tag in info_tags:
-            key = info_tag.split("=")[0]
-            try:
-                value = info_tag.split("=")[1] 
-                df.ix[row, key] = value
-            except:
-                df.ix[row, key] = key
+            if specified_info_tags:
+                key = info_tag.split("=")[0]
+                if key in specified_info_tags:
+                    df = add_info_tag_to_df(df, info_tag, row, key)
+            else:
+                key = info_tag.split("=")[0]
+                df = add_info_tag_to_df(df, info_tag, row, key)
     df.fillna(".", inplace=True)
-    
+        
     return df
         
-def process_files(input_file, output_path, input_keys, pivot_values, headers, header_names, meta_headers, first_line, pivot_builder=build_pivoter):
-    raise_err, message = validate_parameters(input_keys, meta_headers, header_names, pivot_values)  
+def process_files(input_file, output_path, input_keys, format_tags, info_tags, headers, header_names, meta_headers, first_line, pivot_builder=build_pivoter):
+    raise_err, message = validate_parameters(input_keys, meta_headers, header_names, format_tags)  
     if raise_err == 1:
         raise PivotError(message)
         
-    pivoter  = pivot_builder(input_file, input_keys, pivot_values, headers[0])
+    pivoter  = pivot_builder(input_file, input_keys, format_tags, headers[0])
     pivoter.add_file(input_file, headers[0])
     pivoter.validate_annotations()
 
@@ -348,10 +364,10 @@ def process_files(input_file, output_path, input_keys, pivot_values, headers, he
     if "WARNING/ERROR" in sorted_df.columns.values:
         sorted_df.rename(columns={"WARNING/ERROR":"SnpEff_WARNING/ERROR"}, inplace=True)
     
-    expanded_df = expand_info_column(sorted_df)
+    expanded_df = expand_info_column(sorted_df, info_tags)
     
     writer = ExcelWriter(output_path)
-    sorted_df.to_excel(writer, "Variant_output", index=False, merge_cells=0)  
+    expanded_df.to_excel(writer, "Variant_output", index=False, merge_cells=0)  
     writer.save() 
 
     print "Wrote formatted Excel file to [{0}]".format(output_path)
@@ -405,11 +421,14 @@ def add_subparser(subparser):
     parser_pivot.add_argument("-i", "--info_tags",
         help="INFO tags to be fielded out in the pivoting.")
         
+        
 def execute(args, execution_context):
     input_file = os.path.abspath(args.input_file)
     output_path = os.path.abspath(args.output_file)
     input_keys = args.keys.split(",") if args.keys else determine_input_keys(input_file)
-    pivot_values = args.format_tags.split(",") if args.format_tags else ["GT"]
+    
+    format_tags = args.format_tags.split(",") if args.format_tags else [""]
+    info_tags = args.info_tags.split(",") if args.info_tags else ""
     
     output_dir, outfile_name = os.path.split(output_path)
     try:
@@ -425,5 +444,5 @@ def execute(args, execution_context):
     meta_headers, headers, header_names, first_line = get_headers(input_file)
     print "\n".join(execution_context) 
     execution_context.extend(meta_headers + ["##fileformat=VCFv4.2"])
-    process_files(input_file, output_path, input_keys, pivot_values, headers, header_names, meta_headers, first_line)
+    process_files(input_file, output_path, input_keys, format_tags, info_tags, headers, header_names, meta_headers, first_line)
     

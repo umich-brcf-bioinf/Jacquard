@@ -26,7 +26,7 @@ def dataframe(input_data, sep="\t", index_col=None):
     return df
 
 class VariantPivoterTestCase(unittest.TestCase):
-    def test_build_transform(self):
+    def test_transform(self):
         rows = ['COORDINATE']
         cols = ['SAMPLE_NAME']
         pivot_values = ['DP']
@@ -39,9 +39,8 @@ class VariantPivoterTestCase(unittest.TestCase):
 3	blah	DP:ESAF	30:0.2	300:0.2
 4	blah	DP:ESAF	40:0.2	400:0.2'''
         df = dataframe(input_string)
-        
-        transform = pivoter._build_transform_method(rows, cols, pivot_values)
-        actual_df = transform(df, "foo")
+
+        actual_df = pivoter.transform(df, "foo")
         actual_df.columns.names = [""]
         expected_string = \
 '''COORDINATE	SAMPLE_NAME	DP
@@ -349,7 +348,29 @@ class PivotTestCase(unittest.TestCase):
         tm.assert_series_equal(expected_df.ix[:,5], actual_df.ix[:,5])
         
     ##select_prepivot
-    def test_project_prepivot(self):
+    def test_project_prepivot_default(self):
+        dataString = \
+'''SAMPLE_NAME	CHROM	POS	REF	ALT	INFO	FORMAT	GT
+sample1	chr1	1	A	T	blah	GT:DP	0/1
+sample2	chr1	2	A	T	blah	GT:DP	0/1
+sample3	chr1	3	A	T	blah	DP	1/1
+sample6	chr1	4	A	T	blah	GT	1/1'''
+        df = pd.read_csv(StringIO(dataString), sep="\t", header=False)
+        pivot_values = [""]
+        rows = ["CHROM", "POS", "REF", "ALT"]
+        columns = ["SAMPLE_NAME"]
+        actual_df, pivot_values = project_prepivot(df, pivot_values, rows, columns)
+        
+        expected_dataString = \
+'''SAMPLE_NAME	CHROM	POS	REF	ALT	INFO	FORMAT	GT
+sample1	chr1	1	A	T	blah	GT:DP	0/1
+sample2	chr1	2	A	T	blah	GT:DP	0/1
+sample3	chr1	3	A	T	blah	DP	1/1
+sample6	chr1	4	A	T	blah	GT	1/1'''
+        expected_df = pd.read_csv(StringIO(expected_dataString), sep="\t", header=False)
+
+        tm.assert_frame_equal(expected_df, actual_df)
+    def test_project_prepivot_specifiedTags(self):
         dataString = \
 '''SAMPLE_NAME	CHROM	POS	REF	ALT	INFO	FORMAT	GT
 sample1	chr1	1	A	T	blah	GT:DP	0/1
@@ -360,7 +381,7 @@ sample6	chr1	4	A	T	blah	GT	1/1'''
         pivot_values = ["GT"]
         rows = ["CHROM", "POS", "REF", "ALT"]
         columns = ["SAMPLE_NAME"]
-        actual_df = project_prepivot(df, pivot_values, rows, columns)
+        actual_df, pivot_values = project_prepivot(df, pivot_values, rows, columns)
         
         expected_dataString = \
 '''SAMPLE_NAME	CHROM	POS	REF	ALT	GT
@@ -449,7 +470,7 @@ chr1	4	A	T	GT:DP:ESAF	foo	foo_Sample_2	0/1:15:0.2'''
 
         tm.assert_frame_equal(expected_df, actual_df)
     
-    def test_expand_info_column(self):
+    def test_expand_info_column_default(self):
         input_string = \
 '''SAMPLE_NAME	CHROM	POS	REF	ALT	INFO	FORMAT	Sample1	Sample2
 sample1	chr1	1	A	T	blah;foo=bar	GT:DP	0/1:.	1/1:23
@@ -457,7 +478,7 @@ sample2	chr1	2	A	T	blah;foo=.	GT:DP	0/1:.	1/1:25
 sample3	chr1	3	A	T	foo=bar	DP	67	.
 sample6	chr1	4	A	T	blah;foo=bar	GT	1/1	.'''
         df = dataframe(input_string)
-        expanded_df = expand_info_column(df)
+        expanded_df = expand_info_column(df, "")
 
         expected_string = \
 '''SAMPLE_NAME	CHROM	POS	REF	ALT	INFO	FORMAT	Sample1	Sample2	blah	foo
@@ -467,6 +488,44 @@ sample3	chr1	3	A	T	foo=bar	DP	67	.	.	bar
 sample6	chr1	4	A	T	blah;foo=bar	GT	1/1	.	blah	bar'''
         expected_df = dataframe(expected_string)
 
+        tm.assert_frame_equal(expected_df, expanded_df)
+        
+    def test_expand_info_column_specifiedInfoTags_assignedTags(self):
+        input_string = \
+'''SAMPLE_NAME	CHROM	POS	REF	ALT	INFO	FORMAT	Sample1	Sample2
+sample1	chr1	1	A	T	blah;foo=bar	GT:DP	0/1:.	1/1:23
+sample2	chr1	2	A	T	blah;foo=.	GT:DP	0/1:.	1/1:25
+sample3	chr1	3	A	T	foo=bar	DP	67	.
+sample6	chr1	4	A	T	blah;foo=bar	GT	1/1	.'''
+        df = dataframe(input_string)
+        
+        expanded_df = expand_info_column(df, ["foo"])
+        expected_string = \
+'''SAMPLE_NAME	CHROM	POS	REF	ALT	INFO	FORMAT	Sample1	Sample2	foo
+sample1	chr1	1	A	T	blah;foo=bar	GT:DP	0/1:.	1/1:23	bar
+sample2	chr1	2	A	T	blah;foo=.	GT:DP	0/1:.	1/1:25	.
+sample3	chr1	3	A	T	foo=bar	DP	67	.	bar
+sample6	chr1	4	A	T	blah;foo=bar	GT	1/1	.	bar'''
+        expected_df = dataframe(expected_string)
+        tm.assert_frame_equal(expected_df, expanded_df)
+        
+    def test_expand_info_column_specifiedInfoTags_nonAssignedTags(self):
+        input_string = \
+'''SAMPLE_NAME	CHROM	POS	REF	ALT	INFO	FORMAT	Sample1	Sample2
+sample1	chr1	1	A	T	blah;foo=bar	GT:DP	0/1:.	1/1:23
+sample2	chr1	2	A	T	blah;foo=.	GT:DP	0/1:.	1/1:25
+sample3	chr1	3	A	T	foo=bar	DP	67	.
+sample6	chr1	4	A	T	blah;foo=bar	GT	1/1	.'''
+        df = dataframe(input_string)
+        
+        expanded_df = expand_info_column(df, ["blah"])
+        expected_string = \
+'''SAMPLE_NAME	CHROM	POS	REF	ALT	INFO	FORMAT	Sample1	Sample2	blah
+sample1	chr1	1	A	T	blah;foo=bar	GT:DP	0/1:.	1/1:23	blah
+sample2	chr1	2	A	T	blah;foo=.	GT:DP	0/1:.	1/1:25	blah
+sample3	chr1	3	A	T	foo=bar	DP	67	.	.
+sample6	chr1	4	A	T	blah;foo=bar	GT	1/1	.	blah'''
+        expected_df = dataframe(expected_string)
         tm.assert_frame_equal(expected_df, expanded_df)
         
     def test_change_order(self):

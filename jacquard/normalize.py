@@ -3,14 +3,18 @@ import glob
 import os
 import re
 
-from variant_callers import varscan, strelka, unknown
+# from variant_callers import varscan, strelka, unknown
+import variant_callers.varscan 
+import variant_callers.strelka
+import variant_callers.unknown
+
 import jacquard_utils as jacquard_utils
 
 
-def get_headers(file):
+def get_headers(in_file):
     meta_headers = []
     header = ""
-    fh = open(file, "r")
+    fh = open(in_file, "r")
     for line in fh:
         if line.startswith("##"):
             meta_headers.append(line)
@@ -142,7 +146,7 @@ def execute(args, execution_context):
     
     jacquard_utils.validate_directories(input_dir, output_dir)
 
-    callers = [strelka.Strelka(), varscan.Varscan(), unknown.Unknown()]
+    callers = [variant_callers.strelka.Strelka(), variant_callers.varscan.Varscan(), variant_callers.unknown.Unknown()]
     merge_and_sort(input_dir, output_dir, callers, execution_context)
     
         
