@@ -1,10 +1,8 @@
-#!/usr/bin/python2.7
 from collections import OrderedDict
 import os
 import unittest
 import subprocess
 import sys
-import testfixtures
 from testfixtures import TempDirectory
 from jacquard.jacquard_utils import validate_directories, write_output, sort_headers, sort_data, change_pos_to_int, combine_format_values
 
@@ -81,11 +79,6 @@ class SortTestCase(unittest.TestCase):
          line = change_pos_to_int(split_line)
          self.assertEqual([1,2352,"A","G","foo","DP",234], line)
          
-    def test_sort_changePosToInt(self):
-         split_line = ["chr1", "2352","A","G","foo","DP", "234"]
-         line = change_pos_to_int(split_line)
-         self.assertEqual([1,2352,"A","G","foo","DP",234], line)
-     
     def test_sort_sortData(self):
         variants = ["chr1\t2352\tA\tG\tfoo\tDP\t234","chr1\t235234\tA\tG\tfoo\tDP\t234","chr2\t2352\tA\tG\tfoo\tDP\t234","chr1\t2700\tA\tG\tfoo\tDP\t345","chr10\t2352\tA\tG\tfoo\tDP\t234","chr1\t2\tA\tG\tfoo\tDP\t234"]
         

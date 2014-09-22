@@ -1,12 +1,10 @@
-#!/usr/bin/python2.7
 from collections import defaultdict
 import glob
 import os
-from os import listdir
 import re
 
-import varscan, strelka, mutect, unknown
-import jacquard_utils
+from variant_callers import varscan, strelka, unknown
+import jacquard_utils as jacquard_utils
 
 
 def get_headers(file):

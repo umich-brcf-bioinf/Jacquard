@@ -4,14 +4,11 @@ import os
 from os import listdir
 from StringIO import StringIO
 import sys
-from stat import *
-import testfixtures
 from testfixtures import TempDirectory
 import unittest
-from tag import LineProcessor, FileProcessor, tag_files, determine_file_types, print_file_types
-import varscan, mutect, strelka, unknown
-from jacquard_utils import __version__
-import jacquard_utils
+from jacquard.tag import LineProcessor, FileProcessor, tag_files, determine_file_types, print_file_types
+from jacquard.variant_callers import varscan, mutect, unknown
+from jacquard.jacquard_utils import __version__
 
 
 class LineProcessorTestCase(unittest.TestCase):

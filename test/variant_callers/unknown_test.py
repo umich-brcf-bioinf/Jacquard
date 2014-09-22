@@ -1,15 +1,6 @@
-from collections import OrderedDict,defaultdict
-import glob
-import os
-from os import listdir
-from StringIO import StringIO
-import sys
-from stat import *
-import testfixtures
-from testfixtures import TempDirectory
 import unittest
 
-import unknown
+from jacquard.variant_callers import unknown
 
 class UnknownTestCase(unittest.TestCase):
     def test_validateInputFile_valid(self):

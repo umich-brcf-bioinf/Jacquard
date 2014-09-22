@@ -1,4 +1,3 @@
-#!/usr/bin/python2.7
 import argparse
 import numpy
 import os

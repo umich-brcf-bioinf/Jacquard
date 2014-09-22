@@ -1,4 +1,3 @@
-#!/usr/bin/python2.7
 from collections import defaultdict, OrderedDict
 import datetime
 import glob

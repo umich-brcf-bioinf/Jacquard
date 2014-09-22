@@ -1,16 +1,9 @@
 from collections import OrderedDict,defaultdict
-import glob
 import os
-from os import listdir
-from StringIO import StringIO
-import sys
-from stat import *
-import testfixtures
-from testfixtures import TempDirectory
 import unittest
 
-import varscan
-from jacquard_utils import __version__
+from jacquard.variant_callers import varscan
+from jacquard.jacquard_utils import __version__
 
 class VarScanTestCase(unittest.TestCase):
     def test_validateInputFile_valid(self):

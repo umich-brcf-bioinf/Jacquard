@@ -1,10 +1,9 @@
-#!/usr/bin/python2.7
 from collections import OrderedDict, defaultdict
 import glob
 import os
 import shutil
 
-import varscan, strelka, mutect, unknown
+from variant_callers import varscan, strelka, mutect, unknown
 import jacquard_utils
 
 

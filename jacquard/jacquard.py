@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 ##   Copyright 2014 Bioinformatics Core, University of Michigan
 ##
 ##   Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,11 +15,11 @@
 
 import argparse
 import os
-import sys 
+import sys
 
 import pivot_variants
 import rollup_genes
-import tag 
+import tag
 import normalize
 import filter_hc_somatic
 import merge
@@ -28,28 +28,51 @@ import expand
 import style
 import jacquard_utils
 
-def main(modules, arguments):
+def main():
+    dispatch([normalize,
+              tag,
+              filter_hc_somatic,
+              merge,
+              consensus,
+              expand,
+              style,
+              rollup_genes,
+              pivot_variants], sys.argv[1:])
+
+def version_text():
+    callers = jacquard_utils.caller_versions.items()
+    caller_versions = [key + " " + value for key, value in callers]
+    caller_version_string = "\n\t".join(caller_versions)
+    return "Jacquard v{0}\nSupported variant callers:\n\t{1}".\
+        format(jacquard_utils.__version__, caller_version_string)
+
+# pylint: disable=C0301
+def dispatch(modules, arguments):
     parser = argparse.ArgumentParser(
-    formatter_class=argparse.RawDescriptionHelpFormatter, 
-    description='''type 'Jacquard -h <subcommand>' for help on a specific subcommand''', 
-    epilog="authors: Jessica Bene, Chris Gates 07/2014")
-    parser.add_argument("-v", "--version", action='version', version="Jacquard v{0}\nSupported variant callers:\n\t{1}".format(jacquard_utils.__version__, "\n\t".join([key + " " + value for key, value in jacquard_utils.caller_versions.items()])))
-    subparsers = parser.add_subparsers(title="subcommands", dest="subparser_name")
-    
+        usage="jacquard",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description='''type 'Jacquard -h <subcommand>' for help on a specific subcommand''',
+        epilog="authors: Jessica Bene, Chris Gates 07/2014")
+    parser.add_argument(\
+                        "-v",
+                        "--version",
+                        action='version',
+                        version=version_text())
+    subparsers = parser.add_subparsers(title="subcommands",
+                                       dest="subparser_name")
+
     module_dispatch = {}
     for module in modules:
         module.add_subparser(subparsers)
         module_dispatch[module.__name__] = module
 
-    execution_context = [
-                         "##jacquard.version={0}".format(jacquard_utils.__version__), 
-                         "##jacquard.command={0}".format(" ".join(arguments)), 
-                         "##jacquard.cwd={0}".format(os.path.dirname(os.getcwd()))]
+    execution_context = [\
+        "##jacquard.version={0}".format(jacquard_utils.__version__),
+        "##jacquard.command={0}".format(" ".join(arguments)),
+        "##jacquard.cwd={0}".format(os.path.dirname(os.getcwd()))]
 
     args = parser.parse_args(arguments)
     module_dispatch[args.subparser_name].execute(args, execution_context)
 
-
-if __name__ == "__main__":
-    main([normalize, tag, filter_hc_somatic, merge, consensus, expand, style, rollup_genes, pivot_variants], sys.argv[1:])
-    
+if __name__ == '__main__':
+    main()

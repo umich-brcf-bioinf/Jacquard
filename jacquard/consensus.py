@@ -1,4 +1,3 @@
-#!/usr/bin/python2.7
 import argparse
 from collections import defaultdict, OrderedDict
 import numpy

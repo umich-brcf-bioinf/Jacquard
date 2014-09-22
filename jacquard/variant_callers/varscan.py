@@ -1,10 +1,7 @@
-#!/usr/bin/python2.7
 from collections import defaultdict
-import glob
 import os
-from os import listdir
 import re
-import jacquard_utils
+import jacquard.jacquard_utils as jacquard_utils
 
 class Varscan():
     def __init__(self):

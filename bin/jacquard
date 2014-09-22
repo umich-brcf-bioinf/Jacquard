@@ -12,6 +12,10 @@
 ##   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ##   See the License for the specific language governing permissions and
 ##   limitations under the License.
-PYTHONPATH=${PYTHONPATH}:../jacquard:../jacquard/variant_callers
-python `dirname $0`/../jacquard/jacquard.py $@
+RELATIVE_HOME=`dirname $0`/..
+JACQUARD_HOME=`python <(echo "import os,sys; print os.path.realpath('$RELATIVE_HOME')")`
+PYTHONPATH=${PYTHONPATH}:$JACQUARD_HOME
+cd $JACQUARD_HOME
+echo $PATH
+python -m jacquard $@
 

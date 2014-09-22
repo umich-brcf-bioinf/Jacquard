@@ -1,9 +1,5 @@
-from collections import defaultdict
-import glob
-import os
-from os import listdir
-import re
-import jacquard_utils
+import jacquard.jacquard_utils as jacquard_utils
+
 
 class Mutect():
     def __init__(self):

@@ -1,15 +1,8 @@
-from collections import defaultdict
 import os
 import unittest
-import subprocess
-import sys
-import testfixtures
 from testfixtures import TempDirectory
 from jacquard.normalize import identify_merge_candidates, get_headers, merge_data, validate_split_line
-import varscan, mutect, strelka, unknown
-from jacquard_utils import __version__
-import jacquard_utils
-
+from jacquard.variant_callers import varscan, strelka
     
 class IdentifyMergeCandidatesTestCase(unittest.TestCase):
     def test_indentifyMergeCandidates_Strelka(self):
