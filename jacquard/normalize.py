@@ -2,10 +2,12 @@ from collections import defaultdict
 import glob
 import os
 import re
+import shutil
 
 # from variant_callers import varscan, strelka, unknown
 import variant_callers.varscan 
 import variant_callers.strelka
+import variant_callers.mutect
 import variant_callers.unknown
 
 import jacquard_utils as jacquard_utils
@@ -124,16 +126,26 @@ def merge_and_sort(input_dir, output_dir, callers, execution_context=[]):
         print "ERROR: It appears that input directory contains files called with different variant callers. Input directory should only have files for one caller. Review input and try again."
         exit(1)
 
-    merge_candidates, hc_candidates = identify_merge_candidates(in_files, output_dir, caller)
-
-    total_files = 0
-    for key, vals in merge_candidates.items():
-        total_files += len(vals)
-    print "Processing [{0}] samples from [{1}] files in [{2}]".format(len(merge_candidates.keys()), total_files, input_dir)
+    if caller.name == "MuTect":
+        count = 0
+        for in_file_name in in_files:
+            fname, extension = os.path.splitext(in_file_name)
+            if extension == ".vcf":
+                shutil.copy(in_file_name, output_dir)
+                count += 1
+        print "Copied [{0}] VCF files from [{1}] to [{2}]".format(count, input_dir, output_dir)
+        
+    else:
+        merge_candidates, hc_candidates = identify_merge_candidates(in_files, output_dir, caller)
     
-    merge(merge_candidates, output_dir, caller)
-    
-    caller.final_steps(hc_candidates, merge_candidates, output_dir)
+        total_files = 0
+        for key, vals in merge_candidates.items():
+            total_files += len(vals)
+        print "Processing [{0}] samples from [{1}] files in [{2}]".format(len(merge_candidates.keys()), total_files, input_dir)
+        
+        merge(merge_candidates, output_dir, caller)
+        
+        caller.final_steps(hc_candidates, merge_candidates, output_dir)
         
 def add_subparser(subparser):
     parser_normalize_vs = subparser.add_parser("normalize", help="Accepts a directory containing VarScan VCF snp/indel results or Strelka VCF snvs/indels results and creates a new directory of merged, sorted VCFs with added high confidence tags")
@@ -146,7 +158,7 @@ def execute(args, execution_context):
     
     jacquard_utils.validate_directories(input_dir, output_dir)
 
-    callers = [variant_callers.strelka.Strelka(), variant_callers.varscan.Varscan(), variant_callers.unknown.Unknown()]
+    callers = [variant_callers.strelka.Strelka(), variant_callers.varscan.Varscan(), variant_callers.mutect.Mutect(), variant_callers.unknown.Unknown()]
     merge_and_sort(input_dir, output_dir, callers, execution_context)
     
         
