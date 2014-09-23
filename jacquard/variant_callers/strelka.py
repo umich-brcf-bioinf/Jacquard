@@ -1,38 +1,10 @@
 import jacquard.jacquard_utils as jacquard_utils
 
-class Strelka(object):
-    def __init__(self):
-        self.name = "Strelka"
-        self.meta_header = "##jacquard.normalize_strelka.sources={0},{1}\n"
-        self.file_name_search = "snvs|indels"
-
-    def validate_input_file(self, input_file):
-        valid = 0
-        for line in input_file:
-            if line.startswith("##source=strelka"):
-                valid = 1
-            elif line.startswith("##"):
-                continue
-            else:
-                break
-        return (self.name, valid)
-
-    def final_steps(self, hc_candidates, merge_candidates, output_dir):
-        print "Wrote [{0}] VCF files to [{1}]". \
-            format(len(merge_candidates.keys()), output_dir)
-        return merge_candidates
-
-    def handle_hc_files(self, in_file, out_dir, hc_candidates):
-        return hc_candidates
-
-    def validate_file_set(self, all_keys):
-        pass
-
 class AlleleFreqTag(object):
     def __init__(self):
         self.metaheader = '##FORMAT=<ID={0}SK,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_af_tag, jacquard_utils.__version__)
 
-    def format(self, alt, filter, info, format_dict, count):
+    def format(self, alt, filter_field, info, format_dict, count):
         afs = []
         if alt == ".":
             afs = ["."]
@@ -94,13 +66,41 @@ class SomaticTag(object):
     def format(self, alt, filter_field, info, format_dict, count):
         strelka_tag = jacquard_utils.jq_somatic_tag + "SK"
         if filter_field == "PASS":
-            format_dict[strelka_tag] = somatic_status(count)
+            format_dict[strelka_tag] = self.somatic_status(count)
         else:
             format_dict[strelka_tag] = "0"
         return format_dict
 
-def somatic_status(count):
-    if count == 0: #it's NORMAL
-        return "0"
-    else: #it's TUMOR
-        return "1"
+    def somatic_status(self,count):
+        if count == 0: #it's NORMAL
+            return "0"
+        else: #it's TUMOR
+            return "1"
+
+class Strelka(object):
+    def __init__(self):
+        self.name = "Strelka"
+        self.meta_header = "##jacquard.normalize_strelka.sources={0},{1}\n"
+        self.file_name_search = "snvs|indels"
+
+    def validate_input_file(self, input_file):
+        valid = 0
+        for line in input_file:
+            if line.startswith("##source=strelka"):
+                valid = 1
+            elif line.startswith("##"):
+                continue
+            else:
+                break
+        return (self.name, valid)
+
+    def final_steps(self, hc_candidates, merge_candidates, output_dir):
+        print "Wrote [{0}] VCF files to [{1}]". \
+            format(len(merge_candidates.keys()), output_dir)
+        return merge_candidates
+
+    def handle_hc_files(self, in_file, out_dir, hc_candidates):
+        return hc_candidates
+
+    def validate_file_set(self, all_keys):
+        pass

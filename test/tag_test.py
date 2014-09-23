@@ -217,27 +217,21 @@ class TagVarScanTestCase(unittest.TestCase):
             output_dir.cleanup()
             
     def test_tagVarScanFilestest_tagMutectFiles_inputDirectoryNoVCFs(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/reference_files/tag_varscan_test/noVCFs"
-
-        output_dir = script_dir + "/reference_files/tag_varscan_test/output"
-        os.mkdir(output_dir)
-        with self.assertRaises(SystemExit) as cm:
-
-            tag_files(input_dir, output_dir, [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()])
-        
-        self.assertEqual(cm.exception.code, 1)
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            with self.assertRaises(SystemExit) as cm:
+    
+                tag_files(input_dir.path, output_dir.path, [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()])
+            
+            self.assertEqual(cm.exception.code, 1)
         
     def test_tagVarScanFiles_noHeaders(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/reference_files/test_input/unknownCaller"
-        output_dir = script_dir + "/reference_files/invalid_output"
-        os.mkdir(output_dir)
-        with self.assertRaises(SystemExit) as cm:
-
-            tag_files(input_dir, output_dir, [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()])
-
-        self.assertEqual(cm.exception.code, 1)
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("A.vcf","CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SAMPLE1|SAMPLE2\n".replace('|',"\t"))
+            with self.assertRaises(SystemExit) as cm:
+    
+                tag_files(input_dir.path, output_dir.path, [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()])
+    
+            self.assertEqual(cm.exception.code, 1)
 
 class  DetermineFileTypesTestCase(unittest.TestCase):
     def setUp(self):
@@ -311,7 +305,7 @@ class MockLowerTag():
     def __init__(self, metaheader=""):
         self.metaheader = metaheader
 
-    def format(self, alt, filter, info, format_dict, count):
+    def format(self, alt, filter_field, info, format_dict, count):
         str_keys = ",".join(format_dict.keys())
         new_keys = str_keys.lower()
         
@@ -328,7 +322,7 @@ class MockAddTag():
         self.tag= tag
         self.value = value
 
-    def format(self, alt, filter, info, format_dict, count):
+    def format(self, alt, filter_field, info, format_dict, count):
         new_keys = format_dict.keys()
         new_keys.append(self.tag)
         new_vals = format_dict.values()

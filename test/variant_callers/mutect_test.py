@@ -1,12 +1,4 @@
-from collections import OrderedDict,defaultdict
-import glob
-import os
-from os import listdir
-from StringIO import StringIO
-import sys
-from stat import *
-import testfixtures
-from testfixtures import TempDirectory
+from collections import OrderedDict
 import unittest
 
 import jacquard.variant_callers.mutect as mutect
