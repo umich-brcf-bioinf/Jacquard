@@ -34,7 +34,10 @@ class VariantPivoter():
         
     def transform(self, df, fname):
         expanded_df = expand_format(df, self._pivot_values, self._rows, fname)
+
         df, self._pivot_values = project_prepivot(expanded_df, self._pivot_values, self._rows, self._cols)
+#         print df
+             
         return df
 
     def pivot(self):
@@ -77,7 +80,6 @@ class VariantPivoter():
         return sorted_df
                 
     def is_compatible(self, initial_df, fname=""):   
-#         unpivoted_df = self._transform(initial_df, fname)
         unpivoted_df = self.transform(initial_df, fname)
 
         self._check_required_columns_present(unpivoted_df)
@@ -144,15 +146,15 @@ def create_initial_df(input_file, header_index):
 
     return initial_df
 
-def build_pivoter(input_file, input_keys, pivot_values, header_index):
+def build_pivoter(input_file, input_keys, pivot_values, header_index, fname):
     initial_df  = create_initial_df(input_file, header_index)
-
+    
     if "SnpEff_WARNING/ERROR" in initial_df.columns.values or "WARNING/ERROR" in initial_df.columns.values:
         initial_df.rename(columns={"WARNING/ERROR": "SnpEff_WARNING/ERROR"}, inplace=True)
         initial_df = _exclude_errors_and_warnings(initial_df)
-    
+        
     pivoter = VariantPivoter(input_keys, ["SAMPLE_NAME"], pivot_values)
-    unpivoted_df = pivoter.is_compatible(initial_df)
+    unpivoted_df = pivoter.is_compatible(initial_df, fname)
     pivoter._combined_df = unpivoted_df
 
     return pivoter
@@ -221,20 +223,17 @@ def expand_format(df, formats_to_expand, rows, fname):
 
     df["aggregate_format_sample"] = df["FORMAT"] + "=" + df['SAMPLE_DATA']
     df["aggregate_format_sample"] = df["aggregate_format_sample"].map(combine_format_values)
-
+    df["aggregate_format_sample"].to_pickle("aggregate.pickle")
+    
     s = df["aggregate_format_sample"].apply(pd.Series, 1).stack()
     s.index = s.index.droplevel(-1)
     s.name = "format_sample"
 
-#     s.to_pickle("s.pickle")
-#     unpivoted_format_value_df = s.apply(lambda x: pd.Series(x))
-#     unpivoted_format_value_df.columns = ["FORMAT2", "VALUE2"]
-#     unpivoted_format_value_df.to_pickle("df.pickle")
     original_index = s.index
     
     format2=pd.Series([key for key, val  in s])
     value2=pd.Series([val for key, val  in s])
-    
+    value2.to_pickle("value.pickle")
     format2.index = original_index
     value2.index = original_index
     
@@ -248,14 +247,23 @@ def expand_format(df, formats_to_expand, rows, fname):
         
     if "SnpEff_WARNING/ERROR" in joined_df.columns and "SnpEff_WARNING/ERROR" not in rows:
         joined_df.rename(columns={"SnpEff_WARNING/ERROR": "WARNING/ERROR"}, inplace=True)
-
+    
     try:
         pivoted_df = pd.pivot_table(joined_df, rows=rows+["SAMPLE_NAME"], cols="FORMAT2", values="VALUE2", aggfunc=lambda x: x)
     except Exception as e :
         raise PivotError("Cannot pivot data. {0}".format(e))
 
-
     pivoted_df.reset_index(inplace=True)
+    pivoted_df.fillna(".", inplace=True)
+   
+#     print pivoted_df
+        
+    new_df = pivoted_df.applymap(lambda x: type(x))
+    
+    print new_df
+#     print "writing to csv file:"
+#     new_df.to_csv("foo.vcf", index=False, sep="\t")
+#     exit(1)
 
     return pivoted_df
 
@@ -347,14 +355,22 @@ def process_files(input_file, output_path, input_keys, format_tags, info_tags, h
     raise_err, message = validate_parameters(input_keys, meta_headers, header_names, format_tags)  
     if raise_err == 1:
         raise PivotError(message)
-        
-    pivoter  = pivot_builder(input_file, input_keys, format_tags, headers[0])
+   
+    fname, extension = os.path.splitext(os.path.basename(input_file))
+    
+    pivoter  = pivot_builder(input_file, input_keys, format_tags, headers[0], fname)
     pivoter.add_file(input_file, headers[0])
     pivoter.validate_annotations()
 
     pivoted_df = pivoter.pivot()
     pivoted_df = pivoted_df.fillna("")
-
+    
+#     print "pickling"
+#     pivoted_df.to_pickle("df.pickle")
+#     print pivoted_df
+#     exit(1)
+#     print "should have exited...."
+    
     joined_df = pivoter.join_dataframes(pivoted_df)
     insert_links(joined_df)
 

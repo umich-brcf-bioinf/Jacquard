@@ -269,7 +269,7 @@ class PivotTestCase(unittest.TestCase):
         input_keys = ['CHROM', 'POS']
         pivot_values = ["GT"]
 
-        self.assertRaises(PivotError, build_pivoter, StringIO(input_string), input_keys, pivot_values, 0)
+        self.assertRaises(PivotError, build_pivoter, StringIO(input_string), input_keys, pivot_values, 0, "foo")
 
     ##create_initial_df
     def test_create_initial_df(self):

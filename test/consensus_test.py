@@ -67,7 +67,7 @@ class ConsensusTestCase(unittest.TestCase):
     def test_calculateConsensus_multipleCallers(self):
         combined_dict = OrderedDict([("DP", "34"), ("JQ_HC_SOM_VS", "1"), ("JQ_HC_SOM_MT", "1"), ("JQ_HC_SOM_FOO", "1"), ("JQ_AF_VS", "0.5"), ("JQ_AF_MT", "0.43"), ("JQ_DP_MT", "32"), ("JQ_DP_VS", "23")])
         actual_dict, af, dp = calculate_consensus(combined_dict, [], [])
-        expected_dict = OrderedDict([("DP", "34"), ("JQ_HC_SOM_VS", "1"), ("JQ_HC_SOM_MT", "1"), ("JQ_HC_SOM_FOO", "1"), ("JQ_AF_VS", "0.5"), ("JQ_AF_MT", "0.43"), ("JQ_DP_MT", "32"), ("JQ_DP_VS", "23"), ("JQ_AF_AVERAGE", "0"), ("JQ_AF_AVERAGE", "0.465"), ("JQ_SOM_SUM", "3"), ("JQ_DP_AVERAGE", "27.5"), ('JQ_AF_RANGE', '0.07'), ('JQ_DP_RANGE', '9.0')])
+        expected_dict = OrderedDict([("DP", "34"), ("JQ_HC_SOM_VS", "1"), ("JQ_HC_SOM_MT", "1"), ("JQ_HC_SOM_FOO", "1"), ("JQ_AF_VS", "0.5"), ("JQ_AF_MT", "0.43"), ("JQ_DP_MT", "32"), ("JQ_DP_VS", "23"), ("JQ_AF_AVERAGE", "0"), ("JQ_AF_AVERAGE", "0.47"), ("JQ_SOM_SUM", "3"), ("JQ_DP_AVERAGE", "27.5"), ('JQ_AF_RANGE', '0.07'), ('JQ_DP_RANGE', '9.0')])
         self.assertEquals(expected_dict, actual_dict)
         self.assertEquals([0.07], af)
         self.assertEquals([9.0], dp)

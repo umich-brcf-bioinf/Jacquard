@@ -102,7 +102,8 @@ def get_consensus(consensus_tags, consensus_dict):
         average = []
         for key in consensus_dict.keys():
             avg = float(consensus_dict[key])/len(consensus_tags)
-            average.append(str(avg))
+            rounded_avg = roundTwoDigits([str(avg)])
+            average.append(str(rounded_avg))
         consensus = ",".join(average)
     else:
         consensus = 0
