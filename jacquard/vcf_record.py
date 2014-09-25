@@ -7,9 +7,14 @@ class VcfRecord(object):
         self.chrom,self.pos,self.id,self.ref,self.alt,self.qual,self.filter,self.info,self.format = vcf_fields[0:9]
         self.samples = vcf_fields[9:]
         tags = self.format.split(":")
-        self.format_set = set(tags)
+        self.format_set = tags
         self.sample_dict = {}
         for i,sample in enumerate(self.samples):
             values = sample.split(":")
             self.sample_dict[i] = OrderedDict(zip(tags,values))
-                        
+    
+    def asText(self):
+        stringifier = [":".join(self.format_set)]
+        for key in self.sample_dict:
+            stringifier.append(":".join(self.sample_dict[key].values()))
+        return "\t".join(stringifier) + "\n"

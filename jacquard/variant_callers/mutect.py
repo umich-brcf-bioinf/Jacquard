@@ -1,16 +1,14 @@
 import jacquard.jacquard_utils as jacquard_utils
-from jacquard.vcf_record import VcfRecord 
 
 class AlleleFreqTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID={0}MT,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_af_tag, jacquard_utils.__version__)
 
-    def format(self, alt, filter_field, info, format_dict, count):
-        if "FA" in format_dict.keys():
-            freq = format_dict["FA"].split(",")
-            format_dict["JQ_AF_MT"] = self.roundTwoDigits(freq)
-            
-        return format_dict
+    def format(self, vcfRecord):
+        if "FA" in vcfRecord.format_set:
+            for key in vcfRecord.sample_dict.keys():
+                freq = vcfRecord.sample_dict[key]["FA"].split(",")
+                vcfRecord.sample_dict[key]["JQ_AF_MT"] = self.roundTwoDigits(freq)
 
     def roundTwoDigits(self, value): 
         new_values = []
@@ -25,23 +23,24 @@ class DepthTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID={0}MT,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_dp_tag, jacquard_utils.__version__)
 
-    def format(self, alt, filter_field, info, format_dict, count):
-        if "DP" in format_dict.keys():
-            format_dict["JQ_DP_MT"] = format_dict["DP"]
-            
-        return format_dict
+    def format(self, vcfRecord):
+        if "DP" in vcfRecord.format_set:
+            for key in vcfRecord.sample_dict.keys():
+                vcfRecord.sample_dict[key]["JQ_DP_MT"] = vcfRecord.sample_dict[key]["DP"]
     
 class SomaticTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID={0}MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_somatic_tag, jacquard_utils.__version__)
-
-    def format(self, alt, filter_field, info, format_dict, count):
+        self.good = True
+        
+    def format(self, vcfRecord):
         mutect_tag = jacquard_utils.jq_somatic_tag + "MT"
-        if "SS" in format_dict.keys():
-            format_dict[mutect_tag] = self.somatic_status(format_dict["SS"])
+        if "SS" in vcfRecord.format_set:
+            for key in vcfRecord.sample_dict.keys():
+                vcfRecord.sample_dict[key][mutect_tag] = self.somatic_status(vcfRecord.sample_dict[key]["SS"])
         else:
-            format_dict[mutect_tag] = "0"
-        return format_dict
+            for key in vcfRecord.sample_dict.keys():
+                vcfRecord.sample_dict[key][mutect_tag] = "0"        
 
     def somatic_status(self, ss_value):
         if ss_value == "2":
@@ -52,6 +51,7 @@ class SomaticTag():
 class Mutect():
     def __init__(self):
         self.name = "MuTect"
+        self.tags = [AlleleFreqTag(),DepthTag(),SomaticTag()]
         
     def validate_input_file(self, input_file):
         valid = 0
@@ -62,4 +62,18 @@ class Mutect():
                 continue
             else:
                 break
-        return (self.name, valid)
+        return (valid)
+     
+    def validate_record(self,vcfRecord):
+            return True
+           
+    def add_tags(self,vcfRecord):
+        for tag in self.tags:
+            tag.format(vcfRecord)
+        return vcfRecord.asText()
+    
+    def update_metaheader(self,metaheader):
+        for tag in self.tags:
+            metaheader += tag.metaheader
+        return metaheader    
+    

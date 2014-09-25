@@ -6,7 +6,7 @@ from StringIO import StringIO
 import sys
 from testfixtures import TempDirectory
 import unittest
-from jacquard.tag import LineProcessor, FileProcessor, tag_files, determine_file_types, print_file_types
+from jacquard.tag import tag_files
 from jacquard.variant_callers import varscan, mutect, unknown
 from jacquard.jacquard_utils import __version__
 
