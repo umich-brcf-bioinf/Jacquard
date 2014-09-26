@@ -28,38 +28,39 @@ def dataframe(input_data, sep="\t", index_col=None):
 
 class MergeTestCase(unittest.TestCase):
     def test_addFiles(self):
-        rows = ['COORDINATE']
+        rows = ["CHROM", "POS", "REF", "ALT"]
 
         pivoter = VariantPivoter(rows)
         sample_A_file = \
-'''COORDINATE\tINFO\tFORMAT\tSamp1
-1\tfoo\tDP:ESAF\t1:0.2
-2\tfoo\tDP:ESAF\t12:0.2
-3\tfoo\tDP:ESAF\t31:0.2
-4\tfoo\tDP:ESAF\t6:0.2'''
+'''CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tSamp1
+1\t23\tA\tT\tfoo\tDP:ESAF\t1:0.2
+2\t24\tA\tT\tfoo\tDP:ESAF\t12:0.2
+3\t25\tA\tT\tfoo\tDP:ESAF\t31:0.2
+4\t26\tA\tT\tfoo\tDP:ESAF\t6:0.2'''
         sample_B_file = \
-'''COORDINATE\tINFO\tFORMAT\tSamp2
-1\tfoo\tDP:ESAF\t5:0.2
-2\tfoo\tDP:ESAF\t2:0.2
-3\tfoo\tDP:ESAF\t74:0.2
-4\tfoo\tDP:ESAF\t25:0.2'''
+'''CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tSamp2
+1\t23\tA\tT\tfoo\tDP:ESAF\t5:0.2
+2\t24\tA\tT\tfoo\tDP:ESAF\t2:0.2
+3\t25\tA\tT\tfoo\tDP:ESAF\t74:0.2
+4\t26\tA\tT\tfoo\tDP:ESAF\t25:0.2'''
     
         pivoter.add_file(StringIO(sample_A_file), 0, "MuTect", {}, "file1")
         pivoter.add_file(StringIO(sample_B_file), 0, "MuTect", {}, "file2")
         
         actual_df = pivoter._combined_df
         actual_df.columns.names = [""]
+        print actual_df
         expected_string = \
-'''COORDINATE\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|Samp1\tMuTect|file2|FORMAT\tMuTect|file2|Samp2
-1\tfoo\tDP:ESAF\t1:0.2\tDP:ESAF\t5:0.2
-2\tfoo\tDP:ESAF\t12:0.2\tDP:ESAF\t2:0.2
-3\tfoo\tDP:ESAF\t31:0.2\tDP:ESAF\t74:0.2
-4\tfoo\tDP:ESAF\t6:0.2\tDP:ESAF\t25:0.2'''
+'''CHROM\tPOS\tREF\tALT\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|Samp1\tMuTect|file2|FORMAT\tMuTect|file2|Samp2
+1\t23\tA\tT\tfoo\tDP:ESAF\t1:0.2\tDP:ESAF\t5:0.2
+2\t24\tA\tT\tfoo\tDP:ESAF\t12:0.2\tDP:ESAF\t2:0.2
+3\t25\tA\tT\tfoo\tDP:ESAF\t31:0.2\tDP:ESAF\t74:0.2
+4\t26\tA\tT\tfoo\tDP:ESAF\t6:0.2\tDP:ESAF\t25:0.2'''
         expected_df = dataframe(expected_string)
         expected_df.columns.names = [""]
 
         tm.assert_frame_equal(expected_df, actual_df)
-        
+         
     def test_validateSampleCallerVcfs(self):
         dataString1 = \
 '''COORDINATE\tVarScan|foo|FORMAT\tVarScan|sample_A\tVarScan|sample_B\tMuTect|foo|FORMAT\tMuTect|foo|sample_A\tMuTect|foo|sample_A
@@ -230,52 +231,117 @@ class PivotTestCase(unittest.TestCase):
 
     def test_mergeSamples_emptyCombinedDf(self): 
         dataString = \
-'''COORDINATE\tFORMAT\tsample_A\tsample_B
-1\tGT:ESAF\t10:0.2\t100:0.2
-2\tGT:ESAF\t20:0.2\t200:0.2
-3\tGT:ESAF\t30:0.2\t300:0.2
-4\tGT:ESAF\t40:0.2\t400:0.2'''
+'''CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tsample_A\tsample_B
+1\t23\tA\tG\tfoo\tGT:ESAF\t10:0.2\t100:0.2
+2\t24\tA\tG\tfoo\tGT:ESAF\t20:0.2\t200:0.2
+3\t25\tA\tG\tfoo\tGT:ESAF\t30:0.2\t300:0.2
+4\t26\tA\tG\tfoo\tGT:ESAF\t40:0.2\t400:0.2'''
         df = pd.read_csv(StringIO(dataString), sep="\t", header=False, dtype='str')
 
         combined_df = pd.DataFrame()
-        actual_df = merge_samples(df, combined_df, ["COORDINATE"])
+        actual_df = merge_samples(df, combined_df, ["CHROM", "POS", "REF", "ALT"], {})
 
         expected_data = StringIO(
-'''COORDINATE\tFORMAT\tsample_A\tsample_B
-1\tGT:ESAF\t10:0.2\t100:0.2
-2\tGT:ESAF\t20:0.2\t200:0.2
-3\tGT:ESAF\t30:0.2\t300:0.2
-4\tGT:ESAF\t40:0.2\t400:0.2''')
+'''CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tsample_A\tsample_B
+1\t23\tA\tG\tfoo\tGT:ESAF\t10:0.2\t100:0.2
+2\t24\tA\tG\tfoo\tGT:ESAF\t20:0.2\t200:0.2
+3\t25\tA\tG\tfoo\tGT:ESAF\t30:0.2\t300:0.2
+4\t26\tA\tG\tfoo\tGT:ESAF\t40:0.2\t400:0.2''')
         expected_df = pd.read_csv(expected_data, sep="\t", header=False, dtype='str')
         
         tm.assert_frame_equal(expected_df, actual_df)
     
+    def test_mergeSamples_setMultAlt(self):
+        dataString1 = \
+'''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A
+1\t12\tA\tG\tMult_Alt\tGT:ESAF\t10:0.2'''
+        dataString2 = \
+'''CHROM\tPOS\tREF\tALT\tINFO\tfile2|FORMAT\tfile2|sample_B
+1\t12\tA\tT\t.\tGT:ESAF\t100:0.2'''
+        df1 = pd.read_csv(StringIO(dataString1), sep="\t", header=False, dtype='str')
+        df2 = pd.read_csv(StringIO(dataString2), sep="\t", header=False, dtype='str')
+        
+        combined_df = df2
+        
+        actual_df = merge_samples(combined_df, df1, ["CHROM", "POS", "REF", "ALT"], {"1_12_A":["G"]})
+        expected = \
+        '''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile2|FORMAT\tfile2|sample_B
+1\t12\tA\tG\tMult_Alt\tGT:ESAF\t10:0.2\tnan\tnan
+1\t12\tA\tT\tMult_Alt\tnan\tnan\tGT:ESAF\t100:0.2'''
+        expected_df = pd.read_csv(StringIO(expected), sep="\t", header=False, dtype='str')
+        
+        tm.assert_frame_equal(expected_df, actual_df)
+        
+        dataString1 = \
+'''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A
+1\t12\tA\tG\t.\tGT:ESAF\t10:0.2'''
+        dataString2 = \
+'''CHROM\tPOS\tREF\tALT\tINFO\tfile2|FORMAT\tfile2|sample_B
+1\t12\tA\tT\t.\tGT:ESAF\t100:0.2'''
+        df1 = pd.read_csv(StringIO(dataString1), sep="\t", header=False, dtype='str')
+        df2 = pd.read_csv(StringIO(dataString2), sep="\t", header=False, dtype='str')
+        
+        combined_df = df2
+        
+        actual_df = merge_samples(combined_df, df1, ["CHROM", "POS", "REF", "ALT"], {"1_12_A":["G"]})
+        expected = \
+        '''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile2|FORMAT\tfile2|sample_B
+1\t12\tA\tG\tMult_Alt\tGT:ESAF\t10:0.2\tnan\tnan
+1\t12\tA\tT\tMult_Alt\tnan\tnan\tGT:ESAF\t100:0.2'''
+        expected_df = pd.read_csv(StringIO(expected), sep="\t", header=False, dtype='str')
+        
+        print actual_df
+        
+        print expected_df
+        
+        tm.assert_frame_equal(expected_df, actual_df)
+        
+    def test_mergeSamples_dontSetMultAlt(self):
+        dataString1 = \
+'''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A
+1\t12\tA\tG\t.\tGT:ESAF\t10:0.2'''
+        dataString2 = \
+'''CHROM\tPOS\tREF\tALT\tINFO\tfile2|FORMAT\tfile2|sample_B
+1\t12\tA\tG\t.\tGT:ESAF\t100:0.2'''
+        df1 = pd.read_csv(StringIO(dataString1), sep="\t", header=False, dtype='str')
+        df2 = pd.read_csv(StringIO(dataString2), sep="\t", header=False, dtype='str')
+        
+        combined_df = df2
+        
+        actual_df = merge_samples(combined_df, df1, ["CHROM", "POS", "REF", "ALT"], {"1_12_A":["G"]})
+        expected = \
+        '''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile2|FORMAT\tfile2|sample_B
+1\t12\tA\tG\t.\tGT:ESAF\t10:0.2\tGT:ESAF\t100:0.2'''
+        expected_df = pd.read_csv(StringIO(expected), sep="\t", header=False, dtype='str')
+        
+        tm.assert_frame_equal(expected_df, actual_df)
+        
     def test_mergeSamples_populatedCombinedDf(self): 
         dataString1 = \
-'''COORDINATE\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B
-1\tfoo\tGT:ESAF\t10:0.2\t100:0.2
-2\tfoo\tGT:ESAF\t20:0.2\t200:0.2
-3\tfoo\tGT:ESAF\t30:0.2\t300:0.2
-4\tfoo\tGT:ESAF\t40:0.2\t400:0.2'''
+'''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B
+1\t12\tA\tG\tfoo\tGT:ESAF\t10:0.2\t100:0.2
+2\t13\tA\tG\tfoo\tGT:ESAF\t20:0.2\t200:0.2
+3\t14\tA\tG\tfoo\tGT:ESAF\t30:0.2\t300:0.2
+4\t15\tA\tG\tfoo\tGT:ESAF\t40:0.2\t400:0.2'''
         df1 = pd.read_csv(StringIO(dataString1), sep="\t", header=False, dtype='str')
         
         dataString2 = \
-'''COORDINATE\tINFO\tfile2|FORMAT\tfile2|sample_C\tfile2|sample_D
-1\tfoo\tGT:ESAF\t10:0.2\t100:0.2
-2\tfoo\tGT:ESAF\t20:0.2\t200:0.2
-3\tfoo\tGT:ESAF\t30:0.2\t300:0.2
-4\tfoo\tGT:ESAF\t40:0.2\t400:0.2'''
+'''CHROM\tPOS\tREF\tALT\tINFO\tfile2|FORMAT\tfile2|sample_C\tfile2|sample_D
+1\t12\tA\tG\tfoo\tGT:ESAF\t10:0.2\t100:0.2
+2\t13\tA\tG\tfoo\tGT:ESAF\t20:0.2\t200:0.2
+3\t14\tA\tG\tfoo\tGT:ESAF\t30:0.2\t300:0.2
+4\t15\tA\tG\tfoo\tGT:ESAF\t40:0.2\t400:0.2'''
         df2 = pd.read_csv(StringIO(dataString2), sep="\t", header=False, dtype='str')
 
         combined_df = df2
-        actual_df = merge_samples(combined_df, df1, ["COORDINATE"])
+        actual_df = merge_samples(combined_df, df1, ["CHROM", "POS", "REF", "ALT"], {})
 
         expected_data = StringIO(
-'''COORDINATE\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|FORMAT\tfile2|sample_C\tfile2|sample_D
-1\tfoo\tGT:ESAF\t10:0.2\t100:0.2\tGT:ESAF\t10:0.2\t100:0.2
-2\tfoo\tGT:ESAF\t20:0.2\t200:0.2\tGT:ESAF\t20:0.2\t200:0.2
-3\tfoo\tGT:ESAF\t30:0.2\t300:0.2\tGT:ESAF\t30:0.2\t300:0.2
-4\tfoo\tGT:ESAF\t40:0.2\t400:0.2\tGT:ESAF\t40:0.2\t400:0.2''')
+'''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|FORMAT\tfile2|sample_C\tfile2|sample_D
+1\t12\tA\tG\tfoo\tGT:ESAF\t10:0.2\t100:0.2\tGT:ESAF\t10:0.2\t100:0.2
+2\t13\tA\tG\tfoo\tGT:ESAF\t20:0.2\t200:0.2\tGT:ESAF\t20:0.2\t200:0.2
+3\t14\tA\tG\tfoo\tGT:ESAF\t30:0.2\t300:0.2\tGT:ESAF\t30:0.2\t300:0.2
+4\t15\tA\tG\tfoo\tGT:ESAF\t40:0.2\t400:0.2\tGT:ESAF\t40:0.2\t400:0.2''')
         expected_df = pd.read_csv(expected_data, sep="\t", header=False, dtype='str')
 
         tm.assert_frame_equal(expected_df, actual_df)

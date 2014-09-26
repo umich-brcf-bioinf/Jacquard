@@ -220,7 +220,7 @@ def melt_samples(df, fname):
     
 def expand_format(df, formats_to_expand, rows, fname):
     df = melt_samples(df, fname)
-
+    
     df["aggregate_format_sample"] = df["FORMAT"] + "=" + df['SAMPLE_DATA']
     df["aggregate_format_sample"] = df["aggregate_format_sample"].map(combine_format_values)
     df["aggregate_format_sample"].to_pickle("aggregate.pickle")
@@ -252,17 +252,34 @@ def expand_format(df, formats_to_expand, rows, fname):
         pivoted_df = pd.pivot_table(joined_df, rows=rows+["SAMPLE_NAME"], cols="FORMAT2", values="VALUE2", aggfunc=lambda x: x)
     except Exception as e :
         raise PivotError("Cannot pivot data. {0}".format(e))
-
+    
     pivoted_df.reset_index(inplace=True)
     pivoted_df.fillna(".", inplace=True)
-   
-#     print pivoted_df
-        
-    new_df = pivoted_df.applymap(lambda x: type(x))
+
+#     for row, position in pivoted_df["POS"].iteritems():
+#         if position == "29622996":
+#             print row
+#             print pivoted_df.ix[row, "JQ_AF_AVERAGE"]
+#             print pivoted_df.ix[row, "JQ_AF_RANGE"]
+#             print pivoted_df.ix[row, "JQ_AF_RANGE_ZSCORE"]
+#     print "exiting"
+#     exit(1)
+
+#     new_df = pivoted_df.head(61100).tail(30)
+#     
+#     print new_df.info()
+#     print new_df.ix[61098, "POS"]
+#     new_df = new_df.applymap(lambda x: type(x))
+#     print new_df
+#     new_df.to_csv("C:/Users/jebene/Hardiman_EX5_2/input10.csv", index=False, sep="\t")
+#     print "wrote csv"
+#     exit(1)
     
-    print new_df
+#     #new_df = pivoted_df.applymap(lambda x: str(x) +"_")
+#     print new_df
 #     print "writing to csv file:"
-#     new_df.to_csv("foo.vcf", index=False, sep="\t")
+#     pivoted_df.to_csv("C:/Users/jebene/Hardiman_EX5_2/foo.vcf", index=False, sep="\t")
+#     print "wrote csv"
 #     exit(1)
 
     return pivoted_df

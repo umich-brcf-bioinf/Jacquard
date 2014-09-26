@@ -28,7 +28,8 @@ class VariantPivoter():
     def __init__(self, rows, combined_df=pd.DataFrame()):
         self._rows = rows
         self._combined_df = combined_df
- 
+        self.row_dict = {} 
+
     def add_file(self, sample_file, header_index, caller, mutect_dict, file_name=""):
         if file_name == "":
             file_name = sample_file
@@ -41,8 +42,8 @@ class VariantPivoter():
         unpivoted_df = self.is_compatible(initial_df)
         fname_df, sample_columns = append_fname_to_samples(initial_df, file_name, self._rows, caller, mutect_dict)
         validated_df = validate_sample_caller_vcfs(fname_df)
-        self._combined_df = merge_samples(fname_df, self._combined_df, self._rows)
-        
+        self._combined_df = merge_samples(fname_df, self._combined_df, self._rows, self.row_dict)
+
         return sample_columns
 
     def validate_sample_data(self):
@@ -186,12 +187,24 @@ def validate_sample_caller_vcfs(fname_df):
     return fname_df
     
     
-def merge_samples(reduced_df, combined_df, rows):
+def merge_samples(reduced_df, combined_df, rows, row_dict):
+    row_string = ""
+    for i,row in reduced_df.T.iteritems():
+        row_string = reduced_df.ix[i, "CHROM"]+"_"+reduced_df.ix[i,"POS"]+"_"+reduced_df.ix[i, "REF"]
+        info = reduced_df.ix[i, "INFO"]
+        if row_string in row_dict.keys() and reduced_df.ix[i, "ALT"] not in row_dict[row_string]:
+            row_dict[row_string].append(reduced_df.ix[i, "ALT"])
+            reduced_df.ix[i, "INFO"] = "Mult_Alt"
+            for i,row in combined_df.T.iteritems():
+                if combined_df.ix[i, "CHROM"]+"_"+combined_df.ix[i,"POS"]+"_"+combined_df.ix[i, "REF"] == row_string:
+                    combined_df.ix[i, "INFO"] = "Mult_Alt"
+        else:
+            row_dict[row_string] = [reduced_df.ix[i, "ALT"]]
+    
     if combined_df.empty:
         combined_df = reduced_df
     else:
         combined_df = merge(combined_df, reduced_df, how="outer", on=rows+["INFO"])
-
     return combined_df    
     
 def rearrange_columns(output_df):
@@ -214,6 +227,7 @@ def rearrange_columns(output_df):
 def create_dict(df, row, columns):
     file_dict = defaultdict(list)
     all_tags = []
+
     for column in columns:
         if re.search("\|", column) and not re.search("\|FORMAT", column):
             caller = column.split("|")[0]
@@ -542,7 +556,6 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
         count += 1
         
         all_merge_context, all_merge_column_context = determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, new_sample_file, count)
-    
     if unknown_callers != 0:
         print "ERROR: unable to determine variant caller for [{0}] input files. Run (jacquard tag) first.".format(unknown_callers)
         os.rmdir(new_dir)
