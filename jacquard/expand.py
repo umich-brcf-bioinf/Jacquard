@@ -223,7 +223,6 @@ def expand_format(df, formats_to_expand, rows, fname):
     
     df["aggregate_format_sample"] = df["FORMAT"] + "=" + df['SAMPLE_DATA']
     df["aggregate_format_sample"] = df["aggregate_format_sample"].map(combine_format_values)
-    df["aggregate_format_sample"].to_pickle("aggregate.pickle")
     
     s = df["aggregate_format_sample"].apply(pd.Series, 1).stack()
     s.index = s.index.droplevel(-1)
@@ -233,7 +232,7 @@ def expand_format(df, formats_to_expand, rows, fname):
     
     format2=pd.Series([key for key, val  in s])
     value2=pd.Series([val for key, val  in s])
-    value2.to_pickle("value.pickle")
+
     format2.index = original_index
     value2.index = original_index
     
@@ -389,8 +388,8 @@ def process_files(input_file, output_path, input_keys, format_tags, info_tags, h
 #     writer.save() 
 #     print "Wrote formatted Excel file to [{0}]".format(output_path)
 
-    print "writing to csv file: {0}".format(output_path)
     expanded_df.to_csv(output_path, index=False, sep="\t")  
+    print "wrote to csv file: {0}".format(output_path)
    
 def determine_input_keys(input_file):
     fname, extension = os.path.splitext(input_file)

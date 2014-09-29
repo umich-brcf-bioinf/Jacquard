@@ -10,7 +10,7 @@ import pprint
 import os
 from os import listdir
 from os.path import isfile, join
-from jacquard.merge import PivotError, VariantPivoter, merge_samples, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller_and_split_mult_alts, validate_samples_for_callers, validate_sample_caller_vcfs, create_new_line, create_merging_dict, remove_old_columns
+from jacquard.merge import PivotError, VariantPivoter, merge_samples, _add_mult_alt_flags, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller_and_split_mult_alts, validate_samples_for_callers, validate_sample_caller_vcfs, create_new_line, create_merging_dict, remove_old_columns
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
@@ -239,7 +239,7 @@ class PivotTestCase(unittest.TestCase):
         df = pd.read_csv(StringIO(dataString), sep="\t", header=False, dtype='str')
 
         combined_df = pd.DataFrame()
-        actual_df = merge_samples(df, combined_df, ["CHROM", "POS", "REF", "ALT"], {})
+        actual_df = merge_samples(df, combined_df, ["CHROM", "POS", "REF", "ALT"])
 
         expected_data = StringIO(
 '''CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tsample_A\tsample_B
@@ -251,68 +251,41 @@ class PivotTestCase(unittest.TestCase):
         
         tm.assert_frame_equal(expected_df, actual_df)
     
-    def test_mergeSamples_setMultAlt(self):
-        dataString1 = \
+    def test_addMultAltFlags(self):
+        dataString = \
 '''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A
-1\t12\tA\tG\tMult_Alt\tGT:ESAF\t10:0.2'''
-        dataString2 = \
-'''CHROM\tPOS\tREF\tALT\tINFO\tfile2|FORMAT\tfile2|sample_B
-1\t12\tA\tT\t.\tGT:ESAF\t100:0.2'''
-        df1 = pd.read_csv(StringIO(dataString1), sep="\t", header=False, dtype='str')
-        df2 = pd.read_csv(StringIO(dataString2), sep="\t", header=False, dtype='str')
+1\t12\tA\tG\t.\tGT:ESAF\t10:0.2
+1\t12\tA\tC\t.\tGT:ESAF\t10:0.2'''
+        df = pd.read_csv(StringIO(dataString), sep="\t", header=False, dtype='str')
         
-        combined_df = df2
+        actual_df = _add_mult_alt_flags(df)
         
-        actual_df = merge_samples(combined_df, df1, ["CHROM", "POS", "REF", "ALT"], {"1_12_A":["G"]})
-        expected = \
-        '''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile2|FORMAT\tfile2|sample_B
-1\t12\tA\tG\tMult_Alt\tGT:ESAF\t10:0.2\tnan\tnan
-1\t12\tA\tT\tMult_Alt\tnan\tnan\tGT:ESAF\t100:0.2'''
-        expected_df = pd.read_csv(StringIO(expected), sep="\t", header=False, dtype='str')
-        
+        expectedString =  \
+'''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A
+1\t12\tA\tG\tMult_Alt\tGT:ESAF\t10:0.2
+1\t12\tA\tC\tMult_Alt\tGT:ESAF\t10:0.2'''
+        expected_df = pd.read_csv(StringIO(expectedString), sep="\t", header=False, dtype='str')
         tm.assert_frame_equal(expected_df, actual_df)
         
+    def test_mergeSamples_multAlts(self):
         dataString1 = \
-'''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A
-1\t12\tA\tG\t.\tGT:ESAF\t10:0.2'''
-        dataString2 = \
-'''CHROM\tPOS\tREF\tALT\tINFO\tfile2|FORMAT\tfile2|sample_B
-1\t12\tA\tT\t.\tGT:ESAF\t100:0.2'''
+'''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B
+1\t12\tA\tG\t.\tGT:ESAF\t10:0.2\t100:0.2'''
         df1 = pd.read_csv(StringIO(dataString1), sep="\t", header=False, dtype='str')
-        df2 = pd.read_csv(StringIO(dataString2), sep="\t", header=False, dtype='str')
         
-        combined_df = df2
-        
-        actual_df = merge_samples(combined_df, df1, ["CHROM", "POS", "REF", "ALT"], {"1_12_A":["G"]})
-        expected = \
-        '''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile2|FORMAT\tfile2|sample_B
-1\t12\tA\tG\tMult_Alt\tGT:ESAF\t10:0.2\tnan\tnan
-1\t12\tA\tT\tMult_Alt\tnan\tnan\tGT:ESAF\t100:0.2'''
-        expected_df = pd.read_csv(StringIO(expected), sep="\t", header=False, dtype='str')
-        
-        print actual_df
-        
-        print expected_df
-        
-        tm.assert_frame_equal(expected_df, actual_df)
-        
-    def test_mergeSamples_dontSetMultAlt(self):
-        dataString1 = \
-'''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A
-1\t12\tA\tG\t.\tGT:ESAF\t10:0.2'''
         dataString2 = \
-'''CHROM\tPOS\tREF\tALT\tINFO\tfile2|FORMAT\tfile2|sample_B
-1\t12\tA\tG\t.\tGT:ESAF\t100:0.2'''
-        df1 = pd.read_csv(StringIO(dataString1), sep="\t", header=False, dtype='str')
+'''CHROM\tPOS\tREF\tALT\tINFO\tfile2|FORMAT\tfile2|sample_C\tfile2|sample_D
+1\t12\tA\tC\t.\tGT:ESAF\t10:0.2\t100:0.2'''
         df2 = pd.read_csv(StringIO(dataString2), sep="\t", header=False, dtype='str')
-        
+
         combined_df = df2
-        
-        actual_df = merge_samples(combined_df, df1, ["CHROM", "POS", "REF", "ALT"], {"1_12_A":["G"]})
-        expected = \
-        '''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile2|FORMAT\tfile2|sample_B
-1\t12\tA\tG\t.\tGT:ESAF\t10:0.2\tGT:ESAF\t100:0.2'''
-        expected_df = pd.read_csv(StringIO(expected), sep="\t", header=False, dtype='str')
+        actual_df = merge_samples(combined_df, df1, ["CHROM", "POS", "REF", "ALT"])
+
+        expectedString = \
+'''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|FORMAT\tfile2|sample_C\tfile2|sample_D
+1\t12\tA\tG\t.\tGT:ESAF\t10:0.2\t100:0.2\tnan\tnan\tnan
+1\t12\tA\tC\t.\tnan\tnan\tnan\tGT:ESAF\t10:0.2\t100:0.2'''
+        expected_df = pd.read_csv(StringIO(expectedString), sep="\t", header=False, dtype='str')
         
         tm.assert_frame_equal(expected_df, actual_df)
         
@@ -334,7 +307,7 @@ class PivotTestCase(unittest.TestCase):
         df2 = pd.read_csv(StringIO(dataString2), sep="\t", header=False, dtype='str')
 
         combined_df = df2
-        actual_df = merge_samples(combined_df, df1, ["CHROM", "POS", "REF", "ALT"], {})
+        actual_df = merge_samples(combined_df, df1, ["CHROM", "POS", "REF", "ALT"])
 
         expected_data = StringIO(
 '''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|FORMAT\tfile2|sample_C\tfile2|sample_D
@@ -378,7 +351,7 @@ class PivotTestCase(unittest.TestCase):
         caller, unknown_callers, mutect_dict = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
         self.assertEquals("MuTect", caller)
         self.assertEquals(0, unknown_callers)
-        self.assertEquals(["##foo", "##jacquard.tag.caller=MuTect", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\tMult_Alt\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\tMult_Alt\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
+        self.assertEquals(["##foo", "##jacquard.tag.caller=MuTect", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
      
     def test_determineCaller_invalid(self):
         reader = MockReader("##foo\n##jacquard.tag.foo\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2\n1\t2324\t.\tA\tG,T\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.234,0.124:78:25,312")
@@ -387,19 +360,19 @@ class PivotTestCase(unittest.TestCase):
         caller, unknown_callers, mutect_dict = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
         self.assertEquals("unknown", caller)
         self.assertEquals(3, unknown_callers)
-        self.assertEquals(["##foo", "##jacquard.tag.foo", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\tMult_Alt\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\tMult_Alt\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
+        self.assertEquals(["##foo", "##jacquard.tag.foo", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
         
     def test_createNewLine(self):
         fields = ["1", "42", ".", "A", "G,CT", ".", ".", "foo", "DP:JQ_AF_VS:AF", "23:0.24,0.32:0.2354,0.324", "23:0.25,0.36:0.254,0.3456"]
         
         alt_allele_number = 0
         actual_line = create_new_line(alt_allele_number, fields)
-        expected_line = "\t".join(["1", "42", ".", "A", "G", ".", ".", "Mult_Alt", "DP:JQ_AF_VS:AF", "23:0.24:0.2354,0.324", "23:0.25:0.254,0.3456\n"])
+        expected_line = "\t".join(["1", "42", ".", "A", "G", ".", ".", "foo", "DP:JQ_AF_VS:AF", "23:0.24:0.2354,0.324", "23:0.25:0.254,0.3456\n"])
         self.assertEquals(expected_line, actual_line)
         
         alt_allele_number = 1
         actual_line = create_new_line(alt_allele_number, fields)
-        expected_line = "\t".join(["1", "42", ".", "A", "CT", ".", ".", "Mult_Alt", "DP:JQ_AF_VS:AF", "23:0.32:0.2354,0.324", "23:0.36:0.254,0.3456\n"])
+        expected_line = "\t".join(["1", "42", ".", "A", "CT", ".", ".", "foo", "DP:JQ_AF_VS:AF", "23:0.32:0.2354,0.324", "23:0.36:0.254,0.3456\n"])
         self.assertEquals(expected_line, actual_line)
         
     def test_validateSamplesForCallers_valid(self):
@@ -437,7 +410,7 @@ class CombineFormatTestCase(unittest.TestCase):
         df = dataframe(input_string)
         row = 0
         col = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "MuTect|file1|FORMAT", "MuTect|file1|sample_A", "MuTect|file1|sample_B"]
-        expected_file_dict = {'MuTect|file1': [OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_B')])]}
+        expected_file_dict = {'MuTect': [OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_B')])]}
         file_dict, all_tags = create_dict(df, row, col)
         self.assertEqual(expected_file_dict, file_dict)
     
@@ -453,7 +426,7 @@ class CombineFormatTestCase(unittest.TestCase):
         df = dataframe(input_string)
         row = 0
         col = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "MuTect|file1|FORMAT", "MuTect|file1|sample_A", "MuTect|file1|sample_B", "MuTect|file2|FORMAT", "MuTect|file2|sample_A", "MuTect|file2|sample_B"]
-        expected_file_dict = {'MuTect|file2': [OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file2|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file2|sample_B')])], 'MuTect|file1': [OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_B')])]}
+        expected_file_dict = {'MuTect': [OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_B')]), OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file2|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file2|sample_B')])]}
         file_dict, all_tags = create_dict(df, row, col)
         self.assertEqual(expected_file_dict, file_dict)
         
