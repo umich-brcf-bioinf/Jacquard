@@ -256,32 +256,6 @@ def expand_format(df, formats_to_expand, rows, fname):
     pivoted_df.reset_index(inplace=True)
     pivoted_df.fillna(".", inplace=True)
 
-#     for row, position in pivoted_df["POS"].iteritems():
-#         if position == "29622996":
-#             print row
-#             print pivoted_df.ix[row, "JQ_AF_AVERAGE"]
-#             print pivoted_df.ix[row, "JQ_AF_RANGE"]
-#             print pivoted_df.ix[row, "JQ_AF_RANGE_ZSCORE"]
-#     print "exiting"
-#     exit(1)
-
-#     new_df = pivoted_df.head(61100).tail(30)
-#     
-#     print new_df.info()
-#     print new_df.ix[61098, "POS"]
-#     new_df = new_df.applymap(lambda x: type(x))
-#     print new_df
-#     new_df.to_csv("C:/Users/jebene/Hardiman_EX5_2/input10.csv", index=False, sep="\t")
-#     print "wrote csv"
-#     exit(1)
-    
-#     #new_df = pivoted_df.applymap(lambda x: str(x) +"_")
-#     print new_df
-#     print "writing to csv file:"
-#     pivoted_df.to_csv("C:/Users/jebene/Hardiman_EX5_2/foo.vcf", index=False, sep="\t")
-#     print "wrote csv"
-#     exit(1)
-
     return pivoted_df
 
 def combine_format_values(aggregate_col):
