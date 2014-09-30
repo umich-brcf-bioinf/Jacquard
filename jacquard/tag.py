@@ -5,6 +5,7 @@ import shutil
 
 from variant_callers import variant_caller_factory
 import jacquard_utils
+from jacquard_utils import JQException
 
 
 # class LineProcessor():
@@ -94,24 +95,34 @@ def add_subparser(subparser):
     parser_tag.add_argument("input_dir", help="Path to directory containing VCFs. Other file types ignored")
     parser_tag.add_argument("output_dir", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
 
-def determine_file_types(input_dir, in_files, factory):
+def process_files(input_dir, output_dir, in_files, factory):
     file_types = defaultdict(list)   
     handlers = {}                              
-    for _ in in_files:
-        for caller in factory.callers:
-            in_file = open(os.path.join(input_dir, file), "r")
-            valid = caller.validate_input_file(in_file)
-            if valid == 1:
-                file_types[caller.name].append(file)
-                if (caller.good):
-                    handler = "{0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller.name)
-                    print handler
-                    handlers[os.path.basename(file)] = "##jacquard.tag.handler={0}".format(caller.name)
-                    inferred_caller = "##jacquard.tag.caller={0}".format(caller.name)                 
-                    print "{0}: {1}".format(os.path.basename(file), inferred_caller)                    
-                else:  
-                    print "ERROR. {0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller.name)
-                break
+    for in_file in in_files:
+        vcf = open(os.path.join(input_dir, in_file), "r")
+        header = []
+        for line in vcf:
+            if line.startswith("##"):
+                header.append(line)
+        try:
+            caller = factory.get_caller(header)
+        except JQException:
+            print "ERROR. Unable to determine which caller was used on [{0}]. Check input files and try again.".format(in_file)
+            raise JQException
+        
+        #TODO: Continue with getting tags starting from here!
+#             valid = caller.validate_input_file(in_file)
+#             if valid == 1:
+#                 file_types[caller.name].append(file)
+#                 if (caller.good):
+#                     handler = "{0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller.name)
+#                     print handler
+#                     handlers[os.path.basename(file)] = "##jacquard.tag.handler={0}".format(caller.name)
+#                     inferred_caller = "##jacquard.tag.caller={0}".format(caller.name)                 
+#                     print "{0}: {1}".format(os.path.basename(file), inferred_caller)                    
+#                 else:  
+#                     print "ERROR. {0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller.name)
+#                 break
     return file_types, handlers
     
 def print_file_types(output_dir, file_types):
@@ -133,7 +144,7 @@ def tag_files(input_dir, output_dir, execution_context=[]):
     print "\n".join(execution_context)
     print "Processing [{0}] VCF file(s) from [{1}]".format(len(in_files), input_dir)
     
-    file_types, handlers = determine_file_types(input_dir, in_files, factory)
+    file_types, handlers = process_files(input_dir, output_dir, in_files, factory)
     print_file_types(output_dir, file_types)
 
 #     processors = {"VarScan" : FileProcessor(output_dir, tags=[varscan.AlleleFreqTag(), varscan.DepthTag(), varscan.SomaticTag()], execution_context_metadataheaders=execution_context), "MuTect": FileProcessor(output_dir, tags=[mutect.AlleleFreqTag(), mutect.DepthTag(), mutect.SomaticTag()], execution_context_metadataheaders=execution_context), "Strelka": FileProcessor(output_dir, tags=[strelka.AlleleFreqTag(), strelka.DepthTag(), strelka.SomaticTag()], execution_context_metadataheaders=execution_context)}

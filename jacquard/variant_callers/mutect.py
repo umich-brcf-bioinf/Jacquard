@@ -53,9 +53,9 @@ class Mutect():
         self.name = "MuTect"
         self.tags = [AlleleFreqTag(),DepthTag(),SomaticTag()]
         
-    def validate_input_file(self, input_file):
+    def validate_input_file(self, header):
         valid = 0
-        for line in input_file:
+        for line in header:
             if line.startswith("##MuTect"):
                 valid = 1
             elif line.startswith("##"):

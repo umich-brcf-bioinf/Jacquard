@@ -57,13 +57,14 @@ class Varscan():
     def __init__(self):
         self.name = "VarScan"
         self.good = True
+        self.tags = [AlleleFreqTag(),DepthTag(),SomaticTag()]
         self.meta_header = "##jacquard.normalize_varscan.sources={0},{1}\n"
         self.file_name_search = "snp|indel"
 #         self.af_tag = AlleleFreqTag()
         
-    def validate_input_file(self, input_file):
+    def validate_input_file(self, header):
         valid = 0
-        for line in input_file:
+        for line in header:
             if line.startswith("##source=VarScan2"):
                 valid = 1
             elif line.startswith("##"):

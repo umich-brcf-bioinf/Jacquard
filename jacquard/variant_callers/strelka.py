@@ -89,9 +89,9 @@ class Strelka(object):
         self.meta_header = "##jacquard.normalize_strelka.sources={0},{1}\n"
         self.file_name_search = "snvs|indels"
 
-    def validate_input_file(self, input_file):
+    def validate_input_file(self, header):
         valid = 0
-        for line in input_file:
+        for line in header:
             if line.startswith("##source=strelka"):
                 valid = 1
             elif line.startswith("##"):

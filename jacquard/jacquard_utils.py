@@ -87,3 +87,7 @@ def combine_format_values(format, sample):
 def combine_format_dict(format, sample):
     return OrderedDict(zip(format, sample))
 
+class JQException(Exception):
+    """Base class for exceptions in this module."""
+    exit(1)
+    pass
