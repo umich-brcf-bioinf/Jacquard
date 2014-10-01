@@ -35,13 +35,14 @@ class VariantPivoter():
             file_name = sample_file
             
         initial_df  = create_initial_df(sample_file, header_index)
-
+        
         if "#CHROM" in initial_df.columns:
             initial_df.rename(columns={"#CHROM": "CHROM"}, inplace=True)
 
         unpivoted_df = self.is_compatible(initial_df)
         fname_df, sample_columns = append_fname_to_samples(initial_df, file_name, self._rows, caller, mutect_dict)
         validated_df = validate_sample_caller_vcfs(fname_df)
+        
         self._combined_df = merge_samples(fname_df, self._combined_df, self._rows)
 
         return sample_columns
@@ -143,6 +144,7 @@ def build_pivoter(sample_file, input_keys, header_index):
 
 def create_initial_df(sample_file, header_index):
     initial_df = pd.read_csv(sample_file, sep="\t", header=header_index, dtype='str', mangle_dupe_cols=False)
+    initial_df["INFO"] = "."
     
     return initial_df
   
@@ -433,7 +435,8 @@ def create_new_line(alt_allele_number, fields):
                 new_dict[key] = val
         new_samples.append(":".join(new_dict.values()))
 
-    new_line = fields[0:4] + [alt] + fields[5:8] + [fields[8]] + new_samples
+#     new_line = fields[0:4] + [alt] + fields[5:7] + ["."] + [fields[8]] + new_samples
+    new_line = fields[0:4] + [alt] + fields[5:9] + new_samples
 
     return "\t".join(new_line) + "\n"
     
@@ -467,8 +470,9 @@ def determine_caller_and_split_mult_alts(reader, writer, unknown_callers):
                     writer.write(new_line)
                     count += 1
             else:
-                new_line = fields[:7] + ["."] + fields[8:]
-                writer.write("\t".join(new_line))
+#                 new_line = fields[:7] + ["."] + fields[8:]
+#                 writer.write("\t".join(new_line))
+                writer.write("\t".join(fields))
 
     if caller == "unknown":
         print "ERROR: unable to determine variant caller for file [{0}]".format(reader)

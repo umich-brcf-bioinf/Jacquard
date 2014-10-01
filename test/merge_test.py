@@ -1,16 +1,14 @@
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict
 import glob
 import pandas as pd
-from pandas import *
 import unittest
-from pandas.util.testing import assert_frame_equal
 import pandas.util.testing as tm
 from StringIO import StringIO
-import pprint
 import os
-from os import listdir
-from os.path import isfile, join
+from testfixtures import TempDirectory
 from jacquard.merge import PivotError, VariantPivoter, merge_samples, _add_mult_alt_flags, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller_and_split_mult_alts, validate_samples_for_callers, validate_sample_caller_vcfs, create_new_line, create_merging_dict, remove_old_columns
+import jacquard.merge as merge
+from argparse import Namespace
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
@@ -27,6 +25,27 @@ def dataframe(input_data, sep="\t", index_col=None):
     return df
 
 class MergeTestCase(unittest.TestCase):
+    def testExecute_multAltsSplitCorrectly(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            vcfRecordFormat = "##jacquard.tag.caller={}\n" + \
+                "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|A|B\n" + \
+                "chr1|42|.|{}|{}|.|.|{}|JQ_AF_{}|0.1|0.2\n"
+            vcfRecordFormat = vcfRecordFormat.replace("|", "\t")
+            
+            input_dir.write("A.mutect.vcf", vcfRecordFormat.format("MuTect","T","A,C","INFO_Mutect","MT"))
+            input_dir.write("A.strelka.vcf", vcfRecordFormat.format("Strelka","T","A,C","INFO_Strelka","SK"))
+            input_dir.write("A.varscan.vcf", vcfRecordFormat.format("VarScan","T","A,C","INFO_VarScan","VS"))
+    
+            args = Namespace(input_dir=input_dir.path, 
+                             output_file=os.path.join(output_dir.path,"tmp.vcf"), 
+                             allow_inconsistent_sample_sets=False,
+                             keys=None) 
+            merge.execute(args, [])
+    
+            actual_merged = output_dir.read('tmp.vcf').split("\n")
+            print actual_merged
+            self.assertEquals(4, len(actual_merged))
+    
     def test_addFiles(self):
         rows = ["CHROM", "POS", "REF", "ALT"]
 
@@ -52,10 +71,10 @@ class MergeTestCase(unittest.TestCase):
         print actual_df
         expected_string = \
 '''CHROM\tPOS\tREF\tALT\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|Samp1\tMuTect|file2|FORMAT\tMuTect|file2|Samp2
-1\t23\tA\tT\tfoo\tDP:ESAF\t1:0.2\tDP:ESAF\t5:0.2
-2\t24\tA\tT\tfoo\tDP:ESAF\t12:0.2\tDP:ESAF\t2:0.2
-3\t25\tA\tT\tfoo\tDP:ESAF\t31:0.2\tDP:ESAF\t74:0.2
-4\t26\tA\tT\tfoo\tDP:ESAF\t6:0.2\tDP:ESAF\t25:0.2'''
+1\t23\tA\tT\t.\tDP:ESAF\t1:0.2\tDP:ESAF\t5:0.2
+2\t24\tA\tT\t.\tDP:ESAF\t12:0.2\tDP:ESAF\t2:0.2
+3\t25\tA\tT\t.\tDP:ESAF\t31:0.2\tDP:ESAF\t74:0.2
+4\t26\tA\tT\t.\tDP:ESAF\t6:0.2\tDP:ESAF\t25:0.2'''
         expected_df = dataframe(expected_string)
         expected_df.columns.names = [""]
 
@@ -221,9 +240,9 @@ class PivotTestCase(unittest.TestCase):
         actual_df = create_initial_df(reader, 0)
 
         expected_data = StringIO(
-'''#CHROM\tPOS\tREF
-1\t42\tA
-2\t43\tC''');
+'''#CHROM\tPOS\tREF\tINFO
+1\t42\tA\t.
+2\t43\tC\t.''');
 
         expected_df = pd.read_csv(expected_data, sep="\t", header=False, dtype='str')
 
@@ -316,7 +335,8 @@ class PivotTestCase(unittest.TestCase):
 3\t14\tA\tG\tfoo\tGT:ESAF\t30:0.2\t300:0.2\tGT:ESAF\t30:0.2\t300:0.2
 4\t15\tA\tG\tfoo\tGT:ESAF\t40:0.2\t400:0.2\tGT:ESAF\t40:0.2\t400:0.2''')
         expected_df = pd.read_csv(expected_data, sep="\t", header=False, dtype='str')
-
+        
+        print actual_df
         tm.assert_frame_equal(expected_df, actual_df)
     
     ##rearrange columns
@@ -345,34 +365,35 @@ class PivotTestCase(unittest.TestCase):
         tm.assert_frame_equal(expected_df, actual_df)
     
     def test_determineCaller_valid(self):
-        reader = MockReader("##foo\n##jacquard.tag.caller=MuTect\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2\n1\t2324\t.\tA\tG,T\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.234,0.124:78:25,312")
+        reader = MockReader("##foo\n##jacquard.tag.caller=MuTect\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2\n1\t2324\t.\tA\tG,T\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.234,0.124:78:25,312")
         writer = MockWriter()
         unknown_callers = 0
         caller, unknown_callers, mutect_dict = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
         self.assertEquals("MuTect", caller)
         self.assertEquals(0, unknown_callers)
-        self.assertEquals(["##foo", "##jacquard.tag.caller=MuTect", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
+
+        self.assertEquals(["##foo", "##jacquard.tag.caller=MuTect", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
      
     def test_determineCaller_invalid(self):
-        reader = MockReader("##foo\n##jacquard.tag.foo\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2\n1\t2324\t.\tA\tG,T\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.234,0.124:78:25,312")
+        reader = MockReader("##foo\n##jacquard.tag.foo\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2\n1\t2324\t.\tA\tG,T\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.234,0.124:78:25,312")
         writer = MockWriter()
         unknown_callers = 2
         caller, unknown_callers, mutect_dict = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
         self.assertEquals("unknown", caller)
         self.assertEquals(3, unknown_callers)
-        self.assertEquals(["##foo", "##jacquard.tag.foo", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\tinfo\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
+        self.assertEquals(["##foo", "##jacquard.tag.foo", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
         
     def test_createNewLine(self):
-        fields = ["1", "42", ".", "A", "G,CT", ".", ".", "foo", "DP:JQ_AF_VS:AF", "23:0.24,0.32:0.2354,0.324", "23:0.25,0.36:0.254,0.3456"]
+        fields = ["1", "42", ".", "A", "G,CT", ".", ".", ".", "DP:JQ_AF_VS:AF", "23:0.24,0.32:0.2354,0.324", "23:0.25,0.36:0.254,0.3456"]
         
         alt_allele_number = 0
         actual_line = create_new_line(alt_allele_number, fields)
-        expected_line = "\t".join(["1", "42", ".", "A", "G", ".", ".", "foo", "DP:JQ_AF_VS:AF", "23:0.24:0.2354,0.324", "23:0.25:0.254,0.3456\n"])
+        expected_line = "\t".join(["1", "42", ".", "A", "G", ".", ".", ".", "DP:JQ_AF_VS:AF", "23:0.24:0.2354,0.324", "23:0.25:0.254,0.3456\n"])
         self.assertEquals(expected_line, actual_line)
         
         alt_allele_number = 1
         actual_line = create_new_line(alt_allele_number, fields)
-        expected_line = "\t".join(["1", "42", ".", "A", "CT", ".", ".", "foo", "DP:JQ_AF_VS:AF", "23:0.32:0.2354,0.324", "23:0.36:0.254,0.3456\n"])
+        expected_line = "\t".join(["1", "42", ".", "A", "CT", ".", ".", ".", "DP:JQ_AF_VS:AF", "23:0.32:0.2354,0.324", "23:0.36:0.254,0.3456\n"])
         self.assertEquals(expected_line, actual_line)
         
     def test_validateSamplesForCallers_valid(self):

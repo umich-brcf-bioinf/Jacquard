@@ -355,12 +355,6 @@ def process_files(input_file, output_path, input_keys, format_tags, info_tags, h
     pivoted_df = pivoter.pivot()
     pivoted_df = pivoted_df.fillna("")
     
-#     print "pickling"
-#     pivoted_df.to_pickle("df.pickle")
-#     print pivoted_df
-#     exit(1)
-#     print "should have exited...."
-    
     joined_df = pivoter.join_dataframes(pivoted_df)
     insert_links(joined_df)
 
@@ -388,7 +382,9 @@ def process_files(input_file, output_path, input_keys, format_tags, info_tags, h
 #     writer.save() 
 #     print "Wrote formatted Excel file to [{0}]".format(output_path)
 
-    expanded_df.to_csv(output_path, index=False, sep="\t")  
+    print "writing to csv file: {0}".format(output_path)
+    expanded_df.to_csv(output_path, index=False, sep="\t")
+#     sorted_df.to_csv(output_path, index=False, sep="\t")    
     print "wrote to csv file: {0}".format(output_path)
    
 def determine_input_keys(input_file):
