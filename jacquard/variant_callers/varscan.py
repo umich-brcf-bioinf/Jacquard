@@ -3,6 +3,9 @@ import os
 import re
 import jacquard.jacquard_utils as jacquard_utils
 
+_VARSCAN_SOMATIC_HEADER="#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR".replace("|","\t")
+
+
 class AlleleFreqTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID={0}VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_af_tag, jacquard_utils.__version__)
@@ -12,6 +15,7 @@ class AlleleFreqTag():
             for key in vcfRecord.sample_dict.keys():
                 freq = vcfRecord.sample_dict[key]["FREQ"].split(",")
                 vcfRecord.sample_dict[key]["JQ_AF_VS"] = self.roundTwoDigits(freq)
+            vcfRecord.format_set.append("JQ_AF_VS")
                 
     def roundTwoDigits(self, value): 
         new_values = []
@@ -63,23 +67,14 @@ class Varscan():
 #         self.af_tag = AlleleFreqTag()
         
     def validate_input_file(self, header):
-        valid = 0
-        for line in header:
-            if line.startswith("##source=VarScan2"):
-                valid = 1
-            elif line.startswith("##"):
-                continue
-            else:
-                break
-        return (valid)
-    
-    def validate_record(self,vcfRecord):
-        if "NORMAL" in vcfRecord and "TUMOR" in vcfRecord:
-            return True
+        if "##source=VarScan2" not in header:
+            return 0
+                
+        if _VARSCAN_SOMATIC_HEADER in header:
+            return 1
         else:
-            print "Unexpected VarScan VCF structure - missing NORMAL\t and TUMOR\n headers."
-            return False
-        
+            raise jacquard_utils.JQException("Unexpected VarScan VCF structure - missing NORMAL\t and TUMOR\n headers.")
+
     def identify_hc_variants(self,hc_candidates):
         hc_variants = {}
         for key, vals in hc_candidates.items():

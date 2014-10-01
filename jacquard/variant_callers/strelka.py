@@ -1,6 +1,6 @@
 import jacquard.jacquard_utils as jacquard_utils
 
-class AlleleFreqTag(object):
+class _AlleleFreqTag(object):
     def __init__(self):
         self.metaheader = '##FORMAT=<ID={0}SK,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_af_tag, jacquard_utils.__version__)
 
@@ -41,25 +41,35 @@ class AlleleFreqTag(object):
         else:
             return str(round(100 * float(value))/100)
 
-class DepthTag(object):
+class _DepthTag(object):
     def __init__(self):
         self.metaheader = '##FORMAT=<ID={0}SK,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_dp_tag, jacquard_utils.__version__)
 
-    # pylint: disable=W0613,R0201
+    def _get_tier2_base_depth(self, sample_format_dict):
+        tags = ["AU", "CU", "TU", "GU"]
+        depth = 0
+        for tag in tags:
+            depth += int(sample_format_dict[tag].split(",")[1])
+        return depth
+    
     def format(self, vcfRecord):
-        if "DP2" in vcfRecord.format_set:
-            for key in vcfRecord.sample_dict.keys():
-                vcfRecord.sample_dict[key]["JQ_DP_SK"] = vcfRecord.sample_dict[key]["DP2"]
-        elif "AU" in vcfRecord.format_set:
-            tags = ["AU", "CU", "TU", "GU"]
-            denominator = 0
-            for tag in tags:
-                for key in vcfRecord.sample_dict.keys():
-                    denominator += int(vcfRecord.sample_dict[key][tag].split(",")[1])
-            for key in vcfRecord.sample_dict.keys():
-                vcfRecord.sample_dict[key]["JQ_DP_SK"] = str(denominator)
+        if "DP2" not in vcfRecord.format_set and "AU" not in vcfRecord.format_set:
+            return
 
-class SomaticTag(object):
+        sample_values = {}
+        if "DP2" in vcfRecord.format_set:
+            for key in vcfRecord.sample_dict:
+                sample_values[key] = vcfRecord.sample_dict[key]["DP2"]
+        elif "AU" in vcfRecord.format_set:
+            for key in vcfRecord.sample_dict:
+                sample_format_dict = vcfRecord.sample_dict[key]
+                sample_values[key] = self._get_tier2_base_depth(sample_format_dict)
+
+        vcfRecord.insert_format_field("JQ_DP_SK",sample_values)
+        
+
+
+class _SomaticTag(object):
     #TODO: cgates :Pull tag metaheaders to resource bundle?
     def __init__(self):
         self.metaheader = '##FORMAT=<ID={0}SK,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1= somatic (based on PASS in FILTER column),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_somatic_tag, jacquard_utils.__version__)
@@ -70,12 +80,12 @@ class SomaticTag(object):
         strelka_tag = jacquard_utils.jq_somatic_tag + "SK"
         if vcfRecord.filter_field == "PASS":
             for key in vcfRecord.sample_dict.keys():
-                vcfRecord.sample_dict[key][strelka_tag] = self.somatic_status(key)
+                vcfRecord.sample_dict[key][strelka_tag] = self._somatic_status(key)
         else:
             for key in vcfRecord.sample_dict.keys():
                 vcfRecord.sample_dict[key][strelka_tag] = "0"
 
-    def somatic_status(self,count):
+    def _somatic_status(self,count):
         if count == 0: #it's NORMAL
             return "0"
         else: #it's TUMOR
@@ -85,7 +95,7 @@ class Strelka(object):
     def __init__(self):
         self.name = "Strelka"
         self.good = True
-        self.tags = [AlleleFreqTag(),DepthTag(),SomaticTag()]
+        self.tags = [_AlleleFreqTag(),_DepthTag(),_SomaticTag()]
         self.meta_header = "##jacquard.normalize_strelka.sources={0},{1}\n"
         self.file_name_search = "snvs|indels"
 

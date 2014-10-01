@@ -89,5 +89,4 @@ def combine_format_dict(format, sample):
 
 class JQException(Exception):
     """Base class for exceptions in this module."""
-    exit(1)
     pass
