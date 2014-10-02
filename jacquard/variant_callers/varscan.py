@@ -3,6 +3,8 @@ import os
 import re
 import jacquard.jacquard_utils as jacquard_utils
 
+_JQ_VARSCAN_HC_INFO_FIELD = "JQ_HC_VS"
+
 class AlleleFreqTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID={0}VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_af_tag, jacquard_utils.__version__)
@@ -42,7 +44,7 @@ class SomaticTag():
         info_array = info_string.split(";")
         varscan_tag = jacquard_utils.jq_somatic_tag + "VS"
 
-        if "SS=2" in info_array:
+        if "SS=2" in info_array and _JQ_VARSCAN_HC_INFO_FIELD in info_array:
             format_dict[varscan_tag] = self.somatic_status(count)
         else:
             format_dict[varscan_tag] = "0"
@@ -105,8 +107,8 @@ class Varscan():
                 else:
                     merge_key = "^".join([split_line[0], str(split_line[1]), split_line[3], split_line[4]])
                     if merge_key in hc_variants:
-                        if "JQ_HC_VS" not in split_line[7]:
-                            split_line[7] += ";JQ_HC_VS"
+                        if _JQ_VARSCAN_HC_INFO_FIELD not in split_line[7]:
+                            split_line[7] += _JQ_VARSCAN_HC_INFO_FIELD
                         marked_as_hc.append(merge_key)
                     new_line = "\t".join(split_line)
                     new_lines.append(new_line)

@@ -1,3 +1,4 @@
+# pylint: disable=C0103,C0301,R0904
 from collections import OrderedDict,defaultdict
 import os
 import unittest
@@ -171,29 +172,74 @@ class Varscan_DepthTagTestCase(unittest.TestCase):
     def test_format(self):
         tag = varscan.DepthTag()
         format_dict = OrderedDict(zip("A:DP".split(":"), "1:42".split(":")))
-        self.assertEqual(OrderedDict([('A', '1'), ('DP', '42'), ('JQ_DP_VS', '42')]), tag.format("alt", "filter", "", format_dict, 0))
- 
+        self.assertEqual(OrderedDict([('A', '1'), ('DP', '42'), ('JQ_DP_VS', '42')]), tag.format("alt", "filter", "", format_dict, 0)) 
+
+
 class Varscan_SomaticTagTestCase(unittest.TestCase):
+    def setUp(self):
+        self.tag = varscan.SomaticTag()
+
     def test_metaheader(self):
         self.assertEqual('##FORMAT=<ID=JQ_HC_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={0}>\n'.format(__version__), varscan.SomaticTag().metaheader)
-                 
+
     def test_format_missingSSInfoTag(self):
-        tag = varscan.SomaticTag()
-        format_param_string = "A:B"
-        format_value_string = "1:2"
-        format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-        self.assertEqual(["A", "B", "JQ_HC_SOM_VS"], tag.format("alt", "filter", "INFO", format_dict, 0).keys())
-        self.assertEqual(["1", "2", "0"], tag.format("alt", "filter", "INFO", format_dict, 0).values())
-                 
-    def test_format(self):
-        tag = varscan.SomaticTag()
+        format_dict = OrderedDict([("A", "1"), ("B", "2")])
+        actual_format_dict = self.tag.format("alt", "filter", "INFO",
+                                             format_dict, 0)
+        self.assertEqual(["A", "B", "JQ_HC_SOM_VS"], actual_format_dict.keys())
+        self.assertEqual(["1", "2", "0"], actual_format_dict.values())
+
+    def test_format_somaticTag0WhenSampleIsNormal(self):
         format_dict = OrderedDict([("A", "1")])
-        self.assertEqual(OrderedDict([("A", "1"), ("JQ_HC_SOM_VS", "0")]), tag.format("alt", "filter", "INFO;SS=2", format_dict, 0))
-        self.assertEqual(OrderedDict([("A", "1"), ("JQ_HC_SOM_VS", "1")]), tag.format("alt", "filter", "INFO;SS=2", format_dict, 1))
-        self.assertEqual(OrderedDict([("A", "1"), ("JQ_HC_SOM_VS", "1")]), tag.format("alt", "filter", "INFO;SS=2;JQ_HC_SOM_VS", format_dict, 1))
-         
-        format_dict = OrderedDict([("A", "1")])
-        self.assertEqual(OrderedDict([("A", "1",), ("JQ_HC_SOM_VS", "0")]), tag.format("alt", "filter", "INFO", format_dict, 0))
-        self.assertEqual(OrderedDict([("A", "1"), ("JQ_HC_SOM_VS", "0")]), tag.format("alt", "filter", "INFO", format_dict, 1))
-        
+        sample_count = 0
+
+        actual_format_dict = self.tag.format("alt", "filter", "INFO",
+                                             format_dict, sample_count)
+        expected_format_dict = OrderedDict([("A", "1"), ("JQ_HC_SOM_VS", "0")])
+        self.assertEqual(expected_format_dict, actual_format_dict)
+
+        actual_format_dict = self.tag.format("alt", "filter", "INFO;SS=2",
+                                             format_dict, sample_count)
+        expected_format_dict = OrderedDict([("A", "1"), ("JQ_HC_SOM_VS", "0")])
+        self.assertEqual(expected_format_dict, actual_format_dict)
+
+
+    def test_format_somaticTag1WhenSampleIsTumorAndSSAndHighConfidence(self):
+        input_format_dict = {}
+        sample_is_tumor = 1
+
+        actual_format_dict = self.tag.format("alt", "filter",
+                                             "INFO",
+                                             input_format_dict, sample_is_tumor)
+        expected_format_dict = OrderedDict([("JQ_HC_SOM_VS", "0")])
+        self.assertEqual(expected_format_dict, actual_format_dict)
+
+        actual_format_dict = self.tag.format("alt", "filter",
+                                             "INFO;SS=2",
+                                             input_format_dict, sample_is_tumor)
+        expected_format_dict = OrderedDict([("JQ_HC_SOM_VS", "0")])
+        self.assertEqual(expected_format_dict, actual_format_dict)
+
+        actual_format_dict = self.tag.format("alt", "filter",
+                                             "INFO;JQ_HC_VS",
+                                             input_format_dict, sample_is_tumor)
+        expected_format_dict = OrderedDict([("JQ_HC_SOM_VS", "0")])
+        self.assertEqual(expected_format_dict, actual_format_dict)
+
+        actual_format_dict = self.tag.format("alt", "filter",
+                                             "INFO;JQ_HC_VS;SS=2",
+                                             input_format_dict, sample_is_tumor)
+        expected_format_dict = OrderedDict([("JQ_HC_SOM_VS", "1")])
+        self.assertEqual(expected_format_dict, actual_format_dict)
+
+
+    def test_format_rerunningUpdatesInsteadOfAdds(self):
+        format_dict = OrderedDict([("JQ_HC_SOM_VS", "0")])
+        sample_count = 1
+
+        actual_format_dict = self.tag.format("alt", "filter",
+                                             "INFO;SS=2;JQ_HC_VS",
+                                             format_dict, sample_count)
+        expected_format_dict = OrderedDict([("JQ_HC_SOM_VS", "1")])
+        self.assertEqual(expected_format_dict, actual_format_dict)
 
