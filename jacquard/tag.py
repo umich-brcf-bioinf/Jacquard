@@ -1,76 +1,15 @@
-from collections import OrderedDict, defaultdict
+from __future__ import print_function
 import glob
 import os
-import shutil
+#import shutil
 
 from variant_callers import variant_caller_factory
 import jacquard_utils
 from jacquard_utils import JQException
 
 
-# class LineProcessor():
-#     def __init__(self, tags):
-#         self.tags = tags
-#         
-#     def add_tags(self, input_line):
-#         no_newline_line = input_line.rstrip("\n")
-#         original_vcf_fields = no_newline_line.split("\t")
-#         new_vcf_fields = original_vcf_fields[:8]
-#         alt = original_vcf_fields[4]
-#         filter = original_vcf_fields[6]
-#         info = original_vcf_fields[7]
-#         format = original_vcf_fields[8]
-#         samples = original_vcf_fields[9:]
-# 
-#         count = 0
-#         for sample in samples:
-#             format_dict = OrderedDict(zip(format.split(":"), sample.split(":")))
-#             for tag in self.tags:
-#                 format_dict = tag.format(alt, filter, info, format_dict, count)
-#                 
-#             if count < 1: ##only add format column once
-#                 new_vcf_fields.append(":".join(format_dict.keys()))
-#             new_vcf_fields.append(":".join(format_dict.values()))
-#             count += 1
-# 
-#         return "\t".join(new_vcf_fields) + "\n"
-# 
-# class FileProcessor():
-#     def __init__(self, output_dir, tags=[], execution_context_metadataheaders = []):
-#         self._tags = tags
-#         self._metaheader = self._metaheader_handler(execution_context_metadataheaders)
-#         self._output_dir = output_dir
-#         
-#         for tag in self._tags:
-#             self._metaheader += tag.metaheader
-#         self._lineProcessor = LineProcessor(self._tags)
-#             
-#     def _metaheader_handler(self, metaheaders):
-#         new_headers = ["{}\n".format(header) for header in metaheaders]
-#         return ''.join(new_headers)
-# 
-#     def process(self, reader, writer, in_file_name, caller, handlers):
-#         writer.write(handlers[in_file_name] + "\n")
-#         for line in reader:
-#             if line.startswith("##"):
-#                 writer.write(line)
-#             elif line.startswith("#"):
-#                 if caller == "VarScan":
-#                     if "NORMAL" in line and "TUMOR" in line:
-#                         writer.write(self._metaheader)
-#                         writer.write("##jacquard.tag.caller={0}\n".format(caller))
-#                         writer.write(line)
-#                     else:
-#                         print "Unexpected VarScan VCF structure - missing NORMAL\t and TUMOR\n headers."
-#                         shutil.rmtree(self._output_dir)
-#                         exit(1)
-#                 else:
-#                     writer.write(self._metaheader)
-#                     writer.write("##jacquard.tag.caller={0}\n".format(caller))
-#                     writer.write(line)
-#             else:
-#                 edited_line = self._lineProcessor.add_tags(line)
-#                 writer.write(edited_line)
+def log(msg, *args):
+    print(msg.format([str(i) for i in args]))
 
 def write_headers(reader, writer, in_file, execution_context, caller):
     metaheader = ''.join(["{}\n".format(header) for header in execution_context])
@@ -101,7 +40,24 @@ def _get_header(input_dir, in_file):
                 break
     return header
         
-def determine_caller(input_dir, in_files, factory):
+
+def determine_callers2(vcfProviders, factory):
+    file_to_caller = {}
+    any_file_failed = False
+    for vcf in vcfProviders:
+        try:    
+            file_to_caller[vcf.name] = factory.get_caller(vcf)
+        except factory.JQException as e:
+            log("ERROR: Problem parsing [{}]:{}",vcf.name, e)
+            any_file_failed = True
+    if any_file_failed:
+        raise JQException("There were problems parsing some VCFs. Review input files above and try again.")
+
+    return file_to_caller
+
+
+
+def determine_callers(input_dir, in_files, factory):
     file_to_caller = {}   
     problem_files = {"unknown":[],"invalid":[]}         
     for in_file in in_files:
@@ -116,19 +72,6 @@ def determine_caller(input_dir, in_files, factory):
         raise JQException("Unable to determine which caller was used on {0}. Check input files and try again.".format(problem_files["unknown"]))
     if len(problem_files["invalid"])>0:
         raise JQException("Invalid caller on {0}. Check input files and try again.".format(problem_files["invalid"]))
-        #TODO: Continue with getting tags starting from here!
-#             valid = caller.validate_input_file(in_file)
-#             if valid == 1:
-#                 file_types[caller.name].append(file)
-#                 if (caller.good):
-#                     handler = "{0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller.name)
-#                     print handler
-#                     handlers[os.path.basename(file)] = "##jacquard.tag.handler={0}".format(caller.name)
-#                     inferred_caller = "##jacquard.tag.caller={0}".format(caller.name)                 
-#                     print "{0}: {1}".format(os.path.basename(file), inferred_caller)                    
-#                 else:  
-#                     print "ERROR. {0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller.name)
-#                 break
     return file_to_caller
     
 def print_callers(file_to_caller):
@@ -146,7 +89,7 @@ def tag_files(input_dir, output_dir, execution_context=[]):
     print "\n".join(execution_context)
     print "Processing [{0}] VCF file(s) from [{1}]".format(len(in_files), input_dir)
     
-    file_to_caller = determine_caller(input_dir, in_files, factory)
+    file_to_caller = determine_callers(input_dir, in_files, factory)
     print_callers(file_to_caller)
 
 #     processors = {"VarScan" : FileProcessor(output_dir, tags=[varscan.AlleleFreqTag(), varscan.DepthTag(), varscan.SomaticTag()], execution_context_metadataheaders=execution_context), "MuTect": FileProcessor(output_dir, tags=[mutect.AlleleFreqTag(), mutect.DepthTag(), mutect.SomaticTag()], execution_context_metadataheaders=execution_context), "Strelka": FileProcessor(output_dir, tags=[strelka.AlleleFreqTag(), strelka.DepthTag(), strelka.SomaticTag()], execution_context_metadataheaders=execution_context)}

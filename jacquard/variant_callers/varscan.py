@@ -73,7 +73,7 @@ class Varscan():
         if _VARSCAN_SOMATIC_HEADER in header:
             return 1
         else:
-            raise jacquard_utils.JQException("Unexpected VarScan VCF structure - missing NORMAL\t and TUMOR\n headers.")
+            raise jacquard_utils.JQException("Unexpected VarScan VCF structure - missing NORMAL and TUMOR headers.")
 
     def identify_hc_variants(self,hc_candidates):
         hc_variants = {}
