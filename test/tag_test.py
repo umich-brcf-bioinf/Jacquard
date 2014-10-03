@@ -177,9 +177,9 @@ class TagVarScanTestCase(unittest.TestCase):
                 split_result = result.split("\n")
                 self.assertEqual('##jacquard.tag.handler=VarScan', split_result[0])
                 self.assertEqual('##source=VarScan2', split_result[1])
-                self.assertEqual('##FORMAT=<ID=JQ_AF_VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={0}>'.format(__version__), split_result[2])
-                self.assertEqual('##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP),Source="Jacquard",Version={0}>'.format(__version__), split_result[3])
-                self.assertEqual('##FORMAT=<ID=JQ_HC_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={0}>'.format(__version__), split_result[4])
+                self.assertEqual('##FORMAT=<ID=JQ_AF_VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)",Source="Jacquard",Version={0}>'.format(__version__), split_result[2])
+                self.assertEqual('##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)",Source="Jacquard",Version={0}>'.format(__version__), split_result[3])
+                self.assertEqual('##FORMAT=<ID=JQ_HC_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on variant is high confidence, SOMATIC info field and if sample is TUMOR)",Source="Jacquard",Version={0}>'.format(__version__), split_result[4])
                 self.assertEqual('##jacquard.tag.caller=VarScan'.format(__version__), split_result[5])
                 self.assertEqual('#CHROM\tNORMAL\tTUMOR', split_result[6])
             

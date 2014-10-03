@@ -119,7 +119,7 @@ class VarScanTestCase(unittest.TestCase):
          
 class Varscan_AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_AF_VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={0}>\n'.format(__version__), varscan.AlleleFreqTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_AF_VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)",Source="Jacquard",Version={0}>\n'.format(__version__), varscan.AlleleFreqTag().metaheader)
                  
     def test_format_missingAFTag(self):
         tag = varscan.AlleleFreqTag()
@@ -160,7 +160,7 @@ class Varscan_AlleleFreqTagTestCase(unittest.TestCase):
          
 class Varscan_DepthTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP),Source="Jacquard",Version={0}>\n'.format(__version__), varscan.DepthTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_DP_VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)",Source="Jacquard",Version={0}>\n'.format(__version__), varscan.DepthTag().metaheader)
                  
     def test_format_missingDPTag(self):
         tag = varscan.DepthTag()
@@ -180,7 +180,7 @@ class Varscan_SomaticTagTestCase(unittest.TestCase):
         self.tag = varscan.SomaticTag()
 
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_HC_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={0}>\n'.format(__version__), varscan.SomaticTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_HC_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on variant is high confidence, SOMATIC info field and if sample is TUMOR)",Source="Jacquard",Version={0}>\n'.format(__version__), varscan.SomaticTag().metaheader)
 
     def test_format_missingSSInfoTag(self):
         format_dict = OrderedDict([("A", "1"), ("B", "2")])

@@ -7,7 +7,7 @@ _JQ_VARSCAN_HC_INFO_FIELD = "JQ_HC_VS"
 
 class AlleleFreqTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID={0}VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_af_tag, jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)",Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_af_tag, jacquard_utils.__version__)
 
     def format(self, alt, filter_field, info_string, format_dict, count):
         if "FREQ" in format_dict.keys():
@@ -28,7 +28,7 @@ class AlleleFreqTag():
         
 class DepthTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID={0}VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_dp_tag, jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)",Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_dp_tag, jacquard_utils.__version__)
 
     def format(self, alt, filter_field, info_string, format_dict, count):
         if "DP" in format_dict.keys():
@@ -38,7 +38,7 @@ class DepthTag():
     
 class SomaticTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID={0}VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_somatic_tag, jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on variant is high confidence, SOMATIC info field and if sample is TUMOR)",Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_somatic_tag, jacquard_utils.__version__)
 
     def format(self, alt, filter_field, info_string, format_dict, count):
         info_array = info_string.split(";")
@@ -108,7 +108,7 @@ class Varscan():
                     merge_key = "^".join([split_line[0], str(split_line[1]), split_line[3], split_line[4]])
                     if merge_key in hc_variants:
                         if _JQ_VARSCAN_HC_INFO_FIELD not in split_line[7]:
-                            split_line[7] += _JQ_VARSCAN_HC_INFO_FIELD
+                            split_line[7] += ";" + _JQ_VARSCAN_HC_INFO_FIELD
                         marked_as_hc.append(merge_key)
                     new_line = "\t".join(split_line)
                     new_lines.append(new_line)

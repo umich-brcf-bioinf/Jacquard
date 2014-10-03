@@ -13,8 +13,10 @@
 ##   See the License for the specific language governing permissions and
 ##   limitations under the License.
 
+from __future__ import print_function
 import argparse
 import os
+import signal
 import sys
 
 import pivot_variants
@@ -28,8 +30,7 @@ import expand
 import style
 import jacquard_utils
 
-def main():
-    dispatch([normalize,
+_SUBCOMMANDS=[normalize,
               tag,
               filter_hc_somatic,
               merge,
@@ -37,7 +38,17 @@ def main():
               expand,
               style,
               rollup_genes,
-              pivot_variants], sys.argv[1:])
+              pivot_variants]
+
+def main():
+    def handler(signum, frame):
+        print("WARNING: Jacquard was interrupted before completing.", file=sys.stderr)
+        exit(1)
+
+    signal.signal(signal.SIGINT, handler)
+    signal.signal(signal.SIGTERM, handler)
+
+    dispatch(_SUBCOMMANDS, sys.argv[1:])
 
 def version_text():
     callers = jacquard_utils.caller_versions.items()

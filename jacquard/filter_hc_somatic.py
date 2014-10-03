@@ -33,14 +33,14 @@ def find_somatic_positions(in_files, output_dir):
 
         if somatic == 0:
             no_jq_tags.append(file)
-            print "ERROR: input file [{0}] has no Jaquard tags.".format(os.path.basename(file))
+            print "WARNING: input file [{0}] has no high-confidence somatic variants.".format(os.path.basename(file))
             
         in_file.close()
         
         count += 1
         
-    if no_jq_tags != []:
-        print "ERROR: [{0}/{1}] VCF files have no Jacquard tags. Review input and try again.".format(len(no_jq_tags), len(in_files))
+    if no_jq_tags:
+        print "ERROR: [{0}/{1}] VCF files had no high-confidence somatic variants. Review input and try again.".format(len(no_jq_tags), len(in_files))
         exit(1)
         
     print "Found [{0}] high-confidence somatic positions".format(len(somatic_positions.keys()))
