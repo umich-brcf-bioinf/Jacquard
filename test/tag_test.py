@@ -1,3 +1,4 @@
+# pylint: disable=C0103,C0301,R0903,R0904
 from collections import OrderedDict
 import glob
 import os
@@ -9,8 +10,8 @@ import unittest
 from jacquard.tag import tag_files
 from jacquard.variant_callers import varscan, mutect
 from jacquard.jacquard_utils import __version__
-from jacqaurd import tag
-
+import jacquard.tag as tag
+import jacquard.jacquard_utils as jacquard_utils
 
 # class LineProcessorTestCase(unittest.TestCase):
 #     def test_process_line_singleSample(self):
@@ -236,28 +237,105 @@ from jacqaurd import tag
 
 
 class MockVcfProvider(object):
-    def __init__(self, name, header):
+    def __init__(self, name="vcfName", header="##header"):
         self.name = name
         self.header = header
 
 
 class MockCallerFactory(object):
-    def __init__(self, caller):
-        self.caller = caller
-        self.last_vcf=None
-        
-    def get_caller(self, vcf):
+    def __init__(self, vcf_to_caller):
+        self.vcf_to_caller = vcf_to_caller
+        self.last_vcf = None
+
+    def get_vcf_caller(self, vcf):
         self.last_vcf = vcf
-        return self.caller
+        for known_vcf, caller in self.vcf_to_caller.iteritems():
+            if known_vcf == vcf:
+                return caller
+        raise jacquard_utils.JQException("No caller found")
 
 
 class MockCaller(object):
-    pass
+    def __init__(self, name="MockCaller"):
+        self.name = name
+
+class NewTagTestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.output = StringIO()
+        self.saved_stderr = sys.stderr
+        sys.stderr = self.output
+
+    def tearDown(self):
+        self.output.close()
+        sys.stderr = self.saved_stderr
+
+
+    def test_build_vcf_to_caller_singleVcf(self):
+        vcf = MockVcfProvider()
+        caller = MockCaller()
+        factory = MockCallerFactory({vcf:caller})
+
+        actual_dict = tag._build_vcf_to_caller([vcf], factory)
+
+        self.assertEqual({vcf:caller}, actual_dict)
+
+    def test_build_vcf_to_caller_multipleVcfBuildsDict(self):
+        vcf1 = MockVcfProvider()
+        vcf2 = MockVcfProvider()
+        caller1 = MockCaller()
+        caller2 = MockCaller()
+
+        factory = MockCallerFactory({vcf1:caller1, vcf2:caller2})
+
+        actual_dict = tag._build_vcf_to_caller([vcf1, vcf2], factory)
+
+        self.assertEqual({vcf1:caller1, vcf2:caller2}, actual_dict)
+
+
+    def test_build_vcf_to_caller_multipleVcfLogs(self):
+        vcf1 = MockVcfProvider("vcf1")
+        vcf2 = MockVcfProvider("vcf2")
+        vcf3 = MockVcfProvider("vcf3")
+        caller1 = MockCaller("foo_caller")
+        caller2 = MockCaller("bar_caller")
+
+        factory = MockCallerFactory({vcf1:caller1,
+                                     vcf2:caller1,
+                                     vcf3:caller2})
+
+        tag._build_vcf_to_caller([vcf1, vcf2, vcf3], factory)
+
+        output_lines = self.output.getvalue().rstrip().split("\n")
+        self.assertEquals(5, len(output_lines))
+        line_iter = iter(output_lines)
+        self.assertEquals("DEBUG: VCF [vcf1] recognized by caller [foo_caller]", line_iter.next())
+        self.assertEquals("DEBUG: VCF [vcf2] recognized by caller [foo_caller]", line_iter.next())
+        self.assertEquals("DEBUG: VCF [vcf3] recognized by caller [bar_caller]", line_iter.next())
+        self.assertEquals("INFO: Recognized [1] bar_caller file(s)", line_iter.next())
+        self.assertEquals("INFO: Recognized [2] foo_caller file(s)", line_iter.next())
+
+
+
+    def test_build_vcf_to_caller_exceptionIsRaisedDetailsLogged(self):
+        vcf1 = MockVcfProvider(name="vcf1")
+        vcf2 = MockVcfProvider(name="vcf2")
+        mockCaller1 = MockCaller()
+
+        factory = MockCallerFactory({vcf1:mockCaller1})
+
+        self.assertRaisesRegexp(jacquard_utils.JQException,
+                                "There were problems parsing some VCFs.",
+                                tag._build_vcf_to_caller,
+                                [vcf1, vcf2],
+                                factory)
+
+        self.assertRegexpMatches(self.output.getvalue(), 'ERROR: Problem parsing \[vcf2\]:')
+
 
 
 class  TagTestCase(unittest.TestCase):
 
-    
     def setUp(self):
         self.output = StringIO()
         self.saved_stdout = sys.stdout
@@ -266,71 +344,63 @@ class  TagTestCase(unittest.TestCase):
     def tearDown(self):
         self.output.close()
         sys.stdout = self.saved_stdout
-        
-    def test_determineCallers2(self):
-        vcfProvider = MockVcfProvider("foo.vcf", "##foo")
-        mockCaller = MockCaller()
-        factory = MockCallerFactory(mockCaller)
-        actual_dict = tag.determine_callers2([vcfProvider], factory)
-        
-        self.assertEqual({mockVcfProvider:mockCaller}, actual_file_caller_dict)
-    
-    def test_determineCallers(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/reference_files/multi_caller_input/withUnknowns"
-        output_dir = script_dir + "/reference_files/multi_caller_output/"
-        try:
-            os.mkdir(output_dir)
-        except:
-            pass
-        
-        in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
 
-        callers = [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()]
-        file_types, handlers, inferred_callers = determine_file_types(input_dir, in_files, callers)
-        self.assertEqual(["Unknown", "VarScan", "MuTect"], file_types.keys())
-        self.assertEqual('tiny_unknown_input.vcf', os.path.basename(file_types.values()[0][0]))
-        self.assertEqual('tiny_varscan_input.vcf', os.path.basename(file_types.values()[1][0]))
-        self.assertEqual('tiny_mutect_input.vcf', os.path.basename(file_types.values()[2][0]))
-        self.assertEqual('tiny_mutect_input2.vcf', os.path.basename(file_types.values()[2][1]))
-        
-        with self.assertRaises(SystemExit) as cm:
-            print_file_types(output_dir, file_types)
-        self.assertEqual(cm.exception.code, 1)
-        
-        output_list = self.output.getvalue().splitlines()
-                
-        self.assertEqual("tiny_mutect_input.vcf: ##jacquard.tag.handler=MuTect", output_list[0])
-        self.assertEqual("tiny_mutect_input2.vcf: ##jacquard.tag.handler=MuTect", output_list[2])
-        self.assertEqual("ERROR. tiny_unknown_input.vcf: ##jacquard.tag.handler=Unknown", output_list[4])
-        self.assertEqual("tiny_varscan_input.vcf: ##jacquard.tag.handler=VarScan", output_list[5])
-        self.assertEqual("Recognized [1] Unknown file(s)", output_list[7])
-        self.assertEqual("Recognized [1] VarScan file(s)", output_list[8])
-        self.assertEqual("Recognized [2] MuTect file(s)", output_list[9])
-        
-        
-    def test_determineFileTypes_noUnknown(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/reference_files/multi_caller_input/"
-        output_dir = script_dir + "/reference_files/multi_caller_output/"
-        in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
-        
-
-        callers = [mutect.Mutect(), varscan.Varscan(), unknown.Unknown()]
-        file_types, handlers, inferred_callers = determine_file_types(input_dir, in_files, callers)
-        self.assertEqual(["VarScan", "MuTect"], file_types.keys())
-        self.assertEqual('tiny_varscan_input.vcf', os.path.basename(file_types.values()[0][0]))
-        self.assertEqual('tiny_mutect_input.vcf', os.path.basename(file_types.values()[1][0]))
-        self.assertEqual('tiny_mutect_input2.vcf', os.path.basename(file_types.values()[1][1]))
-
-        print_file_types(output_dir, file_types)
-        output_list = self.output.getvalue().splitlines()
-        
-        self.assertEqual("tiny_mutect_input.vcf: ##jacquard.tag.handler=MuTect", output_list[0])
-        self.assertEqual("tiny_mutect_input2.vcf: ##jacquard.tag.handler=MuTect", output_list[2])
-        self.assertEqual("tiny_varscan_input.vcf: ##jacquard.tag.handler=VarScan", output_list[4])
-        self.assertEqual("Recognized [1] VarScan file(s)", output_list[6])
-        self.assertEqual("Recognized [2] MuTect file(s)", output_list[7])
+#     def test_determineCallers(self):
+#         script_dir = os.path.dirname(os.path.abspath(__file__))
+#         input_dir = script_dir + "/reference_files/multi_caller_input/withUnknowns"
+#         output_dir = script_dir + "/reference_files/multi_caller_output/"
+#         try:
+#             os.mkdir(output_dir)
+#         except:
+#             pass
+#         
+#         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
+# 
+#         callers = [mutect.Mutect(), varscan.Varscan()]
+#         file_types, handlers, inferred_callers = tag.determine_callers(input_dir, in_files, callers)
+#         self.assertEqual(["Unknown", "VarScan", "MuTect"], file_types.keys())
+#         self.assertEqual('tiny_unknown_input.vcf', os.path.basename(file_types.values()[0][0]))
+#         self.assertEqual('tiny_varscan_input.vcf', os.path.basename(file_types.values()[1][0]))
+#         self.assertEqual('tiny_mutect_input.vcf', os.path.basename(file_types.values()[2][0]))
+#         self.assertEqual('tiny_mutect_input2.vcf', os.path.basename(file_types.values()[2][1]))
+#         
+#         with self.assertRaises(SystemExit) as cm:
+#             print_file_types(output_dir, file_types)
+#         self.assertEqual(cm.exception.code, 1)
+#         
+#         output_list = self.output.getvalue().splitlines()
+#                 
+#         self.assertEqual("tiny_mutect_input.vcf: ##jacquard.tag.handler=MuTect", output_list[0])
+#         self.assertEqual("tiny_mutect_input2.vcf: ##jacquard.tag.handler=MuTect", output_list[2])
+#         self.assertEqual("ERROR. tiny_unknown_input.vcf: ##jacquard.tag.handler=Unknown", output_list[4])
+#         self.assertEqual("tiny_varscan_input.vcf: ##jacquard.tag.handler=VarScan", output_list[5])
+#         self.assertEqual("Recognized [1] Unknown file(s)", output_list[7])
+#         self.assertEqual("Recognized [1] VarScan file(s)", output_list[8])
+#         self.assertEqual("Recognized [2] MuTect file(s)", output_list[9])
+#         
+#         
+#     def test_determineFileTypes_noUnknown(self):
+#         script_dir = os.path.dirname(os.path.abspath(__file__))
+#         input_dir = script_dir + "/reference_files/multi_caller_input/"
+#         output_dir = script_dir + "/reference_files/multi_caller_output/"
+#         in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
+#         
+# 
+#         callers = [mutect.Mutect(), varscan.Varscan()]
+#         file_types, handlers, inferred_callers = tag.determine_callers(input_dir, in_files, callers)
+#         self.assertEqual(["VarScan", "MuTect"], file_types.keys())
+#         self.assertEqual('tiny_varscan_input.vcf', os.path.basename(file_types.values()[0][0]))
+#         self.assertEqual('tiny_mutect_input.vcf', os.path.basename(file_types.values()[1][0]))
+#         self.assertEqual('tiny_mutect_input2.vcf', os.path.basename(file_types.values()[1][1]))
+# 
+#         print_file_types(output_dir, file_types)
+#         output_list = self.output.getvalue().splitlines()
+#         
+#         self.assertEqual("tiny_mutect_input.vcf: ##jacquard.tag.handler=MuTect", output_list[0])
+#         self.assertEqual("tiny_mutect_input2.vcf: ##jacquard.tag.handler=MuTect", output_list[2])
+#         self.assertEqual("tiny_varscan_input.vcf: ##jacquard.tag.handler=VarScan", output_list[4])
+#         self.assertEqual("Recognized [1] VarScan file(s)", output_list[6])
+#         self.assertEqual("Recognized [2] MuTect file(s)", output_list[7])
 
 
 class MockLowerTag():
