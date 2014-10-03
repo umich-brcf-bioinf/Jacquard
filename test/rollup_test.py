@@ -18,7 +18,7 @@ def dataframe(input_data, sep="\t", index_col=None):
 class RollupTestCase(unittest.TestCase):
     def test_gene_rollup_highest_impact(self):
         input_string = \
-'''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	HIGHEST_IMPACT	RNA_FREQ_sampleA	RNA_FREQ_sampleB
+'''CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	SNPEFF_TOP_EFFECT_IMPACT	RNA_FREQ_sampleA	RNA_FREQ_sampleB
 1	2	A	T	foo	HIGH	0.5	0.2
 1	2	A	G	foo	LOW	0.7	.28
 2	3	A	T	bar	MODIFIER	0.5	0.1
@@ -65,7 +65,7 @@ sample2	2	3	A	T	bar	2	0.5	.'''
         
     def test_combine_dfs(self):
         input_string = \
-'''SAMPLE_NAME	CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	HIGHEST_IMPACT	Impact_Damaging	RNA_FREQ_sampleA	RNA_FREQ_sampleB
+'''SAMPLE_NAME	CHROM	POS	REF	ANNOTATED_ALLELE	GENE_SYMBOL	SNPEFF_TOP_EFFECT_IMPACT	Impact_Damaging	RNA_FREQ_sampleA	RNA_FREQ_sampleB
 sample1	1	2	A	T	foo	HIGH	0	0.5	0.2
 sample1	1	2	A	G	foo	MODERATE	1	0.7	.28
 sample2	2	3	A	T	bar	LOW	0	.	0.1
