@@ -6,7 +6,7 @@ import unittest
 
 import jacquard.variant_callers.strelka as strelka
 from jacquard.jacquard_utils import __version__, jq_af_tag
-from jacquard.vcf_record import VcfRecord 
+from jacquard.vcf import VcfRecord 
 
 class AlleleFreqTagTestCase(unittest.TestCase):
 

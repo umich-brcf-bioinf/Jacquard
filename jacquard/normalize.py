@@ -4,11 +4,9 @@ import os
 import re
 import shutil
 
-# from variant_callers import varscan, strelka, unknown
 import variant_callers.varscan 
 import variant_callers.strelka
 import variant_callers.mutect
-import variant_callers.unknown
 
 import jacquard_utils as jacquard_utils
 
@@ -158,7 +156,7 @@ def execute(args, execution_context):
     
     jacquard_utils.validate_directories(input_dir, output_dir)
 
-    callers = [variant_callers.strelka.Strelka(), variant_callers.varscan.Varscan(), variant_callers.mutect.Mutect(), variant_callers.unknown.Unknown()]
+    callers = [variant_callers.strelka.Strelka(), variant_callers.varscan.Varscan(), variant_callers.mutect.Mutect()]
     merge_and_sort(input_dir, output_dir, callers, execution_context)
     
         

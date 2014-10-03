@@ -3,7 +3,7 @@ import unittest
 
 import jacquard.variant_callers.mutect as mutect
 from jacquard.jacquard_utils import __version__, jq_dp_tag, jq_somatic_tag
-from jacquard.vcf_record import VcfRecord 
+from jacquard.vcf import VcfRecord 
 
 
 
@@ -60,7 +60,7 @@ class DepthTagTestCase(unittest.TestCase):
 class SomaticTagTestCase(unittest.TestCase):
  
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag),Source="Jacquard",Version={1}>\n'.format(jq_somatic_tag, __version__), mutect._SomaticTag().metaheader)
+        self.assertEqual('##FORMAT=<ID={0}MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag),Source="Jacquard",Version={1}>\n'.format(jq_somatic_tag, __version__), mutect._SomaticTag().metaheader)
         
     def test_format_missingSSTag(self):
         tag = mutect._SomaticTag()
@@ -113,7 +113,7 @@ class Mutect_TestCase(unittest.TestCase):
     def test_updateMetaheader(self):
         input_metaheader = "#foo\n"
         self.caller.tags=[MockTag("mockTag", 42, "##my_metaheader\n")]
-        actual_metaheader = self.caller.update_metaheader(input_metaheader)
+        actual_metaheader = self.caller.get_new_metaheaders(input_metaheader)
 
         expected_line = "#foo\n##my_metaheader\n"
 

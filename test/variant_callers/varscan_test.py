@@ -4,8 +4,14 @@ import unittest
 
 from jacquard.variant_callers import varscan
 from jacquard.jacquard_utils import __version__
+from test.variant_callers.mutect_test import MockTag
 
 class VarScanTestCase(unittest.TestCase):
+    def test_get_new_metaheaders(self):
+        caller = varscan.Varscan()
+        caller.tags = [MockTag("A", "1", "X"),MockTag("A", "1", "Y"),MockTag("A", "1", "Z")]
+        self.assertEquals(["X","Y","Z"], caller.get_new_metaheaders())
+
     def test_validateInputFile_valid(self):
         caller = varscan.Varscan() 
         input_file = ["##source=VarScan2", "foo"]
@@ -175,7 +181,7 @@ class Varscan_DepthTagTestCase(unittest.TestCase):
  
 class Varscan_SomaticTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_HC_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={0}>\n'.format(__version__), varscan.SomaticTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_HC_SOM_VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={0}>\n'.format(__version__), varscan.SomaticTag().metaheader)
                  
     def test_format_missingSSInfoTag(self):
         tag = varscan.SomaticTag()

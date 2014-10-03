@@ -3,12 +3,12 @@ import os
 import re
 import jacquard.jacquard_utils as jacquard_utils
 
-_VARSCAN_SOMATIC_HEADER="#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR".replace("|","\t")
+_VARSCAN_SOMATIC_HEADER = "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR".replace("|","\t")
 
 
 class AlleleFreqTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID={0}VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_af_tag, jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}VS,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ),Source="Jacquard",Version={1}>'.format(jacquard_utils.jq_af_tag, jacquard_utils.__version__)
 
     def format(self, vcfRecord):
         if "FREQ" in vcfRecord.format_set:
@@ -29,7 +29,7 @@ class AlleleFreqTag():
         
 class DepthTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID={0}VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_dp_tag, jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP),Source="Jacquard",Version={1}>'.format(jacquard_utils.jq_dp_tag, jacquard_utils.__version__)
 
     def format(self, vcfRecord):
         if "DP" in vcfRecord.format_set:
@@ -38,7 +38,7 @@ class DepthTag():
     
 class SomaticTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID={0}VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1= somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_somatic_tag, jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR),Source="Jacquard",Version={1}>'.format(jacquard_utils.jq_somatic_tag, jacquard_utils.__version__)
 
     def format(self, vcfRecord):
         info_array = vcfRecord.info.split(";")
@@ -50,7 +50,8 @@ class SomaticTag():
         else:
             for key in vcfRecord.sample_dict.keys():
                 vcfRecord.sample_dict[key][varscan_tag] = "0"
-#  
+
+
     def somatic_status(self, count):
         if count == 0: #it's NORMAL
             return "0"
@@ -62,15 +63,16 @@ class Varscan():
         self.name = "VarScan"
         self.good = True
         self.tags = [AlleleFreqTag(),DepthTag(),SomaticTag()]
+#         self.tags = [AlleleFreqTag(),DepthTag()]
         self.meta_header = "##jacquard.normalize_varscan.sources={0},{1}\n"
         self.file_name_search = "snp|indel"
 #         self.af_tag = AlleleFreqTag()
         
-    def validate_input_file(self, header):
-        if "##source=VarScan2" not in header:
+    def validate_input_file(self, meta_headers, column_header):
+        if "##source=VarScan2" not in meta_headers:
             return 0
                 
-        if _VARSCAN_SOMATIC_HEADER in header:
+        if _VARSCAN_SOMATIC_HEADER == column_header:
             return 1
         else:
             raise jacquard_utils.JQException("Unexpected VarScan VCF structure - missing NORMAL and TUMOR headers.")
@@ -189,7 +191,5 @@ class Varscan():
             tag.format(vcfRecord)
         return vcfRecord.asText()
     
-    def update_metaheader(self,metaheader):
-        for tag in self.tags:
-            metaheader += tag.metaheader
-        return metaheader
+    def get_new_metaheaders(self):
+        return [tag.metaheader for tag in self.tags]
