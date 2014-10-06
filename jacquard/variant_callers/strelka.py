@@ -4,29 +4,21 @@ class _AlleleFreqTag(object):
     def __init__(self):
         self.metaheader = '##FORMAT=<ID={0}SK,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_af_tag, jacquard_utils.__version__)
 
-    def _get_tier2_base_depth(self, sample_format_dict, alt_allele):
-        
-        numerator = float(sample_format_dict[alt_allele + "U"].split(",")[1])
-        tags = ["AU", "CU", "TU", "GU"]
-        depth = 0
-        for tag in tags:
-            depth += float(sample_format_dict[tag].split(",")[1])
-        af = numerator/depth if depth != 0 else 0.0
-        return af
-    
     def format(self, vcfRecord):
         afs = []
-        sample_values = {}
         if vcfRecord.alt == ".":
             afs = ["."]
         else:
             split_alt = vcfRecord.alt.split(",")
-            print split_alt
             for alt_allele in split_alt:
                 if "AU" in vcfRecord.format_set: #if it's an snv
                     for key in vcfRecord.sample_dict.keys():
-                        sample_format_dict = vcfRecord.sample_dict[key]
-                        af = self._get_tier2_base_depth(sample_format_dict, alt_allele)
+                        numerator = float(vcfRecord.sample_dict[key][alt_allele + "U"].split(",")[1])
+                        tags = ["AU", "CU", "TU", "GU"]
+                        denominator = 0
+                        for tag in tags:
+                            denominator += float(vcfRecord.sample_dict[key][tag].split(",")[1])
+                        af = numerator/denominator if denominator != 0 else 0.0
                 elif "TAR" in vcfRecord.format_set: #if it's an indel
                     for key in vcfRecord.sample_dict.keys():
                         numerator = float(vcfRecord.sample_dict[key]["TAR"].split(",")[1])
@@ -42,7 +34,6 @@ class _AlleleFreqTag(object):
         if afs != []:
             for key in vcfRecord.sample_dict.keys():
                 vcfRecord.sample_dict[key]["JQ_AF_SK"] = ",".join(afs)
-            vcfRecord.insert_format_field("JQ_AF_SK",sample_values)
 
     def _round_two_digits(self, value):
         if len(value.split(".")[1]) <= 2:
@@ -87,15 +78,12 @@ class _SomaticTag(object):
     #TODO: cgates : Refactor params to record_object?
     def format(self, vcfRecord):
         strelka_tag = jacquard_utils.jq_somatic_tag + "SK"
-        sample_values = {}
-        if vcfRecord.filter == "PASS":
+        if vcfRecord.filter_field == "PASS":
             for key in vcfRecord.sample_dict.keys():
-                sample_values[key] = self._somatic_status(key)
+                vcfRecord.sample_dict[key][strelka_tag] = self._somatic_status(key)
         else:
             for key in vcfRecord.sample_dict.keys():
-                sample_values[key] = "0"
-                
-        vcfRecord.insert_format_field(strelka_tag,sample_values)
+                vcfRecord.sample_dict[key][strelka_tag] = "0"
 
     def _somatic_status(self,count):
         if count == 0: #it's NORMAL
