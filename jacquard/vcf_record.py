@@ -23,6 +23,7 @@ class VcfRecord(object):
         if fieldname in self.format_set:
             raise KeyError
         self.format_set.append(fieldname)
+        print field_dict.keys()
         if (field_dict.keys() != self.sample_dict.keys()):
             raise KeyError()
         for key in self.sample_dict.keys():

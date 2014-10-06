@@ -2,7 +2,7 @@ import jacquard.jacquard_utils as jacquard_utils
 
 class _AlleleFreqTag(object):
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID={0}SK,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_af_tag, jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}SK,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version={1}>'.format(jacquard_utils.jq_af_tag, jacquard_utils.__version__)
 
     def _get_tier2_base_depth(self, sample_format_dict, alt_allele):
         
@@ -14,34 +14,43 @@ class _AlleleFreqTag(object):
         af = numerator/depth if depth != 0 else 0.0
         return af
     
-    def format(self, vcfRecord):
+    def _get_SNPallelefreq_per_sample(self,vcfRecord,key):
         afs = []
+        split_alt = vcfRecord.alt.split(",")
+        for alt_allele in split_alt:
+            sample_format_dict = vcfRecord.sample_dict[key]
+            af = self._get_tier2_base_depth(sample_format_dict, alt_allele)
+            rounded_af = self._round_two_digits(str(af))
+            capped_af = min(rounded_af, "1.00")
+            afs.append(capped_af)
+        return afs
+            
+    def _get_indelallelefreq_per_sample(self,vcfRecord,key):
+        afs = []
+        numerator = float(vcfRecord.sample_dict[key]["TAR"].split(",")[1])
+        denominator = float(vcfRecord.sample_dict[key]["DP2"])
+        af = numerator/denominator if denominator != 0 else 0.0
+        rounded_af = self._round_two_digits(str(af))
+        capped_af = min(rounded_af, "1.00")
+        afs.append(capped_af)
+        return afs 
+                
+    def format(self, vcfRecord):
         sample_values = {}
         if vcfRecord.alt == ".":
-            afs = ["."]
+            for key in vcfRecord.sample_dict.keys():
+                sample_values[key] = "."
         else:
-            split_alt = vcfRecord.alt.split(",")
-            print split_alt
-            for alt_allele in split_alt:
-                if "AU" in vcfRecord.format_set: #if it's an snv
-                    for key in vcfRecord.sample_dict.keys():
-                        sample_format_dict = vcfRecord.sample_dict[key]
-                        af = self._get_tier2_base_depth(sample_format_dict, alt_allele)
+            for key in vcfRecord.sample_dict.keys():
+                if "AU" in vcfRecord.format_set:#if it's an snp
+                    afs = self._get_SNPallelefreq_per_sample(vcfRecord,key)
+                    sample_values[key] = ",".join(afs)
                 elif "TAR" in vcfRecord.format_set: #if it's an indel
-                    for key in vcfRecord.sample_dict.keys():
-                        numerator = float(vcfRecord.sample_dict[key]["TAR"].split(",")[1])
-                        denominator = float(vcfRecord.sample_dict[key]["DP2"])
-                        af = numerator/denominator if denominator != 0 else 0.0
+                    afs = self._get_indelallelefreq_per_sample(vcfRecord,key)
+                    sample_values[key] = ",".join(afs)
                 else:
                     continue
-
-                rounded_af = self._round_two_digits(str(af))
-                capped_af = min(rounded_af, "1.00")
-                afs.append(capped_af)
-
-        if afs != []:
-            for key in vcfRecord.sample_dict.keys():
-                vcfRecord.sample_dict[key]["JQ_AF_SK"] = ",".join(afs)
+        if sample_values:
             vcfRecord.insert_format_field("JQ_AF_SK",sample_values)
 
     def _round_two_digits(self, value):
@@ -52,7 +61,7 @@ class _AlleleFreqTag(object):
 
 class _DepthTag(object):
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID={0}SK,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_dp_tag, jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}SK,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth),Source="Jacquard",Version={1}>'.format(jacquard_utils.jq_dp_tag, jacquard_utils.__version__)
 
     def _get_tier2_base_depth(self, sample_format_dict):
         tags = ["AU", "CU", "TU", "GU"]
@@ -73,7 +82,7 @@ class _DepthTag(object):
             for key in vcfRecord.sample_dict:
                 sample_format_dict = vcfRecord.sample_dict[key]
                 sample_values[key] = self._get_tier2_base_depth(sample_format_dict)
-
+                
         vcfRecord.insert_format_field("JQ_DP_SK",sample_values)
         
 
@@ -81,7 +90,7 @@ class _DepthTag(object):
 class _SomaticTag(object):
     #TODO: cgates :Pull tag metaheaders to resource bundle?
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID={0}SK,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1= somatic (based on PASS in FILTER column),Source="Jacquard",Version={1}>\n'.format(jacquard_utils.jq_somatic_tag, jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}SK,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column),Source="Jacquard",Version={1}>'.format(jacquard_utils.jq_somatic_tag, jacquard_utils.__version__)
 
     # pylint: disable=W0613,R0201
     #TODO: cgates : Refactor params to record_object?
@@ -111,9 +120,12 @@ class Strelka(object):
         self.meta_header = "##jacquard.normalize_strelka.sources={0},{1}\n"
         self.file_name_search = "snvs|indels"
 
-    def validate_input_file(self, header):
+    def get_new_metaheaders(self):
+        return [tag.metaheader for tag in self.tags]
+
+    def validate_input_file(self, meta_headers, column_header):
         valid = 0
-        for line in header:
+        for line in meta_headers:
             if line.startswith("##source=strelka"):
                 valid = 1
             elif line.startswith("##"):
@@ -121,10 +133,10 @@ class Strelka(object):
             else:
                 break
         return (valid)
-    
+
     def validate_record(self,vcfRecord):
             return True
-        
+
     def final_steps(self, hc_candidates, merge_candidates, output_dir):
         print "Wrote [{0}] VCF files to [{1}]". \
             format(len(merge_candidates.keys()), output_dir)
@@ -140,8 +152,3 @@ class Strelka(object):
         for tag in self.tags:
             tag.format(vcfRecord)
         return vcfRecord.asText()
-    
-    def update_metaheader(self,metaheader):
-        for tag in self.tags:
-            metaheader += tag.metaheader
-        return metaheader

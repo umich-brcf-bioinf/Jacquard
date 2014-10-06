@@ -1,12 +1,11 @@
 # pylint: disable=R0904,C0103
 # pylint: disable=C0301
-from collections import OrderedDict, defaultdict
-import os
+
 import unittest
 
 import jacquard.variant_callers.strelka as strelka
 from jacquard.jacquard_utils import __version__, jq_af_tag, jq_somatic_tag
-from jacquard.vcf_record import VcfRecord 
+from jacquard.vcf import VcfRecord 
 
 class AlleleFreqTagTestCase(unittest.TestCase):
 
@@ -21,21 +20,29 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         tag.format(processedVcfRecord)
         self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
           
-    def test_format_presentAFTag(self):
+    def test_format_AUTag(self):
         tag = strelka._AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|A,C|QUAL|FILTER|INFO|AU:CU:GU:TU|0.567:SA.2:SA.3|0.834:SB.2:SB.3\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|A,C|QUAL|FILTER|INFO|FA:F2:F3:JQ_AF_MT|0.567:SA.2:SA.3:0.57|0.834:SB.2:SB.3:0.83\n".replace('|',"\t")
+        line = "CHROM|POS|ID|REF|A,C|QUAL|FILTER|INFO|AU:CU:GU:TU|1,2:3,4:5,6:7,8|9,10:11,12:13,14:15,16\n".replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|A,C|QUAL|FILTER|INFO|AU:CU:GU:TU:JQ_AF_SK|1,2:3,4:5,6:7,8:0.1,0.2|9,10:11,12:13,14:15,16:0.19,0.23\n".replace('|',"\t")
         processedVcfRecord = VcfRecord(line)
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
         
-#     def test_format_multAlt(self):
-#         tag = strelka._AlleleFreqTag()
-#         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3|0.5,0.8:SA.2:SA.3|0.7,0.6:SB.2:SB.3\n".replace('|',"\t")
-#         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3:JQ_AF_MT|0.5,0.8:SA.2:SA.3:0.5,0.8|0.7,0.6:SB.2:SB.3:0.7,0.6\n".replace('|',"\t")
-#         processedVcfRecord = VcfRecord(line)
-#         tag.format(processedVcfRecord)
-#         self.assertEquals(expected, processedVcfRecord.asText())
+    def test_format_AFTag_noAlt(self):
+        tag = strelka._AlleleFreqTag()
+        line = "CHROM|POS|ID|REF|.|QUAL|FILTER|INFO|AU:CU:GU:TU|1,2:3,4:5,6:7,8|9,10:11,12:13,14:15,16\n".replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|.|QUAL|FILTER|INFO|AU:CU:GU:TU:JQ_AF_SK|1,2:3,4:5,6:7,8:.|9,10:11,12:13,14:15,16:.\n".replace('|',"\t")
+        processedVcfRecord = VcfRecord(line)
+        tag.format(processedVcfRecord)
+        self.assertEquals(expected, processedVcfRecord.asText())
+        
+    def test_format_TARTag(self):
+        tag = strelka._AlleleFreqTag()
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP2:TAR|10:3,4|20:11,7\n".replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP2:TAR:JQ_AF_SK|10:3,4:0.4|20:11,7:0.35\n".replace('|',"\t")
+        processedVcfRecord = VcfRecord(line)
+        tag.format(processedVcfRecord)
+        self.assertEquals(expected, processedVcfRecord.asText())
 #         
 class DepthTagTestCase(unittest.TestCase):
      
