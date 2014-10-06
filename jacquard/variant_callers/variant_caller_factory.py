@@ -4,15 +4,15 @@ from jacquard.variant_callers.mutect import Mutect
 
 from jacquard.jacquard_utils import JQException
 
-class JQCallerNotRecognizedException(JQException):
-    pass
+_CALLERS = [Varscan(), Strelka(), Mutect()]
 
-class Factory():
-    def __init__(self):
-        self._callers = [Varscan(), Strelka(), Mutect()]
-        
-    def get_caller(self, header):
-        for caller in self._callers:
-            if caller.validate_input_file(header):
-                return caller
-        raise JQCallerNotRecognizedException()
+# TODO (cgates/kmeng): refctor signature to get_caller(vcf):
+def get_caller(meta_headers, column_header, name):
+    for caller in _CALLERS:
+        #TODO: this should pass vcf instead of header
+        if caller.validate_input_file(meta_headers, column_header):
+            return caller
+    raise JQException("VCF [{}] was not in the set of recognized callers."
+                      .format(name))
+
+

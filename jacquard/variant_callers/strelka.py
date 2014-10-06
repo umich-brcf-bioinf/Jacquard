@@ -50,8 +50,10 @@ class _AlleleFreqTag(object):
                     sample_values[key] = ",".join(afs)
                 else:
                     continue
+
         if sample_values:
             vcfRecord.insert_format_field("JQ_AF_SK",sample_values)
+
 
     def _round_two_digits(self, value):
         if len(value.split(".")[1]) <= 2:
@@ -93,7 +95,6 @@ class _SomaticTag(object):
         self.metaheader = '##FORMAT=<ID={0}SK,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column),Source="Jacquard",Version={1}>'.format(jacquard_utils.jq_somatic_tag, jacquard_utils.__version__)
 
     # pylint: disable=W0613,R0201
-    #TODO: cgates : Refactor params to record_object?
     def format(self, vcfRecord):
         strelka_tag = jacquard_utils.jq_somatic_tag + "SK"
         sample_values = {}

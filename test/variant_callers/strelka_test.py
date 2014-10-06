@@ -2,15 +2,15 @@
 # pylint: disable=C0301
 
 import unittest
-
 import jacquard.variant_callers.strelka as strelka
 from jacquard.jacquard_utils import __version__, jq_af_tag, jq_somatic_tag
+
 from jacquard.vcf import VcfRecord 
 
 class AlleleFreqTagTestCase(unittest.TestCase):
 
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}SK,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version={1}>\n'.format(jq_af_tag, __version__), strelka._AlleleFreqTag().metaheader)
+        self.assertEqual('##FORMAT=<ID={0}SK,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version={1}>'.format(jq_af_tag, __version__), strelka._AlleleFreqTag().metaheader)
      
     def test_format_missingAFTag(self):
         tag = strelka._AlleleFreqTag()
