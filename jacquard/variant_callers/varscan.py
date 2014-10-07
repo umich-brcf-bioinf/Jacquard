@@ -3,6 +3,7 @@ import os
 import re
 import jacquard.jacquard_utils as jacquard_utils
 
+
 _VARSCAN_SOMATIC_HEADER = "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR".replace("|","\t")
 _JQ_VARSCAN_HC_INFO_FIELD = "JQ_HC_VS"
 
@@ -30,6 +31,7 @@ class AlleleFreqTag():
         
 class DepthTag():
     def __init__(self):
+
         self.metaheader = '##FORMAT=<ID={0}VS,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)",Source="Jacquard",Version={1}>'.format(jacquard_utils.jq_dp_tag, jacquard_utils.__version__)
 
     def format(self, vcfRecord):
@@ -41,6 +43,7 @@ class DepthTag():
     
 class SomaticTag():
     def __init__(self):
+
         self.metaheader = '##FORMAT=<ID={0}VS,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)",Source="Jacquard",Version={1}>'.format(jacquard_utils.jq_somatic_tag, jacquard_utils.__version__)
 
     def format(self, vcfRecord):

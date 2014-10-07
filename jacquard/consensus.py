@@ -8,15 +8,11 @@ import pandas as pd
 import re
 import jacquard_utils
 
-def calculate_zscore(af_range, dp_range, combined_dict):
-    af_mean = sum(af_range)/len(af_range)
-    af_std = numpy.std(af_range)
+def calculate_zscore(af_mean, af_std, dp_mean, dp_std, combined_dict):
     af_range = float(combined_dict["JQ_AF_RANGE"])
     af_zscore = (af_range - af_mean)/af_std
     rounded_af_zscore = roundTwoDigits([str(af_zscore)])
     
-    dp_mean = sum(dp_range)/len(dp_range)
-    dp_std = numpy.std(dp_range)
     dp_range = float(combined_dict["JQ_DP_RANGE"])
     dp_zscore = (dp_range - dp_mean)/dp_std
     rounded_dp_zscore = roundTwoDigits([str(dp_zscore)])
@@ -30,13 +26,19 @@ def iterate_file(reader, writer, output_file, af_range, dp_range, type):
     meta_headers = []
     header = ""
     lines = []
+    
+    af_mean = sum(af_range)/len(af_range) if af_range != [] else ""
+    af_std = numpy.std(af_range) if af_range != [] else ""
+    dp_mean = sum(dp_range)/len(dp_range) if dp_range != [] else ""
+    dp_std = numpy.std(dp_range) if dp_range != [] else ""
+    
     for line in reader:
         if line.startswith("##"):
             meta_headers.append(line)
         elif line.startswith("#"):
             header = line
         else:
-            new_line = process_line(line, af_range, dp_range, type)
+            new_line = process_line(line, af_range, af_mean, af_std, dp_range, dp_mean, dp_std, type)
             lines.append(new_line)
     
     return meta_headers, header, lines
@@ -164,17 +166,17 @@ def combine_format_values(format, sample, sample_column_name):
     new_format = [x + "_" + sample_column_name for x in format.split(":")]
     return OrderedDict(zip(new_format, sample.split(":")))
 
-def process_line(line, af_range, dp_range, type):
+def process_line(line, af_range, af_mean, af_std, dp_range, dp_mean, dp_std, type):
     split_line = line.split("\t")
     format = split_line[8]
     samples = split_line[9:]
     new_samples = []
-
+    
     for sample in samples:
         combined_dict = jacquard_utils.combine_format_values(format, sample)
         
         if type == "zscore":
-            combined_dict = calculate_zscore(af_range, dp_range, combined_dict)
+            combined_dict = calculate_zscore(af_mean, af_std, dp_mean, dp_std, combined_dict)
         elif type == "consensus":
             combined_dict, af_range, dp_range = calculate_consensus(combined_dict, af_range, dp_range)
         new_samples.append(":".join(combined_dict.values()))
@@ -222,6 +224,7 @@ def execute(args, execution_context):
     output_file_writer = open(output_file, "w")
     
     print "Adding z-scores to [{0}]".format(output_file)
+    
     meta_headers, header, lines = iterate_file(tmp_file_reader, output_file_writer, output_file, af_range, dp_range, "zscore")
     add_zscore(meta_headers, header, lines, output_file_writer, output_file, af_range, dp_range)
     

@@ -124,8 +124,10 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         vcf_content = vcf_content.replace('|',"\t")
         
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
+
             input_dir.write("A.vcf",vcf_content)
             input_dir.write("B.vcf",vcf_content)
+
             
             vcf_readers = tag._build_vcf_readers(input_dir.path)
 

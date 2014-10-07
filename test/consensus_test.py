@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import numpy
 import unittest
 
 from jacquard.consensus import iterate_file, add_consensus, process_line, calculate_consensus, create_consensus_dict, get_consensus_som, get_consensus, add_zscore, calculate_zscore
@@ -74,21 +75,27 @@ class ConsensusTestCase(unittest.TestCase):
         
     def test_processLine_consensus(self):
         line = "1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_HC_SOM_VS:DP:JQ_HC_SOM_MT:JQ_AF_VS:JQ_DP_VS\t1:0:1:0.2:43\t0:1:0:0.42:0\t1:3:0:0.0:12\n"
-        new_line = process_line(line, [], [], "consensus")
+        new_line = process_line(line, [], "", "", [], "", "", "consensus")
         expected_line = "1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_HC_SOM_VS:DP:JQ_HC_SOM_MT:JQ_AF_VS:JQ_DP_VS:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE\t1:0:1:0.2:43:0.2:2:43.0:0:0\t0:1:0:0.42:0:0.42:0:0.0:0:0\t1:3:0:0.0:12:0.0:1:12.0:0:0\n"
         self.assertEquals(expected_line, new_line)
     
     def test_processLine_consensusNoJQTags(self):
         line = "1\t1344\t.\tA\tT\t.\t.\tfoo\tFOO:DP\t1:0\t0:2\t1:3\n"
-        new_line = process_line(line, [], [], "consensus")
+        new_line = process_line(line, [], "", "", [], "", "", "consensus")
         expected_line = "1\t1344\t.\tA\tT\t.\t.\tfoo\tFOO:DP:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE\t1:0:0:0:0:0:0\t0:2:0:0:0:0:0\t1:3:0:0:0:0:0\n"
         self.assertEquals(expected_line, new_line)
     
     def test_processLine_zscore(self):
         af_range = [0.1, 1.2, 1.0]
+        af_mean = sum(af_range)/len(af_range) if af_range != [] else ""
+        af_std = numpy.std(af_range) if af_range != [] else ""
+        
         dp_range = [10.0, 1.0, 3.0]
+        dp_mean = sum(dp_range)/len(dp_range) if dp_range != [] else ""
+        dp_std = numpy.std(dp_range) if dp_range != [] else ""
+        
         line = "1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_SOM_VS:JQ_DP_VS:JQ_AF_VS:JQ_AF_RANGE:JQ_DP_RANGE\t1:10.0:0.1:0.1:10.0\t0:1.0:1.2:1.2:1.0\t1:3.0:1.0:1.0:3.0\n"
-        actual_line = process_line(line, af_range, dp_range, "zscore")
+        actual_line = process_line(line, af_range, af_mean, af_std, dp_range, dp_mean, dp_std, "zscore")
         
         expected_line = "1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_SOM_VS:JQ_DP_VS:JQ_AF_VS:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE\t1:10.0:0.1:0.1:10.0:-1.39:1.38\t0:1.0:1.2:1.2:1.0:0.91:-0.95\t1:3.0:1.0:1.0:3.0:0.49:-0.43\n"
         self.assertEquals(expected_line, actual_line)
@@ -151,9 +158,15 @@ class ConsensusTestCase(unittest.TestCase):
         
     def test_calculateZscore(self):
         af_range = [0.1, 1.2, 1.0]
+        af_mean = sum(af_range)/len(af_range) if af_range != [] else ""
+        af_std = numpy.std(af_range) if af_range != [] else ""
+        
         dp_range = [10.0, 1.0, 3.0]
+        dp_mean = sum(dp_range)/len(dp_range) if dp_range != [] else ""
+        dp_std = numpy.std(dp_range) if dp_range != [] else ""
+        
         combined_dict = {"JQ_AF_RANGE" : "0.1", "JQ_DP_RANGE" : "10.0"}
-        combined_dict = calculate_zscore(af_range, dp_range, combined_dict)
+        combined_dict = calculate_zscore(af_mean, af_std, dp_mean, dp_std, combined_dict)
         
         self.assertEquals({'JQ_DP_RANGE_ZSCORE': '1.38', 'JQ_AF_RANGE_ZSCORE': '-1.39', 'JQ_AF_RANGE': '0.1', 'JQ_DP_RANGE': '10.0'}, combined_dict)
         

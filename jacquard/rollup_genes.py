@@ -52,13 +52,12 @@ def gene_rollup_highest_impact(initial_df, samples, cols):
     col_array = []
     col_array.extend(sample_col_array)
 
-    columns = cols + ["HIGHEST_IMPACT"]
+    columns = cols + ["SNPEFF_TOP_EFFECT_IMPACT"]
 
     required_columns = set(columns +  col_array)
     for col in initial_df.columns:
         if col not in required_columns:
             del initial_df[col]
-
     try:
         melted_df = pd.melt(initial_df, id_vars=columns, var_name="Sample", value_name="Sample_Data")
     except Exception as e :
@@ -68,7 +67,7 @@ def gene_rollup_highest_impact(initial_df, samples, cols):
 
     filtered_df = melted_df[melted_df["Sample_Data"] != "."]
 
-    pivoted_df = pd.pivot_table(filtered_df, index=["GENE_SYMBOL", "Sample"], columns=["HIGHEST_IMPACT"], values=["Sample_Data"], aggfunc=np.count_nonzero, fill_value=0)
+    pivoted_df = pd.pivot_table(filtered_df, index=["GENE_SYMBOL", "Sample"], columns=["SNPEFF_TOP_EFFECT_IMPACT"], values=["Sample_Data"], aggfunc=np.count_nonzero, fill_value=0)
 
     pivoted_df = pivoted_df["Sample_Data"]
 
@@ -79,10 +78,7 @@ def gene_rollup_highest_impact(initial_df, samples, cols):
         pivoted_df[item + "_initial_sum"] = pivoted_df[item].map(int)
 
     pivoted_df["SnpEff_Impact"] = pivoted_df["HIGH"].apply(lambda x: "h" * x) + pivoted_df["MODERATE"].apply(lambda x: "m" * x) + pivoted_df["LOW"].apply(lambda x: "l" * x) + pivoted_df["MODIFIER"].apply(lambda x: "x" * x)
-#     pivoted_df["SnpEff_Impact"] = (pivoted_df["HIGH"] * 50 + pivoted_df["MODERATE"]*10 + pivoted_df["LOW"] + pivoted_df["MODIFIER"]/10)/4
-    
     pivoted_df["Impact_score"] = pivoted_df["HIGH"] * 100000.0 + pivoted_df["MODERATE"] + pivoted_df["LOW"]/100000.0 + pivoted_df["MODIFIER"]/10**12
-    # pivoted_df["Impact_score"] = pivoted_df["HIGH"] * 50 + pivoted_df["MODERATE"]*10 + pivoted_df["LOW"] + pivoted_df["MODIFIER"]/10
 
     del pivoted_df["HIGH"]
     del pivoted_df["MODERATE"]

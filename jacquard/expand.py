@@ -220,10 +220,9 @@ def melt_samples(df, fname):
     
 def expand_format(df, formats_to_expand, rows, fname):
     df = melt_samples(df, fname)
-
+    
     df["aggregate_format_sample"] = df["FORMAT"] + "=" + df['SAMPLE_DATA']
     df["aggregate_format_sample"] = df["aggregate_format_sample"].map(combine_format_values)
-    df["aggregate_format_sample"].to_pickle("aggregate.pickle")
     
     s = df["aggregate_format_sample"].apply(pd.Series, 1).stack()
     s.index = s.index.droplevel(-1)
@@ -233,7 +232,7 @@ def expand_format(df, formats_to_expand, rows, fname):
     
     format2=pd.Series([key for key, val  in s])
     value2=pd.Series([val for key, val  in s])
-    value2.to_pickle("value.pickle")
+
     format2.index = original_index
     value2.index = original_index
     
@@ -252,18 +251,9 @@ def expand_format(df, formats_to_expand, rows, fname):
         pivoted_df = pd.pivot_table(joined_df, index=rows+["SAMPLE_NAME"], columns="FORMAT2", values="VALUE2", aggfunc=lambda x: x)
     except Exception as e :
         raise PivotError("Cannot pivot data. {0}".format(e))
-
+    
     pivoted_df.reset_index(inplace=True)
     pivoted_df.fillna(".", inplace=True)
-   
-#     print pivoted_df
-        
-    new_df = pivoted_df.applymap(lambda x: type(x))
-    
-    print new_df
-#     print "writing to csv file:"
-#     new_df.to_csv("foo.vcf", index=False, sep="\t")
-#     exit(1)
 
     return pivoted_df
 
@@ -365,12 +355,6 @@ def process_files(input_file, output_path, input_keys, format_tags, info_tags, h
     pivoted_df = pivoter.pivot()
     pivoted_df = pivoted_df.fillna("")
     
-#     print "pickling"
-#     pivoted_df.to_pickle("df.pickle")
-#     print pivoted_df
-#     exit(1)
-#     print "should have exited...."
-    
     joined_df = pivoter.join_dataframes(pivoted_df)
     insert_links(joined_df)
 
@@ -399,7 +383,9 @@ def process_files(input_file, output_path, input_keys, format_tags, info_tags, h
 #     print "Wrote formatted Excel file to [{0}]".format(output_path)
 
     print "writing to csv file: {0}".format(output_path)
-    expanded_df.to_csv(output_path, index=False, sep="\t")  
+    expanded_df.to_csv(output_path, index=False, sep="\t")
+#     sorted_df.to_csv(output_path, index=False, sep="\t")    
+    print "wrote to csv file: {0}".format(output_path)
    
 def determine_input_keys(input_file):
     fname, extension = os.path.splitext(input_file)

@@ -28,21 +28,23 @@ class VariantPivoter():
     def __init__(self, rows, combined_df=pd.DataFrame()):
         self._rows = rows
         self._combined_df = combined_df
- 
+        self.row_dict = {} 
+
     def add_file(self, sample_file, header_index, caller, mutect_dict, file_name=""):
         if file_name == "":
             file_name = sample_file
             
         initial_df  = create_initial_df(sample_file, header_index)
-
+        
         if "#CHROM" in initial_df.columns:
             initial_df.rename(columns={"#CHROM": "CHROM"}, inplace=True)
 
         unpivoted_df = self.is_compatible(initial_df)
         fname_df, sample_columns = append_fname_to_samples(initial_df, file_name, self._rows, caller, mutect_dict)
         validated_df = validate_sample_caller_vcfs(fname_df)
-        self._combined_df = merge_samples(fname_df, self._combined_df, self._rows)
         
+        self._combined_df = merge_samples(fname_df, self._combined_df, self._rows)
+
         return sample_columns
 
     def validate_sample_data(self):
@@ -55,7 +57,6 @@ class VariantPivoter():
         for column in self._combined_df:
             self.find_non_unique_cells(column)
         
-
         self._combined_df.reset_index(inplace=True)   
         del self._combined_df["index"]
         
@@ -143,6 +144,7 @@ def build_pivoter(sample_file, input_keys, header_index):
 
 def create_initial_df(sample_file, header_index):
     initial_df = pd.read_csv(sample_file, sep="\t", header=header_index, dtype='str', mangle_dupe_cols=False)
+    initial_df["INFO"] = "."
     
     return initial_df
   
@@ -185,13 +187,17 @@ def validate_sample_caller_vcfs(fname_df):
         
     return fname_df
     
+def find_mult_alts(group):
+    if len(group["ALT"]) > 1:
+        group["INFO"] = "Mult_Alt"
+    return group
     
-def merge_samples(reduced_df, combined_df, rows):
+def merge_samples(incoming_df, combined_df, rows):
     if combined_df.empty:
-        combined_df = reduced_df
+        combined_df = incoming_df
     else:
-        combined_df = merge(combined_df, reduced_df, how="outer", on=rows+["INFO"])
-
+        combined_df = merge(combined_df, incoming_df, how="outer", on=rows+["INFO"])
+    
     return combined_df    
     
 def rearrange_columns(output_df):
@@ -214,6 +220,7 @@ def rearrange_columns(output_df):
 def create_dict(df, row, columns):
     file_dict = defaultdict(list)
     all_tags = []
+
     for column in columns:
         if re.search("\|", column) and not re.search("\|FORMAT", column):
             caller = column.split("|")[0]
@@ -227,9 +234,10 @@ def create_dict(df, row, columns):
 #             format_sample = "{0}={1}".format(format_column, sample_column)
             format_sample_dict = jacquard_utils.combine_format_values(format_column, sample_column)
             tags = format_column.split(":")
-            key = "{0}|{1}".format(caller, fname)
-
-            file_dict[key].append(format_sample_dict)
+            
+#             key = "{0}|{1}".format(caller, fname)
+#             file_dict[key].append(format_sample_dict)
+            file_dict[caller].append(format_sample_dict)
             
             for tag in tags:
                 try: 
@@ -343,6 +351,7 @@ def combine_format_columns(df, all_inconsistent_sample_sets):
     
         file_dict, all_tags = create_dict(df, row, columns)
         file_dict = remove_non_jq_tags(df, file_dict)
+
         for key, val in file_dict.items():
             for samp_dict in val:
                 format = []
@@ -355,8 +364,9 @@ def combine_format_columns(df, all_inconsistent_sample_sets):
 
                 df.ix[row, "FORMAT"] = ":".join(format)
                 df.ix[row, samp_dict["sample_name"]] = ":".join(sample)
+    
     df = cleanup_df(df, file_dict)
-
+    
     for row, col in df.T.iteritems():
         columns = col.index.values
         file_dict = create_merging_dict(df, row, columns)
@@ -425,7 +435,8 @@ def create_new_line(alt_allele_number, fields):
                 new_dict[key] = val
         new_samples.append(":".join(new_dict.values()))
 
-    new_line = fields[0:4] + [alt] + fields[5:7] + ["Mult_Alt"] + [fields[8]] + new_samples
+#     new_line = fields[0:4] + [alt] + fields[5:7] + ["."] + [fields[8]] + new_samples
+    new_line = fields[0:4] + [alt] + fields[5:9] + new_samples
 
     return "\t".join(new_line) + "\n"
     
@@ -459,8 +470,9 @@ def determine_caller_and_split_mult_alts(reader, writer, unknown_callers):
                     writer.write(new_line)
                     count += 1
             else:
-                new_line = fields[:7] + ["."] + fields[8:]
-                writer.write("\t".join(new_line))
+#                 new_line = fields[:7] + ["."] + fields[8:]
+#                 writer.write("\t".join(new_line))
+                writer.write("\t".join(fields))
 
     if caller == "unknown":
         print "ERROR: unable to determine variant caller for file [{0}]".format(reader)
@@ -500,6 +512,9 @@ def validate_samples_for_callers(all_merge_column_context, all_inconsistent_samp
         print "WARNING: Some samples were not present for all callers."
         
     return 1
+
+def _add_mult_alt_flags(df):
+    return df.groupby(by=["CHROM", "POS", "REF"]).apply(find_mult_alts)
 
 def process_files(sample_file_readers, input_dir, output_path, input_keys, headers, header_names, first_line, all_inconsistent_sample_sets, execution_context, pivot_builder=build_pivoter):
     first_file_reader = sample_file_readers[0]
@@ -542,12 +557,16 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
         count += 1
         
         all_merge_context, all_merge_column_context = determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, new_sample_file, count)
-    
     if unknown_callers != 0:
         print "ERROR: unable to determine variant caller for [{0}] input files. Run (jacquard tag) first.".format(unknown_callers)
         os.rmdir(new_dir)
         exit(1)
-        
+    
+#     pivoter._combined_df = merge(pivoter._combined_df, pd.DataFrame(columns=pivoter._rows+["INFO"]), how="outer", on=pivoter._rows+["INFO"])
+#     print pivoter._combined_df
+
+    pivoter._combined_df = _add_mult_alt_flags(pivoter._combined_df)
+
     validate_samples_for_callers(all_merge_column_context, all_inconsistent_sample_sets)
 
     new_execution_context = all_merge_context + all_merge_column_context
