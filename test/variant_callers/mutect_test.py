@@ -10,7 +10,7 @@ from jacquard.vcf import VcfRecord
 class AlleleFreqTagTestCase(unittest.TestCase):
 
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_AF_MT,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA),Source="Jacquard",Version={0}>'.format(__version__), mutect._AlleleFreqTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_AF_MT,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)",Source="Jacquard",Version={0}>'.format(__version__), mutect._AlleleFreqTag().metaheader)
                 
     def test_format_missingAFTag(self):
         tag = mutect._AlleleFreqTag()
