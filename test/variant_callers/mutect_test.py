@@ -94,7 +94,7 @@ class Mutect_TestCase(unittest.TestCase):
         self.caller = mutect.Mutect()
         
     def test_validateInputFile_isValid(self):
-        metaheaders = ["##MuTect"]
+        metaheaders = ["##MuTect=blah"]
         self.assertTrue(self.caller.validate_input_file(metaheaders, "#column_header"))
     
     def test_validateInputFile_isNotValid(self):

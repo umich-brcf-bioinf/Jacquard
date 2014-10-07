@@ -74,14 +74,9 @@ class Varscan():
         self.file_name_search = "snp|indel"
         
     def validate_input_file(self, meta_headers, column_header):
-        valid = 0
-        for line in meta_headers:
-            print line
-            if "##source=VarScan2" in line:
-                valid = 1
-                break
-        if valid == 0:
+        if "##source=VarScan2" not in meta_headers:
             return 0
+
         if _VARSCAN_SOMATIC_HEADER == column_header:
             return 1
         else:
