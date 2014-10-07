@@ -127,11 +127,8 @@ class Strelka(object):
     def validate_input_file(self, meta_headers, column_header):
         valid = 0
         for line in meta_headers:
-            if line.startswith("##source=strelka"):
+            if "##source=strelka" in line:
                 valid = 1
-            elif line.startswith("##"):
-                continue
-            else:
                 break
         return (valid)
 

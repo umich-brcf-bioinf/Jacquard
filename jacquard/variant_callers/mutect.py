@@ -64,8 +64,10 @@ class Mutect():
 
     def validate_input_file(self, meta_headers, column_header):
         valid = 0
-        if "##MuTect" in meta_headers:
-            valid = 1
+        for line in meta_headers:
+            if "##MuTect" in line:
+                valid = 1
+                break
         return (valid)
                 
     def add_tags(self,vcfRecord):
