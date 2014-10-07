@@ -3,8 +3,8 @@ from collections import OrderedDict
 import os
 
 
-import jacquard_utils as jacquard_utils
-from jacquard_utils import log
+import utils as utils
+from utils import log
 
 #TODO cgates: add context management to open/close 
 class VcfReader(object):
@@ -25,7 +25,7 @@ class VcfReader(object):
             log("DEBUG: VCF [{}] recognized by caller [{}]",
                  self.name, caller.name)
             return caller
-        except jacquard_utils.JQException as ex:
+        except utils.JQException as ex:
             log("ERROR: Problem parsing [{}]:{}", self.name, ex)
             raise ex
 

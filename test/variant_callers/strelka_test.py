@@ -3,7 +3,7 @@
 
 import unittest
 import jacquard.variant_callers.strelka as strelka
-from jacquard.jacquard_utils import __version__, jq_af_tag, jq_somatic_tag, jq_dp_tag
+from jacquard.utils import __version__, jq_af_tag, jq_somatic_tag, jq_dp_tag
 
 from jacquard.vcf import VcfRecord 
 

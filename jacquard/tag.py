@@ -5,8 +5,8 @@ import os
 import shutil
 
 from variant_callers import variant_caller_factory
-import jacquard_utils
-from jacquard_utils import JQException, log
+import utils
+from utils import JQException, log
 import vcf
 
 
@@ -85,7 +85,7 @@ def _build_vcf_readers_to_writers(vcf_readers, output_dir):
 def execute(args, execution_context):
     input_dir = os.path.abspath(args.input_dir)
     output_dir = os.path.abspath(args.output_dir)
-    jacquard_utils.validate_directories(input_dir, output_dir)
+    utils.validate_directories(input_dir, output_dir)
 
     #TODO cgates: move to jacquard.py
     for line in execution_context:

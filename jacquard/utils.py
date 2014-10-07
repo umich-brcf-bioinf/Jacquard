@@ -47,10 +47,10 @@ def validate_directories(input_dir, output_dir):
                 "Check parameters and try again", output_dir)
             exit(1)
             
-def write_output(writer, headers, variants):
+def write_output(writer, headers, actual_sorted_variants):
     for line in headers:
         writer.write(line)
-    for line in variants:
+    for line in actual_sorted_variants:
         writer.write(line)
         
 def sort_headers(headers):
@@ -76,14 +76,14 @@ def sort_data(all_variants):
         
     sorted_variants = sorted(new_variants, key=itemgetter(0,1,3,4)) #sort by CHROM, POS, REF, ALT
     
-    variants = []
+    actual_sorted_variants = []
     for variant in sorted_variants:
         new_field = [str(field) for field in variant]
         if "chr" not in new_field[0]:
             new_field[0] = "chr" + new_field[0]
-        variants.append("\t".join(new_field))
+        actual_sorted_variants.append("\t".join(new_field))
         
-    return variants
+    return actual_sorted_variants
 
 def change_pos_to_int(split_line):
     new_line = []

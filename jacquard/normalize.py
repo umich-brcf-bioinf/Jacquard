@@ -8,7 +8,7 @@ import variant_callers.varscan
 import variant_callers.strelka
 import variant_callers.mutect
 
-import jacquard_utils as jacquard_utils
+import utils as utils
 
 
 def get_headers(in_file):
@@ -68,10 +68,10 @@ def merge(merge_candidates, output_dir, caller):
         meta_headers.append(header)
         all_variants = merge_data(pair)
 
-        sorted_variants = jacquard_utils.sort_data(all_variants)
+        sorted_variants = utils.sort_data(all_variants)
         
         out_file = open(merge_file, "w")
-        jacquard_utils.write_output(out_file, meta_headers, sorted_variants)
+        utils.write_output(out_file, meta_headers, sorted_variants)
         out_file.close()
 
 def identify_merge_candidates(in_files, out_dir, caller):
@@ -154,7 +154,7 @@ def execute(args, execution_context):
     input_dir = os.path.abspath(args.input_dir)
     output_dir = os.path.abspath(args.output_dir)
     
-    jacquard_utils.validate_directories(input_dir, output_dir)
+    utils.validate_directories(input_dir, output_dir)
 
     callers = [variant_callers.strelka.Strelka(), variant_callers.varscan.Varscan(), variant_callers.mutect.Mutect()]
     merge_and_sort(input_dir, output_dir, callers, execution_context)

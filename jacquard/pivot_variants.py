@@ -14,7 +14,7 @@ import openpyxl
 from openpyxl import load_workbook
 from openpyxl.style import Color, Fill, Font
 
-import jacquard_utils
+import utils
 
 class PivotError(Exception):
     """Base class for exceptions in this module."""
@@ -594,7 +594,7 @@ def execute(args, execution_context):
     
     output_dir, outfile_name = os.path.split(output_path)
 
-    jacquard_utils.validate_directories(input_dir, output_dir)
+    utils.validate_directories(input_dir, output_dir)
         
     fname, extension = os.path.splitext(outfile_name)
     if extension != ".csv": 

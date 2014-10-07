@@ -1,6 +1,6 @@
 import unittest
 import jacquard.variant_callers.variant_caller_factory as variant_caller_factory
-from jacquard.jacquard_utils import JQException
+from jacquard.utils import JQException
 
 
 class VariantCallerFactoryTestCase(unittest.TestCase):

@@ -14,7 +14,7 @@ import openpyxl
 from openpyxl import load_workbook
 from openpyxl.style import Color, Fill, Font
 
-import jacquard_utils
+import utils
 
 class PivotError(Exception):
     """Base class for exceptions in this module."""

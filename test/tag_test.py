@@ -9,9 +9,9 @@ from testfixtures import TempDirectory
 import unittest
 from jacquard.tag import tag_files
 from jacquard.variant_callers import varscan, mutect
-from jacquard.jacquard_utils import __version__
+from jacquard.utils import __version__
 import jacquard.tag as tag
-import jacquard.jacquard_utils as jacquard_utils
+import jacquard.utils as utils
 from argparse import Namespace
 from re import findall, MULTILINE
 
@@ -26,7 +26,7 @@ class MockCallerFactory(object):
         for known_vcf, caller in self.vcf_to_caller.iteritems():
             if known_vcf == vcf:
                 return caller
-        raise jacquard_utils.JQException("No caller found")
+        raise utils.JQException("No caller found")
         
 class MockWriter():
     def __init__(self):
@@ -180,7 +180,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             input_dir.write("A.vcf",vcf_content)
             input_dir.write("B.vcf",vcf_content)
 
-            self.assertRaisesRegexp(jacquard_utils.JQException,
+            self.assertRaisesRegexp(utils.JQException,
                                     "VCF files could not be parsed",
                                     tag._build_vcf_readers,
                                     input_dir.path)

@@ -2,7 +2,7 @@ from collections import OrderedDict
 import unittest
 
 import jacquard.variant_callers.mutect as mutect
-from jacquard.jacquard_utils import __version__, jq_dp_tag, jq_somatic_tag
+from jacquard.utils import __version__, jq_dp_tag, jq_somatic_tag
 from jacquard.vcf import VcfRecord 
 
 

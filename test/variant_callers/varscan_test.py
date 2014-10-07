@@ -4,7 +4,7 @@ import os
 import unittest
 
 from jacquard.variant_callers import varscan
-from jacquard.jacquard_utils import __version__,jq_af_tag,jq_dp_tag,jq_somatic_tag,\
+from jacquard.utils import __version__,jq_af_tag,jq_dp_tag,jq_somatic_tag,\
     JQException
 from test.variant_callers.mutect_test import MockTag
 from jacquard.vcf import VcfRecord 

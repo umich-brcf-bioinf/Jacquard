@@ -2,7 +2,7 @@ from jacquard.variant_callers.varscan import Varscan
 from jacquard.variant_callers.strelka import Strelka
 from jacquard.variant_callers.mutect import Mutect
 
-from jacquard.jacquard_utils import JQException
+from jacquard.utils import JQException
 
 _CALLERS = [Varscan(), Strelka(), Mutect()]
 
