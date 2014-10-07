@@ -13,7 +13,7 @@ class MockCaller(object):
 
 
 def build_mock_get_caller_method(caller):
-    def get_caller(metaheaders, column_header, name):
+    def get_caller(metaheaders,column_header,name):
         return caller
     return get_caller
 

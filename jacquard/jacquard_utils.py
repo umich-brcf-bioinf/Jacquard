@@ -30,7 +30,7 @@ def log(msg, *args):
 
 def validate_directories(input_dir, output_dir):    
     if not os.path.isdir(input_dir):
-        log("ERROR. Specified input directory {} does not exist", input_dir)
+        log("ERROR. Specified input directory [{}] does not exist.", input_dir)
         exit(1)
     try:
         listdir(input_dir)

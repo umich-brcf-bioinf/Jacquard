@@ -5,25 +5,29 @@ import subprocess
 import sys
 from testfixtures import TempDirectory
 from jacquard.jacquard_utils import validate_directories, write_output, sort_headers, sort_data, change_pos_to_int, combine_format_values
+from StringIO import StringIO
 
+        
 class ValidateDirectoriesTestCase(unittest.TestCase):
+    def setUp(self):
+        self.output = StringIO()
+        self.saved_stderr = sys.stderr
+        sys.stderr = self.output
+ 
+    def tearDown(self):
+        self.output.close()
+        sys.stderr = self.saved_stderr
+
     def test_validateDirectories_inputDirectoryDoesntExist(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/tag_varscan_test/foo"
-        output_dir = script_dir + "/tag_varscan_test/output"
+        input_dir = script_dir + "/reference_files/tag_varscan_test/foo"
+        output_dir = script_dir + "/reference_files/tag_varscan_test/output"
          
         with self.assertRaises(SystemExit) as cm:
             validate_directories(input_dir, output_dir)
         self.assertEqual(cm.exception.code, 1)
-     
-    def test_validateDirectories_inputDirectoryUnreadable(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/tag_varscan_test/unreadable"
-        output_dir = script_dir + "/tag_varscan_test/output"
- 
-        with self.assertRaises(SystemExit) as cm:
-            validate_directories(input_dir, output_dir)
-        self.assertEqual(cm.exception.code, 1)
+        
+        self.assertRegexpMatches(self.output.getvalue(),"ERROR. Specified input directory \[.*\] does not exist.")
          
     def test_validateDirectories_outputDirectoryNotCreated(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
@@ -41,6 +45,7 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
                 cleanup_unwriteable_dir(unwriteable_dir)
             
             self.assertEqual(cm.exception.code, 1)
+            self.assertRegexpMatches(self.output.getvalue(),"ERROR. Output directory \[.*\] could not be created. Check parameters and try again")
  
 class WriteOutputTestCase(unittest.TestCase):
     def test_writeOutput(self):

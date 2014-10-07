@@ -6,11 +6,10 @@ from jacquard.jacquard_utils import JQException
 
 _CALLERS = [Varscan(), Strelka(), Mutect()]
 
-# TODO (cgates/kmeng): refctor signature to get_caller(vcf):
-def get_caller(meta_headers, column_header, name):
+def get_caller(metaheaders,column_header,name):
     for caller in _CALLERS:
         #TODO: this should pass vcf instead of header
-        if caller.validate_input_file(meta_headers, column_header):
+        if caller.validate_input_file(metaheaders, column_header):
             return caller
     raise JQException("VCF [{}] was not in the set of recognized callers."
                       .format(name))

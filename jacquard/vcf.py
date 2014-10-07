@@ -21,7 +21,7 @@ class VcfReader(object):
 
     def _initialize_caller(self, get_caller):
         try:
-            caller = get_caller(self.metaheaders, self.column_header, self.name)
+            caller = get_caller(self.metaheaders,self.column_header,self.name)
             log("DEBUG: VCF [{}] recognized by caller [{}]",
                  self.name, caller.name)
             return caller
