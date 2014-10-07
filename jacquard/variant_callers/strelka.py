@@ -63,7 +63,7 @@ class _AlleleFreqTag(object):
 
 class _DepthTag(object):
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID={0}SK,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth),Source="Jacquard",Version={1}>'.format(jacquard_utils.jq_dp_tag, jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}SK,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version={1}>'.format(jacquard_utils.jq_dp_tag, jacquard_utils.__version__)
 
     def _get_tier2_base_depth(self, sample_format_dict):
         tags = ["AU", "CU", "TU", "GU"]
@@ -92,7 +92,7 @@ class _DepthTag(object):
 class _SomaticTag(object):
     #TODO: cgates :Pull tag metaheaders to resource bundle?
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID={0}SK,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column),Source="Jacquard",Version={1}>'.format(jacquard_utils.jq_somatic_tag, jacquard_utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}SK,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",Source="Jacquard",Version={1}>'.format(jacquard_utils.jq_somatic_tag, jacquard_utils.__version__)
 
     # pylint: disable=W0613,R0201
     def format(self, vcfRecord):

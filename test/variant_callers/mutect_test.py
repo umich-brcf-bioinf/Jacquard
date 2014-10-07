@@ -10,7 +10,7 @@ from jacquard.vcf import VcfRecord
 class AlleleFreqTagTestCase(unittest.TestCase):
 
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_AF_MT,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA),Source="Jacquard",Version={0}>'.format(__version__), mutect._AlleleFreqTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_AF_MT,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)",Source="Jacquard",Version={0}>'.format(__version__), mutect._AlleleFreqTag().metaheader)
                 
     def test_format_missingAFTag(self):
         tag = mutect._AlleleFreqTag()
@@ -39,7 +39,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
 class DepthTagTestCase(unittest.TestCase):
     
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}MT,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP),Source="Jacquard",Version={1}>'.format(jq_dp_tag, __version__), mutect._DepthTag().metaheader)
+        self.assertEqual('##FORMAT=<ID={0}MT,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP)",Source="Jacquard",Version={1}>'.format(jq_dp_tag, __version__), mutect._DepthTag().metaheader)
         
     def test_format_missingDPTag(self):
         tag = mutect._DepthTag()
@@ -60,7 +60,7 @@ class DepthTagTestCase(unittest.TestCase):
 class SomaticTagTestCase(unittest.TestCase):
  
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag),Source="Jacquard",Version={1}>'.format(jq_somatic_tag, __version__), mutect._SomaticTag().metaheader)
+        self.assertEqual('##FORMAT=<ID={0}MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)",Source="Jacquard",Version={1}>'.format(jq_somatic_tag, __version__), mutect._SomaticTag().metaheader)
         
     def test_format_missingSSTag(self):
         tag = mutect._SomaticTag()

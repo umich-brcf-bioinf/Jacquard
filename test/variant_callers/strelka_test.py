@@ -3,7 +3,7 @@
 
 import unittest
 import jacquard.variant_callers.strelka as strelka
-from jacquard.jacquard_utils import __version__, jq_af_tag, jq_somatic_tag
+from jacquard.jacquard_utils import __version__, jq_af_tag, jq_somatic_tag, jq_dp_tag
 
 from jacquard.vcf import VcfRecord 
 
@@ -46,6 +46,9 @@ class AlleleFreqTagTestCase(unittest.TestCase):
 #         
 class DepthTagTestCase(unittest.TestCase):
      
+    def test_metaheader(self):
+        self.assertEqual('##FORMAT=<ID={0}SK,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version={1}>'.format(jq_dp_tag, __version__), strelka._DepthTag().metaheader)
+
     def test_format_missingTag(self):
         tag = strelka._DepthTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
@@ -72,6 +75,9 @@ class DepthTagTestCase(unittest.TestCase):
          
 class SomaticTagTestCase(unittest.TestCase):
      
+    def test_metaheader(self):
+        self.assertEqual('##FORMAT=<ID={0}SK,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",Source="Jacquard",Version={1}>'.format(jq_somatic_tag, __version__), strelka._SomaticTag().metaheader)
+        
     def test_format_missingPASS(self):
         tag = strelka._SomaticTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
