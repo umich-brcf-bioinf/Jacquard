@@ -4,8 +4,7 @@ Jacquard
 Suite of command-line tools to expedite analysis of exome variant data from multiple patients and multiple variant callers.
 
 [![Build Status](https://travis-ci.org/umich-brcf-bioinf/Jacquard.svg?branch=develop)](https://travis-ci.org/umich-brcf-bioinf/Jacquard) 
-[![Coverage Status](https://coveralls.io/repos/umich-brcf-bioinf/Jacquard/badge.png?branch=develop)](https://coveralls.io/r/umich-brcf-bioinf/Jacquard?branch=develop)
-
+[![Coverage Status](https://img.shields.io/coveralls/umich-brcf-bioinf/Jacquard.svg)](https://coveralls.io/r/umich-brcf-bioinf/Jacquard)
 ## Directory List
 * jacquard-runner.py : Convenience wrapper for running Jacquard directly from source tree.
 * jacquard : Python libraries 
