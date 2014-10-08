@@ -13,8 +13,8 @@ from sets import Set
 import sys 
 import time
 
-# import jacquard.jacquard_utils as jacquard_utils
-import jacquard_utils
+# import jacquard.utils as utils
+import utils
 
 class PivotError(Exception):
     """Base class for exceptions in this module."""
@@ -232,7 +232,7 @@ def create_dict(df, row, columns):
             sample_column += ":" + column
 
 #             format_sample = "{0}={1}".format(format_column, sample_column)
-            format_sample_dict = jacquard_utils.combine_format_values(format_column, sample_column)
+            format_sample_dict = utils.combine_format_values(format_column, sample_column)
             tags = format_column.split(":")
             
 #             key = "{0}|{1}".format(caller, fname)
@@ -321,7 +321,7 @@ def create_merging_dict(df, row, columns):
             sample_columns.append(sample_column)
             sample_names.append(column)
 
-            format_sample_dict = jacquard_utils.combine_format_values(format_column, sample_column)
+            format_sample_dict = utils.combine_format_values(format_column, sample_column)
 #             for key, val in format_sample_dict.items():
 #                 if val == ".":
 #                     del format_sample_dict[key]
@@ -422,7 +422,7 @@ def create_new_line(alt_allele_number, fields):
     samples = fields[9:]
     new_samples = []
     for sample in samples:
-        format_sample_dict = jacquard_utils.combine_format_values(format, sample)
+        format_sample_dict = utils.combine_format_values(format, sample)
         new_dict = OrderedDict()
         for key, val in format_sample_dict.items():
             if re.search("JQ_AF", key): #only care about splitting jacquard tags
@@ -665,7 +665,7 @@ def execute(args, execution_context):
 
     output_dir, outfile_name = os.path.split(output_path)
 
-    jacquard_utils.validate_directories(input_dir, output_dir)
+    utils.validate_directories(input_dir, output_dir)
         
     fname, extension = os.path.splitext(outfile_name)
     if extension != ".vcf": 

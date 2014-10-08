@@ -1,9 +1,10 @@
 # pylint: disable=R0904
 import unittest
-from jacquard.jacquard import dispatch
+import jacquard.jacquard as jacquard
 import test.mock_module as mock_module
+
 
 class JacquardTestCase(unittest.TestCase):
     def test_main(self):
-        dispatch([mock_module], ["mock_module"])
+        jacquard.dispatch([mock_module], ["mock_module"])
         self.assertEqual(True, mock_module.execute_called)

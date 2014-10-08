@@ -6,7 +6,7 @@ from os import listdir
 from os.path import isfile, join
 import pandas as pd
 import re
-import jacquard_utils
+import utils
 
 def calculate_zscore(af_mean, af_std, dp_mean, dp_std, combined_dict):
     af_range = float(combined_dict["JQ_AF_RANGE"])
@@ -59,18 +59,18 @@ def add_zscore(meta_headers, header, lines, writer, output_file, af_range, dp_ra
     print "".join(consensus_meta_headers)
     
     meta_headers.append(header)
-    jacquard_utils.write_output(writer, meta_headers, lines)
+    utils.write_output(writer, meta_headers, lines)
     print "Wrote consensus-somatic-tagged VCF to [{0}]".format(output_file)
     
 def add_consensus(meta_headers, header, lines, writer, output_file):
-    consensus_meta_headers = ['##FORMAT=<ID=JQ_SOM_SUM,Number=1,Type=Integer,Description="Jacquard consensus somatic call = sum({0}*)">\n'.format(jacquard_utils.jq_somatic_tag), 
-                              '##FORMAT=<ID=JQ_AF_AVERAGE,Number=A,Type=Integer,Description="Jacquard consensus somatic call = average({0}*)">\n'.format(jacquard_utils.jq_af_tag),
-                              '##FORMAT=<ID=JQ_DP_AVERAGE,Number=1,Type=Integer,Description="Jacquard consensus depth = average({0}*)">\n'.format(jacquard_utils.jq_dp_tag)]
+    consensus_meta_headers = ['##FORMAT=<ID=JQ_SOM_SUM,Number=1,Type=Integer,Description="Jacquard consensus somatic call = sum({0}*)">\n'.format(utils.jq_somatic_tag), 
+                              '##FORMAT=<ID=JQ_AF_AVERAGE,Number=A,Type=Integer,Description="Jacquard consensus somatic call = average({0}*)">\n'.format(utils.jq_af_tag),
+                              '##FORMAT=<ID=JQ_DP_AVERAGE,Number=1,Type=Integer,Description="Jacquard consensus depth = average({0}*)">\n'.format(utils.jq_dp_tag)]
     print "".join(consensus_meta_headers)
     meta_headers.extend(consensus_meta_headers)
             
     meta_headers.append(header)
-    jacquard_utils.write_output(writer, meta_headers, lines)
+    utils.write_output(writer, meta_headers, lines)
     
 def roundTwoDigits(value): 
     new_values = []
@@ -133,15 +133,15 @@ def calculate_consensus(combined_dict, af_range, dp_range):
     somatic = {}
     depth = {}
     for key in combined_dict.keys():
-        if key.startswith(jacquard_utils.jq_somatic_tag):
+        if key.startswith(utils.jq_somatic_tag):
             if combined_dict[key] != ".":
                 somatic = create_consensus_dict(key, combined_dict[key], combined_dict, somatic, "int")
-        elif key.startswith(jacquard_utils.jq_af_tag):
+        elif key.startswith(utils.jq_af_tag):
             if combined_dict[key] != ".":
                 new_af = roundTwoDigits(combined_dict[key].split(","))
                 af = create_consensus_dict(key, new_af, combined_dict, af, "float")
                 consensus_af_tags.append(key)
-        elif key.startswith(jacquard_utils.jq_dp_tag):
+        elif key.startswith(utils.jq_dp_tag):
             if combined_dict[key] != ".":
                 depth = create_consensus_dict(key, combined_dict[key], combined_dict, depth, "float")
                 consensus_dp_tags.append(key)
@@ -173,7 +173,7 @@ def process_line(line, af_range, af_mean, af_std, dp_range, dp_mean, dp_std, typ
     new_samples = []
     
     for sample in samples:
-        combined_dict = jacquard_utils.combine_format_values(format, sample)
+        combined_dict = utils.combine_format_values(format, sample)
         
         if type == "zscore":
             combined_dict = calculate_zscore(af_mean, af_std, dp_mean, dp_std, combined_dict)
