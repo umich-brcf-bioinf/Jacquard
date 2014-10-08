@@ -1,6 +1,0 @@
-=================
-Usage
-=================
-Jacquard reads VCF files in as input. All the available tools in Jacquard except for expand, style, rollup_genes and pivot_variants will produce a VCF file; see individual commands for details.
-VCF File – Commonly accepted in the bioinformatics field. A tab-delimited file that contains records for each variant, with a column for chromosome number(CHROM), position(POS), ID, reference allele(REF), alternate allele(s)(ALT), quality score(QUAL), filter(FILTER), info(INFO), format(FORMAT), and per sample information.
-To see specifications go to http://samtools.github.io/hts-specs/VCFv4.2.pdf.
