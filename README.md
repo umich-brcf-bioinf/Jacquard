@@ -1,10 +1,10 @@
 
-ExomeSeqPipeline
+Jacquard
 ================
 Suite of command-line tools to expedite analysis of exome variant data from multiple patients and multiple variant callers.
 
-[![Build Status](https://travis-ci.org/umich-brcf-bioinf/ExomeSeqPipeline.svg?branch=develop)](https://travis-ci.org/umich-brcf-bioinf/ExomeSeqPipeline)
-[![Coverage Status](https://coveralls.io/repos/umich-brcf-bioinf/ExomeSeqPipeline/badge.png?branch=develop)](https://coveralls.io/r/umich-brcf-bioinf/ExomeSeqPipeline?branch=develop)
+[![Build Status](https://travis-ci.org/umich-brcf-bioinf/Jacquard.svg?branch=develop)](https://travis-ci.org/umich-brcf-bioinf/Jacquard) 
+[![Coverage Status](https://coveralls.io/repos/umich-brcf-bioinf/Jacquard/badge.png?branch=develop)](https://coveralls.io/r/umich-brcf-bioinf/Jacquard?branch=develop)
 
 ## Directory List
 * jacquard-runner.py : Convenience wrapper for running Jacquard directly from source tree.
@@ -12,11 +12,13 @@ Suite of command-line tools to expedite analysis of exome variant data from mult
 * test : Automated unit tests
 
 ## Usage
+
 jacquard-runner.py <subcommand> [options] [arguments]
+
 For help on a specific subcommand:
 jacquard-runner.py <subcommand> --help 
 
-# Subcommands
+## Subcommands
     normalize           Accepts a single directory containing:
                             MuTect VCFs
                             Strelka snvs/indels VCFs
