@@ -59,7 +59,7 @@ def dispatch(modules, arguments):
         usage="jacquard",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description='''type 'Jacquard -h <subcommand>' for help on a specific subcommand''',
-        epilog="authors: Jessica Bene, Chris Gates 07/2014")
+        epilog="authors: Jessica Bene, Ashwini Bhasi, Chris Gates, Kevin Meng, Peter Ulintz; October 2014")
     parser.add_argument(\
                         "-v",
                         "--version",
