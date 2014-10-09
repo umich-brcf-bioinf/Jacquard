@@ -1,4 +1,5 @@
 import jacquard.utils as utils
+from jacquard.vcf import VcfReader
 
 class _AlleleFreqTag(object):
     def __init__(self):
@@ -121,6 +122,34 @@ class Strelka(object):
         self.meta_header = "##jacquard.normalize_strelka.sources={0},{1}\n"
         self.file_name_search = "snvs|indels"
 
+#TODO: Add to normalize.py.
+    def _validate_raw_input_files(self, file_readers):
+        if len(file_readers) != 2:
+                raise utils.JQException("ERROR: Strelka directories should have exactly two input files per patient, but found [{}].".format(len(file_readers)))
+
+        tmp = list([file_readers[0].file_name,file_readers[1].file_name])
+        for i,name in enumerate(tmp):
+            if "snvs" in name:
+                tmp[i] = "snvs"
+        for i,name in enumerate(tmp):
+            if "indels" in name:
+                tmp[i] = "indels"
+        if not (tmp[0] == "snvs" and tmp[1] == "indels") and not (tmp[1] == "snvs" and tmp[0] == "indels"): 
+            raise utils.JQException("ERROR: Each patient in a Strelka directory should have a SNVs file and an indel file.")
+        
+#TODO: Add to normalize.py.        
+    def normalize(self, file_writer, file_readers):
+        self._validate_raw_input_files(file_readers)
+        
+        file_writer.open()
+        for file_reader in file_readers:
+            vcf_reader = VcfReader(file_reader.input_filepath)
+            file_reader.open()
+            for line in file_reader.read_lines():
+                file_writer.write(line)
+            file_reader.close()
+        file_writer.close()
+        
     def get_new_metaheaders(self):
         return [tag.metaheader for tag in self.tags]
 

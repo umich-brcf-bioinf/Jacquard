@@ -1,10 +1,21 @@
+from StringIO import StringIO
+import sys
 import os
 import unittest
 from testfixtures import TempDirectory
-from jacquard.normalize import identify_merge_candidates, get_headers, merge_data, validate_split_line
+from jacquard.normalize import identify_merge_candidates, get_headers, merge_data, validate_split_line, _build_vcf_readers
 from jacquard.variant_callers import varscan, strelka
     
-class IdentifyMergeCandidatesTestCase(unittest.TestCase):
+class NormalizeTestCase(unittest.TestCase):
+    def setUp(self):
+        self.output = StringIO()
+        self.saved_stderr = sys.stderr
+        sys.stderr = self.output
+
+    def tearDown(self):
+        self.output.close()
+        sys.stderr = self.saved_stderr
+        
     def test_indentifyMergeCandidates_Strelka(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/normalize_strelka_test/input/"
@@ -37,8 +48,34 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
         
         self.assertEqual([output_dir + "tiny_merged.vcf"], merge_candidates.keys())
         self.assertEqual([[input_dir + "tiny_indel.vcf", input_dir + "tiny_snp.vcf"]], merge_candidates.values())
-
-class MergeTestCase(unittest.TestCase):
+    
+    def test_build_vcf_readers(self):
+        vcf_content ='''##source=strelka
+#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
+chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
+chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
+'''
+        vcf_content = vcf_content.replace('|',"\t")
+        
+        with TempDirectory() as input_dir:
+            input_dir.write("A.vcf",vcf_content)
+            input_dir.write("B.vcf",vcf_content)
+            
+            vcf_readers = _build_vcf_readers(input_dir.path)
+            
+            self.assertEqual("A.vcf", vcf_readers[0].file_name)
+            self.assertEqual(["##source=strelka"], vcf_readers[0].metaheaders)
+            self.assertEqual("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR",
+                              vcf_readers[0].column_header)
+            self.assertEqual("B.vcf", vcf_readers[1].file_name)
+            self.assertEqual(["##source=strelka"], vcf_readers[1].metaheaders)
+            self.assertEqual("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR",
+                              vcf_readers[1].column_header)
+            self.assertEqual(2, len(vcf_readers))
+        
+    def test_merge_and_sort(self):
+        pass
+        
     def test_merge_getHeaders_Strelka(self):
         with TempDirectory() as input_dir:
             input_dir.write("A.vcf","##source=strelka\n##foobarbaz\n#CHROM\tNORMAL\tTUMOR\n123\n456\n")
@@ -121,7 +158,6 @@ class MergeTestCase(unittest.TestCase):
             self.assertEqual('1\t2352\tA\tGT\tfoo\tDP\t234\n', all_variants[1])
         input_dir.cleanup()
 
-class ValidateSplitLine(unittest.TestCase):
     def test_validateSplitLine_valid_Strelka(self):
         split_line = ["chr1", "234", ".", "A", "G", ".", "PASS", "SS=5", "DP", "345"]
         invalid, warn, line = validate_split_line(split_line, 0, 0)
@@ -224,16 +260,16 @@ class ValidateSplitLine(unittest.TestCase):
         self.assertEqual(0, warn)
         self.assertEqual([], line)
         
-class MockWriter():
-    def __init__(self):
-        self._content = []
-        self.wasClosed = False
-
-    def write(self, content):
-        self._content.extend(content.splitlines())
-        
-    def lines(self):
-        return self._content
-
-    def close(self):
-        self.wasClosed = True
+# class MockWriter():
+#     def __init__(self):
+#         self._content = []
+#         self.wasClosed = False
+# 
+#     def write(self, content):
+#         self._content.extend(content.splitlines())
+#         
+#     def lines(self):
+#         return self._content
+# 
+#     def close(self):
+#         self.wasClosed = True

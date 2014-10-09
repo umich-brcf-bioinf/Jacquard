@@ -58,6 +58,18 @@ class Mutect():
     def __init__(self):
         self.name = "MuTect"
         self.tags = [_AlleleFreqTag(),_DepthTag(),_SomaticTag()]
+        
+    def normalize(self, file_writer, file_readers):
+        if len(file_readers) != 1:
+                raise utils.JQException("ERROR: MuTect directories should have exactly one input file per patient, but found [{}].".format(len(file_readers)))
+
+        file_writer.open()
+        for file_reader in file_readers:
+            file_reader.open()
+            for line in file_reader.read_lines():
+                file_writer.write(line)
+            file_reader.close()
+        file_writer.close()
 
     def get_new_metaheaders(self):
         return [tag.metaheader for tag in self.tags]

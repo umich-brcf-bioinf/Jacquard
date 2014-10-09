@@ -4,18 +4,7 @@ import unittest
 import sys
 from StringIO import StringIO
 from testfixtures import TempDirectory
-from jacquard.vcf import VcfRecord, VcfReader, VcfWriter
-
-
-class MockCaller(object):
-    def __init__(self, name="MockCaller"):
-        self.name = name
-
-
-def build_mock_get_caller_method(caller):
-    def get_caller(metaheaders,column_header,name):
-        return caller
-    return get_caller
+from jacquard.vcf import VcfRecord, VcfReader, FileWriter
 
 
 class VcfRecordTestCase(unittest.TestCase):
@@ -76,45 +65,28 @@ class VcfReaderTestCase(unittest.TestCase):
         sys.stderr = self.saved_stderr        
     
     def test_init(self):
-        mock_caller = MockCaller()
-        get_caller = build_mock_get_caller_method(mock_caller)
-
         with TempDirectory() as input_dir:
             input_dir.write("A.vcf","##source=strelka\n##foobarbaz\n#CHROM\tNORMAL\tTUMOR\n123\n456\n")
             file_path = os.path.join(input_dir.path, "A.vcf")
-            reader = VcfReader(file_path, get_caller)
+            reader = VcfReader(file_path)
 
-            self.assertEquals(file_path, reader.file_path)
-            self.assertEquals("A.vcf", reader.name)
+            self.assertEquals(file_path, reader.input_filepath)
+            self.assertEquals("A.vcf", reader.file_name)
             self.assertEquals("#CHROM\tNORMAL\tTUMOR", reader.column_header)
             self.assertEquals(["##source=strelka", "##foobarbaz"], reader.metaheaders)
-            self.assertEquals(mock_caller, reader.caller)
 
     def test_metaheadersAreImmutable(self):
-        get_caller = build_mock_get_caller_method(MockCaller())
         with TempDirectory() as input_dir:
             input_dir.write("A.vcf","##source=strelka\n##foobarbaz\n#CHROM\tNORMAL\tTUMOR\n123\n456\n")
             file_name = os.path.join(input_dir.path, "A.vcf")
-            reader = VcfReader(file_name, get_caller)
+            reader = VcfReader(file_name)
             
             original_length = len(reader.metaheaders)
             reader.metaheaders.append("foo")
             
             self.assertEquals(original_length, len(reader.metaheaders))
 
-    def test_initLogsVcfCallers(self):
-        get_caller = build_mock_get_caller_method(MockCaller())
-        with TempDirectory() as input_dir:
-            input_dir.write("A.vcf","##source=strelka\n##foobarbaz\n#CHROM\tNORMAL\tTUMOR\n123\n456\n")
-            file_name = os.path.join(input_dir.path, "A.vcf")
-            VcfReader(file_name, get_caller)
-
-        actual_output_lines = self.output.getvalue().rstrip().split("\n")
-        self.assertEquals(1, len(actual_output_lines))
-        self.assertRegexpMatches(actual_output_lines[0], "DEBUG.*A\.vcf.*MockCaller")
-
     def test_vcf_records(self):
-        get_caller = build_mock_get_caller_method(MockCaller())
         vcf_content ='''##source=strelka
 #CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
 chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
@@ -124,7 +96,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         with TempDirectory() as input_dir:
             input_dir.write("A.vcf", vcf_content)
             file_name = os.path.join(input_dir.path, "A.vcf")
-            reader = VcfReader(file_name, get_caller)
+            reader = VcfReader(file_name)
 
             actual_vcf_records = []
             reader.open()
@@ -142,7 +114,7 @@ class VcfWriterTestCase(unittest.TestCase):
         with TempDirectory() as output_dir:
             file_path = os.path.join(output_dir.path,"test.tmp")
 
-            writer = VcfWriter(file_path)
+            writer = FileWriter(file_path)
             writer.open()
             writer.write("A")
             writer.write("B\n")

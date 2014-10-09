@@ -3,10 +3,48 @@
 
 import unittest
 import jacquard.variant_callers.strelka as strelka
-from jacquard.utils import __version__, jq_af_tag, jq_somatic_tag, jq_dp_tag
+from jacquard.utils import __version__, jq_af_tag, jq_somatic_tag, jq_dp_tag, JQException
+import os
 
 from jacquard.vcf import VcfRecord 
 
+
+class MockWriter():
+    def __init__(self):
+        self._content = []
+        self.opened = False
+        self.closed = False
+
+    def open (self):
+        self.opened = True
+        
+    def write(self, content):
+        self._content.extend(content.splitlines())
+        
+    def lines(self):
+        return self._content
+
+    def close(self):
+        self.closed = True
+        
+class MockReader():
+    def __init__(self, lines = [], input_filepath="foo"):
+        self._lines_iter = iter(lines)
+        self.input_filepath = input_filepath
+        self.file_name = os.path.basename(input_filepath)
+        self.opened = False
+        self.closed = False
+
+    def open (self):
+        self.opened = True
+        
+    def read_lines(self):
+        return self._lines_iter
+
+    def close(self):
+        self.closed = True
+        
+        
 class AlleleFreqTagTestCase(unittest.TestCase):
 
     def test_metaheader(self):
@@ -93,8 +131,7 @@ class SomaticTagTestCase(unittest.TestCase):
         processedVcfRecord = VcfRecord(line)
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
-         
-         
+
 # class MockTag(object):
 #     def __init__(self, field_name, field_value, metaheader=None):
 #         self.field_name = field_name
@@ -136,7 +173,51 @@ class SomaticTagTestCase(unittest.TestCase):
 #         self.assertEquals(expected_line, actual_metaheader)
 
 
-# class StrelkaTestCase(unittest.TestCase):
+
+class StrelkaTestCase(unittest.TestCase):
+    
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        self.caller = strelka.Strelka()
+         
+#     def test_normalize(self):
+#         writer = MockWriter()
+#         content = ["foo", "bar", "baz"]
+#         reader = MockReader(content)
+#         self.caller.normalize(writer,[reader,reader])
+#         
+#         self.assertTrue(reader.opened)
+#         self.assertTrue(reader.closed)
+#         self.assertTrue(writer.opened)
+#         self.assertTrue(writer.closed)
+#         self.assertEquals(content, writer.lines())
+
+    def test_normalize_hasIndelSnvs(self):
+        writer = MockWriter()
+        reader1 = MockReader(input_filepath="indels")
+        reader2 = MockReader(input_filepath="snvs")
+        
+        self.caller.normalize(writer,[reader1,reader2])
+        pass
+        
+    def test_normalize_raisesExceptionMissingIndelSnvs(self):
+        self.assert_two_files_throw_exception("foo", "bar")
+        self.assert_two_files_throw_exception("snvs", "bar")
+        self.assert_two_files_throw_exception("foo.snvs", "bar")
+        self.assert_two_files_throw_exception("foo.indels", "bar")
+        self.assert_two_files_throw_exception("foo.indels", "bar.indels")
+        self.assert_two_files_throw_exception("foo.snvs", "bar.snvs")
+        self.assert_two_files_throw_exception("snvs/foo", "indels/bar")
+        self.assert_two_files_throw_exception("indels.snvs", "bar")
+        self.assert_two_files_throw_exception("A.indels.snvs", "B.indels.snvs")
+        
+        
+        
+
+    def assert_two_files_throw_exception(self, file1, file2):
+        self.assertRaises(JQException, self.caller.normalize, MockWriter(), [MockReader(input_filepath=file1), MockReader(input_filepath=file2)])
+
+
 #     def test_validateInputFile_valid(self):
 #         caller = strelka.Strelka()
 #         input_file = ["##source=strelka", "foo"]
@@ -179,75 +260,3 @@ class SomaticTagTestCase(unittest.TestCase):
 #         sample_files = caller.validate_file_set(all_keys)
 # 
 #         self.assertEqual(None, sample_files)
-# 
-# class Strelka_AlleleFreqTagTestCase(unittest.TestCase):
-#     def test_metaheader(self):
-#         self.assertEqual('##FORMAT=<ID=JQ_AF_SK,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version={0}>\n'.format(__version__), strelka.AlleleFreqTag().metaheader)
-# 
-#     def test_format_missingAFTag(self):
-#         tag = strelka.AlleleFreqTag()
-#         format_param_string = "A:B"
-#         format_value_string = "1:2"
-#         format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("C", "filter", "", format_dict, 0))
-# 
-#     def test_format_rounds(self):
-#         tag = strelka.AlleleFreqTag()
-#         format_dict = OrderedDict(zip("A:AU:CU:GU:TU".split(":"), "1:0.2,0.5:0.2,0.5:0.2,0.5:0.2,0.5:".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('AU', '0.2,0.5'), ('CU', '0.2,0.5'), ('GU', '0.2,0.5'), ('TU', '0.2,0.5'), ('JQ_AF_SK', '0.25')]), tag.format("C", "filter", "", format_dict, 0))
-# 
-#         format_dict = OrderedDict(zip("A:AU:CU:GU:TU".split(":"), "1:0.2,0.6:0.2,0.6:0.2,0.5:0.2,0.5:".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('AU', '0.2,0.6'), ('CU', '0.2,0.6'), ('GU', '0.2,0.5'), ('TU', '0.2,0.5'), ('JQ_AF_SK', '0.27')]), tag.format("C", "filter", "", format_dict, 0))
-# 
-#         format_dict = OrderedDict(zip("A:AU:CU:GU:TU".split(":"), "1:0.2,0.6:0.2,0.8:0.2,0.5:0.2,0.5:".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('AU', '0.2,0.6'), ('CU', '0.2,0.8'), ('GU', '0.2,0.5'), ('TU', '0.2,0.5'), ('JQ_AF_SK', '0.33,0.21')]), tag.format("C,T", "filter", "", format_dict, 0))
-# 
-#         format_dict = OrderedDict(zip("A:TAR:DP2".split(":"), "1:13,32:53".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('TAR', '13,32'), ('DP2', '53'), ('JQ_AF_SK', '0.6')]), tag.format("C", "filter", "", format_dict, 0))
-# 
-#         format_dict = OrderedDict(zip("A:TAR:DP2".split(":"), "1:13,50:53".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('TAR', '13,50'), ('DP2', '53'), ('JQ_AF_SK', '0.94')]), tag.format("C", "filter", "", format_dict, 0))
-# 
-#         format_dict = OrderedDict(zip("A:TAR:DP2".split(":"), "1:13,70:53".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('TAR', '13,70'), ('DP2', '53'), ('JQ_AF_SK', '1.00')]), tag.format("C", "filter", "", format_dict, 0))
-# 
-# class Strelka_DepthTagTestCase(unittest.TestCase):
-#     def test_metaheader(self):
-#         self.assertEqual('##FORMAT=<ID=JQ_DP_SK,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth),Source="Jacquard",Version=0.1>\n'.format(__version__), strelka.DepthTag().metaheader)
-# 
-#     def test_format_missingDP2AUTags(self):
-#         tag = strelka.DepthTag()
-#         format_param_string = "A:B"
-#         format_value_string = "1:2"
-#         format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("C", "filter", "", format_dict, 0))
-# 
-#     def test_format(self):
-#         tag = strelka.DepthTag()
-#         format_dict = OrderedDict(zip("A:DP2".split(":"), "1:42".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('DP2', '42'), ('JQ_DP_SK', '42')]), tag.format("C", "filter", "", format_dict, 0))
-# 
-#         format_dict = OrderedDict(zip("A:AU:CU:GU:TU".split(":"), "1:42,42:5,5:13,13:4,4".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('AU', '42,42'), ('CU', '5,5'), ('GU', '13,13'), ('TU', '4,4'), ('JQ_DP_SK', '64')]), tag.format("C", "filter", "", format_dict, 0))
-# 
-# class Strelka_SomaticTagTestCase(unittest.TestCase):
-#     def test_metaheader(self):
-#         self.assertEqual('##FORMAT=<ID=JQ_HC_SOM_SK,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1= somatic (based on PASS in FILTER column),Source="Jacquard",Version=0.1>\n'.format(__version__), strelka.SomaticTag().metaheader)
-# 
-#     def test_format_missingPASSTag(self):
-#         tag = strelka.SomaticTag()
-#         format_param_string = "A:B"
-#         format_value_string = "1:2"
-#         format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('B', '2'), ('JQ_HC_SOM_SK', '0')]), tag.format("C", "reject", "", format_dict, 0))
-#         self.assertEqual(OrderedDict([('A', '1'), ('B', '2'), ('JQ_HC_SOM_SK', '0')]), tag.format("C", "PASS;foo", "", format_dict, 0))
-# 
-#     def test_format(self):
-#         tag = strelka.SomaticTag()
-#         format_dict = OrderedDict(zip("A:SS".split(":"), "1:2".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('SS', '2'), ('JQ_HC_SOM_SK', '0')]), tag.format("C", "PASS", "", format_dict, 0))
-#         self.assertEqual(OrderedDict([('A', '1'), ('SS', '2'), ('JQ_HC_SOM_SK', '1')]), tag.format("C", "PASS", "", format_dict, 1))
-# 
-#         format_dict = OrderedDict(zip("A:SS".split(":"), "1:1".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('SS', '1'), ('JQ_HC_SOM_SK', '0')]), tag.format("C", "PASS", "", format_dict, 0))
-#         self.assertEqual(OrderedDict([('A', '1'), ('SS', '1'), ('JQ_HC_SOM_SK', '1')]), tag.format("C", "PASS", "", format_dict, 1))

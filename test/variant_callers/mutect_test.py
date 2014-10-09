@@ -1,10 +1,42 @@
-from collections import OrderedDict
 import unittest
 
 import jacquard.variant_callers.mutect as mutect
-from jacquard.utils import __version__, jq_dp_tag, jq_somatic_tag
+from jacquard.utils import __version__, jq_dp_tag, jq_somatic_tag,JQException
 from jacquard.vcf import VcfRecord 
 
+
+class MockWriter():
+    def __init__(self):
+        self._content = []
+        self.opened = False
+        self.closed = False
+
+    def open (self):
+        self.opened = True
+        
+    def write(self, content):
+        self._content.extend(content.splitlines())
+        
+    def lines(self):
+        return self._content
+
+    def close(self):
+        self.closed = True
+        
+class MockReader():
+    def __init__(self, lines = []):
+        self._lines_iter = iter(lines)
+        self.opened = False
+        self.closed = False
+
+    def open (self):
+        self.opened = True
+        
+    def read_lines(self):
+        return self._lines_iter
+
+    def close(self):
+        self.closed = True
 
 
 class AlleleFreqTagTestCase(unittest.TestCase):
@@ -115,8 +147,22 @@ class Mutect_TestCase(unittest.TestCase):
         actual_metaheader = self.caller.get_new_metaheaders()
 
         self.assertEquals(["##my_metaheader\n"], actual_metaheader)
+        
+    def test_normalize(self):
+        writer = MockWriter()
+        content = ["foo", "bar", "baz"]
+        reader = MockReader(content)
+        self.caller.normalize(writer,[reader])
+        
+        self.assertTrue(reader.opened)
+        self.assertTrue(reader.closed)
+        self.assertTrue(writer.opened)
+        self.assertTrue(writer.closed)
+        self.assertEquals(content, writer.lines())
 
-
+    def test_normalize_raisesExceptionIfTwoInputFiles(self):
+        self.assertRaisesRegexp(JQException, r"ERROR: MuTect .* but found \[2\]\.", self.caller.normalize, MockWriter(), [MockReader(), MockReader()])
+        
 #     #TODO: (cgates/kmeng) Remove when switched to new VcfRecord
 #     def test_format_rounds(self):
 #         tag = mutect.AlleleFreqTag()

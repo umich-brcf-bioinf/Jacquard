@@ -226,7 +226,7 @@ def expand_format(df, formats_to_expand, rows, fname):
     
     s = df["aggregate_format_sample"].apply(pd.Series, 1).stack()
     s.index = s.index.droplevel(-1)
-    s.name = "format_sample"
+    s.input_filepath = "format_sample"
 
     original_index = s.index
     

@@ -22,7 +22,7 @@ def tag_files(vcf_readers_to_writers, execution_context):
 #     for count, reader, writer in enumerate(vcf_readers_to_writers.items()):
     for count, item in enumerate(vcf_readers_to_writers.items()):
         reader,writer = item
-        log("INFO: Reading [{}] ({}/{})", reader.name,
+        log("INFO: Reading [{}] ({}/{})", reader.input_filepath,
              count, total_number_of_files)
         reader.open()
         writer.open()
@@ -60,7 +60,9 @@ def _build_vcf_readers(input_dir,
     for filename in in_files:
         file_path = os.path.join(input_dir, filename)
         try:
-            vcf_readers.append(vcf.VcfReader(file_path, get_caller))
+            vcf_reader = vcf.VcfReader(file_path)
+            caller = get_caller(vcf_reader.metaheaders, vcf_reader.column_header, vcf_reader.file_name)
+            vcf_readers.append(vcf.RecognizedVcfReader(vcf_reader, caller))
         except JQException:
             failures += 1
     if failures:
@@ -74,10 +76,10 @@ def _build_vcf_readers(input_dir,
 def _build_vcf_readers_to_writers(vcf_readers, output_dir):
     vcf_providers_to_writers = {}
     for reader in vcf_readers:
-        basename, extension = os.path.splitext(reader.name)
+        basename, extension = os.path.splitext(reader.file_name)
         new_filename = basename + ".jacquardTags" + extension
         output_filepath = os.path.join(output_dir, new_filename)
-        vcf_providers_to_writers[reader] = vcf.VcfWriter(output_filepath)
+        vcf_providers_to_writers[reader] = vcf.FileWriter(output_filepath)
     
     return vcf_providers_to_writers
 

@@ -6,33 +6,52 @@ import os
 import utils as utils
 from utils import log
 
+class RecognizedVcfReader(object):
+    def __init__(self,vcf_reader,caller):
+        self._vcf_reader = vcf_reader
+        self.caller = caller
+        
+    @property
+    def column_header(self):
+        return self._vcf_reader.column_header
+
+    def close(self):
+        return self._vcf_reader.close()
+
+    @property
+    def file_name(self):
+        return self._vcf_reader.file_name
+    
+    @property
+    def input_filepath(self):
+        return self._vcf_reader.input_filepath
+
+    @property
+    def metaheaders(self):
+        return self._vcf_reader.metaheaders
+    
+    def open(self):
+        return self._vcf_reader.open()
+    
+    def vcf_records(self):
+        return self._vcf_reader.vcf_records()
+    
+    
 #TODO cgates: add context management to open/close 
 class VcfReader(object):
-    def __init__(self, file_path, get_caller):
-        self.file_path = file_path
-        self.name = os.path.basename(file_path)
-        self.file_reader = None
+    def __init__(self, input_filepath):
+        self.input_filepath = input_filepath
+        self.file_name = os.path.basename(input_filepath)
+        self._file_reader = None
         (self.column_header, self._metaheaders) = self._read_headers()
-        self.caller = self._initialize_caller(get_caller)
 
     @property
     def metaheaders(self):
         return list(self._metaheaders)
 
-    def _initialize_caller(self, get_caller):
-        try:
-            caller = get_caller(self.metaheaders,self.column_header,self.name)
-            log("DEBUG: VCF [{}] recognized by caller [{}]",
-                 self.name, caller.name)
-            return caller
-        except utils.JQException as ex:
-            log("ERROR: Problem parsing [{}]:{}", self.name, ex)
-            raise ex
-
-
     def _read_headers(self):
         metaheaders = []
-        with open(self.file_path, "r") as vcf:
+        with open(self.input_filepath, "r") as vcf:
             for line in vcf:
                 if line.startswith("##"):
                     metaheaders.append(line.rstrip("\n"))
@@ -43,16 +62,16 @@ class VcfReader(object):
         return column_header, metaheaders
 
     def vcf_records(self):
-        for line in self.file_reader:
+        for line in self._file_reader:
             if line.startswith("#"):
                 continue
             yield VcfRecord(line)
 
     def open(self):
-        self.file_reader = open(self.file_path, 'r')
+        self._file_reader = open(self.input_filepath, 'r')
 
     def close(self):
-        self.file_reader.close()
+        self._file_reader.close()
 
 
 class VcfRecord(object):
@@ -84,7 +103,7 @@ class VcfRecord(object):
 
 
 #TODO cgates: add context management to open/close 
-class VcfWriter(object):
+class FileWriter(object):
     def __init__(self, output_filepath):
         self.output_filepath = output_filepath
         self._file_writer = None
@@ -97,4 +116,20 @@ class VcfWriter(object):
 
     def close(self):
         self._file_writer.close()
-
+        
+        
+class FileReader(object):
+    def __init__(self, input_filepath):
+        self.input_filepath = input_filepath
+        self.file_name = os.path.basename(input_filepath)
+        self._file_reader = None
+    
+    def open(self):
+        self._file_reader = open(self.input_filepath,"r")
+    
+    def read_lines(self):
+        for line in self._file_reader:
+            yield line
+    
+    def close(self):
+        self._file_reader.close()

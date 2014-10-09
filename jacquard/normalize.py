@@ -3,7 +3,11 @@ import glob
 import os
 import re
 import shutil
+from utils import JQException, log
+import collections
+import vcf
 
+from variant_callers import variant_caller_factory
 import variant_callers.varscan 
 import variant_callers.strelka
 import variant_callers.mutect
@@ -106,6 +110,9 @@ def validate_callers(in_file_name, validated_callers, callers):
     
     return validated_callers
 
+def merge_and_sort2():
+    pass
+
 def merge_and_sort(input_dir, output_dir, callers, execution_context=[]):
     print "\n".join(execution_context)
 
@@ -118,13 +125,13 @@ def merge_and_sort(input_dir, output_dir, callers, execution_context=[]):
 
     if len(validated_callers) == 1:
         for initial_caller in callers:
-            if validated_callers[0] == initial_caller.name:
+            if validated_callers[0] == initial_caller.input_filepath:
                 caller = initial_caller
     else:
         print "ERROR: It appears that input directory contains files called with different variant callers. Input directory should only have files for one caller. Review input and try again."
         exit(1)
 
-    if caller.name == "MuTect":
+    if caller.input_filepath == "MuTect":
         count = 0
         for in_file_name in in_files:
             fname, extension = os.path.splitext(in_file_name)
@@ -150,12 +157,48 @@ def add_subparser(subparser):
     parser_normalize_vs.add_argument("input_dir", help="Path to directory containing VCFs. Each sample must have exactly two files matching these patterns: <sample>.indel.vcf, <sample>.snp.vcf, <sample>.indel.Germline.hc, <sample>.snp.Germline.hc, <sample>.indel.LOH.hc, <sample>.snp.LOH.hc, <sample>.indel.Somatic.hc, <sample>.snp.somatic.hc, <sample>.indel.*.hc, <sample>.snp.*.hc ")
     parser_normalize_vs.add_argument("output_dir", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
 
+def _build_vcf_readers(input_dir,
+                         get_caller=variant_caller_factory.get_caller):
+    in_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
+    vcf_readers = []
+    failures = 0
+    for filename in in_files:
+        file_path = os.path.join(input_dir, filename)
+        try:
+            vcf_reader = vcf.VcfReader(file_path)
+            caller = get_caller(vcf_reader.metaheaders, vcf_reader.column_header, vcf_reader.file_name)
+            vcf_readers.append(vcf.RecognizedVcfReader(vcf_reader, caller))
+        except JQException:
+            failures += 1
+    if failures:
+        raise JQException("[{}] VCF files could not be parsed."
+                          " Review logs for details, adjust input, "
+                          "and try again.".format(failures))
+    _log_caller_info(vcf_readers)
+    return vcf_readers
+
+def _log_caller_info(vcf_readers):
+    caller_count = collections.defaultdict(int)
+    for vcf in vcf_readers:
+        caller_count[vcf.caller.name] += 1
+    for caller_name in sorted(caller_count):
+        log("INFO: Recognized [{0}] {1} file(s)",
+             caller_count[caller_name], caller_name)
+
 def execute(args, execution_context): 
     input_dir = os.path.abspath(args.input_dir)
     output_dir = os.path.abspath(args.output_dir)
     
     utils.validate_directories(input_dir, output_dir)
+    vcf_readers = _build_vcf_readers(input_dir)
+    if not vcf_readers:
+        log("ERROR: Specified input directory [{0}] contains no VCF files."
+             "Check parameters and try again.", input_dir)
+        #TODO cgates: move to jacquard.py
+        shutil.rmtree(output_dir)
+        exit(1)
 
+    
     callers = [variant_callers.strelka.Strelka(), variant_callers.varscan.Varscan(), variant_callers.mutect.Mutect()]
     merge_and_sort(input_dir, output_dir, callers, execution_context)
     

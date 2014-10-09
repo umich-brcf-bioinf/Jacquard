@@ -58,8 +58,8 @@ class MockCaller(object):
         return self.metaheaders
 
 class MockVcfReader(object):
-    def __init__(self, name="vcfName", metaheaders=["##metaheaders"], column_header="#header"):
-        self.name = name
+    def __init__(self, input_filepath="vcfName", metaheaders=["##metaheaders"], column_header="#header"):
+        self.input_filepath = input_filepath
         self.metaheaders = metaheaders
         self.caller = MockCaller()
         self.column_header = column_header
@@ -105,12 +105,12 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             
             vcf_readers = tag._build_vcf_readers(input_dir.path)
             
-            self.assertEqual("A.vcf", vcf_readers[0].name)
-            self.assertEqual(["##source=strelka"], vcf_readers[0]._metaheaders)
+            self.assertEqual("A.vcf", vcf_readers[0].file_name)
+            self.assertEqual(["##source=strelka"], vcf_readers[0].metaheaders)
             self.assertEqual("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR",
                               vcf_readers[0].column_header)
-            self.assertEqual("B.vcf", vcf_readers[1].name)
-            self.assertEqual(["##source=strelka"], vcf_readers[1]._metaheaders)
+            self.assertEqual("B.vcf", vcf_readers[1].file_name)
+            self.assertEqual(["##source=strelka"], vcf_readers[1].metaheaders)
             self.assertEqual("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR",
                               vcf_readers[1].column_header)
             self.assertEqual(2, len(vcf_readers))
@@ -133,13 +133,13 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
             actual_dict = tag._build_vcf_readers_to_writers(vcf_readers, output_dir.path)
             
-            actual_set = set([actual_dict.keys()[0].name,actual_dict.keys()[1].name])
-            expected_set = set(["A.vcf","B.vcf"])
-            self.assertTrue(actual_set.intersection(expected_set)==expected_set)
+            actual_readers = sorted([reader.file_name for reader in actual_dict])
+            expected_readers = ["A.vcf","B.vcf"]
+            self.assertEquals(actual_readers, expected_readers)
             
-            actual_set = set([actual_dict.values()[0].output_filepath,actual_dict.values()[1].output_filepath])
-            expected_set = set([os.path.join(output_dir.path , "B.jacquardTags.vcf"),os.path.join(output_dir.path , "B.jacquardTags.vcf")])
-            self.assertTrue(actual_set.intersection(expected_set)==expected_set)
+            actual_writers = sorted([writer.output_filepath for writer in actual_dict.values()])
+            expected_writers = [os.path.join(output_dir.path, base_filename) for base_filename in ["A.jacquardTags.vcf", "B.jacquardTags.vcf"]]
+            self.assertEquals(actual_writers, expected_writers)
 
 
     def test_build_vcf_to_caller_multipleVcfLogs(self):
@@ -160,6 +160,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             tag._build_vcf_readers_to_writers(vcf_readers, output_dir.path)
     
             output_lines = self.output.getvalue().rstrip().split("\n")
+            print(self.output.getvalue())
             self.assertEquals(3, len(output_lines))
             line_iter = iter(output_lines)
             self.assertEquals("DEBUG: VCF [A.vcf] recognized by caller [Strelka]", line_iter.next())
