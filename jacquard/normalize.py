@@ -157,16 +157,20 @@ def add_subparser(subparser):
     parser_normalize_vs.add_argument("input_dir", help="Path to directory containing VCFs. Each sample must have exactly two files matching these patterns: <sample>.indel.vcf, <sample>.snp.vcf, <sample>.indel.Germline.hc, <sample>.snp.Germline.hc, <sample>.indel.LOH.hc, <sample>.snp.LOH.hc, <sample>.indel.Somatic.hc, <sample>.snp.somatic.hc, <sample>.indel.*.hc, <sample>.snp.*.hc ")
     parser_normalize_vs.add_argument("output_dir", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
 
-def _build_vcf_readers(input_dir,
+def _point_readers_to_caller_and_writer(input_dir,output_dir,
                          get_caller=variant_caller_factory.get_caller):
     in_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
+    file_readers = []
     vcf_readers = []
+    file_writer = vcf.FileWriter(os.path.join(output_dir,in_files[0].split(".")[0]+".normalized.vcf")) 
     failures = 0
     for filename in in_files:
         file_path = os.path.join(input_dir, filename)
         try:
-            vcf_reader = vcf.VcfReader(vcf.FileReader(file_path))
+            file_reader = vcf.FileReader(file_path)
+            vcf_reader = vcf.VcfReader(file_reader)
             caller = get_caller(vcf_reader.metaheaders, vcf_reader.column_header, vcf_reader.file_name)
+            file_readers.append(file_reader)
             vcf_readers.append(vcf.RecognizedVcfReader(vcf_reader, caller))
         except JQException:
             failures += 1
@@ -175,7 +179,7 @@ def _build_vcf_readers(input_dir,
                           " Review logs for details, adjust input, "
                           "and try again.".format(failures))
     _log_caller_info(vcf_readers)
-    return vcf_readers
+    return {file_writer:file_readers}
 
 def _log_caller_info(vcf_readers):
     caller_count = collections.defaultdict(int)
@@ -190,7 +194,7 @@ def execute(args, execution_context):
     output_dir = os.path.abspath(args.output_dir)
     
     utils.validate_directories(input_dir, output_dir)
-    vcf_readers = _build_vcf_readers(input_dir)
+    vcf_readers = _point_readers_to_caller_and_writer(input_dir,output_dir)
     if not vcf_readers:
         log("ERROR: Specified input directory [{0}] contains no VCF files."
              "Check parameters and try again.", input_dir)
