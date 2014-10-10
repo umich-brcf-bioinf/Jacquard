@@ -3,8 +3,7 @@ from collections import OrderedDict
 import os
 
 
-import utils as utils
-from utils import log
+import utils
 
 class RecognizedVcfReader(object):
     def __init__(self,vcf_reader,caller):
@@ -39,11 +38,12 @@ class RecognizedVcfReader(object):
     
 #TODO cgates: add context management to open/close 
 class VcfReader(object):
-    def __init__(self, input_filepath):
-        self.input_filepath = input_filepath
-        self.file_name = os.path.basename(input_filepath)
-        self._file_reader = None
+    def __init__(self, file_reader):        
+        self.input_filepath = file_reader.input_filepath
+        self.file_name = file_reader.file_name
+        self._file_reader = file_reader
         (self.column_header, self._metaheaders) = self._read_headers()
+        
 
     @property
     def metaheaders(self):
@@ -51,24 +51,32 @@ class VcfReader(object):
 
     def _read_headers(self):
         metaheaders = []
-        with open(self.input_filepath, "r") as vcf:
-            for line in vcf:
+        column_header = None
+        try:
+            self._file_reader.open()
+            for line in self._file_reader.read_lines():
                 if line.startswith("##"):
                     metaheaders.append(line.rstrip("\n"))
                 elif line.startswith("#"):
                     column_header = line.rstrip("\n")
                 else:
                     break
+        finally:
+            self._file_reader.close()
+
+        if not (column_header and metaheaders):
+            raise utils.JQException("ERROR: [{}] is not a valid vcf. Missing column header or metaheaders.".format(self.file_name))
+        
         return column_header, metaheaders
 
     def vcf_records(self):
-        for line in self._file_reader:
+        for line in self._file_reader.read_lines():
             if line.startswith("#"):
                 continue
             yield VcfRecord(line)
 
     def open(self):
-        self._file_reader = open(self.input_filepath, 'r')
+        self._file_reader.open()
 
     def close(self):
         self._file_reader.close()

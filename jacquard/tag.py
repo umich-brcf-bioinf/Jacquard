@@ -60,7 +60,7 @@ def _build_vcf_readers(input_dir,
     for filename in in_files:
         file_path = os.path.join(input_dir, filename)
         try:
-            vcf_reader = vcf.VcfReader(file_path)
+            vcf_reader = vcf.VcfReader(vcf.FileReader(file_path))
             caller = get_caller(vcf_reader.metaheaders, vcf_reader.column_header, vcf_reader.file_name)
             vcf_readers.append(vcf.RecognizedVcfReader(vcf_reader, caller))
         except JQException:

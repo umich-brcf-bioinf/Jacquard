@@ -143,8 +143,8 @@ class Strelka(object):
         
         file_writer.open()
         for file_reader in file_readers:
-            vcf_reader = VcfReader(file_reader.input_filepath)
-            file_reader.open()
+            vcf_reader = VcfReader(file_reader)
+            
             for line in file_reader.read_lines():
                 file_writer.write(line)
             file_reader.close()

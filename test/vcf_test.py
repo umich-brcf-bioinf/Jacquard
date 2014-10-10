@@ -5,7 +5,26 @@ import sys
 from StringIO import StringIO
 from testfixtures import TempDirectory
 from jacquard.vcf import VcfRecord, VcfReader, FileWriter
+import jacquard.utils as utils
 
+
+class MockFileReader(object):
+    def __init__(self, input_filepath="/foo/mockFileReader.txt", content = []):
+        self.input_filepath = input_filepath
+        self.file_name = os.path.basename(input_filepath)
+        self._content = content
+        self.open_was_called = False
+        self.close_was_called = False
+    
+    def open(self):
+        self.open_was_called = True
+    
+    def read_lines(self):
+        for line in self._content:
+            yield line
+         
+    def close(self):
+        self.close_was_called = True
 
 class VcfRecordTestCase(unittest.TestCase):
     def testInit(self):
@@ -64,51 +83,66 @@ class VcfReaderTestCase(unittest.TestCase):
         self.output.close()
         sys.stderr = self.saved_stderr        
     
+    
     def test_init(self):
-        with TempDirectory() as input_dir:
-            input_dir.write("A.vcf","##source=strelka\n##foobarbaz\n#CHROM\tNORMAL\tTUMOR\n123\n456\n")
-            file_path = os.path.join(input_dir.path, "A.vcf")
-            reader = VcfReader(file_path)
+        file_contents = ["##metaheader1\n",
+                         "##metaheader2\n",
+                         "#columnHeader\n",
+                         "record1\n",
+                         "record2"]
+        mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
 
-            self.assertEquals(file_path, reader.input_filepath)
-            self.assertEquals("A.vcf", reader.file_name)
-            self.assertEquals("#CHROM\tNORMAL\tTUMOR", reader.column_header)
-            self.assertEquals(["##source=strelka", "##foobarbaz"], reader.metaheaders)
+        actual_vcf_reader = VcfReader(mock_reader)
+        
+        self.assertEquals("my_dir/my_file.txt", actual_vcf_reader.input_filepath)
+        self.assertEquals("my_file.txt", actual_vcf_reader.file_name)
+        self.assertEquals("#columnHeader", actual_vcf_reader.column_header)
+        self.assertEquals(["##metaheader1", "##metaheader2"], actual_vcf_reader.metaheaders)
 
     def test_metaheadersAreImmutable(self):
-        with TempDirectory() as input_dir:
-            input_dir.write("A.vcf","##source=strelka\n##foobarbaz\n#CHROM\tNORMAL\tTUMOR\n123\n456\n")
-            file_name = os.path.join(input_dir.path, "A.vcf")
-            reader = VcfReader(file_name)
-            
-            original_length = len(reader.metaheaders)
-            reader.metaheaders.append("foo")
-            
-            self.assertEquals(original_length, len(reader.metaheaders))
+        file_contents = ["##metaheader1\n",
+                         "##metaheader2\n",
+                         "#columnHeader\n",
+                         "record1\n",
+                         "record2"]
+        mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+        reader = VcfReader(mock_reader)
+        
+        original_length = len(reader.metaheaders)
+        reader.metaheaders.append("foo")
+        
+        self.assertEquals(original_length, len(reader.metaheaders))
 
     def test_vcf_records(self):
-        vcf_content ='''##source=strelka
-#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
-chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
-chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
-'''
-        vcf_content = vcf_content.replace('|',"\t")
-        with TempDirectory() as input_dir:
-            input_dir.write("A.vcf", vcf_content)
-            file_name = os.path.join(input_dir.path, "A.vcf")
-            reader = VcfReader(file_name)
+        file_contents = ["##metaheader1\n",
+                         "##metaheader2\n",
+                         "#columnHeader\n",
+                         "chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR\n".replace("|","\t"),
+                         "chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR".replace("|","\t")]
+        mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+        reader = VcfReader(mock_reader)
 
-            actual_vcf_records = []
-            reader.open()
-            for vcf_record in reader.vcf_records():
-                actual_vcf_records.append(vcf_record)
-            reader.close()
+        actual_vcf_records = []
+        reader.open()
+        for vcf_record in reader.vcf_records():
+            actual_vcf_records.append(vcf_record)
+        reader.close()
 
         self.assertEquals(2, len(actual_vcf_records))
         self.assertEquals('chr1', actual_vcf_records[0].chrom)
         self.assertEquals('chr2', actual_vcf_records[1].chrom)
+        self.assertTrue(mock_reader.open_was_called)
+        self.assertTrue(mock_reader.close_was_called)
 
-
+        
+    def test_noColumnHeaders(self):
+        mock_reader = MockFileReader("my_dir/my_file.txt", ["##metaheader\n"])
+        self.assertRaises(utils.JQException, VcfReader, mock_reader)
+            
+    def test_noMetaheaders(self):
+        mock_reader = MockFileReader("my_dir/my_file.txt", ["#columnHeader\n"])
+        self.assertRaises(utils.JQException, VcfReader, mock_reader)
+            
 class VcfWriterTestCase(unittest.TestCase):
     def test_write(self):
         with TempDirectory() as output_dir:

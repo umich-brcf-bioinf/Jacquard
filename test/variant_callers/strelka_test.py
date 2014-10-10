@@ -27,22 +27,23 @@ class MockWriter():
     def close(self):
         self.closed = True
         
-class MockReader():
-    def __init__(self, lines = [], input_filepath="foo"):
-        self._lines_iter = iter(lines)
+class MockFileReader(object):
+    def __init__(self, input_filepath="/foo/mockFileReader.txt", content = []):
         self.input_filepath = input_filepath
         self.file_name = os.path.basename(input_filepath)
-        self.opened = False
-        self.closed = False
-
-    def open (self):
-        self.opened = True
-        
+        self._content = content
+        self.open_was_called = False
+        self.close_was_called = False
+    
+    def open(self):
+        self.open_was_called = True
+    
     def read_lines(self):
-        return self._lines_iter
-
+        for line in self._content:
+            yield line
+         
     def close(self):
-        self.closed = True
+        self.close_was_called = True
         
         
 class AlleleFreqTagTestCase(unittest.TestCase):
@@ -194,8 +195,9 @@ class StrelkaTestCase(unittest.TestCase):
 
     def test_normalize_hasIndelSnvs(self):
         writer = MockWriter()
-        reader1 = MockReader(input_filepath="indels")
-        reader2 = MockReader(input_filepath="snvs")
+
+        reader1 = MockFileReader("indels",["##metaheader\n","#column_header\n"])
+        reader2 = MockFileReader("snvs",["##metaheader\n","#column_header\n"])
         
         self.caller.normalize(writer,[reader1,reader2])
         pass
@@ -211,11 +213,8 @@ class StrelkaTestCase(unittest.TestCase):
         self.assert_two_files_throw_exception("indels.snvs", "bar")
         self.assert_two_files_throw_exception("A.indels.snvs", "B.indels.snvs")
         
-        
-        
-
     def assert_two_files_throw_exception(self, file1, file2):
-        self.assertRaises(JQException, self.caller.normalize, MockWriter(), [MockReader(input_filepath=file1), MockReader(input_filepath=file2)])
+        self.assertRaises(JQException, self.caller.normalize, MockWriter(), [MockFileReader(input_filepath=file1), MockFileReader(input_filepath=file2)])
 
 
 #     def test_validateInputFile_valid(self):
