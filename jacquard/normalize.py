@@ -76,20 +76,21 @@ def merge(merge_candidates, output_dir, caller):
         jacquard_utils.write_output(out_file, meta_headers, sorted_variants)
         out_file.close()
 
+#TODO (cgates): Adjust per EX-91
 def identify_merge_candidates(in_files, out_dir, caller):
     merge_candidates = defaultdict(list)
     hc_candidates = defaultdict(list)
     
     for in_file in in_files:
-        fname, extension = os.path.splitext(in_file)
-        if extension == ".vcf":
+        #fname, extension = os.path.splitext(in_file)
+        if in_file.lower().endswith(".vcf"):
             merged_fname = re.sub(caller.file_name_search, "merged", os.path.join(out_dir, os.path.basename(in_file)))
             merge_candidates[merged_fname].append(in_file)
-        elif extension == ".hc":
+        elif in_file.lower().endswith(".somatic.hc"):
             hc_candidates = caller.handle_hc_files(in_file, out_dir, hc_candidates)
     
     all_keys = hc_candidates.keys() + merge_candidates.keys()
-    caller.validate_file_set(all_keys)
+    #caller.validate_file_set(all_keys)
 
     return merge_candidates, hc_candidates
 
