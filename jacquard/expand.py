@@ -14,7 +14,7 @@ import openpyxl
 from openpyxl import load_workbook
 from openpyxl.style import Color, Fill, Font
 
-import jacquard_utils
+import utils
 
 class PivotError(Exception):
     """Base class for exceptions in this module."""
@@ -248,7 +248,7 @@ def expand_format(df, formats_to_expand, rows, fname):
         joined_df.rename(columns={"SnpEff_WARNING/ERROR": "WARNING/ERROR"}, inplace=True)
     
     try:
-        pivoted_df = pd.pivot_table(joined_df, rows=rows+["SAMPLE_NAME"], cols="FORMAT2", values="VALUE2", aggfunc=lambda x: x)
+        pivoted_df = pd.pivot_table(joined_df, index=rows+["SAMPLE_NAME"], columns="FORMAT2", values="VALUE2", aggfunc=lambda x: x)
     except Exception as e :
         raise PivotError("Cannot pivot data. {0}".format(e))
     

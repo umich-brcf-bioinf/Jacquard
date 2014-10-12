@@ -19,30 +19,26 @@ import os
 import signal
 import sys
 
-import pivot_variants
-import rollup_genes
-import tag
-import normalize
-import filter_hc_somatic
-import merge
-import consensus
-import expand
-import style
-import jacquard_utils
+import tag as tag
+import normalize as normalize
+import filter_hc_somatic as filter_hc_somatic
+import merge as merge
+import consensus as consensus
+import expand as expand
+import utils as utils
 
 _SUBCOMMANDS=[normalize,
               tag,
               filter_hc_somatic,
               merge,
               consensus,
-              expand,
-              style,
-              rollup_genes,
-              pivot_variants]
+              expand]
 
 def main():
+    #pylint: disable=W0613
     def handler(signum, frame):
-        print("WARNING: Jacquard was interrupted before completing.", file=sys.stderr)
+        print("WARNING: Jacquard was interrupted before completing.",
+              file=sys.stderr)
         exit(1)
 
     signal.signal(signal.SIGINT, handler)
@@ -51,11 +47,11 @@ def main():
     dispatch(_SUBCOMMANDS, sys.argv[1:])
 
 def version_text():
-    callers = jacquard_utils.caller_versions.items()
+    callers = utils.caller_versions.items()
     caller_versions = [key + " " + value for key, value in callers]
     caller_version_string = "\n\t".join(caller_versions)
     return "Jacquard v{0}\nSupported variant callers:\n\t{1}".\
-        format(jacquard_utils.__version__, caller_version_string)
+        format(utils.__version__, caller_version_string)
 
 # pylint: disable=C0301
 def dispatch(modules, arguments):
@@ -63,7 +59,7 @@ def dispatch(modules, arguments):
         usage="jacquard",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description='''type 'Jacquard -h <subcommand>' for help on a specific subcommand''',
-        epilog="authors: Jessica Bene, Chris Gates 07/2014")
+        epilog="authors: Jessica Bene, Ashwini Bhasi, Chris Gates, Kevin Meng, Peter Ulintz; October 2014")
     parser.add_argument(\
                         "-v",
                         "--version",
@@ -79,7 +75,7 @@ def dispatch(modules, arguments):
         module_dispatch[short_name] = module
 
     execution_context = [\
-        "##jacquard.version={0}".format(jacquard_utils.__version__),
+        "##jacquard.version={0}".format(utils.__version__),
         "##jacquard.command={0}".format(" ".join(arguments)),
         "##jacquard.cwd={0}".format(os.path.dirname(os.getcwd()))]
 
