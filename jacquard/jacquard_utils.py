@@ -1,9 +1,11 @@
+from __future__ import print_function
 __version__ = 0.1
-
 from collections import OrderedDict
+from datetime import datetime
 from operator import itemgetter
 import os
 from os import listdir
+import sys
 
 global caller_versions
 caller_versions = {"VarScan":"v2.3", "MuTect": "v1.1.4", "Strelka": "v2.0.15"}
@@ -15,21 +17,26 @@ jq_somatic_tag = "JQ_HC_SOM_"
 jq_af_tag = "JQ_AF_"
 jq_dp_tag = "JQ_DP_"
 
+# pylint: disable=W0142
+def log(msg, *args):
+    print("{}|{}".format(datetime.now(), msg.format(*[str(i) for i in args])), file=sys.stderr)
+
+
 def validate_directories(input_dir, output_dir):    
     if not os.path.isdir(input_dir):
-        print "ERROR. Specified input directory {0} does not exist".format(input_dir)
+        log("ERROR. Specified input directory [{}] does not exist", input_dir)
         exit(1)
     try:
         listdir(input_dir)
     except:
-        print "ERROR. Specified input directory [{0}] cannot be read. Check permissions and try again.".format(input_dir)
+        log("ERROR. Specified input directory [{}] cannot be read. Check permissions and try again.", input_dir)
         exit(1)
         
     if not os.path.isdir(output_dir):
         try:
             os.makedirs(output_dir)
         except:
-            print "ERROR. Output directory could not be created. Check parameters and try again"
+            log("ERROR. Output directory could not be created. Check parameters and try again")
             exit(1)
             
 def write_output(writer, headers, variants):
