@@ -127,7 +127,7 @@ class Strelka(object):
         if len(file_readers) != 2:
                 raise utils.JQException("ERROR: Strelka directories should have exactly two input files per patient, but found [{}].".format(len(file_readers)))
 
-        tmp = list([file_readers[0].file_name,file_readers[1].file_name])
+        tmp = [file_readers[0].file_name,file_readers[1].file_name]
         for i,name in enumerate(tmp):
             if "snvs" in name:
                 tmp[i] = "snvs"
@@ -136,18 +136,27 @@ class Strelka(object):
                 tmp[i] = "indels"
         if not (tmp[0] == "snvs" and tmp[1] == "indels") and not (tmp[1] == "snvs" and tmp[0] == "indels"): 
             raise utils.JQException("ERROR: Each patient in a Strelka directory should have a SNVs file and an indel file.")
+
+        vcf_readers = [VcfReader(file_readers[0]),VcfReader(file_readers[1])]
+        if not vcf_readers[0].column_header == vcf_readers[1].column_header:
+            raise utils.JQException("ERROR: The column headers for VCF files [{},{}] do not match."\
+                .format(vcf_readers[0].file_name,vcf_readers[1].file_name))
+        return vcf_readers
         
 #TODO: Add to normalize.py.        
     def normalize(self, file_writer, file_readers):
-        self._validate_raw_input_files(file_readers)
-        
+        vcf_readers = self._validate_raw_input_files(file_readers)
+        metaheader_list = []
+        column_header = None
+        for i,vcf_reader in enumerate(vcf_readers):
+            if i==0:
+                column_header = vcf_reader.column_header
+            metaheader_list.extend(vcf_reader.metaheaders)
+        sorted_metaheader_set = sorted(set(metaheader_list))
         file_writer.open()
-        for file_reader in file_readers:
-            vcf_reader = VcfReader(file_reader)
-            
-            for line in file_reader.read_lines():
-                file_writer.write(line)
-            file_reader.close()
+        for metaheader in sorted_metaheader_set:
+            file_writer.write(metaheader+"\n")
+        file_writer.write(column_header+"\n")
         file_writer.close()
         
     def get_new_metaheaders(self):

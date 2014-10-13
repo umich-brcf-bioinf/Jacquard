@@ -110,9 +110,6 @@ def validate_callers(in_file_name, validated_callers, callers):
     
     return validated_callers
 
-def merge_and_sort2():
-    pass
-
 def merge_and_sort(input_dir, output_dir, callers, execution_context=[]):
     print "\n".join(execution_context)
 

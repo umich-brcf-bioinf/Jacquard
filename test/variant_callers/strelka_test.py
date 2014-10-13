@@ -181,18 +181,38 @@ class StrelkaTestCase(unittest.TestCase):
         unittest.TestCase.setUp(self)
         self.caller = strelka.Strelka()
          
-#     def test_normalize(self):
+#     def test_normalize_duplicateHeaders(self):
 #         writer = MockWriter()
-#         content = ["foo", "bar", "baz"]
-#         reader = MockReader(content)
-#         self.caller.normalize(writer,[reader,reader])
-#         
-#         self.assertTrue(reader.opened)
-#         self.assertTrue(reader.closed)
+#         content = ["##foo", "##bar", "#baz"]
+#         reader1 = MockFileReader("indels.vcf", content)
+#         reader2 = MockFileReader("snvs.vcf", content)
+#         self.caller.normalize(writer,[reader1,reader2])
+#          
 #         self.assertTrue(writer.opened)
 #         self.assertTrue(writer.closed)
-#         self.assertEquals(content, writer.lines())
+#         self.assertEquals(["##bar", "##foo", "#baz"], writer.lines())
 
+    def test_normalize(self):
+        writer = MockWriter()
+        content1 = ["##foo", "##bar", "#baz"]
+        content2 = ["##hi", "##bar", "#baz"]
+        reader1 = MockFileReader("indels.vcf", content1)
+        reader2 = MockFileReader("snvs.vcf", content2)
+        self.caller.normalize(writer,[reader1,reader2])
+         
+        self.assertTrue(writer.opened)
+        self.assertTrue(writer.closed)
+        self.assertEquals(["##bar", "##foo", "##hi", "#baz"], writer.lines())
+        
+    def test_normalize_mismatchedColumnHeaders(self):
+        writer = MockWriter()
+        content1 = ["##foo", "##bar", "#baz"]
+        content2 = ["##foo", "##bar", "#bluh"]
+        reader1 = MockFileReader("indels.vcf", content1)
+        reader2 = MockFileReader("snvs.vcf", content2)
+        
+        self.assertRaises(JQException, self.caller.normalize, writer, [reader1,reader2])
+        
     def test_normalize_hasIndelSnvs(self):
         writer = MockWriter()
 
