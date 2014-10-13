@@ -15,18 +15,6 @@ import jacquard.utils as utils
 from argparse import Namespace
 from re import findall, MULTILINE
 
-
-class MockCallerFactory(object):
-    def __init__(self, vcf_to_caller):
-        self.vcf_to_caller = vcf_to_caller
-        self.last_vcf = None
-
-    def get_vcf_caller(self, vcf):
-        self.last_vcf = vcf
-        for known_vcf, caller in self.vcf_to_caller.iteritems():
-            if known_vcf == vcf:
-                return caller
-        raise utils.JQException("No caller found")
         
 class MockWriter():
     def __init__(self):

@@ -4,7 +4,7 @@ import unittest
 import sys
 from StringIO import StringIO
 from testfixtures import TempDirectory
-from jacquard.vcf import VcfRecord, VcfReader, FileWriter
+from jacquard.vcf import VcfRecord, VcfReader, FileWriter, FileReader
 import jacquard.utils as utils
 
 
@@ -143,6 +143,7 @@ class VcfReaderTestCase(unittest.TestCase):
         mock_reader = MockFileReader("my_dir/my_file.txt", ["#columnHeader\n"])
         self.assertRaises(utils.JQException, VcfReader, mock_reader)
             
+        
 class VcfWriterTestCase(unittest.TestCase):
     def test_write(self):
         with TempDirectory() as output_dir:
@@ -158,6 +159,49 @@ class VcfWriterTestCase(unittest.TestCase):
             actual_output = output_dir.read('test.tmp')
             expected_output = "AB|CD|".replace('|', os.linesep)
             self.assertEquals(expected_output, actual_output)
-
             
+class FileReaderTestCase(unittest.TestCase):
+    def test_equality(self):
+        self.assertEquals(FileReader("foo"),FileReader("foo"))
+        self.assertNotEquals(FileReader("foo"),FileReader("bar"))
+        self.assertNotEquals(FileReader("foo"), 1)
 
+    def test_hashable(self):
+        s = set([FileReader("foo")])
+        s.add(FileReader("foo"))
+        self.assertEquals(1, len(s))
+    
+    def test_read_lines(self):
+        with TempDirectory() as input_dir:
+            input_dir.write("A.tmp","1\n2\n3")
+            reader = FileReader(os.path.join(input_dir.path, "A.tmp"))
+            reader.open()
+            actual_lines = [line for line in reader.read_lines()]
+            reader.close()
+
+            self.assertEquals(["1\n","2\n","3"], actual_lines)
+
+class FileWriterTestCase(unittest.TestCase):
+    def test_equality(self):
+        self.assertEquals(FileWriter("foo"),FileWriter("foo"))
+        self.assertNotEquals(FileWriter("foo"),FileWriter("bar"))
+        self.assertNotEquals(FileWriter("foo"), 1)
+            
+    def test_hashable(self):
+        s = set([FileWriter("foo")])
+        s.add(FileWriter("foo"))
+        self.assertEquals(1, len(s))
+            
+    def test_write_lines(self):
+        with TempDirectory() as output_dir:
+            writer = FileWriter(os.path.join(output_dir.path, "A.tmp"))
+            writer.open()
+            writer.write("1\n2\n")
+            writer.write("3")      
+            writer.close()
+
+            actual_file = open(os.path.join(output_dir.path, "A.tmp"))
+            actual_output = actual_file.readlines()
+            actual_file.close()
+            
+            self.assertEquals(["1\n","2\n","3"], actual_output)

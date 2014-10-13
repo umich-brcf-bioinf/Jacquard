@@ -3,9 +3,72 @@ import sys
 import os
 import unittest
 from testfixtures import TempDirectory
-from jacquard.normalize import identify_merge_candidates, get_headers, merge_data, validate_split_line, _point_readers_to_caller_and_writer
+from jacquard.normalize import identify_merge_candidates, get_headers, merge_data, validate_split_line, _partition_files_by_patient, _determine_caller_per_directory
 from jacquard.variant_callers import varscan, strelka
+from jacquard.vcf import FileReader, FileWriter
+import jacquard.utils as utils
     
+# def build_mock_get_caller_method(caller):
+#     def get_caller(metaheaders, column_header, name):
+#         return caller
+#     return get_caller
+
+class MockCallerFactory(object):
+    def __init__(self, caller):
+        self.caller = caller
+        self.last_filename = None
+
+    def get_caller(self, metaheaders, column_header, name):
+        self.last_filename = name
+        return self.caller
+    
+class MockCaller(object):
+    def __init__(self, name="MockCaller", metaheaders=["##mockMetaheader1"]):
+        self.name = name
+        self.metaheaders = metaheaders
+
+    def add_tags(self, vcfRecord):
+        return vcfRecord
+
+    def get_new_metaheaders(self):
+        return self.metaheaders
+
+class MockFileReader(object):
+    def __init__(self, input_filepath="/foo/mockFileReader.txt", content = []):
+        self.input_filepath = input_filepath
+        self.file_name = os.path.basename(input_filepath)
+        self._content = content
+        self.open_was_called = False
+        self.close_was_called = False
+    
+    def open(self):
+        self.open_was_called = True
+    
+    def read_lines(self):
+        for line in self._content:
+            yield line
+         
+    def close(self):
+        self.close_was_called = True
+    
+class MockFileWriter():
+    def __init__(self):
+        self._content = []
+        self.opened = False
+        self.closed = False
+
+    def open (self):
+        self.opened = True
+        
+    def write(self, content):
+        self._content.extend(content.splitlines())
+        
+    def lines(self):
+        return self._content
+
+    def close(self):
+        self.closed = True
+
 class NormalizeTestCase(unittest.TestCase):
     def setUp(self):
         self.output = StringIO()
@@ -49,6 +112,43 @@ class NormalizeTestCase(unittest.TestCase):
         self.assertEqual([output_dir + "tiny_merged.vcf"], merge_candidates.keys())
         self.assertEqual([[input_dir + "tiny_indel.vcf", input_dir + "tiny_snp.vcf"]], merge_candidates.values())
     
+
+    def test__partition_files_by_patient(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("A.1.vcf","")
+            input_dir.write("A.2.vcf","")
+            input_dir.write("B.vcf","")
+             
+            writer_to_readers = _partition_files_by_patient(input_dir.path, output_dir.path)
+            
+            writerA = FileWriter(os.path.join(output_dir.path,"A.normalized.vcf"))
+            readersA = [FileReader(os.path.join(input_dir.path,"A.1.vcf")), 
+                        FileReader(os.path.join(input_dir.path,"A.2.vcf"))]
+            writerB = FileWriter(os.path.join(output_dir.path,"B.normalized.vcf"))           
+            readersB = [FileReader(os.path.join(input_dir.path,"B.vcf"))]
+            
+            self.assertEquals({writerA: readersA, writerB: readersB}, 
+                              writer_to_readers)
+
+    def test__determine_caller_per_directory(self):
+            
+            writerA = MockFileWriter()
+            readersA = [MockFileReader("A.1.vcf",["##metaheaders","#column_header"]), 
+                        MockFileReader("A.2.vcf",["##metaheaders","#column_header"])]
+            writerB = MockFileWriter()           
+            readersB = [MockFileReader("B.vcf",["##metaheaders","#column_header"])]
+            
+            mock_writer_to_readers = {writerA: readersA, writerB: readersB}
+            
+            mock_caller = MockCaller()
+            mock_caller_factory = MockCallerFactory(mock_caller)
+            caller = _determine_caller_per_directory(mock_writer_to_readers, mock_caller_factory.get_caller)
+            self.assertEquals(mock_caller,caller)
+            self.assertEquals(mock_caller_factory.last_filename, mock_writer_to_readers.values()[0][0].file_name)
+            
+    def test__log_caller_info(self):
+        pass
+
 #     def test_point_readers_to_caller_and_writer(self):
 #         vcf_content ='''##source=strelka
 # #CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
@@ -73,6 +173,8 @@ class NormalizeTestCase(unittest.TestCase):
 #                               readers_to_writer.values()[0][1].column_header)
 #             self.assertEqual(2, len(readers_to_writer.values()[0]))
 #         
+
+         
     def test_merge_and_sort(self):
         pass
         

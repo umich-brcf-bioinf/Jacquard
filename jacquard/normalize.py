@@ -157,29 +157,26 @@ def add_subparser(subparser):
     parser_normalize_vs.add_argument("input_dir", help="Path to directory containing VCFs. Each sample must have exactly two files matching these patterns: <sample>.indel.vcf, <sample>.snp.vcf, <sample>.indel.Germline.hc, <sample>.snp.Germline.hc, <sample>.indel.LOH.hc, <sample>.snp.LOH.hc, <sample>.indel.Somatic.hc, <sample>.snp.somatic.hc, <sample>.indel.*.hc, <sample>.snp.*.hc ")
     parser_normalize_vs.add_argument("output_dir", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
 
-def _point_readers_to_caller_and_writer(input_dir,output_dir,
-                         get_caller=variant_caller_factory.get_caller):
+def _partition_files_by_patient(input_dir, output_dir):
     in_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
-    file_readers = []
-    vcf_readers = []
-    file_writer = vcf.FileWriter(os.path.join(output_dir,in_files[0].split(".")[0]+".normalized.vcf")) 
-    failures = 0
-    for filename in in_files:
-        file_path = os.path.join(input_dir, filename)
-        try:
-            file_reader = vcf.FileReader(file_path)
-            vcf_reader = vcf.VcfReader(file_reader)
-            caller = get_caller(vcf_reader.metaheaders, vcf_reader.column_header, vcf_reader.file_name)
-            file_readers.append(file_reader)
-            vcf_readers.append(vcf.RecognizedVcfReader(vcf_reader, caller))
-        except JQException:
-            failures += 1
-    if failures:
-        raise JQException("[{}] VCF files could not be parsed."
-                          " Review logs for details, adjust input, "
-                          "and try again.".format(failures))
-    _log_caller_info(vcf_readers)
-    return {file_writer:file_readers}
+    patient_to_files = defaultdict(list)
+    for file_path in in_files:
+        filename = os.path.basename(file_path)
+        patient = filename.split(".")[0]
+        patient_to_files[patient].append(vcf.FileReader(file_path))
+    
+    writer_to_readers = {}
+    for patient in patient_to_files:
+        file_writer = vcf.FileWriter(os.path.join(output_dir,patient+".normalized.vcf"))
+        writer_to_readers[file_writer] = patient_to_files[patient]
+        
+    return writer_to_readers
+
+def _determine_caller_per_directory(writer_to_readers, 
+                                    get_caller=variant_caller_factory.get_caller):
+    file_reader = writer_to_readers.values()[0][0]
+    vcf_reader = vcf.VcfReader(file_reader)
+    return get_caller(vcf_reader.metaheaders, vcf_reader.column_header, vcf_reader.file_name)
 
 def _log_caller_info(vcf_readers):
     caller_count = collections.defaultdict(int)
@@ -194,14 +191,15 @@ def execute(args, execution_context):
     output_dir = os.path.abspath(args.output_dir)
     
     utils.validate_directories(input_dir, output_dir)
-    vcf_readers = _point_readers_to_caller_and_writer(input_dir,output_dir)
-    if not vcf_readers:
+    patient_to_files = _partition_files_by_patient(input_dir, output_dir)
+    if not patient_to_files:
         log("ERROR: Specified input directory [{0}] contains no VCF files."
              "Check parameters and try again.", input_dir)
         #TODO cgates: move to jacquard.py
         shutil.rmtree(output_dir)
         exit(1)
 
+    
     
     callers = [variant_callers.strelka.Strelka(), variant_callers.varscan.Varscan(), variant_callers.mutect.Mutect()]
     merge_and_sort(input_dir, output_dir, callers, execution_context)
