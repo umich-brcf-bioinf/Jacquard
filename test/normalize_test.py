@@ -1,13 +1,23 @@
+
+# pylint: disable=C0103,C0301,R0903,R0904
 from StringIO import StringIO
-import sys
-import os
-import unittest
+from argparse import Namespace
+
+from jacquard.variant_callers import varscan, strelka, variant_caller_factory
 from testfixtures import TempDirectory
-from jacquard.normalize import identify_merge_candidates, get_headers, merge_data, validate_split_line, _partition_files_by_patient, _determine_caller_per_directory
-from jacquard.variant_callers import varscan, strelka
+
+from jacquard.normalize import identify_merge_candidates, get_headers, \
+merge_data, validate_split_line, _partition_files_by_patient, _determine_caller_per_directory
+
 from jacquard.vcf import FileReader, FileWriter
 import jacquard.utils as utils
     
+import jacquard.normalize as normalize
+import jacquard.utils as utils
+import os
+import sys
+import unittest
+
 # def build_mock_get_caller_method(caller):
 #     def get_caller(metaheaders, column_header, name):
 #         return caller
@@ -71,6 +81,7 @@ class MockFileWriter():
 
 class NormalizeTestCase(unittest.TestCase):
     def setUp(self):
+        unittest.TestCase.setUp(self)
         self.output = StringIO()
         self.saved_stderr = sys.stderr
         sys.stderr = self.output
@@ -78,7 +89,73 @@ class NormalizeTestCase(unittest.TestCase):
     def tearDown(self):
         self.output.close()
         sys.stderr = self.saved_stderr
-        
+        unittest.TestCase.tearDown(self)
+
+    def test_execute(self):
+        vcf_content1 = ('''##source=strelka
+##file1
+#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
+chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
+chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
+''').replace('|', "\t")
+        vcf_content2 = ('''##source=strelka
+##file2
+#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
+chr1|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
+chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
+''').replace('|', "\t")
+
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("P1.strelka.snvs.vcf", vcf_content1)
+            input_dir.write("P1.strelka.indels.vcf", vcf_content2)
+            args = Namespace(input_dir=input_dir.path,
+                             output_dir=output_dir.path)
+
+            normalize.execute(args, ["extra_header1", "extra_header2"])
+
+            output_dir.check("P1.strelka.merged.vcf")
+            with open(os.path.join(output_dir.path, "P1.strelka.merged.vcf")) as actual_output_file:
+                actual_output_lines = actual_output_file.readlines()
+
+        self.assertEquals(8, len(actual_output_lines), "normalize output wrong number of lines")
+
+    def test_validate_single_caller(self):
+        with TempDirectory() as input_dir:
+            strelka_file1 = input_dir.write("strelka1.vcf",
+                                            "##source=strelka\n#colHeader")
+            strelka_file2 = input_dir.write("strelka2.vcf",
+                                            "##source=strelka\n#colHeader")
+            caller = normalize._validate_single_caller([strelka_file1, strelka_file2],
+                                                       variant_caller_factory.get_caller)
+
+            self.assertEquals("Strelka", caller.name)
+
+    def test_validate_single_caller_raisesWhenDistinctCallers(self):
+        with TempDirectory() as input_dir:
+            strelka_file = input_dir.write("strelka1.vcf",
+                                           "##source=strelka\n#colHeader")
+            varscan_file = input_dir.write("varscan.vcf",
+                                           "##source=VarScan2\n" +\
+                                           "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR")
+            self.assertRaises(utils.JQException,
+                              normalize._validate_single_caller,
+                              [strelka_file, varscan_file],
+                              variant_caller_factory.get_caller)
+
+    def test_validate_single_caller_raisesWhenUnrecognizedCaller(self):
+        with TempDirectory() as input_dir:
+            strelka_file = input_dir.write("strelka1.vcf",
+                                           "##source=strelka\n#colHeader")
+            unrecognized_file = input_dir.write("foo.vcf",
+                                                "##source=foo\n#colHeader")
+            self.assertRaises(utils.JQException,
+                              normalize._validate_single_caller,
+                              [strelka_file, unrecognized_file],
+                              variant_caller_factory.get_caller)
+
+
+class IdentifyMergeCandidatesTestCase(unittest.TestCase):
+
     def test_indentifyMergeCandidates_Strelka(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/normalize_strelka_test/input/"
@@ -90,7 +167,8 @@ class NormalizeTestCase(unittest.TestCase):
         self.assertEqual([output_dir + "tiny_strelka.merged.vcf"], merge_candidates.keys())
         self.assertEqual([[input_dir + "tiny_strelka.indels.vcf", input_dir + "tiny_strelka.snvs.vcf"]], merge_candidates.values())
         
-    def test_indentifyMergeCandidates_missingFiles_VarScan(self):
+    #TODO (cgates): Adjust per EX-91
+    def Xtest_indentifyMergeCandidates_missingFiles_VarScan(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/normalize_varscan_test/input/"
         in_files = [input_dir + "foo_indel.vcf", input_dir + "tiny_indel.vcf", input_dir + "tiny_snp.vcf", input_dir + "tiny_indel.Germline.hc", input_dir + "tiny_indel.LOH.hc", input_dir + "tiny_indel.Somatic.hc", input_dir + "tiny_snp.Germline.hc", input_dir + "tiny_snp.LOH.hc", input_dir + "tiny_snp.Somatic.hc"]
@@ -362,16 +440,16 @@ class NormalizeTestCase(unittest.TestCase):
         self.assertEqual(0, warn)
         self.assertEqual([], line)
         
-# class MockWriter():
-#     def __init__(self):
-#         self._content = []
-#         self.wasClosed = False
-# 
-#     def write(self, content):
-#         self._content.extend(content.splitlines())
-#         
-#     def lines(self):
-#         return self._content
-# 
-#     def close(self):
-#         self.wasClosed = True
+class MockWriter():
+    def __init__(self):
+        self._content = []
+        self.wasClosed = False
+
+    def write(self, content):
+        self._content.extend(content.splitlines())
+        
+    def lines(self):
+        return self._content
+
+    def close(self):
+        self.wasClosed = True

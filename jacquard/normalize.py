@@ -11,9 +11,10 @@ from variant_callers import variant_caller_factory
 import variant_callers.varscan 
 import variant_callers.strelka
 import variant_callers.mutect
+import variant_callers.variant_caller_factory as variant_caller_factory
 
 import utils as utils
-
+import vcf as vcf
 
 def get_headers(in_file):
     meta_headers = []
@@ -78,57 +79,53 @@ def merge(merge_candidates, output_dir, caller):
         utils.write_output(out_file, meta_headers, sorted_variants)
         out_file.close()
 
+#TODO (cgates): Adjust per EX-91
 def identify_merge_candidates(in_files, out_dir, caller):
     merge_candidates = defaultdict(list)
     hc_candidates = defaultdict(list)
     
     for in_file in in_files:
-        fname, extension = os.path.splitext(in_file)
-        if extension == ".vcf":
+        #fname, extension = os.path.splitext(in_file)
+        if in_file.lower().endswith(".vcf"):
             merged_fname = re.sub(caller.file_name_search, "merged", os.path.join(out_dir, os.path.basename(in_file)))
             merge_candidates[merged_fname].append(in_file)
-        elif extension == ".hc":
+        elif in_file.lower().endswith(".somatic.hc"):
             hc_candidates = caller.handle_hc_files(in_file, out_dir, hc_candidates)
     
     all_keys = hc_candidates.keys() + merge_candidates.keys()
-    caller.validate_file_set(all_keys)
+    #caller.validate_file_set(all_keys)
 
     return merge_candidates, hc_candidates
 
-def validate_callers(in_file_name, validated_callers, callers):
-    for caller in callers:
-        in_file = open(in_file_name, "r")
-        caller_name, valid = caller.validate_input_file(in_file)
-        if valid == 1:
-            if caller_name == "Unknown":
-                print "ERROR: Unknown input file type"
-                exit(1)
-            if caller_name not in validated_callers:
-                validated_callers.append(caller_name)
-            break
-        in_file.close()
-    
-    return validated_callers
+def _validate_single_caller(filepaths, get_caller):
+    callers = set()
+    try:
+        for filepath in filepaths:
+            if filepath.endswith(".vcf"):
+                reader = vcf.VcfReader(vcf.FileReader(filepath))
+                caller = get_caller(reader.metaheaders,
+                                    reader.column_header,
+                                    filepath)
+                callers.add(caller)
+    except utils.JQException:
+        raise utils.JQException("Problem normalizing the input VCF files. "
+                                "Review input and try again.")
+
+    if len(callers) > 1:
+        raise utils.JQException("The input directory contains VCFs from "
+                                "different variant callers. Review input and "
+                                "try again.")
+    else:
+        return iter(callers).next()
 
 def merge_and_sort(input_dir, output_dir, callers, execution_context=[]):
     print "\n".join(execution_context)
 
     in_files = sorted(glob.glob(os.path.join(input_dir,"*")))
-    validated_callers = []
-    for in_file_name in in_files:
-        fname, extension = os.path.splitext(in_file_name)
-        if extension == ".vcf":
-            validated_callers = validate_callers(in_file_name, validated_callers, callers)
 
-    if len(validated_callers) == 1:
-        for initial_caller in callers:
-            if validated_callers[0] == initial_caller.input_filepath:
-                caller = initial_caller
-    else:
-        print "ERROR: It appears that input directory contains files called with different variant callers. Input directory should only have files for one caller. Review input and try again."
-        exit(1)
+    caller = _validate_single_caller(in_files, variant_caller_factory.get_caller)
 
-    if caller.input_filepath == "MuTect":
+    if caller.name == "MuTect":
         count = 0
         for in_file_name in in_files:
             fname, extension = os.path.splitext(in_file_name)

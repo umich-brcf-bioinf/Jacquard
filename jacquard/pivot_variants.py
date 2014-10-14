@@ -378,7 +378,7 @@ def expand_format(df, formats_to_expand, rows, fname):
 
     s = df["aggregate_format_sample"].apply(pd.Series, 1).stack()
     s.index = s.index.droplevel(-1)
-    s.input_filepath = "format_sample"
+    s.name = "format_sample"
 
     unpivoted_format_value_df = s.apply(lambda x: pd.Series(x))
     unpivoted_format_value_df.columns = ["FORMAT2", "VALUE2"]
