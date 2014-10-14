@@ -181,17 +181,6 @@ class StrelkaTestCase(unittest.TestCase):
         unittest.TestCase.setUp(self)
         self.caller = strelka.Strelka()
          
-#     def test_normalize_duplicateHeaders(self):
-#         writer = MockWriter()
-#         content = ["##foo", "##bar", "#baz"]
-#         reader1 = MockFileReader("indels.vcf", content)
-#         reader2 = MockFileReader("snvs.vcf", content)
-#         self.caller.normalize(writer,[reader1,reader2])
-#          
-#         self.assertTrue(writer.opened)
-#         self.assertTrue(writer.closed)
-#         self.assertEquals(["##bar", "##foo", "#baz"], writer.lines())
-
     def test_normalize(self):
         writer = MockWriter()
         content1 = ["##foo", "##bar", "#baz"]
@@ -232,6 +221,21 @@ class StrelkaTestCase(unittest.TestCase):
         self.assert_two_files_throw_exception("snvs/foo", "indels/bar")
         self.assert_two_files_throw_exception("indels.snvs", "bar")
         self.assert_two_files_throw_exception("A.indels.snvs", "B.indels.snvs")
+        
+    def test_normalize_writesSequentialRecords(self):
+        writer = MockWriter()
+        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t.\t."
+        record2 = "chr2\t.\t.\t.\t.\t.\t.\t.\t.\t."
+        record3 = "chr3\t.\t.\t.\t.\t.\t.\t.\t.\t."
+        content1 = ["##foo", "#bar", record2, record3]
+        content2 = ["##foo", "#bar", record1, record3]
+        reader1 = MockFileReader("indels.vcf", content1)
+        reader2 = MockFileReader("snvs.vcf", content2)
+        self.caller.normalize(writer,[reader1,reader2])
+         
+        self.assertTrue(writer.opened)
+        self.assertTrue(writer.closed)
+        self.assertEquals(["##foo", "#bar", record1, record2, record3, record3], writer.lines())
         
     def assert_two_files_throw_exception(self, file1, file2):
         self.assertRaises(JQException, self.caller.normalize, MockWriter(), [MockFileReader(input_filepath=file1), MockFileReader(input_filepath=file2)])

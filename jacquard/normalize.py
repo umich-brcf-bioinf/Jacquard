@@ -155,7 +155,7 @@ def add_subparser(subparser):
     parser_normalize_vs.add_argument("output_dir", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
 
 def _partition_files_by_patient(input_dir, output_dir):
-    in_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
+    in_files = sorted(glob.glob(os.path.join(input_dir, "*")))
     patient_to_files = defaultdict(list)
     for file_path in in_files:
         filename = os.path.basename(file_path)

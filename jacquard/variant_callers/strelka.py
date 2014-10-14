@@ -135,13 +135,21 @@ class Strelka(object):
             if "indels" in name:
                 tmp[i] = "indels"
         if not (tmp[0] == "snvs" and tmp[1] == "indels") and not (tmp[1] == "snvs" and tmp[0] == "indels"): 
-            raise utils.JQException("ERROR: Each patient in a Strelka directory should have a SNVs file and an indel file.")
+            raise utils.JQException("ERROR: Each patient in a Strelka directory should have a snvs file and an indels file.")
 
         vcf_readers = [VcfReader(file_readers[0]),VcfReader(file_readers[1])]
         if not vcf_readers[0].column_header == vcf_readers[1].column_header:
             raise utils.JQException("ERROR: The column headers for VCF files [{},{}] do not match."\
                 .format(vcf_readers[0].file_name,vcf_readers[1].file_name))
         return vcf_readers
+        
+    def _organize_vcf_records(self,vcf_readers):
+        all_records = []
+        for vcf_reader in vcf_readers:
+            for record in vcf_reader.vcf_records():
+                all_records.append(record.asText())
+        parsed_records = utils.sort_data(all_records)
+        return parsed_records
         
 #TODO: Add to normalize.py.        
     def normalize(self, file_writer, file_readers):
@@ -157,6 +165,9 @@ class Strelka(object):
         for metaheader in sorted_metaheader_set:
             file_writer.write(metaheader+"\n")
         file_writer.write(column_header+"\n")
+        parsed_records = self._organize_vcf_records(vcf_readers)
+        for record in parsed_records:
+            file_writer.write(record)
         file_writer.close()
         
     def get_new_metaheaders(self):

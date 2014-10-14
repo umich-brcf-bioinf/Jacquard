@@ -2,6 +2,7 @@ from collections import defaultdict
 import os
 import re
 import jacquard.utils as utils
+from jacquard.vcf import VcfReader
 
 
 _VARSCAN_SOMATIC_HEADER = "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR".replace("|","\t")
@@ -82,6 +83,78 @@ class Varscan():
         else:
             raise utils.JQException("Unexpected VarScan VCF structure - missing NORMAL and TUMOR headers.")
 
+    def _validate_vcf_fileset(self,vcf_readers):
+        if len(vcf_readers) != 2:
+            raise utils.JQException("ERROR: VarScan directories should have exactly two input VCF files per patient, but found [{}].".format(len(vcf_readers)))
+
+        tmp = [vcf_readers[0].file_name,vcf_readers[1].file_name]
+        for i,name in enumerate(tmp):
+            if "snp" in name:
+                tmp[i] = "snp"
+        for i,name in enumerate(tmp):
+            if "indel" in name:
+                tmp[i] = "indel"
+        if not (tmp[0] == "snp" and tmp[1] == "indel") and not (tmp[1] == "snp" and tmp[0] == "indel"): 
+            raise utils.JQException("ERROR: Each patient in a VarScan directory should have a snp file and an indel file.")
+
+        if not vcf_readers[0].column_header == vcf_readers[1].column_header:
+            raise utils.JQException("ERROR: The column headers for VCF files [{},{}] do not match."\
+                .format(vcf_readers[0].file_name,vcf_readers[1].file_name))
+    
+    def _validate_hc_fileset(self,hc_candidates):
+        if len(hc_candidates) != 6:
+            raise utils.JQException("ERROR: VarScan directories should have exactly 6 input HC files per patient, but found [{}].".format(len(hc_candidates)))
+        pass
+        
+    def _validate_raw_input_files(self, file_readers):
+        vcf_readers = []
+        hc_candidates = []
+        for file_reader in file_readers:
+            fname, ext = os.path.splitext(file_reader.file_name)
+            if ext == ".hc":
+                hc_candidates.append(file_reader)
+            elif ext == ".vcf":
+                vcf_readers.append(VcfReader(file_reader))
+                
+        self._validate_vcf_fileset(vcf_readers)
+        self._validate_hc_fileset(hc_candidates)
+              
+        return vcf_readers,hc_candidates
+        
+    def _write_vcf_records(self,vcf_readers):
+        all_records = []
+        for vcf_reader in vcf_readers:
+            for record in vcf_reader.vcf_records():
+                all_records.append(record.asText())
+        parsed_records = utils.sort_data(all_records)
+        return parsed_records
+        
+#     def _identify_hc_records(self, file_readers):
+#         hc_candidates = []
+#         for file_reader in file_readers:
+#             fname, ext = os.path.splitext(file_reader.file_name)
+#             if ext == ".hc":
+#                 hc_candidates.append()
+                
+#TODO: Add to normalize.py.        
+    def normalize(self, file_writer, file_readers):
+        vcf_readers,hc_candidates = self._validate_raw_input_files(file_readers)
+        metaheader_list = []
+        column_header = None
+        for i,vcf_reader in enumerate(vcf_readers):
+            if i==0:
+                column_header = vcf_reader.column_header
+            metaheader_list.extend(vcf_reader.metaheaders)
+        sorted_metaheader_set = sorted(set(metaheader_list))
+        file_writer.open()
+        for metaheader in sorted_metaheader_set:
+            file_writer.write(metaheader+"\n")
+        file_writer.write(column_header+"\n")
+        parsed_records = self._write_vcf_records(vcf_readers)
+        for record in parsed_records:
+            file_writer.write(record)
+        file_writer.close()
+        
     def identify_hc_variants(self,hc_candidates):
         hc_variants = {}
         for key, vals in hc_candidates.items():
