@@ -102,24 +102,34 @@ class Varscan():
                 .format(vcf_readers[0].file_name,vcf_readers[1].file_name))
     
     def _validate_hc_fileset(self,hc_candidates):
-        if len(hc_candidates) != 6:
-            raise utils.JQException("ERROR: VarScan directories should have exactly 6 input HC files per patient, but found [{}].".format(len(hc_candidates)))
+        if len(hc_candidates) != 2:
+            raise utils.JQException("ERROR: VarScan directories should have exactly 2 input somatic HC files per patient, but found [{}].".format(len(hc_candidates)))
+
+        tmp = [hc_candidates[0].file_name,hc_candidates[1].file_name]
+        for i,name in enumerate(tmp):
+            if "snp" in name:
+                tmp[i] = "snp"
+        for i,name in enumerate(tmp):
+            if "indel" in name:
+                tmp[i] = "indel"
+        if not (tmp[0] == "snp" and tmp[1] == "indel") and not (tmp[1] == "snp" and tmp[0] == "indel"): 
+            raise utils.JQException("ERROR: Each patient in a VarScan directory should have a snp file and an indel file.")
+
         pass
         
     def _validate_raw_input_files(self, file_readers):
         vcf_readers = []
         hc_candidates = []
         for file_reader in file_readers:
-            fname, ext = os.path.splitext(file_reader.file_name)
-            if ext == ".hc":
+            if file_reader.file_name.lower().endswith(".somatic.hc"):
                 hc_candidates.append(file_reader)
-            elif ext == ".vcf":
+            elif file_reader.file_name.lower().endswith(".vcf"):
                 vcf_readers.append(VcfReader(file_reader))
                 
         self._validate_vcf_fileset(vcf_readers)
         self._validate_hc_fileset(hc_candidates)
               
-        return vcf_readers,hc_candidates
+        return vcf_readers, hc_candidates
         
     def _write_vcf_records(self,vcf_readers):
         all_records = []
@@ -128,13 +138,6 @@ class Varscan():
                 all_records.append(record.asText())
         parsed_records = utils.sort_data(all_records)
         return parsed_records
-        
-#     def _identify_hc_records(self, file_readers):
-#         hc_candidates = []
-#         for file_reader in file_readers:
-#             fname, ext = os.path.splitext(file_reader.file_name)
-#             if ext == ".hc":
-#                 hc_candidates.append()
                 
 #TODO: Add to normalize.py.        
     def normalize(self, file_writer, file_readers):

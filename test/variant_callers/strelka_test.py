@@ -202,14 +202,14 @@ class StrelkaTestCase(unittest.TestCase):
         
         self.assertRaises(JQException, self.caller.normalize, writer, [reader1,reader2])
         
-    def test_normalize_hasIndelSnvs(self):
-        writer = MockWriter()
-
-        reader1 = MockFileReader("indels",["##metaheader\n","#column_header\n"])
-        reader2 = MockFileReader("snvs",["##metaheader\n","#column_header\n"])
-        
-        self.caller.normalize(writer,[reader1,reader2])
-        pass
+#     def test_normalize_hasIndelSnvs(self):
+#         writer = MockWriter()
+# 
+#         reader1 = MockFileReader("indels",["##metaheader\n","#column_header\n"])
+#         reader2 = MockFileReader("snvs",["##metaheader\n","#column_header\n"])
+#         
+#         self.caller.normalize(writer,[reader1,reader2])
+#         pass
         
     def test_normalize_raisesExceptionMissingIndelSnvs(self):
         self.assert_two_files_throw_exception("foo", "bar")

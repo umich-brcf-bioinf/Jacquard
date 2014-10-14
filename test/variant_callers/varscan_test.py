@@ -156,12 +156,7 @@ class VarscanTestCase(unittest.TestCase):
         readers = []
         readers.append(MockFileReader("indel.vcf", content1))
         readers.append(MockFileReader("snp.vcf", content2))
-        readers.append(MockFileReader("foo.hc", []))
-        readers.append(MockFileReader("bar.hc", []))
-        readers.append(MockFileReader("baz.hc", []))
-        readers.append(MockFileReader("fal.hc", []))
-        readers.append(MockFileReader("con.hc", []))
-        readers.append(MockFileReader("punch.hc", []))
+        self.append_hc_files(readers)
         self.caller.normalize(writer, readers)
          
         self.assertTrue(writer.opened)
@@ -172,20 +167,13 @@ class VarscanTestCase(unittest.TestCase):
         writer = MockWriter()
         content1 = ["##foo", "##bar", "#baz"]
         content2 = ["##foo", "##bar", "#bluh"]
-        reader1 = MockFileReader("indel.vcf", content1)
-        reader2 = MockFileReader("snp.vcf", content2)
+        readers = []
+        readers.append(MockFileReader("indel.vcf", content1))
+        readers.append(MockFileReader("snp.vcf", content2))
+        self.append_hc_files(readers)
          
-        self.assertRaises(JQException, self.caller.normalize, writer, [reader1,reader2])
-         
-#     def test_normalize_hasIndelSnvs(self):
-#         writer = MockWriter()
-#  
-#         reader1 = MockFileReader("indel.vcf",["##metaheader\n","#column_header\n"])
-#         reader2 = MockFileReader("snp.vcf",["##metaheader\n","#column_header\n"])
-#          
-#         self.caller.normalize(writer,[reader1,reader2])
-#         pass
-#          
+        self.assertRaises(JQException, self.caller.normalize, writer, readers)
+          
     def test_normalize_raisesExceptionMissingIndelSnvs(self):
         self.assert_two_files_throw_exception("foo.vcf", "bar.vcf")
         self.assert_two_files_throw_exception("snp.vcf", "bar.vcf")
@@ -196,25 +184,38 @@ class VarscanTestCase(unittest.TestCase):
         self.assert_two_files_throw_exception("snp/foo.vcf", "indel/bar.vcf")
         self.assert_two_files_throw_exception("indel.snp.vcf", "bar.vcf")
         self.assert_two_files_throw_exception("A.indel.snp.vcf", "B.indel.snp.vcf")
-#         
-#     def test_normalize_writesSequentialRecords(self):
-#         writer = MockWriter()
-#         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t.\t."
-#         record2 = "chr2\t.\t.\t.\t.\t.\t.\t.\t.\t."
-#         record3 = "chr3\t.\t.\t.\t.\t.\t.\t.\t.\t."
-#         content1 = ["##foo", "#bar", record2, record3]
-#         content2 = ["##foo", "#bar", record1, record3]
-#         reader1 = MockFileReader("indels.vcf", content1)
-#         reader2 = MockFileReader("snvs.vcf", content2)
-#         self.caller.normalize(writer,[reader1,reader2])
-#          
-#         self.assertTrue(writer.opened)
-#         self.assertTrue(writer.closed)
-#         self.assertEquals(["##foo", "#bar", record1, record2, record3, record3], writer.lines())
+         
+    def test_normalize_writesSequentialRecords(self):
+        writer = MockWriter()
+        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t.\t."
+        record2 = "chr2\t.\t.\t.\t.\t.\t.\t.\t.\t."
+        record3 = "chr3\t.\t.\t.\t.\t.\t.\t.\t.\t."
+        content1 = ["##foo", "#bar", record2, record3]
+        content2 = ["##foo", "#bar", record1, record3]
+        readers = []
+        readers.append(MockFileReader("indel.vcf", content1))
+        readers.append(MockFileReader("snp.vcf", content2))
+        self.append_hc_files(readers)
+        self.caller.normalize(writer,readers)
+           
+        self.assertTrue(writer.opened)
+        self.assertTrue(writer.closed)
+        self.assertEquals(["##foo", "#bar", record1, record2, record3, record3], writer.lines())
+        
+    
 #         
     def assert_two_files_throw_exception(self, file1, file2):
-        self.assertRaises(JQException, self.caller.normalize, MockWriter(), [MockFileReader(input_filepath=file1), MockFileReader(input_filepath=file2)])
+        readers = []
+        readers.append(MockFileReader(input_filepath=file1))
+        readers.append(MockFileReader(input_filepath=file2))
+        self.append_hc_files(readers)
+    
+        self.assertRaises(JQException, self.caller.normalize, MockWriter(), readers)
 
+    def append_hc_files(self,readers):
+        readers.append(MockFileReader("snp.somatic.hc", []))
+        readers.append(MockFileReader("indel.somatic.hc", []))
+        
 #     def setUp(self):
 #         self.caller = varscan.Varscan()
 #         
