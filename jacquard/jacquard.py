@@ -67,20 +67,25 @@ def dispatch(modules, arguments):
                         version=version_text())
     subparsers = parser.add_subparsers(title="subcommands",
                                        dest="subparser_name")
+    try:
+        module_dispatch = {}
+        for module in modules:
+            module.add_subparser(subparsers)
+            short_name = module.__name__.split('.')[-1]
+            module_dispatch[short_name] = module
 
-    module_dispatch = {}
-    for module in modules:
-        module.add_subparser(subparsers)
-        short_name = module.__name__.split('.')[-1]
-        module_dispatch[short_name] = module
+        execution_context = [\
+            "##jacquard.version={0}".format(utils.__version__),
+            "##jacquard.command={0}".format(" ".join(arguments)),
+            "##jacquard.cwd={0}".format(os.path.dirname(os.getcwd()))]
 
-    execution_context = [\
-        "##jacquard.version={0}".format(utils.__version__),
-        "##jacquard.command={0}".format(" ".join(arguments)),
-        "##jacquard.cwd={0}".format(os.path.dirname(os.getcwd()))]
-
-    args = parser.parse_args(arguments)
-    module_dispatch[args.subparser_name].execute(args, execution_context)
-
+        args = parser.parse_args(arguments)
+        module_dispatch[args.subparser_name].execute(args, execution_context)
+    except Exception as exception:
+        print("ERROR: " + str(exception),
+              file=sys.stderr)
+        print("ERROR: Jacquard encountered an unanticipated problem. Please contact your sysadmin or Jacquard support for assistance.",
+              file=sys.stderr)
+        sys.exit(1)
 if __name__ == '__main__':
     main()

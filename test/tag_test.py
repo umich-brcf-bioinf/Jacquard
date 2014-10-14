@@ -1,19 +1,13 @@
 # pylint: disable=C0103,C0301,R0903,R0904
-from collections import OrderedDict
-import glob
-import os
-from os import listdir
 from StringIO import StringIO
-import sys
-from testfixtures import TempDirectory
-import unittest
-from jacquard.tag import tag_files
-from jacquard.variant_callers import varscan, mutect
-from jacquard.utils import __version__
-import jacquard.tag as tag
-import jacquard.utils as utils
 from argparse import Namespace
 from re import findall, MULTILINE
+from testfixtures import TempDirectory
+import jacquard.tag as tag
+import jacquard.utils as utils
+import os
+import sys
+import unittest
 
 
 class MockCallerFactory(object):
@@ -214,30 +208,25 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 '''
-        vcf_content1 = vcf_content1.replace('|',"\t") 
-        vcf_content2 = vcf_content2.replace('|',"\t")
+        vcf_content1 = vcf_content1.replace('|', "\t")
+        vcf_content2 = vcf_content2.replace('|', "\t")
 
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("A.vcf",vcf_content1)
-            input_dir.write("B.vcf",vcf_content2)
+            input_dir.write("A.vcf", vcf_content1)
+            input_dir.write("B.vcf", vcf_content2)
 
-            args = Namespace(input_dir=input_dir.path, 
+            args = Namespace(input_dir=input_dir.path,
                              output_dir=output_dir.path)
 
-            tag.execute(args,[])
+            tag.execute(args, [])
 
             output_dir.check("A.jacquardTags.vcf", "B.jacquardTags.vcf")
-            
             file_content1 = output_dir.read("A.jacquardTags.vcf")
             file_content2 = output_dir.read("B.jacquardTags.vcf")
-            
-            
-            self.assertTrue('##FORMAT=<ID=JQ_HC_SOM_SK' in file_content1)
-            
-            self.assertEquals(2,len(findall(r'^chr.*JQ_HC_SOM_SK',file_content1, MULTILINE)))
 
+            self.assertTrue('##FORMAT=<ID=JQ_HC_SOM_SK' in file_content1)
+            self.assertEquals(2,
+                              len(findall(r'^chr.*JQ_HC_SOM_SK', file_content1, MULTILINE)))
             self.assertTrue('##FORMAT=<ID=JQ_HC_SOM_VS' in file_content2)
-             
-            self.assertEquals(2,len(findall(r'^chr.*JQ_HC_SOM_VS',file_content2, MULTILINE)))
-            
-        
+            self.assertEquals(2,
+                              len(findall(r'^chr.*JQ_HC_SOM_VS', file_content2, MULTILINE)))

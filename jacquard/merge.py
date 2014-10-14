@@ -13,7 +13,6 @@ from sets import Set
 import sys 
 import time
 
-# import jacquard.utils as utils
 import utils
 
 class PivotError(Exception):
@@ -660,13 +659,11 @@ def add_subparser(subparser):
 def execute(args, execution_context):
     input_dir = os.path.abspath(args.input_dir)
     output_path = os.path.abspath(args.output_file)
+    output_dir, outfile_name = os.path.split(output_path)
+    utils.validate_directories(input_dir, output_dir)
     input_keys = args.keys.split(",") if args.keys else determine_input_keys(input_dir)
     all_inconsistent_sample_sets = args.allow_inconsistent_sample_sets
 
-    output_dir, outfile_name = os.path.split(output_path)
-
-    utils.validate_directories(input_dir, output_dir)
-        
     fname, extension = os.path.splitext(outfile_name)
     if extension != ".vcf": 
         print "Error. Specified output {0} must have a .vcf extension".format(output_path)
