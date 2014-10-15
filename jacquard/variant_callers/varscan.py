@@ -113,7 +113,7 @@ class Varscan():
             if "indel" in name:
                 tmp[i] = "indel"
         if not (tmp[0] == "snp" and tmp[1] == "indel") and not (tmp[1] == "snp" and tmp[0] == "indel"): 
-            raise utils.JQException("ERROR: Each patient in a VarScan directory should have a snp file and an indel file.")
+            raise utils.JQException("ERROR: Each patient in a VarScan directory should have a somatic HC snp file and indel file.")
 
         pass
         
@@ -131,17 +131,77 @@ class Varscan():
               
         return vcf_readers, hc_candidates
         
-    def _write_vcf_records(self,vcf_readers):
+    def _organize_vcf_records(self,vcf_readers):
         all_records = []
         for vcf_reader in vcf_readers:
+            vcf_reader.open()
             for record in vcf_reader.vcf_records():
                 all_records.append(record.asText())
+            vcf_reader.close()
         parsed_records = utils.sort_data(all_records)
         return parsed_records
+        
+    def _identify_hc_variants(self,hc_candidates):
+        hc_variants = {}
+        for hc_file in hc_candidates:
+            f = open(hc_file, "r")
+            for line in f:
+                split_line = line.split("\t")
+                if line.startswith("chrom"):
+                    continue
+                else:
+                    hc_key = "^".join([split_line[0], split_line[1], split_line[2], split_line[3]])
+                    hc_variants[hc_key] = 1
                 
+        return hc_variants
+
+    def _mark_hc_variants(self,hc_variants, writer, output_dir):
+        marked_as_hc = []
+    
+        new_lines = []
+        headers = []
+        for line in writer:
+            split_line = line.split("\t")
+            if line.startswith('"'):
+                line = line.replace("\t", "")
+                line = line[1:-2] + "\n"
+            if line.startswith("#"):
+                headers.append(line)
+            else:
+                merge_key = "^".join([split_line[0], str(split_line[1]), split_line[3], split_line[4]])
+                if merge_key in hc_variants:
+                    if _JQ_VARSCAN_HC_INFO_FIELD not in split_line[7]:
+                        split_line[7] += ";"+_JQ_VARSCAN_HC_INFO_FIELD
+                    marked_as_hc.append(merge_key)
+                new_line = "\t".join(split_line)
+                new_lines.append(new_line)
+        
+        sorted_headers = utils.sort_headers(headers)
+        self.write_to_merged_file(new_lines, sorted_headers, writer)
+                
+        return marked_as_hc
+    
+    def _write_to_merged_file(self, new_lines, headers, writer):
+        sorted_variants = utils.sort_data(new_lines)
+        utils.write_output(writer, headers, sorted_variants)
+
+    def _final_steps(self, hc_candidates, writer, output_dir):
+        hc_variants = self.identify_hc_variants(hc_candidates)
+        marked_as_hc = self.mark_hc_variants(hc_variants, writer, output_dir)
+
+        return marked_as_hc
+    
+    def _process_hc_files(self, hc_candidates):
+        for hc_file_reader in hc_candidates:
+            hc_file_reader.open()
+            for line in hc_file_reader.read_lines():
+                split_line = line.split()
+                
+            
 #TODO: Add to normalize.py.        
     def normalize(self, file_writer, file_readers):
         vcf_readers,hc_candidates = self._validate_raw_input_files(file_readers)
+        
         metaheader_list = []
         column_header = None
         for i,vcf_reader in enumerate(vcf_readers):
@@ -153,9 +213,10 @@ class Varscan():
         for metaheader in sorted_metaheader_set:
             file_writer.write(metaheader+"\n")
         file_writer.write(column_header+"\n")
-        parsed_records = self._write_vcf_records(vcf_readers)
+        parsed_records = self._organize_vcf_records(vcf_readers)
         for record in parsed_records:
             file_writer.write(record)
+        
         file_writer.close()
         
     def identify_hc_variants(self,hc_candidates):

@@ -146,8 +146,10 @@ class Strelka(object):
     def _organize_vcf_records(self,vcf_readers):
         all_records = []
         for vcf_reader in vcf_readers:
+            vcf_reader.open()
             for record in vcf_reader.vcf_records():
                 all_records.append(record.asText())
+            vcf_reader.close()
         parsed_records = utils.sort_data(all_records)
         return parsed_records
         

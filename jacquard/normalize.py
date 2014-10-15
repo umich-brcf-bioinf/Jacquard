@@ -94,7 +94,7 @@ def identify_merge_candidates(in_files, out_dir, caller):
     
     all_keys = hc_candidates.keys() + merge_candidates.keys()
     #caller.validate_file_set(all_keys)
-
+    
     return merge_candidates, hc_candidates
 
 def _validate_single_caller(filepaths, get_caller):

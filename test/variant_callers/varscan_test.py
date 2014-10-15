@@ -182,15 +182,15 @@ class VarscanTestCase(unittest.TestCase):
           
     def test_normalize_raisesExceptionMissingIndelSnvs(self):
         error_msg = r"ERROR: Each patient in a VarScan directory should have a snp file and an indel file."
-        self.assert_two_files_throw_exception("foo.vcf", "bar.vcf", error_msg)
-        self.assert_two_files_throw_exception("snp.vcf", "bar.vcf", error_msg)
-        self.assert_two_files_throw_exception("foo.snp.vcf", "bar.vcf", error_msg)
-        self.assert_two_files_throw_exception("foo.indel.vcf", "bar.vcf", error_msg)
-        self.assert_two_files_throw_exception("foo.indel.vcf", "bar.indel.vcf", error_msg)
-        self.assert_two_files_throw_exception("foo.snp.vcf", "bar.snp.vcf", error_msg)
-        self.assert_two_files_throw_exception("snp/foo.vcf", "indel/bar.vcf", error_msg)
-        self.assert_two_files_throw_exception("indel.snp.vcf", "bar.vcf", error_msg)
-        self.assert_two_files_throw_exception("A.indel.snp.vcf", "B.indel.snp.vcf", error_msg)
+        self.assert_two_vcf_files_throw_exception("foo.vcf", "bar.vcf")
+        self.assert_two_vcf_files_throw_exception("snp.vcf", "bar.vcf")
+        self.assert_two_vcf_files_throw_exception("foo.snp.vcf", "bar.vcf")
+        self.assert_two_vcf_files_throw_exception("foo.indel.vcf", "bar.vcf")
+        self.assert_two_vcf_files_throw_exception("foo.indel.vcf", "bar.indel.vcf")
+        self.assert_two_vcf_files_throw_exception("foo.snp.vcf", "bar.snp.vcf")
+        self.assert_two_vcf_files_throw_exception("snp/foo.vcf", "indel/bar.vcf")
+        self.assert_two_vcf_files_throw_exception("indel.snp.vcf", "bar.vcf")
+        self.assert_two_vcf_files_throw_exception("A.indel.snp.vcf", "B.indel.snp.vcf")
          
     def test_normalize_writesSequentialRecords(self):
         writer = MockWriter()
@@ -208,8 +208,46 @@ class VarscanTestCase(unittest.TestCase):
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
         self.assertEquals(["##foo", "#bar", record1, record2, record3, record3], writer.lines())
-#         
-    def assert_two_files_throw_exception(self, file1, file2, exception):
+
+    def test_normalize_missingHCFilesRaisesException(self):
+        writer = MockWriter()
+        content1 = ["##foo", "#bar"]
+        content2 = ["##foo", "#bar"]
+        readers = []
+        readers.append(MockFileReader("indel.vcf", content1))
+        readers.append(MockFileReader("snp.vcf", content2))
+        readers.append(MockFileReader("snp.somatic.hc", []))
+        self.assertRaisesRegexp(JQException, r"ERROR: VarScan directories should have exactly 2 input somatic HC files per patient, but found \[1\].",
+                                self.caller.normalize, writer, readers)
+        readers = []
+        readers.append(MockFileReader("indel.vcf", content1))
+        readers.append(MockFileReader("snp.vcf", content2))
+        readers.append(MockFileReader("foo", []))
+        readers.append(MockFileReader("bar", []))
+        self.assertRaisesRegexp(JQException, r"ERROR: VarScan directories should have exactly 2 input somatic HC files per patient, but found \[0\].",
+                                self.caller.normalize, writer, readers)
+        
+    def test_normalize_wrongHCFilesRaisesException(self):
+        self.assert_two_vcf_files_throw_exception("foo.vcf", "bar.vcf")
+        self.assert_two_vcf_files_throw_exception("snp.vcf", "bar.vcf")
+        self.assert_two_vcf_files_throw_exception("foo.snp.vcf", "bar.vcf")
+        self.assert_two_vcf_files_throw_exception("foo.indel.vcf", "bar.vcf")
+        self.assert_two_vcf_files_throw_exception("foo.indel.vcf", "bar.indel.vcf")
+        self.assert_two_vcf_files_throw_exception("foo.snp.vcf", "bar.snp.vcf")
+        self.assert_two_vcf_files_throw_exception("snp/foo.vcf", "indel/bar.vcf")
+        self.assert_two_vcf_files_throw_exception("indel.snp.vcf", "bar.vcf")
+        self.assert_two_vcf_files_throw_exception("A.indel.snp.vcf", "B.indel.snp.vcf")
+         
+    def assert_two_hc_files_throw_exception(self, file1, file2):
+        writer = MockWriter()
+        readers = []
+        readers.append(MockFileReader("indel.vcf", ["##foo", "#bar"]))
+        readers.append(MockFileReader("snp.vcf", ["##foo", "#bar"]))
+        self.append_hc_files(readers, file1, file2)
+        with self.assertRaisesRegexp(JQException, r"ERROR: Each patient in a VarScan directory should have a somatic HC snp file and indel file."):
+            self.caller.normalize(writer, readers)
+         
+    def assert_two_vcf_files_throw_exception(self, file1, file2):
         readers = []
         content = ["##foo","#bar"]
         readers.append(MockFileReader(input_filepath=file1, content=content))
@@ -217,12 +255,12 @@ class VarscanTestCase(unittest.TestCase):
         self.append_hc_files(readers)
     
 #         self.assertRaises(JQException, self.caller.normalize, MockWriter(), readers)
-        with self.assertRaisesRegexp(JQException,exception):
+        with self.assertRaisesRegexp(JQException,r"ERROR: Each patient in a VarScan directory should have a snp file and an indel file."):
             self.caller.normalize(MockWriter(), readers)
 
-    def append_hc_files(self,readers):
-        readers.append(MockFileReader("snp.somatic.hc", []))
-        readers.append(MockFileReader("indel.somatic.hc", []))
+    def append_hc_files(self, readers, file1="snp.somatic.hc", file2="indel.somatic.hc"):
+        readers.append(MockFileReader(file1, []))
+        readers.append(MockFileReader(file2, []))
         
 #     def setUp(self):
 #         self.caller = varscan.Varscan()

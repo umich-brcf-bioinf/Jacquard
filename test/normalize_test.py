@@ -7,7 +7,8 @@ from jacquard.variant_callers import varscan, strelka, variant_caller_factory
 from testfixtures import TempDirectory
 
 from jacquard.normalize import identify_merge_candidates, get_headers, \
-merge_data, validate_split_line, _partition_files_by_patient, _determine_caller_per_directory
+merge_data, validate_split_line, _partition_files_by_patient, _determine_caller_per_directory,\
+merge_and_sort
 
 from jacquard.vcf import FileReader, FileWriter
 import jacquard.utils as utils
@@ -163,7 +164,7 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
         output_dir = script_dir + "/normalize_strelka_test/output/"
 
         merge_candidates, hc_candidates = identify_merge_candidates(in_files, output_dir, strelka.Strelka())
-        
+        self.assertEquals(0,1)
         self.assertEqual([output_dir + "tiny_strelka.merged.vcf"], merge_candidates.keys())
         self.assertEqual([[input_dir + "tiny_strelka.indels.vcf", input_dir + "tiny_strelka.snvs.vcf"]], merge_candidates.values())
         

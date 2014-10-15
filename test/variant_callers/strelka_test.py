@@ -217,16 +217,15 @@ class StrelkaTestCase(unittest.TestCase):
                                 self.caller.normalize, MockWriter(), [MockFileReader(input_filepath="foo")])
             
     def test_normalize_raisesExceptionMissingIndelSnvs(self):
-        error_msg = r"ERROR: Each patient in a Strelka directory should have a snvs file and an indels file."
-        self.assert_two_files_throw_exception("foo", "bar", error_msg)
-        self.assert_two_files_throw_exception("snvs", "bar", error_msg)
-        self.assert_two_files_throw_exception("foo.snvs", "bar", error_msg)
-        self.assert_two_files_throw_exception("foo.indels", "bar", error_msg)
-        self.assert_two_files_throw_exception("foo.indels", "bar.indels", error_msg)
-        self.assert_two_files_throw_exception("foo.snvs", "bar.snvs", error_msg)
-        self.assert_two_files_throw_exception("snvs/foo", "indels/bar", error_msg)
-        self.assert_two_files_throw_exception("indels.snvs", "bar", error_msg)
-        self.assert_two_files_throw_exception("A.indels.snvs", "B.indels.snvs", error_msg)
+        self.assert_two_vcf_files_throw_exception("foo", "bar")
+        self.assert_two_vcf_files_throw_exception("snvs", "bar")
+        self.assert_two_vcf_files_throw_exception("foo.snvs", "bar")
+        self.assert_two_vcf_files_throw_exception("foo.indels", "bar")
+        self.assert_two_vcf_files_throw_exception("foo.indels", "bar.indels")
+        self.assert_two_vcf_files_throw_exception("foo.snvs", "bar.snvs")
+        self.assert_two_vcf_files_throw_exception("snvs/foo", "indels/bar")
+        self.assert_two_vcf_files_throw_exception("indels.snvs", "bar")
+        self.assert_two_vcf_files_throw_exception("A.indels.snvs", "B.indels.snvs")
         
     def test_normalize_writesSequentialRecords(self):
         writer = MockWriter()
@@ -243,8 +242,8 @@ class StrelkaTestCase(unittest.TestCase):
         self.assertTrue(writer.closed)
         self.assertEquals(["##foo", "#bar", record1, record2, record3, record3], writer.lines())
         
-    def assert_two_files_throw_exception(self, file1, file2, exception):
-        with self.assertRaisesRegexp(JQException,exception):
+    def assert_two_vcf_files_throw_exception(self, file1, file2):
+        with self.assertRaisesRegexp(JQException,r"ERROR: Each patient in a Strelka directory should have a snvs file and an indels file."):
             self.caller.normalize(MockWriter(), [MockFileReader(input_filepath=file1), MockFileReader(input_filepath=file2)])
             
 #     def test_validateInputFile_valid(self):
