@@ -44,7 +44,6 @@ class VcfReader(object):
         self._file_reader = file_reader
         (self.column_header, self._metaheaders) = self._read_headers()
         
-
     @property
     def metaheaders(self):
         return list(self._metaheaders)

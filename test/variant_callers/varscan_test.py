@@ -163,6 +163,11 @@ class VarscanTestCase(unittest.TestCase):
         self.assertTrue(writer.closed)
         self.assertEquals(["##bar", "##foo", "##hi", "#baz"], writer.lines())
         
+    def test_normalize_wrongNumberOfFiles(self):
+        self.assertRaisesRegexp(JQException,
+            r"ERROR: VarScan directories should have exactly two input VCF files per patient, but found \[1\].",
+            self.caller.normalize, MockWriter(), [MockFileReader(input_filepath="foo.vcf", content=["##foo", "#bar"])])
+            
     def test_normalize_mismatchedColumnHeaders(self):
         writer = MockWriter()
         content1 = ["##foo", "##bar", "#baz"]
@@ -172,24 +177,26 @@ class VarscanTestCase(unittest.TestCase):
         readers.append(MockFileReader("snp.vcf", content2))
         self.append_hc_files(readers)
          
-        self.assertRaises(JQException, self.caller.normalize, writer, readers)
+        self.assertRaisesRegexp(JQException, r"ERROR: The column headers for VCF files \[indel.vcf,snp.vcf\] do not match.",
+                                 self.caller.normalize, writer, readers)
           
     def test_normalize_raisesExceptionMissingIndelSnvs(self):
-        self.assert_two_files_throw_exception("foo.vcf", "bar.vcf")
-        self.assert_two_files_throw_exception("snp.vcf", "bar.vcf")
-        self.assert_two_files_throw_exception("foo.snp.vcf", "bar.vcf")
-        self.assert_two_files_throw_exception("foo.indel.vcf", "bar.vcf")
-        self.assert_two_files_throw_exception("foo.indel.vcf", "bar.indel.vcf")
-        self.assert_two_files_throw_exception("foo.snp.vcf", "bar.snp.vcf")
-        self.assert_two_files_throw_exception("snp/foo.vcf", "indel/bar.vcf")
-        self.assert_two_files_throw_exception("indel.snp.vcf", "bar.vcf")
-        self.assert_two_files_throw_exception("A.indel.snp.vcf", "B.indel.snp.vcf")
+        error_msg = r"ERROR: Each patient in a VarScan directory should have a snp file and an indel file."
+        self.assert_two_files_throw_exception("foo.vcf", "bar.vcf", error_msg)
+        self.assert_two_files_throw_exception("snp.vcf", "bar.vcf", error_msg)
+        self.assert_two_files_throw_exception("foo.snp.vcf", "bar.vcf", error_msg)
+        self.assert_two_files_throw_exception("foo.indel.vcf", "bar.vcf", error_msg)
+        self.assert_two_files_throw_exception("foo.indel.vcf", "bar.indel.vcf", error_msg)
+        self.assert_two_files_throw_exception("foo.snp.vcf", "bar.snp.vcf", error_msg)
+        self.assert_two_files_throw_exception("snp/foo.vcf", "indel/bar.vcf", error_msg)
+        self.assert_two_files_throw_exception("indel.snp.vcf", "bar.vcf", error_msg)
+        self.assert_two_files_throw_exception("A.indel.snp.vcf", "B.indel.snp.vcf", error_msg)
          
     def test_normalize_writesSequentialRecords(self):
         writer = MockWriter()
-        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t.\t."
-        record2 = "chr2\t.\t.\t.\t.\t.\t.\t.\t.\t."
-        record3 = "chr3\t.\t.\t.\t.\t.\t.\t.\t.\t."
+        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
+        record2 = "chr2\t.\t.\t.\t.\t.\t.\t.\t."
+        record3 = "chr3\t.\t.\t.\t.\t.\t.\t.\t."
         content1 = ["##foo", "#bar", record2, record3]
         content2 = ["##foo", "#bar", record1, record3]
         readers = []
@@ -201,16 +208,17 @@ class VarscanTestCase(unittest.TestCase):
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
         self.assertEquals(["##foo", "#bar", record1, record2, record3, record3], writer.lines())
-        
-    
 #         
-    def assert_two_files_throw_exception(self, file1, file2):
+    def assert_two_files_throw_exception(self, file1, file2, exception):
         readers = []
-        readers.append(MockFileReader(input_filepath=file1))
-        readers.append(MockFileReader(input_filepath=file2))
+        content = ["##foo","#bar"]
+        readers.append(MockFileReader(input_filepath=file1, content=content))
+        readers.append(MockFileReader(input_filepath=file2, content=content))
         self.append_hc_files(readers)
     
-        self.assertRaises(JQException, self.caller.normalize, MockWriter(), readers)
+#         self.assertRaises(JQException, self.caller.normalize, MockWriter(), readers)
+        with self.assertRaisesRegexp(JQException,exception):
+            self.caller.normalize(MockWriter(), readers)
 
     def append_hc_files(self,readers):
         readers.append(MockFileReader("snp.somatic.hc", []))
