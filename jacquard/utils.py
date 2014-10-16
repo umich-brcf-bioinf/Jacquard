@@ -23,7 +23,6 @@ class JQException(Exception):
     """Base class for exceptions in this module."""
     pass
 
-
 # pylint: disable=W0142
 def log(msg, *args):
     print(msg.format(*[str(i) for i in args]), file=sys.stderr)

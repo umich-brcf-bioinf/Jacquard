@@ -164,7 +164,7 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
         output_dir = script_dir + "/normalize_strelka_test/output/"
 
         merge_candidates, hc_candidates = identify_merge_candidates(in_files, output_dir, strelka.Strelka())
-        self.assertEquals(0,1)
+
         self.assertEqual([output_dir + "tiny_strelka.merged.vcf"], merge_candidates.keys())
         self.assertEqual([[input_dir + "tiny_strelka.indels.vcf", input_dir + "tiny_strelka.snvs.vcf"]], merge_candidates.values())
         

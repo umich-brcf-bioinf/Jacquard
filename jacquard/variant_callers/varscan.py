@@ -192,22 +192,34 @@ class Varscan():
         return marked_as_hc
     
     def _process_hc_files(self, hc_candidates):
+        metaheader = None
+        chr_nums = []
         for hc_file_reader in hc_candidates:
             hc_file_reader.open()
             for line in hc_file_reader.read_lines():
                 split_line = line.split()
-                
+                if split_line[0] != "chrom" and split_line[0].startswith("chr"):
+                    chr_num = split_line[0].split("chr")[1]
+                    chr_nums.append(chr_num)
+            hc_file_reader.close()
+        if len(chr_nums)>0:
+            metaheader = '##INFO=<ID='+_JQ_VARSCAN_HC_INFO_FIELD+\
+                        ',Number=1,Type=Flag,Description="Jaquard high-confidence '+\
+                        'somatic flag for VarScan. Based on intersection with filtered VarScan variants.">'
+        return metaheader, chr_nums
             
 #TODO: Add to normalize.py.        
     def normalize(self, file_writer, file_readers):
-        vcf_readers,hc_candidates = self._validate_raw_input_files(file_readers)
-        
+        vcf_readers, hc_candidates = self._validate_raw_input_files(file_readers)
+        hc_metaheader, chr_nums = self._process_hc_files(hc_candidates)
         metaheader_list = []
         column_header = None
         for i,vcf_reader in enumerate(vcf_readers):
             if i==0:
                 column_header = vcf_reader.column_header
             metaheader_list.extend(vcf_reader.metaheaders)
+        if hc_metaheader is not None:
+            metaheader_list.append(hc_metaheader)
         sorted_metaheader_set = sorted(set(metaheader_list))
         file_writer.open()
         for metaheader in sorted_metaheader_set:
@@ -218,7 +230,7 @@ class Varscan():
             file_writer.write(record)
         
         file_writer.close()
-        
+
     def identify_hc_variants(self,hc_candidates):
         hc_variants = {}
         for key, vals in hc_candidates.items():

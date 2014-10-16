@@ -7,8 +7,8 @@ from jacquard.variant_callers import varscan
 from jacquard.utils import __version__,jq_af_tag,jq_dp_tag,jq_somatic_tag,\
     JQException
 from test.variant_callers.mutect_test import MockTag
-from jacquard.vcf import VcfRecord 
-
+from jacquard.vcf import VcfRecord, FileReader
+from testfixtures import TempDirectory
 
 class MockWriter():
     def __init__(self):
@@ -179,9 +179,26 @@ class VarscanTestCase(unittest.TestCase):
          
         self.assertRaisesRegexp(JQException, r"ERROR: The column headers for VCF files \[indel.vcf,snp.vcf\] do not match.",
                                  self.caller.normalize, writer, readers)
-          
+    
+    def test__process_hc_files(self):
+        hc_readers = []
+        with TempDirectory() as input_dir:
+            input_dir.write("A",
+                            ("chrom|position|ref|var|normal_reads1|"+\
+                            "normal_reads2|normal_var_freq|normal_gt|"+\
+                            "tumor_reads1|tumor_reads2|tumor_var_freq|"+\
+                            "tumor_gt|somatic_status|variant_p_value|"+\
+                            "somatic_p_value|tumor_reads1_plus|tumor_reads1_minus|"+\
+                            "tumor_reads2_plus|tumor_reads2_minus|normal_reads1_plus|"+\
+                            "normal_reads1_minus|normal_reads2_plus|normal_reads2_minus\n"+\
+                            "chr1|161332554|A|G|25|1|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n"+\
+                            "chr2|161332557|G|A|25|1|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n"+\
+                            "chr3|99463179|G|A|22|0|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n"+
+                            "").replace("|","\t"))
+            hc_readers.append(FileReader(os.path.join(input_dir.path,"A")))
+            self.caller._process_hc_files(hc_readers)
+        
     def test_normalize_raisesExceptionMissingIndelSnvs(self):
-        error_msg = r"ERROR: Each patient in a VarScan directory should have a snp file and an indel file."
         self.assert_two_vcf_files_throw_exception("foo.vcf", "bar.vcf")
         self.assert_two_vcf_files_throw_exception("snp.vcf", "bar.vcf")
         self.assert_two_vcf_files_throw_exception("foo.snp.vcf", "bar.vcf")
