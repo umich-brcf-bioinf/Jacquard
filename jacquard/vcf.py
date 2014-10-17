@@ -48,7 +48,7 @@ class VcfReader(object):
     def metaheaders(self):
         return list(self._metaheaders)
 
-    def _read_headers(self):
+    def _read_headers(self): #TODO: VcfReader shouldn't do open and close unless user tells it to
         metaheaders = []
         column_header = None
         try:
@@ -86,6 +86,7 @@ class VcfRecord(object):
         vcf_fields = vcf_line.rstrip("\n").split("\t")
         self.chrom,self.pos,self.id,self.ref,self.alt,self.qual,self.filter,self.info,self.format = vcf_fields[0:9]
         self.samples = vcf_fields[9:]
+        self.key = self.chrom+"_"+self.pos+"_"+self.ref+"_"+self.alt
         tags = self.format.split(":")
         self.format_set = tags
         self.sample_dict = {}

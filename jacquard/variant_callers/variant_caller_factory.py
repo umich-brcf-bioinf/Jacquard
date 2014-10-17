@@ -16,5 +16,9 @@ def get_caller(metaheaders, column_header, name):
     raise utils.JQException("VCF [{}] was not in the set of recognized callers."
                       .format(name))
 
+@property
+def callers():
+    return _CALLERS
+
 # def recognize_vcf(vcf_reader,):
 

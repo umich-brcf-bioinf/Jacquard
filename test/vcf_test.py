@@ -72,6 +72,9 @@ class VcfRecordTestCase(unittest.TestCase):
         record = VcfRecord(input_line)
         self.assertRaises(KeyError, record.insert_format_field, "F1", {0:0.6, 1:0.6})
 
+    def testCreateKey(self):
+        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
+        self.assertEquals("CHROM_POS_REF_ALT",VcfRecord(input_line).key)
 
 class VcfReaderTestCase(unittest.TestCase):
     def setUp(self):

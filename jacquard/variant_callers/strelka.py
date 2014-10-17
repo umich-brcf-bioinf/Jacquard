@@ -143,31 +143,28 @@ class Strelka(object):
                 .format(vcf_readers[0].file_name,vcf_readers[1].file_name))
         return vcf_readers
         
-    def _organize_vcf_records(self,vcf_readers):
+    def _parse_vcf_readers(self,vcf_readers):
         all_records = []
+        metaheader_list = []
+        column_header = vcf_readers[0].column_header
         for vcf_reader in vcf_readers:
+            metaheader_list.extend(vcf_reader.metaheaders)
             vcf_reader.open()
             for record in vcf_reader.vcf_records():
                 all_records.append(record.asText())
             vcf_reader.close()
         parsed_records = utils.sort_data(all_records)
-        return parsed_records
+        return metaheader_list, column_header, parsed_records
         
 #TODO: Add to normalize.py.        
     def normalize(self, file_writer, file_readers):
         vcf_readers = self._validate_raw_input_files(file_readers)
-        metaheader_list = []
-        column_header = None
-        for i,vcf_reader in enumerate(vcf_readers):
-            if i==0:
-                column_header = vcf_reader.column_header
-            metaheader_list.extend(vcf_reader.metaheaders)
+        metaheader_list, column_header, parsed_records = self._parse_vcf_readers(vcf_readers)
         sorted_metaheader_set = sorted(set(metaheader_list))
         file_writer.open()
         for metaheader in sorted_metaheader_set:
             file_writer.write(metaheader+"\n")
         file_writer.write(column_header+"\n")
-        parsed_records = self._organize_vcf_records(vcf_readers)
         for record in parsed_records:
             file_writer.write(record)
         file_writer.close()

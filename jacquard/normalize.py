@@ -87,7 +87,7 @@ def identify_merge_candidates(in_files, out_dir, caller):
     for in_file in in_files:
         #fname, extension = os.path.splitext(in_file)
         if in_file.lower().endswith(".vcf"):
-            merged_fname = re.sub(caller.file_name_search, "merged", os.path.join(out_dir, os.path.basename(in_file)))
+            merged_fname = re.sub(caller.file_name_search, "normalized", os.path.join(out_dir, os.path.basename(in_file)))
             merge_candidates[merged_fname].append(in_file)
         elif in_file.lower().endswith(".somatic.hc"):
             hc_candidates = caller.handle_hc_files(in_file, out_dir, hc_candidates)
@@ -185,17 +185,19 @@ def execute(args, execution_context):
     output_dir = os.path.abspath(args.output_dir)
     
     utils.validate_directories(input_dir, output_dir)
-    patient_to_files = _partition_files_by_patient(input_dir, output_dir)
-    if not patient_to_files:
+    writer_to_readers = _partition_files_by_patient(input_dir, output_dir)
+    if not writer_to_readers:
         log("ERROR: Specified input directory [{0}] contains no VCF files."
              "Check parameters and try again.", input_dir)
         #TODO cgates: move to jacquard.py
         shutil.rmtree(output_dir)
         exit(1)
+        
+#     caller = _determine_caller_per_directory(writer_to_readers)
+#     for writer, readers in writer_to_readers.items():    
+#         caller.normalize(writer, readers)
 
-    
-    
     callers = [variant_callers.strelka.Strelka(), variant_callers.varscan.Varscan(), variant_callers.mutect.Mutect()]
     merge_and_sort(input_dir, output_dir, callers, execution_context)
-    
+     
         

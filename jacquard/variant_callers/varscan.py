@@ -131,93 +131,43 @@ class Varscan():
               
         return vcf_readers, hc_candidates
         
-    def _organize_vcf_records(self,vcf_readers):
+    def _parse_vcf_readers(self,vcf_readers,hc_keys):
         all_records = []
+        metaheader_list = []
+        column_header = vcf_readers[0].column_header
         for vcf_reader in vcf_readers:
+            metaheader_list.extend(vcf_reader.metaheaders)
             vcf_reader.open()
             for record in vcf_reader.vcf_records():
+                if record.key in hc_keys:
+                    record.info = record.info+";"+_JQ_VARSCAN_HC_INFO_FIELD
                 all_records.append(record.asText())
             vcf_reader.close()
         parsed_records = utils.sort_data(all_records)
-        return parsed_records
-        
-    def _identify_hc_variants(self,hc_candidates):
-        hc_variants = {}
-        for hc_file in hc_candidates:
-            f = open(hc_file, "r")
-            for line in f:
-                split_line = line.split("\t")
-                if line.startswith("chrom"):
-                    continue
-                else:
-                    hc_key = "^".join([split_line[0], split_line[1], split_line[2], split_line[3]])
-                    hc_variants[hc_key] = 1
-                
-        return hc_variants
-
-    def _mark_hc_variants(self,hc_variants, writer, output_dir):
-        marked_as_hc = []
-    
-        new_lines = []
-        headers = []
-        for line in writer:
-            split_line = line.split("\t")
-            if line.startswith('"'):
-                line = line.replace("\t", "")
-                line = line[1:-2] + "\n"
-            if line.startswith("#"):
-                headers.append(line)
-            else:
-                merge_key = "^".join([split_line[0], str(split_line[1]), split_line[3], split_line[4]])
-                if merge_key in hc_variants:
-                    if _JQ_VARSCAN_HC_INFO_FIELD not in split_line[7]:
-                        split_line[7] += ";"+_JQ_VARSCAN_HC_INFO_FIELD
-                    marked_as_hc.append(merge_key)
-                new_line = "\t".join(split_line)
-                new_lines.append(new_line)
-        
-        sorted_headers = utils.sort_headers(headers)
-        self.write_to_merged_file(new_lines, sorted_headers, writer)
-                
-        return marked_as_hc
-    
-    def _write_to_merged_file(self, new_lines, headers, writer):
-        sorted_variants = utils.sort_data(new_lines)
-        utils.write_output(writer, headers, sorted_variants)
-
-    def _final_steps(self, hc_candidates, writer, output_dir):
-        hc_variants = self.identify_hc_variants(hc_candidates)
-        marked_as_hc = self.mark_hc_variants(hc_variants, writer, output_dir)
-
-        return marked_as_hc
+        return metaheader_list, column_header, parsed_records
     
     def _process_hc_files(self, hc_candidates):
         metaheader = None
-        chr_nums = []
+        hc_keys = []
         for hc_file_reader in hc_candidates:
             hc_file_reader.open()
             for line in hc_file_reader.read_lines():
                 split_line = line.split()
                 if split_line[0] != "chrom" and split_line[0].startswith("chr"):
-                    chr_num = split_line[0].split("chr")[1]
-                    chr_nums.append(chr_num)
+                    hc_key = split_line[0]+"_"+split_line[1]+"_"+split_line[2]+"_"+split_line[3]
+                    hc_keys.append(hc_key)
             hc_file_reader.close()
-        if len(chr_nums)>0:
+        if len(hc_keys)>0:
             metaheader = '##INFO=<ID='+_JQ_VARSCAN_HC_INFO_FIELD+\
                         ',Number=1,Type=Flag,Description="Jaquard high-confidence '+\
                         'somatic flag for VarScan. Based on intersection with filtered VarScan variants.">'
-        return metaheader, chr_nums
+        return metaheader, hc_keys
             
 #TODO: Add to normalize.py.        
     def normalize(self, file_writer, file_readers):
         vcf_readers, hc_candidates = self._validate_raw_input_files(file_readers)
-        hc_metaheader, chr_nums = self._process_hc_files(hc_candidates)
-        metaheader_list = []
-        column_header = None
-        for i,vcf_reader in enumerate(vcf_readers):
-            if i==0:
-                column_header = vcf_reader.column_header
-            metaheader_list.extend(vcf_reader.metaheaders)
+        hc_metaheader, hc_keys = self._process_hc_files(hc_candidates)
+        metaheader_list, column_header, parsed_records = self._parse_vcf_readers(vcf_readers, hc_keys)
         if hc_metaheader is not None:
             metaheader_list.append(hc_metaheader)
         sorted_metaheader_set = sorted(set(metaheader_list))
@@ -225,7 +175,6 @@ class Varscan():
         for metaheader in sorted_metaheader_set:
             file_writer.write(metaheader+"\n")
         file_writer.write(column_header+"\n")
-        parsed_records = self._organize_vcf_records(vcf_readers)
         for record in parsed_records:
             file_writer.write(record)
         

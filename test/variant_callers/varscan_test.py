@@ -162,7 +162,26 @@ class VarscanTestCase(unittest.TestCase):
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
         self.assertEquals(["##bar", "##foo", "##hi", "#baz"], writer.lines())
-        
+    
+    def test_normalize_modifyBasedOnHCVariants(self):
+        writer = MockWriter()
+        content1 = ["##FOO", "#bar", "chr1|161332554|.|A|G|.|.|.|.|.\n".replace("|","\t")]
+        content2 = ["##FOO", "#bar", "chr1|161332554|.|G|G|.|.|.|.|.\n".replace("|","\t")]
+        readers = []
+        readers.append(MockFileReader("indel.vcf", content1))
+        readers.append(MockFileReader("snp.vcf", content2))
+        self.append_hc_files(readers,content1=["chr1|161332554|A|G|25|1|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n".replace("|","\t")])
+        self.caller.normalize(writer, readers)
+        self.maxDiff = None
+           
+        self.assertEquals(["##FOO", 
+                        '##INFO=<ID=JQ_HC_VS'\
+                        ',Number=1,Type=Flag,Description="Jaquard high-confidence '+\
+                        'somatic flag for VarScan. Based on intersection with filtered VarScan variants.">', 
+                        "#bar",
+                        "chr1|161332554|.|A|G|.|.|.;JQ_HC_VS|.|.".replace("|","\t"),
+                        "chr1|161332554|.|G|G|.|.|.|.|.".replace("|","\t")], writer.lines())
+         
     def test_normalize_wrongNumberOfFiles(self):
         self.assertRaisesRegexp(JQException,
             r"ERROR: VarScan directories should have exactly two input VCF files per patient, but found \[1\].",
@@ -196,7 +215,11 @@ class VarscanTestCase(unittest.TestCase):
                             "chr3|99463179|G|A|22|0|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n"+
                             "").replace("|","\t"))
             hc_readers.append(FileReader(os.path.join(input_dir.path,"A")))
-            self.caller._process_hc_files(hc_readers)
+            expected = ('##INFO=<ID=JQ_HC_VS'\
+                        ',Number=1,Type=Flag,Description="Jaquard high-confidence '+\
+                        'somatic flag for VarScan. Based on intersection with filtered VarScan variants.">',
+                        ["chr1_161332554_A_G","chr2_161332557_G_A","chr3_99463179_G_A"])
+            self.assertEquals(expected,self.caller._process_hc_files(hc_readers))
         
     def test_normalize_raisesExceptionMissingIndelSnvs(self):
         self.assert_two_vcf_files_throw_exception("foo.vcf", "bar.vcf")
@@ -275,9 +298,9 @@ class VarscanTestCase(unittest.TestCase):
         with self.assertRaisesRegexp(JQException,r"ERROR: Each patient in a VarScan directory should have a snp file and an indel file."):
             self.caller.normalize(MockWriter(), readers)
 
-    def append_hc_files(self, readers, file1="snp.somatic.hc", file2="indel.somatic.hc"):
-        readers.append(MockFileReader(file1, []))
-        readers.append(MockFileReader(file2, []))
+    def append_hc_files(self, readers, file1="snp.somatic.hc", file2="indel.somatic.hc", content1=[], content2=[]):
+        readers.append(MockFileReader(file1, content1))
+        readers.append(MockFileReader(file2, content2))
         
 #     def setUp(self):
 #         self.caller = varscan.Varscan()
