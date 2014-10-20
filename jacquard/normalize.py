@@ -78,24 +78,7 @@ def merge(merge_candidates, output_dir, caller):
         utils.write_output(out_file, meta_headers, sorted_variants)
         out_file.close()
 
-#TODO (cgates): Adjust per EX-91
-def identify_merge_candidates(in_files, out_dir, caller):
-    merge_candidates = defaultdict(list)
-    hc_candidates = defaultdict(list)
-    
-    for in_file in in_files:
-        #fname, extension = os.path.splitext(in_file)
-        if in_file.lower().endswith(".vcf"):
-            merged_fname = re.sub(caller.file_name_search, "normalized", os.path.join(out_dir, os.path.basename(in_file)))
-            merge_candidates[merged_fname].append(in_file)
-        elif in_file.lower().endswith(".somatic.hc"):
-            hc_candidates = caller.handle_hc_files(in_file, out_dir, hc_candidates)
-    
-    all_keys = hc_candidates.keys() + merge_candidates.keys()
-    #caller.validate_file_set(all_keys)
-    
-    return merge_candidates, hc_candidates
-
+#TODO: hook up to something
 def _validate_single_caller(filepaths, get_caller):
     callers = set()
     try:
@@ -117,34 +100,6 @@ def _validate_single_caller(filepaths, get_caller):
     else:
         return iter(callers).next()
 
-def merge_and_sort(input_dir, output_dir, callers, execution_context=[]):
-    print "\n".join(execution_context)
-
-    in_files = sorted(glob.glob(os.path.join(input_dir,"*")))
-
-    caller = _validate_single_caller(in_files, variant_caller_factory.get_caller)
-
-    if caller.name == "MuTect":
-        count = 0
-        for in_file_name in in_files:
-            fname, extension = os.path.splitext(in_file_name)
-            if extension == ".vcf":
-                shutil.copy(in_file_name, output_dir)
-                count += 1
-        print "Copied [{0}] VCF files from [{1}] to [{2}]".format(count, input_dir, output_dir)
-        
-    else:
-        merge_candidates, hc_candidates = identify_merge_candidates(in_files, output_dir, caller)
-    
-        total_files = 0
-        for key, vals in merge_candidates.items():
-            total_files += len(vals)
-        print "Processing [{0}] samples from [{1}] files in [{2}]".format(len(merge_candidates.keys()), total_files, input_dir)
-        
-        merge(merge_candidates, output_dir, caller)
-        
-        caller.final_steps(hc_candidates, merge_candidates, output_dir)
-        
 def add_subparser(subparser):
     parser_normalize_vs = subparser.add_parser("normalize", help="Accepts a directory containing VarScan VCF snp/indel results or Strelka VCF snvs/indels results and creates a new directory of merged, sorted VCFs with added high confidence tags")
     parser_normalize_vs.add_argument("input_dir", help="Path to directory containing VCFs. Each sample must have exactly two files matching these patterns: <sample>.indel.vcf, <sample>.snp.vcf, <sample>.indel.Germline.hc, <sample>.snp.Germline.hc, <sample>.indel.LOH.hc, <sample>.snp.LOH.hc, <sample>.indel.Somatic.hc, <sample>.snp.somatic.hc, <sample>.indel.*.hc, <sample>.snp.*.hc ")
@@ -154,9 +109,14 @@ def _partition_input_files(in_files, output_dir, caller):
     infiles_to_outfile = defaultdict(list)
     
     for file_path in in_files:
-        output_filename = re.sub(caller.file_name_search, "normalized", os.path.join(output_dir, os.path.basename(file_path)))       
-        infiles_to_outfile[output_filename].append(vcf.FileReader(file_path))
-    
+        basename = os.path.basename(file_path)
+        fname, extension = os.path.splitext(basename)
+        fname = re.sub(".Somatic", "", fname)
+        
+        output_filename = re.sub(caller.file_name_search, "normalized", fname) if caller.file_name_search else ".".join([fname,"normalized"])
+        output_file = os.path.join(output_dir, ".".join([output_filename, "vcf"]))
+        infiles_to_outfile[output_file].append(vcf.FileReader(file_path))
+   
     writer_to_readers = {}
     for in_file in infiles_to_outfile:
         file_writer = vcf.FileWriter(in_file)
@@ -166,11 +126,13 @@ def _partition_input_files(in_files, output_dir, caller):
 
 def _determine_caller_per_directory(in_files, 
                                     get_caller=variant_caller_factory.get_caller):
-    
-    file_reader = vcf.FileReader(in_files[0])
-    vcf_reader = vcf.VcfReader(file_reader)
-    
-    return get_caller(vcf_reader.metaheaders, vcf_reader.column_header, vcf_reader.file_name)
+    for in_file in in_files:
+        extension = os.path.splitext(os.path.basename(in_file))[1]
+        if extension == ".vcf":
+            file_reader = vcf.FileReader(in_file)
+            vcf_reader = vcf.VcfReader(file_reader)
+
+            return get_caller(vcf_reader.metaheaders, vcf_reader.column_header, vcf_reader.file_name)
 
 def _log_caller_info(vcf_readers):
     caller_count = collections.defaultdict(int)
@@ -190,6 +152,7 @@ def execute(args, execution_context):
     in_files = sorted(glob.glob(os.path.join(input_dir, "*")))
     
     caller = _determine_caller_per_directory(in_files)
+
     writer_to_readers = _partition_input_files(in_files, output_dir, caller)
     
     if not writer_to_readers:
@@ -200,8 +163,7 @@ def execute(args, execution_context):
         shutil.rmtree(output_dir)
         exit(1)
         
-    
-    for writer, readers in writer_to_readers.items():    
+    for writer, readers in writer_to_readers.items():  
         caller.normalize(writer, readers)
      
-        
+    print "done"

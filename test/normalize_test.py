@@ -6,9 +6,8 @@ from argparse import Namespace
 from jacquard.variant_callers import varscan, strelka, variant_caller_factory
 from testfixtures import TempDirectory
 
-from jacquard.normalize import identify_merge_candidates, get_headers, \
-merge_data, validate_split_line, _partition_input_files, _determine_caller_per_directory,\
-merge_and_sort
+from jacquard.normalize import get_headers, \
+merge_data, validate_split_line, _partition_input_files, _determine_caller_per_directory
 
 from jacquard.vcf import FileReader, FileWriter
 import jacquard.utils as utils
@@ -155,44 +154,6 @@ chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                               [strelka_file, unrecognized_file],
                               variant_caller_factory.get_caller)
 
-
-class IdentifyMergeCandidatesTestCase(unittest.TestCase):
-
-    def test_indentifyMergeCandidates_Strelka(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/normalize_strelka_test/input/"
-        in_files = [input_dir + "tiny_strelka.indels.vcf", input_dir + "tiny_strelka.snvs.vcf"]
-        output_dir = script_dir + "/normalize_strelka_test/output/"
-
-        merge_candidates, hc_candidates = identify_merge_candidates(in_files, output_dir, strelka.Strelka())
-
-        self.assertEqual([output_dir + "tiny_strelka.normalized.vcf"], merge_candidates.keys())
-        self.assertEqual([[input_dir + "tiny_strelka.indels.vcf", input_dir + "tiny_strelka.snvs.vcf"]], merge_candidates.values())
-        
-    #TODO (cgates): Adjust per EX-91
-    def Xtest_indentifyMergeCandidates_missingFiles_VarScan(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/normalize_varscan_test/input/"
-        in_files = [input_dir + "foo_indel.vcf", input_dir + "tiny_indel.vcf", input_dir + "tiny_snp.vcf", input_dir + "tiny_indel.Germline.hc", input_dir + "tiny_indel.LOH.hc", input_dir + "tiny_indel.Somatic.hc", input_dir + "tiny_snp.Germline.hc", input_dir + "tiny_snp.LOH.hc", input_dir + "tiny_snp.Somatic.hc"]
-        output_dir = script_dir + "/normalize_varscan_test/output"
-        
-        with self.assertRaises(SystemExit) as cm:
-
-            merge_candidates = identify_merge_candidates(in_files, output_dir, varscan.Varscan())
-        self.assertEqual(cm.exception.code, 1)
-        
-    def test_indentifyMergeCandidates_VarScan(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/normalize_varscan_test/input/"
-        in_files = [input_dir + "tiny_indel.vcf", input_dir + "tiny_snp.vcf", input_dir + "tiny_indel.Germline.hc", input_dir + "tiny_indel.LOH.hc", input_dir + "tiny_indel.Somatic.hc", input_dir + "tiny_snp.Germline.hc", input_dir + "tiny_snp.LOH.hc", input_dir + "tiny_snp.Somatic.hc"]
-        output_dir = script_dir + "/normalize_varscan_test/output/"
-
-        merge_candidates, hc_candidates = identify_merge_candidates(in_files, output_dir, varscan.Varscan())
-        
-        self.assertEqual([output_dir + "tiny_normalized.vcf"], merge_candidates.keys())
-        self.assertEqual([[input_dir + "tiny_indel.vcf", input_dir + "tiny_snp.vcf"]], merge_candidates.values())
-    
-
     def test__partition_input_files(self):
         in_files = ["A.1.snps.vcf", "A.1.indels.vcf", "B.snps.vcf"]
         output_dir_path = "output_dir_path"
@@ -250,10 +211,6 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
 #             self.assertEqual(2, len(readers_to_writer.values()[0]))
 #         
 
-         
-    def test_merge_and_sort(self):
-        pass
-        
     def test_merge_getHeaders_Strelka(self):
         with TempDirectory() as input_dir:
             input_dir.write("A.vcf","##source=strelka\n##foobarbaz\n#CHROM\tNORMAL\tTUMOR\n123\n456\n")

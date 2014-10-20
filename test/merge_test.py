@@ -63,8 +63,8 @@ class MergeTestCase(unittest.TestCase):
 3\t25\tA\tT\tfoo\tDP:ESAF\t74:0.2
 4\t26\tA\tT\tfoo\tDP:ESAF\t25:0.2'''
     
-        pivoter.add_file(StringIO(sample_A_file), 0, "MuTect", {}, "file1")
-        pivoter.add_file(StringIO(sample_B_file), 0, "MuTect", {}, "file2")
+        pivoter.add_file(StringIO(sample_A_file), 0, "MuTect", "file1")
+        pivoter.add_file(StringIO(sample_B_file), 0, "MuTect", "file2")
         
         actual_df = pivoter._combined_df
         actual_df.columns.names = [""]
@@ -368,7 +368,7 @@ class PivotTestCase(unittest.TestCase):
         reader = MockReader("##foo\n##jacquard.tag.caller=MuTect\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2\n1\t2324\t.\tA\tG,T\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.234,0.124:78:25,312")
         writer = MockWriter()
         unknown_callers = 0
-        caller, unknown_callers, mutect_dict = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
+        caller, unknown_callers = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
         self.assertEquals("MuTect", caller)
         self.assertEquals(0, unknown_callers)
 
@@ -378,7 +378,7 @@ class PivotTestCase(unittest.TestCase):
         reader = MockReader("##foo\n##jacquard.tag.foo\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2\n1\t2324\t.\tA\tG,T\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.234,0.124:78:25,312")
         writer = MockWriter()
         unknown_callers = 2
-        caller, unknown_callers, mutect_dict = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
+        caller, unknown_callers = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
         self.assertEquals("unknown", caller)
         self.assertEquals(3, unknown_callers)
         self.assertEquals(["##foo", "##jacquard.tag.foo", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())

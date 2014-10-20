@@ -29,7 +29,7 @@ class VariantPivoter():
         self._combined_df = combined_df
         self.row_dict = {} 
 
-    def add_file(self, sample_file, header_index, caller, mutect_dict, file_name=""):
+    def add_file(self, sample_file, header_index, caller, file_name=""):
         if file_name == "":
             file_name = sample_file
             
@@ -39,7 +39,7 @@ class VariantPivoter():
             initial_df.rename(columns={"#CHROM": "CHROM"}, inplace=True)
 
         unpivoted_df = self.is_compatible(initial_df)
-        fname_df, sample_columns = append_fname_to_samples(initial_df, file_name, self._rows, caller, mutect_dict)
+        fname_df, sample_columns = append_fname_to_samples(initial_df, file_name, self._rows, caller)
         validated_df = validate_sample_caller_vcfs(fname_df)
         
         self._combined_df = merge_samples(fname_df, self._combined_df, self._rows)
@@ -147,16 +147,16 @@ def create_initial_df(sample_file, header_index):
     
     return initial_df
   
-def append_fname_to_samples(df, file_name, rows, caller, mutect_dict):
+def append_fname_to_samples(df, file_name, rows, caller):
     indexed_df = df.set_index(rows + ["INFO"])
     
-    if caller == "MuTect":
-        for key, val in mutect_dict.items():
-            if val in df.columns.values:
-                if key == "normal_sample_name":
-                    indexed_df.rename(columns={val : "NORMAL"}, inplace=True)
-                elif key == "tumor_sample_name":
-                    indexed_df.rename(columns={val : "TUMOR"}, inplace=True)
+#     if caller == "MuTect":
+#         for key, val in mutect_dict.items():
+#             if val in df.columns.values:
+#                 if key == "normal_sample_name":
+#                     indexed_df.rename(columns={val : "NORMAL"}, inplace=True)
+#                 elif key == "tumor_sample_name":
+#                     indexed_df.rename(columns={val : "TUMOR"}, inplace=True)
 
     basename = os.path.basename(file_name)
     fname_prefix = basename.split(".")[0]
@@ -441,21 +441,10 @@ def create_new_line(alt_allele_number, fields):
     
 def determine_caller_and_split_mult_alts(reader, writer, unknown_callers):
     caller = "unknown"
-    mutect_dict = {}
     for line in reader:
         if line.startswith("##jacquard.tag.caller="):
             caller = line.split("=")[1].strip("\n")
             writer.write(line)
-        elif line.startswith("##MuTect="):
-            split_line = line.split(" ")
-            for item in split_line:
-                split_item = item.split("=")
-                try:
-                    mutect_dict[split_item[0]] = split_item[1]
-                except:
-                    pass
-            writer.write(line)
-            
         elif line.startswith("#"):
             writer.write(line)
         else:
@@ -464,7 +453,7 @@ def determine_caller_and_split_mult_alts(reader, writer, unknown_callers):
             alts = alt.split(",")
             if len(alts) > 1: #there's a mult-alt
                 count = 0
-                for alt_allele in alts:
+                for _ in alts:
                     new_line = create_new_line(count, fields)
                     writer.write(new_line)
                     count += 1
@@ -477,7 +466,7 @@ def determine_caller_and_split_mult_alts(reader, writer, unknown_callers):
         print "ERROR: unable to determine variant caller for file [{0}]".format(reader)
         unknown_callers += 1
     
-    return caller, unknown_callers, mutect_dict
+    return caller, unknown_callers
 
 def validate_samples_for_callers(all_merge_column_context, all_inconsistent_sample_sets):
     sample_dict = defaultdict(list)
@@ -548,11 +537,11 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
         
         reader = open(sample_file, "r")
         writer = open(new_sample_file, "w")
-        caller, unknown_callers, mutect_dict = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
+        caller, unknown_callers = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
         reader.close()
         writer.close()
 
-        sample_columns = pivoter.add_file(new_sample_file, headers[count - 1], caller, mutect_dict)
+        sample_columns = pivoter.add_file(new_sample_file, headers[count - 1], caller)
         count += 1
         
         all_merge_context, all_merge_column_context = determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, new_sample_file, count)

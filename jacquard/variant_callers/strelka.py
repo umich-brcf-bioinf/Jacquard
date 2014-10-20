@@ -125,7 +125,7 @@ class Strelka(object):
 #TODO: Add to normalize.py.
     def _validate_raw_input_files(self, file_readers):
         if len(file_readers) != 2:
-                raise utils.JQException("ERROR: Strelka directories should have exactly two input files per patient, but found [{}].".format(len(file_readers)))
+                raise utils.JQException("Strelka directories should have exactly two input files per patient, but found [{}].".format(len(file_readers)))
 
         tmp = [file_readers[0].file_name,file_readers[1].file_name]
         for i,name in enumerate(tmp):
@@ -135,11 +135,11 @@ class Strelka(object):
             if "indels" in name:
                 tmp[i] = "indels"
         if not (tmp[0] == "snvs" and tmp[1] == "indels") and not (tmp[1] == "snvs" and tmp[0] == "indels"): 
-            raise utils.JQException("ERROR: Each patient in a Strelka directory should have a snvs file and an indels file.")
+            raise utils.JQException("Each patient in a Strelka directory should have a snvs file and an indels file.")
 
         vcf_readers = [VcfReader(file_readers[0]),VcfReader(file_readers[1])]
         if not vcf_readers[0].column_header == vcf_readers[1].column_header:
-            raise utils.JQException("ERROR: The column headers for VCF files [{},{}] do not match."\
+            raise utils.JQException("The column headers for VCF files [{},{}] do not match."\
                 .format(vcf_readers[0].file_name,vcf_readers[1].file_name))
         return vcf_readers
         
@@ -147,13 +147,17 @@ class Strelka(object):
         all_records = []
         metaheader_list = []
         column_header = vcf_readers[0].column_header
+        
         for vcf_reader in vcf_readers:
             metaheader_list.extend(vcf_reader.metaheaders)
             vcf_reader.open()
+            
             for record in vcf_reader.vcf_records():
                 all_records.append(record.asText())
             vcf_reader.close()
+        
         parsed_records = utils.sort_data(all_records)
+        
         return metaheader_list, column_header, parsed_records
         
 #TODO: Add to normalize.py.        
@@ -161,34 +165,38 @@ class Strelka(object):
         vcf_readers = self._validate_raw_input_files(file_readers)
         metaheader_list, column_header, parsed_records = self._parse_vcf_readers(vcf_readers)
         sorted_metaheader_set = sorted(set(metaheader_list))
+        
         file_writer.open()
+        
         for metaheader in sorted_metaheader_set:
             file_writer.write(metaheader+"\n")
         file_writer.write(column_header+"\n")
+        
         for record in parsed_records:
             file_writer.write(record)
+        
         file_writer.close()
         
     def get_new_metaheaders(self):
         return [tag.metaheader for tag in self.tags]
-
+ 
     def validate_input_file(self, meta_headers, column_header):
         return "##source=strelka" in meta_headers
-
+ 
     def validate_record(self,vcfRecord):
             return True
-
+ 
     def final_steps(self, hc_candidates, merge_candidates, output_dir):
         print "Wrote [{0}] VCF files to [{1}]". \
             format(len(merge_candidates.keys()), output_dir)
         return merge_candidates
-
+ 
     def handle_hc_files(self, in_file, out_dir, hc_candidates):
         return hc_candidates
-
+ 
     def validate_file_set(self, all_keys):
         pass
-
+ 
     def add_tags(self,vcfRecord):
         for tag in self.tags:
             tag.format(vcfRecord)

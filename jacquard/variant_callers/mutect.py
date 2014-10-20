@@ -1,4 +1,6 @@
 import jacquard.utils as utils
+import re
+import jacquard.vcf as vcf
 
 class _AlleleFreqTag():
     def __init__(self):
@@ -58,28 +60,54 @@ class Mutect():
     def __init__(self):
         self.name = "MuTect"
         self.tags = [_AlleleFreqTag(),_DepthTag(),_SomaticTag()]
+        self.file_name_search = ""
+        
+    def _get_mutect_cmd_parameters(self, line, mutect_dict):
+        split_line = line.split(" ")
+        
+        for item in split_line:
+            split_item = item.split("=")
+            try:
+                mutect_dict[split_item[0]] = split_item[1]
+            except:
+                pass
+            
+        return mutect_dict
         
     def normalize(self, file_writer, file_readers):
         if len(file_readers) != 1:
-                raise utils.JQException("ERROR: MuTect directories should have exactly one input file per patient, but found [{}].".format(len(file_readers)))
+                raise utils.JQException("MuTect directories should have exactly one input file per patient, but found [{}].".format(len(file_readers)))
 
         file_writer.open()
         for file_reader in file_readers:
             file_reader.open()
+
+            mutect_dict = {}
             for line in file_reader.read_lines():
+                if "##MuTect=" in line:
+                    mutect_dict = self._get_mutect_cmd_parameters(line, mutect_dict)
+                if "#CHROM" in line:
+                    if "normal_sample_name" in mutect_dict and "tumor_sample_name" in mutect_dict:
+                        line = re.sub(mutect_dict["normal_sample_name"], "NORMAL", line)
+                        line = re.sub(mutect_dict["tumor_sample_name"], "TUMOR", line)
+                    else:
+                        raise utils.JQException("Unable to determine normal and tumor sample ordering based on MuTect metaheader.")
+                    
                 file_writer.write(line)
+            
             file_reader.close()
         file_writer.close()
 
     def get_new_metaheaders(self):
         return [tag.metaheader for tag in self.tags]
-
+        
     def validate_input_file(self, meta_headers, column_header):
         valid = 0
         for line in meta_headers:
             if "##MuTect" in line:
                 valid = 1
                 break
+            
         return (valid)
                 
     def add_tags(self,vcfRecord):
