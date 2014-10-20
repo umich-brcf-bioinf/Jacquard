@@ -5,9 +5,7 @@ import re
 import shutil
 from utils import JQException, log
 import collections
-import vcf
 
-from variant_callers import variant_caller_factory
 import variant_callers.varscan 
 import variant_callers.strelka
 import variant_callers.mutect
@@ -67,6 +65,7 @@ def merge(merge_candidates, output_dir, caller):
         pair = merge_candidates[merge_file]
         meta_headers, header = get_headers(pair[0])
         sample_sources = caller.meta_header.format(os.path.basename(pair[0]), os.path.basename(pair[1]))
+        
         print os.path.basename(merge_file) + ": " + sample_sources
         
         meta_headers.append(sample_sources)
@@ -151,31 +150,34 @@ def add_subparser(subparser):
     parser_normalize_vs.add_argument("input_dir", help="Path to directory containing VCFs. Each sample must have exactly two files matching these patterns: <sample>.indel.vcf, <sample>.snp.vcf, <sample>.indel.Germline.hc, <sample>.snp.Germline.hc, <sample>.indel.LOH.hc, <sample>.snp.LOH.hc, <sample>.indel.Somatic.hc, <sample>.snp.somatic.hc, <sample>.indel.*.hc, <sample>.snp.*.hc ")
     parser_normalize_vs.add_argument("output_dir", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
 
-def _partition_files_by_patient(input_dir, output_dir):
-    in_files = sorted(glob.glob(os.path.join(input_dir, "*")))
-    patient_to_files = defaultdict(list)
+def _partition_input_files(in_files, output_dir, caller):
+    infiles_to_outfile = defaultdict(list)
+    
     for file_path in in_files:
-        filename = os.path.basename(file_path)
-        patient = filename.split(".")[0]
-        patient_to_files[patient].append(vcf.FileReader(file_path))
+        output_filename = re.sub(caller.file_name_search, "normalized", os.path.join(output_dir, os.path.basename(file_path)))       
+        infiles_to_outfile[output_filename].append(vcf.FileReader(file_path))
     
     writer_to_readers = {}
-    for patient in patient_to_files:
-        file_writer = vcf.FileWriter(os.path.join(output_dir,patient+".normalized.vcf"))
-        writer_to_readers[file_writer] = patient_to_files[patient]
-        
+    for in_file in infiles_to_outfile:
+        file_writer = vcf.FileWriter(in_file)
+        writer_to_readers[file_writer] = infiles_to_outfile[in_file]
+
     return writer_to_readers
 
-def _determine_caller_per_directory(writer_to_readers, 
+def _determine_caller_per_directory(in_files, 
                                     get_caller=variant_caller_factory.get_caller):
-    file_reader = writer_to_readers.values()[0][0]
+    
+    file_reader = vcf.FileReader(in_files[0])
     vcf_reader = vcf.VcfReader(file_reader)
+    
     return get_caller(vcf_reader.metaheaders, vcf_reader.column_header, vcf_reader.file_name)
 
 def _log_caller_info(vcf_readers):
     caller_count = collections.defaultdict(int)
+    
     for vcf in vcf_readers:
         caller_count[vcf.caller.name] += 1
+    
     for caller_name in sorted(caller_count):
         log("INFO: Recognized [{0}] {1} file(s)",
              caller_count[caller_name], caller_name)
@@ -185,19 +187,21 @@ def execute(args, execution_context):
     output_dir = os.path.abspath(args.output_dir)
     
     utils.validate_directories(input_dir, output_dir)
-    writer_to_readers = _partition_files_by_patient(input_dir, output_dir)
+    in_files = sorted(glob.glob(os.path.join(input_dir, "*")))
+    
+    caller = _determine_caller_per_directory(in_files)
+    writer_to_readers = _partition_input_files(in_files, output_dir, caller)
+    
     if not writer_to_readers:
         log("ERROR: Specified input directory [{0}] contains no VCF files."
              "Check parameters and try again.", input_dir)
+        
         #TODO cgates: move to jacquard.py
         shutil.rmtree(output_dir)
         exit(1)
         
-#     caller = _determine_caller_per_directory(writer_to_readers)
-#     for writer, readers in writer_to_readers.items():    
-#         caller.normalize(writer, readers)
-
-    callers = [variant_callers.strelka.Strelka(), variant_callers.varscan.Varscan(), variant_callers.mutect.Mutect()]
-    merge_and_sort(input_dir, output_dir, callers, execution_context)
+    
+    for writer, readers in writer_to_readers.items():    
+        caller.normalize(writer, readers)
      
         

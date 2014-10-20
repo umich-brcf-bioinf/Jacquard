@@ -7,7 +7,7 @@ from jacquard.variant_callers import varscan, strelka, variant_caller_factory
 from testfixtures import TempDirectory
 
 from jacquard.normalize import identify_merge_candidates, get_headers, \
-merge_data, validate_split_line, _partition_files_by_patient, _determine_caller_per_directory,\
+merge_data, validate_split_line, _partition_input_files, _determine_caller_per_directory,\
 merge_and_sort
 
 from jacquard.vcf import FileReader, FileWriter
@@ -37,6 +37,7 @@ class MockCaller(object):
     def __init__(self, name="MockCaller", metaheaders=["##mockMetaheader1"]):
         self.name = name
         self.metaheaders = metaheaders
+        self.file_name_search = "snps|indels"
 
     def add_tags(self, vcfRecord):
         return vcfRecord
@@ -92,34 +93,6 @@ class NormalizeTestCase(unittest.TestCase):
         sys.stderr = self.saved_stderr
         unittest.TestCase.tearDown(self)
 
-    def Xtest_execute(self):
-        vcf_content1 = ('''##source=strelka
-##file1
-#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
-chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
-chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
-''').replace('|', "\t")
-        vcf_content2 = ('''##source=strelka
-##file2
-#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
-chr1|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
-chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
-''').replace('|', "\t")
-
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("P1.strelka.snvs.vcf", vcf_content1)
-            input_dir.write("P1.strelka.indels.vcf", vcf_content2)
-            args = Namespace(input_dir=input_dir.path,
-                             output_dir=output_dir.path)
-
-            normalize.execute(args, ["extra_header1", "extra_header2"])
-
-            output_dir.check("P1.strelka.merged.vcf")
-            with open(os.path.join(output_dir.path, "P1.strelka.merged.vcf")) as actual_output_file:
-                actual_output_lines = actual_output_file.readlines()
-
-        self.assertEquals(8, len(actual_output_lines), "normalize output wrong number of lines")
-        
     def test_execute(self):
         vcf_content1 = ('''##source=strelka
 ##file1
@@ -220,37 +193,34 @@ class IdentifyMergeCandidatesTestCase(unittest.TestCase):
         self.assertEqual([[input_dir + "tiny_indel.vcf", input_dir + "tiny_snp.vcf"]], merge_candidates.values())
     
 
-    def test__partition_files_by_patient(self):
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("A.1.vcf","")
-            input_dir.write("A.2.vcf","")
-            input_dir.write("B.vcf","")
-             
-            writer_to_readers = _partition_files_by_patient(input_dir.path, output_dir.path)
-            
-            writerA = FileWriter(os.path.join(output_dir.path,"A.normalized.vcf"))
-            readersA = [FileReader(os.path.join(input_dir.path,"A.1.vcf")), 
-                        FileReader(os.path.join(input_dir.path,"A.2.vcf"))]
-            writerB = FileWriter(os.path.join(output_dir.path,"B.normalized.vcf"))           
-            readersB = [FileReader(os.path.join(input_dir.path,"B.vcf"))]
-            self.assertEquals({writerA: readersA, writerB: readersB}, 
-                              writer_to_readers)
-            
+    def test__partition_input_files(self):
+        in_files = ["A.1.snps.vcf", "A.1.indels.vcf", "B.snps.vcf"]
+        output_dir_path = "output_dir_path"
+        caller = MockCaller()
+        writer_to_readers = _partition_input_files(in_files, output_dir_path, caller)
+        
+        writerA = FileWriter(os.path.join(output_dir_path,"A.1.normalized.vcf"))
+        readersA = [FileReader(os.path.join("A.1.snps.vcf")), 
+                    FileReader(os.path.join("A.1.indels.vcf"))]
+        writerB = FileWriter(os.path.join(output_dir_path,"B.normalized.vcf"))           
+        readersB = [FileReader(os.path.join("B.snps.vcf"))]
+        self.assertEquals({writerA: readersA, writerB: readersB}, 
+                          writer_to_readers)
+        
     def test__determine_caller_per_directory(self):
-            
-            writerA = MockFileWriter()
-            readersA = [MockFileReader("A.1.vcf",["##metaheaders","#column_header"]), 
-                        MockFileReader("A.2.vcf",["##metaheaders","#column_header"])]
-            writerB = MockFileWriter()           
-            readersB = [MockFileReader("B.vcf",["##metaheaders","#column_header"])]
-            
-            mock_writer_to_readers = {writerA: readersA, writerB: readersB}
-            
-            mock_caller = MockCaller()
-            mock_caller_factory = MockCallerFactory(mock_caller)
-            caller = _determine_caller_per_directory(mock_writer_to_readers, mock_caller_factory.get_caller)
-            self.assertEquals(mock_caller,caller)
-            self.assertEquals(mock_caller_factory.last_filename, mock_writer_to_readers.values()[0][0].file_name)
+            with TempDirectory() as input_dir:
+                A = input_dir.write("A.vcf","##source=strelka\n#colHeader")
+                B = input_dir.write("B.vcf","##source=strelka\n#colHeader")
+                input_files = [A, B]
+                
+                mock_caller = MockCaller()
+                mock_caller_factory = MockCallerFactory(mock_caller)
+                
+                caller = _determine_caller_per_directory(input_files, mock_caller_factory.get_caller)
+                
+                self.assertEquals(mock_caller,caller)
+                self.assertEquals(mock_caller_factory.last_filename, "A.vcf")
+                
             
     def test__log_caller_info(self):
         pass
