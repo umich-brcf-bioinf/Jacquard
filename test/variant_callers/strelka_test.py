@@ -6,7 +6,8 @@ import jacquard.variant_callers.strelka as strelka
 from jacquard.utils import __version__, jq_af_tag, jq_somatic_tag, jq_dp_tag, JQException
 import os
 
-from jacquard.vcf import VcfRecord 
+from jacquard.vcf import VcfRecord, FileReader
+from testfixtures import TempDirectory
 
 
 class MockWriter():
@@ -181,6 +182,27 @@ class StrelkaTestCase(unittest.TestCase):
         unittest.TestCase.setUp(self)
         self.caller = strelka.Strelka()
          
+    def test_validate_vcfs_in_directory(self):
+        in_files = ["A.vcf","B.vcf"]
+        self.caller.validate_vcfs_in_directory(in_files)
+        
+        in_files = ["A.vcf","B"]
+        self.assertRaisesRegexp(JQException, "ERROR: Non-VCF file in directory. Check parameters and try again", self.caller.validate_vcfs_in_directory, in_files)
+
+    def test_decorate_files(self):
+        filenames = ["A/A.strelka.snvs.vcf","A.strelka.indels.vcf"]
+        decorator = "normalized"
+        
+        actual_filenames = self.caller.decorate_files(filenames, decorator)
+        expected_filenames = "A.strelka.normalized.vcf"
+        
+        self.assertEquals(expected_filenames,actual_filenames)
+
+        filenames = ["A.strelka.vcf","A.strelka.vcf"]
+        decorator = "normalized"
+        
+        self.assertRaisesRegexp(JQException, "Each patient in a Strelka directory should have a snvs file and an indels file.", self.caller.decorate_files, filenames, decorator)
+        
     def test_normalize(self):
         writer = MockWriter()
         content1 = ["##foo", "##bar", "#baz"]
@@ -226,6 +248,19 @@ class StrelkaTestCase(unittest.TestCase):
         self.assert_two_vcf_files_throw_exception("snvs/foo", "indels/bar")
         self.assert_two_vcf_files_throw_exception("indels.snvs", "bar")
         self.assert_two_vcf_files_throw_exception("A.indels.snvs", "B.indels.snvs")
+        
+#     def test_normalize_nonVCFFile(self):
+#         with TempDirectory() as input_dir:
+#             writer = MockWriter()
+#             content1 = ["##foo", "#bar"]
+#             content2 = ["##foo", "#bar"]
+#             reader1 = MockFileReader("indels.vcf", content1)
+#             reader2 = MockFileReader("snvs.vcf", content2)
+#             self.caller.normalize(writer,[reader1,reader2])
+#              
+#             self.assertTrue(writer.opened)
+#             self.assertTrue(writer.closed)
+#             self.assertEquals(["##foo", "#bar", record1, record2, record3, record3], writer.lines())
         
     def test_normalize_writesSequentialRecords(self):
         writer = MockWriter()

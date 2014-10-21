@@ -1,6 +1,7 @@
 import jacquard.utils as utils
 import re
 import jacquard.vcf as vcf
+import os
 
 class _AlleleFreqTag():
     def __init__(self):
@@ -74,10 +75,20 @@ class Mutect():
             
         return mutect_dict
         
+    def decorate_files(self, filenames, decorator):
+        output_file = None
+        for i in xrange(len(filenames)):
+            output_file = os.path.basename(re.sub("vcf", decorator+".vcf", filenames[i]))
+        return output_file
+                
+    def validate_vcfs_in_directory(self, in_files):
+        for in_file in in_files:
+            if not in_file.lower().endswith("vcf"):
+                raise utils.JQException("ERROR: Non-VCF file in directory. Check parameters and try again")
+#         
     def normalize(self, file_writer, file_readers):
         if len(file_readers) != 1:
                 raise utils.JQException("MuTect directories should have exactly one input file per patient, but found [{}].".format(len(file_readers)))
-
         file_writer.open()
         for file_reader in file_readers:
             file_reader.open()

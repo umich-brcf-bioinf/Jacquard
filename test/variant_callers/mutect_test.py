@@ -126,6 +126,20 @@ class Mutect_TestCase(unittest.TestCase):
     def setUp(self):
         self.caller = mutect.Mutect()
         
+    def test_validate_vcfs_in_directory(self):
+        in_files = ["A.vcf","B.vcf"]
+        self.caller.validate_vcfs_in_directory(in_files)
+        
+        in_files = ["A.vcf","B"]
+        self.assertRaisesRegexp(JQException, "ERROR: Non-VCF file in directory. Check parameters and try again", self.caller.validate_vcfs_in_directory, in_files)
+        
+    def test_decorate_files(self):
+        filenames = ["A/A.vcf"]
+        decorator = "normalized"
+        actual_filenames = self.caller.decorate_files(filenames, decorator)
+        expected_filenames = "A.normalized.vcf"
+        self.assertEquals(expected_filenames,actual_filenames)
+    
     def test_validateInputFile_isValid(self):
         metaheaders = ["##MuTect=blah"]
         self.assertTrue(self.caller.validate_input_file(metaheaders, "#column_header"))

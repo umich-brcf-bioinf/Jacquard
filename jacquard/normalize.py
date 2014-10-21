@@ -13,6 +13,7 @@ import variant_callers.variant_caller_factory as variant_caller_factory
 
 import utils as utils
 import vcf as vcf
+from docutils import readers
 
 def get_headers(in_file):
     meta_headers = []
@@ -106,21 +107,21 @@ def add_subparser(subparser):
     parser_normalize_vs.add_argument("output_dir", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
 
 def _partition_input_files(in_files, output_dir, caller):
-    infiles_to_outfile = defaultdict(list)
-    
+    patient_to_files = defaultdict(list)
+        
     for file_path in in_files:
         basename = os.path.basename(file_path)
-        fname, extension = os.path.splitext(basename)
-        fname = re.sub(".Somatic", "", fname)
-        
-        output_filename = re.sub(caller.file_name_search, "normalized", fname) if caller.file_name_search else ".".join([fname,"normalized"])
-        output_file = os.path.join(output_dir, ".".join([output_filename, "vcf"]))
-        infiles_to_outfile[output_file].append(vcf.FileReader(file_path))
+        patient = basename.split(".")[0]
+        patient_to_files[patient].append(file_path)
    
     writer_to_readers = {}
-    for in_file in infiles_to_outfile:
-        file_writer = vcf.FileWriter(in_file)
-        writer_to_readers[file_writer] = infiles_to_outfile[in_file]
+    for patient,in_files in patient_to_files.items():
+        output_file = caller.decorate_files(in_files, "normalized")
+        file_writer = vcf.FileWriter(os.path.join(output_dir,output_file))
+        file_readers = []
+        for file_path in patient_to_files[patient]:
+            file_readers.append(vcf.FileReader(file_path))
+        writer_to_readers[file_writer] = file_readers
 
     return writer_to_readers
 
@@ -143,7 +144,7 @@ def _log_caller_info(vcf_readers):
     for caller_name in sorted(caller_count):
         log("INFO: Recognized [{0}] {1} file(s)",
              caller_count[caller_name], caller_name)
-
+        
 def execute(args, execution_context): 
     input_dir = os.path.abspath(args.input_dir)
     output_dir = os.path.abspath(args.output_dir)
@@ -153,10 +154,12 @@ def execute(args, execution_context):
     
     caller = _determine_caller_per_directory(in_files)
 
+    caller.validate_vcfs_in_directory(in_files)    
+    
     writer_to_readers = _partition_input_files(in_files, output_dir, caller)
     
     if not writer_to_readers:
-        log("ERROR: Specified input directory [{0}] contains no VCF files."
+        log("ERROR: Specified input directory [{0}] contains no files."
              "Check parameters and try again.", input_dir)
         
         #TODO cgates: move to jacquard.py
@@ -166,4 +169,3 @@ def execute(args, execution_context):
     for writer, readers in writer_to_readers.items():  
         caller.normalize(writer, readers)
      
-    print "done"

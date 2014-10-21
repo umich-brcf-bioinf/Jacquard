@@ -1,5 +1,8 @@
 import jacquard.utils as utils
 from jacquard.vcf import VcfReader
+import re
+from jacquard.utils import JQException
+import os
 
 class _AlleleFreqTag(object):
     def __init__(self):
@@ -125,7 +128,7 @@ class Strelka(object):
 #TODO: Add to normalize.py.
     def _validate_raw_input_files(self, file_readers):
         if len(file_readers) != 2:
-                raise utils.JQException("Strelka directories should have exactly two input files per patient, but found [{}].".format(len(file_readers)))
+            raise utils.JQException("Strelka directories should have exactly two input files per patient, but found [{}].".format(len(file_readers)))
 
         tmp = [file_readers[0].file_name,file_readers[1].file_name]
         for i,name in enumerate(tmp):
@@ -159,7 +162,23 @@ class Strelka(object):
         parsed_records = utils.sort_data(all_records)
         
         return metaheader_list, column_header, parsed_records
-        
+      
+    def decorate_files(self, filenames, decorator):
+        output_file = None
+        for i in xrange(len(filenames)):
+            match = re.search("("+self.file_name_search+")", filenames[i])
+            if match is not None:
+                prefix,suffix = re.split(self.file_name_search,filenames[i])
+                output_file = os.path.basename(prefix+decorator+suffix)
+        if output_file is None:
+            raise utils.JQException("Each patient in a Strelka directory should have a snvs file and an indels file.")
+        return output_file
+              
+    def validate_vcfs_in_directory(self, in_files):
+        for in_file in in_files:
+            if not in_file.lower().endswith("vcf"):
+                raise utils.JQException("ERROR: Non-VCF file in directory. Check parameters and try again")
+                    
 #TODO: Add to normalize.py.        
     def normalize(self, file_writer, file_readers):
         vcf_readers = self._validate_raw_input_files(file_readers)

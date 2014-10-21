@@ -171,6 +171,25 @@ class Varscan():
                         'somatic flag for VarScan. Based on intersection with filtered VarScan variants.">'
         return metaheader, hc_keys
             
+    def decorate_files(self, filenames, decorator):
+        output_file = None
+        for i in xrange(len(filenames)):
+            if not filenames[i].lower().endswith("somatic.hc"):
+                match = re.search("("+self.file_name_search+")", filenames[i])
+                if match is not None:
+                    prefix,suffix = re.split(self.file_name_search,filenames[i])
+                    output_file = os.path.basename(prefix+decorator+suffix)
+
+        if output_file is None:
+            raise utils.JQException("Each patient in a VarScan directory should have a snp file and an indel file.")
+        
+        return output_file
+    
+    def validate_vcfs_in_directory(self, in_files):
+        for in_file in in_files:
+            if not in_file.lower().endswith("vcf") and not in_file.lower().endswith("somatic.hc"):
+                raise utils.JQException("ERROR: Non-VCF or non-somatic.hc file in directory. Check parameters and try again")
+            
 #TODO: Add to normalize.py.        
     def normalize(self, file_writer, file_readers):
         vcf_readers, hc_candidates = self._validate_raw_input_files(file_readers)

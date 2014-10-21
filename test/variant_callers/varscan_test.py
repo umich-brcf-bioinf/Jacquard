@@ -148,7 +148,29 @@ class VarscanTestCase(unittest.TestCase):
     def setUp(self):
         unittest.TestCase.setUp(self)
         self.caller = varscan.Varscan()
-         
+
+    def test_validate_vcfs_in_directory(self):
+        in_files = ["A.vcf","B.vcf","A.somatic.hc"]
+        self.caller.validate_vcfs_in_directory(in_files)
+        
+        in_files = ["A.vcf","B"]
+        self.assertRaisesRegexp(JQException, "ERROR: Non-VCF or non-somatic.hc file in directory. Check parameters and try again", self.caller.validate_vcfs_in_directory, in_files)
+
+    def test_decorate_files(self):
+        filenames = ["A/A.varscan.snp.vcf","A.varscan.indel.vcf","A.snp.somatic.hc","A.indel.somatic.hc"]
+        decorator = "normalized"
+        
+        actual_filenames = self.caller.decorate_files(filenames, decorator)
+        expected_filenames = "A.varscan.normalized.vcf"
+        
+        self.assertEquals(expected_filenames,actual_filenames)
+        
+        filenames = ["A.varscan.vcf","A.varscan.vcf"]
+        decorator = "normalized"
+        
+        self.assertRaisesRegexp(JQException, "Each patient in a VarScan directory should have a snp file and an indel file.", self.caller.decorate_files, filenames, decorator)
+        
+        
     def test_normalize(self):
         writer = MockWriter()
         content1 = ["##foo", "##bar", "#baz"]

@@ -41,6 +41,9 @@ class MockCaller(object):
     def add_tags(self, vcfRecord):
         return vcfRecord
 
+    def decorate_files(self, filenames, decorator):
+        return filenames[0]+"foo"
+
     def get_new_metaheaders(self):
         return self.metaheaders
 
@@ -154,7 +157,7 @@ chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                               [strelka_file, unrecognized_file],
                               variant_caller_factory.get_caller)
 
-    def test__partition_input_files(self):
+    def Xtest__partition_input_files(self):
         in_files = ["A.1.snps.vcf", "A.1.indels.vcf", "B.snps.vcf"]
         output_dir_path = "output_dir_path"
         caller = MockCaller()
@@ -165,6 +168,21 @@ chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                     FileReader(os.path.join("A.1.indels.vcf"))]
         writerB = FileWriter(os.path.join(output_dir_path,"B.normalized.vcf"))           
         readersB = [FileReader(os.path.join("B.snps.vcf"))]
+        self.assertEquals({writerA: readersA, writerB: readersB}, 
+                          writer_to_readers)
+        
+    def test__partition_input_files(self):
+        in_files = ["A.","A.","B."]
+        caller = MockCaller()
+        output_dir_path = ""
+        writer_to_readers = _partition_input_files(in_files, output_dir_path, caller)
+        self.maxDiff=None
+        writerA = FileWriter("A.foo")
+        readersA = [FileReader("A."), 
+                    FileReader("A.")]
+        writerB = FileWriter("B.foo")           
+        readersB = [FileReader("B.")]
+        
         self.assertEquals({writerA: readersA, writerB: readersB}, 
                           writer_to_readers)
         
