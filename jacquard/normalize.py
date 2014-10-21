@@ -13,7 +13,6 @@ import variant_callers.variant_caller_factory as variant_caller_factory
 
 import utils as utils
 import vcf as vcf
-from docutils import readers
 
 #TODO: hook up to something
 def _validate_single_caller(filepaths, get_caller):

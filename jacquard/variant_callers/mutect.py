@@ -1,6 +1,5 @@
 import jacquard.utils as utils
 import re
-import jacquard.vcf as vcf
 import os
 
 class _AlleleFreqTag():
