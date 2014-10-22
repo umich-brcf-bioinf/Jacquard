@@ -6,7 +6,8 @@ import jacquard.variant_callers.strelka as strelka
 from jacquard.utils import __version__, jq_af_tag, jq_somatic_tag, jq_dp_tag, JQException
 import os
 
-from jacquard.vcf import VcfRecord 
+from jacquard.vcf import VcfRecord, FileReader
+from testfixtures import TempDirectory
 
 
 class MockWriter():
@@ -181,6 +182,27 @@ class StrelkaTestCase(unittest.TestCase):
         unittest.TestCase.setUp(self)
         self.caller = strelka.Strelka()
          
+    def test_validate_vcfs_in_directory(self):
+        in_files = ["A.vcf","B.vcf"]
+        self.caller.validate_vcfs_in_directory(in_files)
+        
+        in_files = ["A.vcf","B"]
+        self.assertRaisesRegexp(JQException, "ERROR: Non-VCF file in directory. Check parameters and try again", self.caller.validate_vcfs_in_directory, in_files)
+
+    def test_decorate_files(self):
+        filenames = ["A/A.strelka.snvs.vcf","A.strelka.indels.vcf"]
+        decorator = "normalized"
+        
+        actual_filenames = self.caller.decorate_files(filenames, decorator)
+        expected_filenames = "A.strelka.normalized.vcf"
+        
+        self.assertEquals(expected_filenames,actual_filenames)
+
+        filenames = ["A.strelka.vcf","A.strelka.vcf"]
+        decorator = "normalized"
+        
+        self.assertRaisesRegexp(JQException, "Each patient in a Strelka directory should have a snvs file and an indels file.", self.caller.decorate_files, filenames, decorator)
+        
     def test_normalize(self):
         writer = MockWriter()
         content1 = ["##foo", "##bar", "#baz"]
@@ -200,7 +222,7 @@ class StrelkaTestCase(unittest.TestCase):
         reader1 = MockFileReader("indels.vcf", content1)
         reader2 = MockFileReader("snvs.vcf", content2)
         
-        self.assertRaisesRegexp(JQException, r"ERROR: The column headers for VCF files \[indels.vcf,snvs.vcf\] do not match.",
+        self.assertRaisesRegexp(JQException, r"The column headers for VCF files \[indels.vcf,snvs.vcf\] do not match.",
                                  self.caller.normalize, writer, [reader1,reader2])
         
 #     def test_normalize_hasIndelSnvs(self):
@@ -213,7 +235,7 @@ class StrelkaTestCase(unittest.TestCase):
 #         pass
     def test_normalize_wrongNumberOfFiles(self):
         self.assertRaisesRegexp(JQException,
-                                r"ERROR: Strelka directories should have exactly two input files per patient, but found \[1\].",
+                                r"Strelka directories should have exactly two input files per patient, but found \[1\].",
                                 self.caller.normalize, MockWriter(), [MockFileReader(input_filepath="foo")])
             
     def test_normalize_raisesExceptionMissingIndelSnvs(self):
@@ -226,6 +248,19 @@ class StrelkaTestCase(unittest.TestCase):
         self.assert_two_vcf_files_throw_exception("snvs/foo", "indels/bar")
         self.assert_two_vcf_files_throw_exception("indels.snvs", "bar")
         self.assert_two_vcf_files_throw_exception("A.indels.snvs", "B.indels.snvs")
+        
+#     def test_normalize_nonVCFFile(self):
+#         with TempDirectory() as input_dir:
+#             writer = MockWriter()
+#             content1 = ["##foo", "#bar"]
+#             content2 = ["##foo", "#bar"]
+#             reader1 = MockFileReader("indels.vcf", content1)
+#             reader2 = MockFileReader("snvs.vcf", content2)
+#             self.caller.normalize(writer,[reader1,reader2])
+#              
+#             self.assertTrue(writer.opened)
+#             self.assertTrue(writer.closed)
+#             self.assertEquals(["##foo", "#bar", record1, record2, record3, record3], writer.lines())
         
     def test_normalize_writesSequentialRecords(self):
         writer = MockWriter()
@@ -243,7 +278,7 @@ class StrelkaTestCase(unittest.TestCase):
         self.assertEquals(["##foo", "#bar", record1, record2, record3, record3], writer.lines())
         
     def assert_two_vcf_files_throw_exception(self, file1, file2):
-        with self.assertRaisesRegexp(JQException,r"ERROR: Each patient in a Strelka directory should have a snvs file and an indels file."):
+        with self.assertRaisesRegexp(JQException,r"Each patient in a Strelka directory should have a snvs file and an indels file."):
             self.caller.normalize(MockWriter(), [MockFileReader(input_filepath=file1), MockFileReader(input_filepath=file2)])
             
 #     def test_validateInputFile_valid(self):

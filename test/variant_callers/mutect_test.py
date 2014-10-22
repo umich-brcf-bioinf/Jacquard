@@ -28,6 +28,7 @@ class MockReader():
         self._lines_iter = iter(lines)
         self.opened = False
         self.closed = False
+        self.input_filepath = "foo"
 
     def open (self):
         self.opened = True
@@ -125,6 +126,20 @@ class Mutect_TestCase(unittest.TestCase):
     def setUp(self):
         self.caller = mutect.Mutect()
         
+    def test_validate_vcfs_in_directory(self):
+        in_files = ["A.vcf","B.vcf"]
+        self.caller.validate_vcfs_in_directory(in_files)
+        
+        in_files = ["A.vcf","B"]
+        self.assertRaisesRegexp(JQException, "ERROR: Non-VCF file in directory. Check parameters and try again", self.caller.validate_vcfs_in_directory, in_files)
+        
+    def test_decorate_files(self):
+        filenames = ["A/A.vcf"]
+        decorator = "normalized"
+        actual_filenames = self.caller.decorate_files(filenames, decorator)
+        expected_filenames = "A.normalized.vcf"
+        self.assertEquals(expected_filenames,actual_filenames)
+    
     def test_validateInputFile_isValid(self):
         metaheaders = ["##MuTect=blah"]
         self.assertTrue(self.caller.validate_input_file(metaheaders, "#column_header"))
@@ -161,7 +176,24 @@ class Mutect_TestCase(unittest.TestCase):
         self.assertEquals(content, writer.lines())
 
     def test_normalize_raisesExceptionIfTwoInputFiles(self):
-        self.assertRaisesRegexp(JQException, r"ERROR: MuTect .* but found \[2\]\.", self.caller.normalize, MockWriter(), [MockReader(), MockReader()])
+        self.assertRaisesRegexp(JQException, r"MuTect .* but found \[2\]\.", self.caller.normalize, MockWriter(), [MockReader(), MockReader()])
+        
+    def test_normalize_changes_column_headers(self):
+        writer = MockWriter()
+        content = ["##MuTect=foo normal_sample_name=normal_sample tumor_sample_name=tumor_sample foo=bar", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ttumor_sample\tnormal_sample"]
+        reader = MockReader(content)
+        self.caller.normalize(writer,[reader])
+    
+        expected_lines = ["##MuTect=foo normal_sample_name=normal_sample tumor_sample_name=tumor_sample foo=bar", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tTUMOR\tNORMAL"]
+        self.assertEquals(expected_lines, writer.lines())
+        
+    def test_normalize_doesnt_change_column_headers(self):
+        writer = MockWriter()
+        content = ["##MuTect=foo", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ttumor_sample\tnormal_sample"]
+        reader = MockReader(content)
+        
+        self.assertRaises(JQException, self.caller.normalize, writer, [reader])
+        
         
 #     #TODO: (cgates/kmeng) Remove when switched to new VcfRecord
 #     def test_format_rounds(self):
