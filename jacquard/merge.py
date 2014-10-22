@@ -179,11 +179,10 @@ def validate_sample_caller_vcfs(fname_df):
         caller = key.split("|")[0]
         sample = "|".join(key.split("|")[1:])
         if val > 1:
-            utils.log("ERROR: Sample [{}] appears to be called by [{}] in multiple files.", sample, caller)
+            logger.error("Sample [{}] appears to be called by [{}] in multiple files.", sample, caller)
             error = 1
     if error == 1:
-        utils.log("ERROR: Some samples have calls for the same caller in more than one file. Adjust or move problem input files and try again.")
-        exit(1)
+        raise utils.JQException("Some samples have calls for the same caller in more than one file. Adjust or move problem input files and try again.")
         
     return fname_df
     
@@ -663,6 +662,9 @@ def add_subparser(subparser):
 def execute(args, execution_context):
     input_dir = os.path.abspath(args.input_dir)
     output_path = os.path.abspath(args.output_file)
+    
+    logger.initialize_logger(os.path.dirname(output_path), "merge") #TODO: May want to have this be instantiated at jacquard.py and then passed down.
+    
     output_dir, outfile_name = os.path.split(output_path)
     utils.validate_directories(input_dir, output_dir)
     input_keys = args.keys.split(",") if args.keys else determine_input_keys(input_dir)

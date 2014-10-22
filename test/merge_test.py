@@ -9,9 +9,24 @@ from testfixtures import TempDirectory
 from jacquard.merge import PivotError, VariantPivoter, merge_samples, _add_mult_alt_flags, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller_and_split_mult_alts, validate_samples_for_callers, validate_sample_caller_vcfs, create_new_line, create_merging_dict, remove_old_columns
 import jacquard.merge as merge
 from argparse import Namespace
+import sys
+import jacquard.logger as logger
+from jacquard.utils import JQException
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
+class MockLogger(object):
+    def error(self, msg):
+        return msg
+    def warning(self, msg):
+        return msg
+    def info(self, msg):
+        return msg
+    def debug(self, msg):
+        return msg
+    def validation_messages(self, msg):
+        return msg
+    
 def dataframe(input_data, sep="\t", index_col=None):
     def tupelizer(thing):
         if isinstance(thing, str) and thing.startswith("(") and thing.endswith(")"):
@@ -25,27 +40,43 @@ def dataframe(input_data, sep="\t", index_col=None):
     return df
 
 class MergeTestCase(unittest.TestCase):
+    
+    def setUp(self):
+        self.logger = logger
+        self.input_dir = TempDirectory()
+        self.output_dir = TempDirectory()
+        self.logger.initialize_logger(self.output_dir.path, "merge")
+        self.output = StringIO()
+        self.saved_stderr = sys.stderr
+        sys.stderr = self.output
+
+    def tearDown(self):
+        self.input_dir.cleanup()
+        self.output_dir.cleanup()
+        self.output.close()
+        sys.stderr = self.saved_stderr
+        
     def testExecute_multAltsSplitCorrectly(self):
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            vcfRecordFormat = "##jacquard.tag.caller={}\n" + \
-                "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|A|B\n" + \
-                "chr1|42|.|{}|{}|.|.|{}|JQ_AF_{}|0.1|0.2\n"
-            vcfRecordFormat = vcfRecordFormat.replace("|", "\t")
-            
-            input_dir.write("A.mutect.vcf", vcfRecordFormat.format("MuTect","T","A,C","INFO_Mutect","MT"))
-            input_dir.write("A.strelka.vcf", vcfRecordFormat.format("Strelka","T","A,C","INFO_Strelka","SK"))
-            input_dir.write("A.varscan.vcf", vcfRecordFormat.format("VarScan","T","A,C","INFO_VarScan","VS"))
-    
-            args = Namespace(input_dir=input_dir.path, 
-                             output_file=os.path.join(output_dir.path,"tmp.vcf"), 
-                             allow_inconsistent_sample_sets=False,
-                             keys=None) 
-            merge.execute(args, [])
-    
-            actual_merged = output_dir.read('tmp.vcf').split("\n")
-            print actual_merged
-            self.assertEquals(4, len(actual_merged))
-    
+        
+        vcfRecordFormat = "##jacquard.tag.caller={}\n" + \
+            "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|A|B\n" + \
+            "chr1|42|.|{}|{}|.|.|{}|JQ_AF_{}|0.1|0.2\n"
+        vcfRecordFormat = vcfRecordFormat.replace("|", "\t")
+        
+        self.input_dir.write("A.mutect.vcf", vcfRecordFormat.format("MuTect","T","A,C","INFO_Mutect","MT"))
+        self.input_dir.write("A.strelka.vcf", vcfRecordFormat.format("Strelka","T","A,C","INFO_Strelka","SK"))
+        self.input_dir.write("A.varscan.vcf", vcfRecordFormat.format("VarScan","T","A,C","INFO_VarScan","VS"))
+
+        args = Namespace(input_dir=self.input_dir.path, 
+                         output_file=os.path.join(self.output_dir.path,"tmp.vcf"), 
+                         allow_inconsistent_sample_sets=False,
+                         keys=None) 
+        merge.execute(args, [])
+
+        actual_merged = self.output_dir.read('tmp.vcf').split("\n")
+        print actual_merged
+        self.assertEquals(4, len(actual_merged))
+
     def test_addFiles(self):
         rows = ["CHROM", "POS", "REF", "ALT"]
 
@@ -88,10 +119,13 @@ class MergeTestCase(unittest.TestCase):
 3\tGT:ESAF\t30:0.2\t300:0.2
 4\tGT:ESAF\t40:0.2\t400:0.2'''
         df = pd.read_csv(StringIO(dataString1), sep="\t", header=False, dtype='str', mangle_dupe_cols=False)
-        with self.assertRaises(SystemExit) as cm:
-            validate_sample_caller_vcfs(df)
 
-        self.assertEqual(cm.exception.code, 1)
+        self.assertRaisesRegexp(JQException,
+                                "Some samples have calls for the same caller in more than one file. Adjust or move problem input files and try again.",
+                                validate_sample_caller_vcfs,
+                                df)
+        self.assertTrue("Sample [foo|sample_A] appears to be called by [MuTect] in multiple files." in self.output.getvalue())
+        
         
     def test_isCompatible_raiseIfMissingRequiredColumns(self): 
         rows = ['COORDINATE', 'foo']
