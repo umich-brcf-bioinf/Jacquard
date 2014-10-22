@@ -15,6 +15,9 @@ import time
 
 # import jacquard.jacquard_utils as jacquard_utils
 import jacquard_utils
+import logger
+
+_TOOL = "merge"
 
 class PivotError(Exception):
     """Base class for exceptions in this module."""
@@ -531,7 +534,8 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
         
     pivoter  = pivot_builder(first_file, input_keys, headers[0])
     
-    jacquard_utils.log("Processing [{}] VCF files from [{}]", len(sample_file_readers), input_dir)
+#     jacquard_utils.log("Processing [{}] VCF files from [{}]", len(sample_file_readers), input_dir)
+    logger.log_info(message="Processing [{}] VCF files from [{}]".format(len(sample_file_readers), input_dir), logging_dict=logging_dict, tool=_TOOL)
     
     count = 0
     all_merge_context = []
@@ -675,9 +679,12 @@ def execute(args, execution_context):
     output_path = os.path.abspath(args.output_file)
     input_keys = args.keys.split(",") if args.keys else determine_input_keys(input_dir)
     all_inconsistent_sample_sets = args.allow_inconsistent_sample_sets
-
     output_dir, outfile_name = os.path.split(output_path)
 
+    logger.log_info("Jacquard begins ({})".format(jacquard_utils.__version__), logging_dict)
+#     logger.log_info("command = ".format(" ".join(args)), logging_dict)
+    logger.log_info("currect.working.dir = ".format(os.getcwd()), logging_dict)
+    
     jacquard_utils.validate_directories(input_dir, output_dir)
         
     fname, extension = os.path.splitext(outfile_name)
@@ -692,7 +699,8 @@ def execute(args, execution_context):
         
     sample_file_readers, headers, header_names, first_line, meta_headers = get_headers_and_readers(in_files)
 
-    print("\n".join(execution_context) + "\n") 
+#     print("\n".join(execution_context)) 
     execution_context.extend(meta_headers + ["##fileformat=VCFv4.2"])
+    
     process_files(sample_file_readers, input_dir, output_path, input_keys, headers, header_names, first_line, all_inconsistent_sample_sets, execution_context)
     

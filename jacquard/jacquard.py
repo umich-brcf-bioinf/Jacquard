@@ -29,6 +29,7 @@ import consensus
 import expand
 import style
 import jacquard_utils
+import logging
 
 _SUBCOMMANDS=[normalize,
               tag,
@@ -63,7 +64,7 @@ def dispatch(modules, arguments):
         usage="jacquard",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description='''type 'Jacquard -h <subcommand>' for help on a specific subcommand''',
-        epilog="authors: Jessica Bene, Chris Gates 07/2014")
+        epilog="authors: Jessica Bene, Ashwini Bhasi, Chris Gates, Kevin Meng, Peter Ulintz 07/2014")
     parser.add_argument(\
                         "-v",
                         "--version",
@@ -82,6 +83,8 @@ def dispatch(modules, arguments):
         "##jacquard.version={0}".format(jacquard_utils.__version__),
         "##jacquard.command={0}".format(" ".join(arguments)),
         "##jacquard.cwd={0}".format(os.path.dirname(os.getcwd()))]
+
+    logging_dict = logger.initialize_logger(output_dir, _TOOL)
 
     args = parser.parse_args(arguments)
     module_dispatch[args.subparser_name].execute(args, execution_context)
