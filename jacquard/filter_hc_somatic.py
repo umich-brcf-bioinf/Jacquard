@@ -1,7 +1,7 @@
 import glob
 import os
 import re
-import jacquard_utils
+import utils
 
 def find_somatic_positions(in_files, output_dir):
     somatic_positions = {}
@@ -23,9 +23,9 @@ def find_somatic_positions(in_files, output_dir):
                 sample_cols = split_line[9:]
                 
                 for sample_col in sample_cols:
-                    format_sample_dict = jacquard_utils.combine_format_values(format_col, sample_col)
+                    format_sample_dict = utils.combine_format_values(format_col, sample_col)
                     for key in format_sample_dict.keys():
-                        if re.search(jacquard_utils.jq_somatic_tag, key):
+                        if re.search(utils.jq_somatic_tag, key):
                             if format_sample_dict[key] == "1":
                                 somatic_key = "^".join([split_line[0], split_line[1]])
                                 somatic_positions[somatic_key] = 1
@@ -33,14 +33,14 @@ def find_somatic_positions(in_files, output_dir):
 
         if somatic == 0:
             no_jq_tags.append(file)
-            print "WARNING: input file [{0}] has no high-confidence somatic variants.".format(os.path.basename(file))
+            print "WARNING: input file [{0}] has no high-confidence somatic actual_sorted_variants.".format(os.path.basename(file))
             
         in_file.close()
         
         count += 1
         
     if no_jq_tags:
-        print "ERROR: [{0}/{1}] VCF files had no high-confidence somatic variants. Review input and try again.".format(len(no_jq_tags), len(in_files))
+        print "ERROR: [{0}/{1}] VCF files had no high-confidence somatic actual_sorted_variants. Review input and try again.".format(len(no_jq_tags), len(in_files))
         exit(1)
         
     print "Found [{0}] high-confidence somatic positions".format(len(somatic_positions.keys()))
@@ -53,7 +53,7 @@ def write_somatic(in_files, output_dir, somatic_positions, execution_context):
     for file in in_files:
         non_somatic = 0
         headers = []
-        variants = []
+        actual_sorted_variants = []
         
         fname, extension = os.path.splitext(os.path.basename(file))
         new_file = fname + "_HCsomatic" + extension
@@ -68,7 +68,7 @@ def write_somatic(in_files, output_dir, somatic_positions, execution_context):
                 split_line = line.split("\t")
                 key = "^".join([split_line[0], split_line[1]])
                 if key in somatic_positions:
-                    variants.append(line)
+                    actual_sorted_variants.append(line)
                 else: 
                     non_somatic += 1
        
@@ -77,8 +77,8 @@ def write_somatic(in_files, output_dir, somatic_positions, execution_context):
         headers.append(excluded_variants)
         headers.extend(execution_context)
         
-        sorted_headers = jacquard_utils.sort_headers(headers)
-        jacquard_utils.write_output(out_file, sorted_headers, variants)
+        sorted_headers = utils.sort_headers(headers)
+        utils.write_output(out_file, sorted_headers, actual_sorted_variants)
         
         in_file.close()
         out_file.close()
@@ -111,7 +111,7 @@ def execute(args, execution_context):
     input_dir = os.path.abspath(args.input_dir)
     output_dir = os.path.abspath(args.output_dir)
     
-    jacquard_utils.validate_directories(input_dir, output_dir)
+    utils.validate_directories(input_dir, output_dir)
     
     filter_somatic_positions(input_dir, output_dir, execution_context)
     

@@ -13,11 +13,7 @@ from sets import Set
 import sys 
 import time
 
-# import jacquard.jacquard_utils as jacquard_utils
-import jacquard_utils
-import logger
-
-_TOOL = "merge"
+import utils
 
 class PivotError(Exception):
     """Base class for exceptions in this module."""
@@ -235,7 +231,7 @@ def create_dict(df, row, columns):
             sample_column += ":" + column
 
 #             format_sample = "{0}={1}".format(format_column, sample_column)
-            format_sample_dict = jacquard_utils.combine_format_values(format_column, sample_column)
+            format_sample_dict = utils.combine_format_values(format_column, sample_column)
             tags = format_column.split(":")
             
 #             key = "{0}|{1}".format(caller, fname)
@@ -324,7 +320,7 @@ def create_merging_dict(df, row, columns):
             sample_columns.append(sample_column)
             sample_names.append(column)
 
-            format_sample_dict = jacquard_utils.combine_format_values(format_column, sample_column)
+            format_sample_dict = utils.combine_format_values(format_column, sample_column)
 #             for key, val in format_sample_dict.items():
 #                 if val == ".":
 #                     del format_sample_dict[key]
@@ -430,7 +426,7 @@ def create_new_line(alt_allele_number, fields):
     samples = fields[9:]
     new_samples = []
     for sample in samples:
-        format_sample_dict = jacquard_utils.combine_format_values(format, sample)
+        format_sample_dict = utils.combine_format_values(format, sample)
         new_dict = OrderedDict()
         for key, val in format_sample_dict.items():
             if re.search("JQ_AF", key): #only care about splitting jacquard tags
@@ -677,16 +673,11 @@ def add_subparser(subparser):
 def execute(args, execution_context):
     input_dir = os.path.abspath(args.input_dir)
     output_path = os.path.abspath(args.output_file)
+    output_dir, outfile_name = os.path.split(output_path)
+    utils.validate_directories(input_dir, output_dir)
     input_keys = args.keys.split(",") if args.keys else determine_input_keys(input_dir)
     all_inconsistent_sample_sets = args.allow_inconsistent_sample_sets
-    output_dir, outfile_name = os.path.split(output_path)
 
-    logger.log_info("Jacquard begins ({})".format(jacquard_utils.__version__), logging_dict)
-#     logger.log_info("command = ".format(" ".join(args)), logging_dict)
-    logger.log_info("currect.working.dir = ".format(os.getcwd()), logging_dict)
-    
-    jacquard_utils.validate_directories(input_dir, output_dir)
-        
     fname, extension = os.path.splitext(outfile_name)
     if extension != ".vcf": 
         jacquard_utils.log("Error. Specified output {} must have a .vcf extension", output_path)

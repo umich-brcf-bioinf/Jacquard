@@ -1,157 +1,108 @@
-from collections import OrderedDict, defaultdict
+from __future__ import print_function
+import collections
 import glob
 import os
 import shutil
 
-from variant_callers import varscan, strelka, mutect, unknown
-import jacquard_utils
+from variant_callers import variant_caller_factory
+import utils
+from utils import JQException, log
+import vcf
 
 
-class LineProcessor():
-    def __init__(self, tags):
-        self.tags = tags
-        
-    def add_tags(self, input_line):
-        no_newline_line = input_line.rstrip("\n")
-        original_vcf_fields = no_newline_line.split("\t")
-        new_vcf_fields = original_vcf_fields[:8]
-        alt = original_vcf_fields[4]
-        filter = original_vcf_fields[6]
-        info = original_vcf_fields[7]
-        format = original_vcf_fields[8]
-        samples = original_vcf_fields[9:]
-
-        count = 0
-        for sample in samples:
-            format_dict = OrderedDict(zip(format.split(":"), sample.split(":")))
-            for tag in self.tags:
-                format_dict = tag.format(alt, filter, info, format_dict, count)
-                
-            if count < 1: ##only add format column once
-                new_vcf_fields.append(":".join(format_dict.keys()))
-            new_vcf_fields.append(":".join(format_dict.values()))
-            count += 1
-
-        return "\t".join(new_vcf_fields) + "\n"
-
-class FileProcessor():
-    def __init__(self, output_dir, tags=[], execution_context_metadataheaders = []):
-        self._tags = tags
-        self._metaheader = self._metaheader_handler(execution_context_metadataheaders)
-        self._output_dir = output_dir
-        
-        for tag in self._tags:
-            self._metaheader += tag.metaheader
-        self._lineProcessor = LineProcessor(self._tags)
-            
-    def _metaheader_handler(self, metaheaders):
-        new_headers = ["{}\n".format(header) for header in metaheaders]
-        return ''.join(new_headers)
-
-    def process(self, reader, writer, in_file_name, caller, handlers):
-        writer.write(handlers[in_file_name] + "\n")
-        for line in reader:
-            if line.startswith("##"):
-                writer.write(line)
-            elif line.startswith("#"):
-                if caller == "VarScan":
-                    if "NORMAL" in line and "TUMOR" in line:
-                        writer.write(self._metaheader)
-                        writer.write("##jacquard.tag.caller={0}\n".format(caller))
-                        writer.write(line)
-                    else:
-                        print "Unexpected VarScan VCF structure - missing NORMAL\t and TUMOR\n headers."
-                        shutil.rmtree(self._output_dir)
-                        exit(1)
-                else:
-                    writer.write(self._metaheader)
-                    writer.write("##jacquard.tag.caller={0}\n".format(caller))
-                    writer.write(line)
-            else:
-                edited_line = self._lineProcessor.add_tags(line)
-                writer.write(edited_line)
-
-
+#pylint: disable=C0301
 def add_subparser(subparser):
     parser_tag = subparser.add_parser("tag", help="Accepts a directory of VCf results and creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
     parser_tag.add_argument("input_dir", help="Path to directory containing VCFs. Other file types ignored")
     parser_tag.add_argument("output_dir", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
 
-def determine_file_types(input_dir, in_files, callers):
-    file_types = defaultdict(list)   
-    handlers = {}
-    inferred_callers = []                                    
-    for file in in_files:
-        for caller in callers:
-            in_file = open(os.path.join(input_dir, file), "r")
-            caller_name, valid = caller.validate_input_file(in_file)
-            if valid == 1:
-                file_types[caller_name].append(file)
-                if caller_name == "Unknown":
-                    print "ERROR. {0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller_name)
-                else:  
-                    handler = "{0}: ##jacquard.tag.handler={1}".format(os.path.basename(file), caller_name)
-                    print handler
-                    handlers[os.path.basename(file)] = "##jacquard.tag.handler={0}".format(caller_name)
-                    inferred_caller = "##jacquard.tag.caller={0}".format(caller_name)
-                    inferred_callers.append(inferred_caller)
-                    print "{0}: {1}".format(os.path.basename(file), inferred_caller)
-                break
-    return file_types, handlers, inferred_callers
-    
-def print_file_types(output_dir, file_types):
-    for key, vals in file_types.items():
-        print "Recognized [{0}] {1} file(s)".format(len(vals), key)
-    if "Unknown" in file_types.keys():
-        print "ERROR. Unable to determine which caller was used on [{0}]. Check input files and try again.".format(file_types["Unknown"])
-        shutil.rmtree(output_dir)
-        exit(1)
-    
-def tag_files(input_dir, output_dir, callers, execution_context=[]):
-    in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
-    if len(in_files) < 1:
-        print "ERROR. Specified input directory [{0}] contains no VCF files. Check parameters and try again."
-        shutil.rmtree(output_dir)
-        exit(1)
 
-    print "\n".join(execution_context)
-    print "Processing [{0}] VCF file(s) from [{1}]".format(len(in_files), input_dir)
-    
-    file_types, handlers, inferred_callers = determine_file_types(input_dir, in_files, callers)
-    print_file_types(output_dir, file_types)
+def tag_files(vcf_readers_to_writers, execution_context):
+    total_number_of_files = len(vcf_readers_to_writers)
+#     for count, reader, writer in enumerate(vcf_readers_to_writers.items()):
+    for count, item in enumerate(vcf_readers_to_writers.items()):
+        reader,writer = item
+        log("INFO: Reading [{}] ({}/{})", reader.input_filepath,
+             count, total_number_of_files)
+        reader.open()
+        writer.open()
 
-    processors = {"VarScan" : FileProcessor(output_dir, tags=[varscan.AlleleFreqTag(), varscan.DepthTag(), varscan.SomaticTag()], execution_context_metadataheaders=execution_context), "MuTect": FileProcessor(output_dir, tags=[mutect.AlleleFreqTag(), mutect.DepthTag(), mutect.SomaticTag()], execution_context_metadataheaders=execution_context), "Strelka": FileProcessor(output_dir, tags=[strelka.AlleleFreqTag(), strelka.DepthTag(), strelka.SomaticTag()], execution_context_metadataheaders=execution_context)}
-    
-    total_number_of_files = len(in_files)
-    count = 1
-    for in_file in in_files:
-        print "Reading [{0}] ({1}/{2})".format(os.path.basename(in_file), count, total_number_of_files)
-        fname, extension = os.path.splitext(os.path.basename(in_file))
-        new_file = fname + ".jacquardTags" + extension
-        
-        in_file_reader = open(os.path.join(input_dir, in_file), "r")
-        out_file_writer = open(os.path.join(output_dir, new_file), "w")
-        
-        for key, vals in file_types.items():
-            if in_file in vals:
-                processors[key].process(in_file_reader, out_file_writer, os.path.basename(in_file), key, handlers)
-        
-        in_file_reader.close()
-        out_file_writer.close()
-        
-        count += 1
-    
-    out_files = sorted(glob.glob(os.path.join(output_dir,"*.vcf")))
-    
-    print "Wrote [{0}] VCF file(s) to [{1}]".format(len(out_files), output_dir)
+        #TODO cgates: method?
+        new_headers = reader.metaheaders
+        new_headers.extend(execution_context)
+        new_headers.append("##jacquard.tag.caller={0}".format(reader.caller.name))
+        new_headers.extend(reader.caller.get_new_metaheaders())
+        new_headers.append(reader.column_header)
+        header_text = "\n".join(new_headers) +"\n"
 
-def execute(args, execution_context): 
+        writer.write(header_text)
+        for vcf_record in reader.vcf_records():
+            writer.write(reader.caller.add_tags(vcf_record))
+
+        reader.close()
+        writer.close()
+
+
+def _log_caller_info(vcf_readers):
+    caller_count = collections.defaultdict(int)
+    for vcf in vcf_readers:
+        caller_count[vcf.caller.name] += 1
+    for caller_name in sorted(caller_count):
+        log("INFO: Recognized [{0}] {1} file(s)",
+             caller_count[caller_name], caller_name)
+
+
+def _build_vcf_readers(input_dir,
+                         get_caller=variant_caller_factory.get_caller):
+    in_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
+    vcf_readers = []
+    failures = 0
+    for filename in in_files:
+        file_path = os.path.join(input_dir, filename)
+        try:
+            vcf_reader = vcf.VcfReader(vcf.FileReader(file_path))
+            caller = get_caller(vcf_reader.metaheaders, vcf_reader.column_header, vcf_reader.file_name)
+            vcf_readers.append(vcf.RecognizedVcfReader(vcf_reader, caller))
+        except JQException:
+            failures += 1
+    if failures:
+        raise JQException("[{}] VCF files could not be parsed."
+                          " Review logs for details, adjust input, "
+                          "and try again.".format(failures))
+    _log_caller_info(vcf_readers)
+    return vcf_readers
+
+
+def _build_vcf_readers_to_writers(vcf_readers, output_dir):
+    vcf_providers_to_writers = {}
+    for reader in vcf_readers:
+        basename, extension = os.path.splitext(reader.file_name)
+        new_filename = basename + ".jacquardTags" + extension
+        output_filepath = os.path.join(output_dir, new_filename)
+        vcf_providers_to_writers[reader] = vcf.FileWriter(output_filepath)
+    
+    return vcf_providers_to_writers
+
+
+def execute(args, execution_context):
     input_dir = os.path.abspath(args.input_dir)
     output_dir = os.path.abspath(args.output_dir)
-    
-    jacquard_utils.validate_directories(input_dir, output_dir)
-    
+    utils.validate_directories(input_dir, output_dir)
 
-    callers = [mutect.Mutect(), varscan.Varscan(), strelka.Strelka(), unknown.Unknown()]
-    tag_files(input_dir, output_dir, callers, execution_context)
-    
+    #TODO cgates: move to jacquard.py
+    for line in execution_context:
+        log("DEBUG: {}", line)
+
+    vcf_readers = _build_vcf_readers(input_dir)
+    if not vcf_readers:
+        log("ERROR: Specified input directory [{0}] contains no VCF files."
+             "Check parameters and try again.", input_dir)
+        #TODO cgates: move to jacquard.py
+        shutil.rmtree(output_dir)
+        exit(1)
+
+    readers_to_writers = _build_vcf_readers_to_writers(vcf_readers, output_dir)
+    log("INFO: Processing [{}] VCF file(s) from [{}]", len(vcf_readers), input_dir)
+    tag_files(readers_to_writers, execution_context)
+    log("INFO: Wrote [{}] VCF file(s) to [{}]",
+         len(readers_to_writers), output_dir)

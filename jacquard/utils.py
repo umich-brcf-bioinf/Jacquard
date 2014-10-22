@@ -1,13 +1,14 @@
 from __future__ import print_function
-__version__ = 0.1
+__version__ = 0.21
+
 from collections import OrderedDict
-from datetime import datetime
 from operator import itemgetter
 import os
 from os import listdir
 import sys
 
 global caller_versions
+#TODO cgates: These should be in the callers or the caller factory, but not here.
 caller_versions = {"VarScan":"v2.3", "MuTect": "v1.1.4", "Strelka": "v2.0.15"}
 
 global jq_somatic_tag
@@ -17,32 +18,38 @@ jq_somatic_tag = "JQ_HC_SOM_"
 jq_af_tag = "JQ_AF_"
 jq_dp_tag = "JQ_DP_"
 
+
+class JQException(Exception):
+    """Base class for exceptions in this module."""
+    pass
+
 # pylint: disable=W0142
 def log(msg, *args):
-    print("{}|{}".format(datetime.now(), msg.format(*[str(i) for i in args])), file=sys.stderr)
-
+    print(msg.format(*[str(i) for i in args]), file=sys.stderr)
 
 def validate_directories(input_dir, output_dir):    
     if not os.path.isdir(input_dir):
-        log("ERROR. Specified input directory [{}] does not exist", input_dir)
+        log("ERROR. Specified input directory [{}] does not exist.", input_dir)
         exit(1)
     try:
         listdir(input_dir)
     except:
-        log("ERROR. Specified input directory [{}] cannot be read. Check permissions and try again.", input_dir)
+        log("ERROR. Specified input directory [{}] cannot be read. "+
+            "Check permissions and try again.",input_dir)
         exit(1)
         
     if not os.path.isdir(output_dir):
         try:
             os.makedirs(output_dir)
         except:
-            log("ERROR. Output directory could not be created. Check parameters and try again")
+            log("ERROR. Output directory [{}] could not be created. "+
+                "Check parameters and try again", output_dir)
             exit(1)
             
-def write_output(writer, headers, variants):
+def write_output(writer, headers, actual_sorted_variants):
     for line in headers:
         writer.write(line)
-    for line in variants:
+    for line in actual_sorted_variants:
         writer.write(line)
         
 def sort_headers(headers):
@@ -68,14 +75,14 @@ def sort_data(all_variants):
         
     sorted_variants = sorted(new_variants, key=itemgetter(0,1,3,4)) #sort by CHROM, POS, REF, ALT
     
-    variants = []
+    actual_sorted_variants = []
     for variant in sorted_variants:
         new_field = [str(field) for field in variant]
         if "chr" not in new_field[0]:
             new_field[0] = "chr" + new_field[0]
-        variants.append("\t".join(new_field))
+        actual_sorted_variants.append("\t".join(new_field))
         
-    return variants
+    return actual_sorted_variants
 
 def change_pos_to_int(split_line):
     new_line = []
