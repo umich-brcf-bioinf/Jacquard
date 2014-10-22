@@ -77,7 +77,7 @@ class Mutect():
     def decorate_files(self, filenames, decorator):
         output_file = None
         for i in xrange(len(filenames)):
-            output_file = os.path.basename(re.sub("vcf", decorator+".vcf", filenames[i]))
+            output_file = os.path.basename(re.sub(r"\.vcf$", "."+decorator+".vcf", filenames[i]))
         return output_file
                 
     def validate_vcfs_in_directory(self, in_files):

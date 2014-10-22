@@ -72,7 +72,6 @@ class Varscan():
         self.good = True
         self.tags = [AlleleFreqTag(),DepthTag(),SomaticTag()]
         self.meta_header = "##jacquard.normalize_varscan.sources={0},{1}\n"
-        self.file_name_search = "snp|indel"
         
     def validate_input_file(self, meta_headers, column_header):
         if "##source=VarScan2" not in meta_headers:
@@ -173,17 +172,14 @@ class Varscan():
             
     def decorate_files(self, filenames, decorator):
         output_file = None
-        for i in xrange(len(filenames)):
-            if not filenames[i].lower().endswith("somatic.hc"):
-                match = re.search("("+self.file_name_search+")", filenames[i])
-                if match is not None:
-                    prefix,suffix = re.split(self.file_name_search,filenames[i])
+        file_name_search = "snp|indel"
+        for filename in filenames:
+            if not filename.lower().endswith("somatic.hc"):
+                if re.search("("+file_name_search+")", filename):
+                    prefix,suffix = re.split(file_name_search,filename)
                     output_file = os.path.basename(prefix+decorator+suffix)
-
-        if output_file is None:
-            raise utils.JQException("Each patient in a VarScan directory should have a snp file and an indel file.")
-        
-        return output_file
+                    return output_file
+        raise utils.JQException("Each patient in a VarScan directory should have a snp file and an indel file.")
     
     def validate_vcfs_in_directory(self, in_files):
         for in_file in in_files:

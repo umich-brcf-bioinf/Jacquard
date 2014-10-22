@@ -123,7 +123,6 @@ class Strelka(object):
         self.good = True
         self.tags = [_AlleleFreqTag(),_DepthTag(),_SomaticTag()]
         self.meta_header = "##jacquard.normalize_strelka.sources={0},{1}\n"
-        self.file_name_search = "snvs|indels"
 
 #TODO: Add to normalize.py.
     def _validate_raw_input_files(self, file_readers):
@@ -165,14 +164,14 @@ class Strelka(object):
       
     def decorate_files(self, filenames, decorator):
         output_file = None
-        for i in xrange(len(filenames)):
-            match = re.search("("+self.file_name_search+")", filenames[i])
-            if match is not None:
-                prefix,suffix = re.split(self.file_name_search,filenames[i])
+        file_name_search = "snvs|indels"
+        for filename in filenames:
+            if re.search("("+file_name_search+")", filename):
+                prefix,suffix = re.split(file_name_search,filename)
                 output_file = os.path.basename(prefix+decorator+suffix)
-        if output_file is None:
-            raise utils.JQException("Each patient in a Strelka directory should have a snvs file and an indels file.")
-        return output_file
+                return output_file
+            
+        raise utils.JQException("Each patient in a Strelka directory should have a snvs file and an indels file.")
               
     def validate_vcfs_in_directory(self, in_files):
         for in_file in in_files:
