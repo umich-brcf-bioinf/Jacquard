@@ -10,22 +10,17 @@ from jacquard.merge import PivotError, VariantPivoter, merge_samples, _add_mult_
 import jacquard.merge as merge
 from argparse import Namespace
 import sys
-import jacquard.logger as logger
+# import jacquard.logger as logger
 from jacquard.utils import JQException
+from testfixtures.tempdirectory import TempDirectory
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
-class MockLogger(object):
-    def error(self, msg):
-        return msg
-    def warning(self, msg):
-        return msg
-    def info(self, msg):
-        return msg
-    def debug(self, msg):
-        return msg
-    def validation_messages(self, msg):
-        return msg
+mock_log_called = False
+
+def mock_log(msg, *args):
+    global mock_log_called
+    mock_log_called = True
     
 def dataframe(input_data, sep="\t", index_col=None):
     def tupelizer(thing):
@@ -42,19 +37,23 @@ def dataframe(input_data, sep="\t", index_col=None):
 class MergeTestCase(unittest.TestCase):
     
     def setUp(self):
-        self.logger = logger
-        self.input_dir = TempDirectory()
-        self.output_dir = TempDirectory()
-        self.logger.initialize_logger(self.output_dir.path, "merge")
+        self._reset_mock_logger()
         self.output = StringIO()
         self.saved_stderr = sys.stderr
         sys.stderr = self.output
 
     def tearDown(self):
-        self.input_dir.cleanup()
-        self.output_dir.cleanup()
         self.output.close()
         sys.stderr = self.saved_stderr
+        
+    def _reset_mock_logger(self):
+        global mock_log_called
+        mock_log_called = False
+        global mock_log
+        merge.logger.info = mock_log
+        merge.logger.error = mock_log
+        merge.logger.warning = mock_log
+        merge.logger.debug = mock_log
         
     def testExecute_multAltsSplitCorrectly(self):
         
@@ -63,19 +62,21 @@ class MergeTestCase(unittest.TestCase):
             "chr1|42|.|{}|{}|.|.|{}|JQ_AF_{}|0.1|0.2\n"
         vcfRecordFormat = vcfRecordFormat.replace("|", "\t")
         
-        self.input_dir.write("A.mutect.vcf", vcfRecordFormat.format("MuTect","T","A,C","INFO_Mutect","MT"))
-        self.input_dir.write("A.strelka.vcf", vcfRecordFormat.format("Strelka","T","A,C","INFO_Strelka","SK"))
-        self.input_dir.write("A.varscan.vcf", vcfRecordFormat.format("VarScan","T","A,C","INFO_VarScan","VS"))
-
-        args = Namespace(input_dir=self.input_dir.path, 
-                         output_file=os.path.join(self.output_dir.path,"tmp.vcf"), 
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("A.mutect.vcf", vcfRecordFormat.format("MuTect","T","A,C","INFO_Mutect","MT"))
+            input_dir.write("A.strelka.vcf", vcfRecordFormat.format("Strelka","T","A,C","INFO_Strelka","SK"))
+            input_dir.write("A.varscan.vcf", vcfRecordFormat.format("VarScan","T","A,C","INFO_VarScan","VS"))
+        
+            args = Namespace(input_dir=input_dir.path, 
+                         output_file=os.path.join(output_dir.path,"tmp.vcf"), 
                          allow_inconsistent_sample_sets=False,
                          keys=None) 
-        merge.execute(args, [])
-
-        actual_merged = self.output_dir.read('tmp.vcf').split("\n")
-        print actual_merged
-        self.assertEquals(4, len(actual_merged))
+            merge.execute(args, [])
+    
+            actual_merged = output_dir.read('tmp.vcf').split("\n")
+            
+            self.assertEquals(4, len(actual_merged))
+            
 
     def test_addFiles(self):
         rows = ["CHROM", "POS", "REF", "ALT"]
@@ -121,11 +122,12 @@ class MergeTestCase(unittest.TestCase):
         df = pd.read_csv(StringIO(dataString1), sep="\t", header=False, dtype='str', mangle_dupe_cols=False)
 
         self.assertRaisesRegexp(JQException,
-                                "Some samples have calls for the same caller in more than one file. Adjust or move problem input files and try again.",
-                                validate_sample_caller_vcfs,
-                                df)
-        self.assertTrue("Sample [foo|sample_A] appears to be called by [MuTect] in multiple files." in self.output.getvalue())
-        
+                                    "Some samples have calls for the same caller in more than one file. Adjust or move problem input files and try again.",
+                                    merge.validate_sample_caller_vcfs,
+                                    df)
+#             self.assertTrue("Sample [foo|sample_A] appears to be called by [MuTect] in multiple files." in self.output.getvalue())
+        global mock_log_called
+        self.assertTrue(mock_log_called)
         
     def test_isCompatible_raiseIfMissingRequiredColumns(self): 
         rows = ['COORDINATE', 'foo']
@@ -198,7 +200,6 @@ class MergeTestCase(unittest.TestCase):
 
         tm.assert_frame_equal(expected_df, actual_df)
     
-class PivotTestCase(unittest.TestCase):
     ##validate parameters
     def test_validateParameters_allValid(self):
         input_keys = ["CHROM", "POS", "REF"]
@@ -248,11 +249,11 @@ class PivotTestCase(unittest.TestCase):
         input_dir = TEST_DIRECTORY + "/reference_files/test_input/test_input_keys_txt"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*")))
         
-        with self.assertRaises(SystemExit) as cm:
-            sample_file_readers, headers, header_names, first_line, meta_headers = get_headers_and_readers(in_files)
-
-        self.assertEqual(cm.exception.code, 1)
-        
+        self.assertRaisesRegexp(JQException,
+                                r"VCF file\(s\) .* have no Jacquard tags. Run \[jacquard tag\] on these files and try again.",
+                                get_headers_and_readers,
+                                in_files)
+                
     def test_buildPivoter_invalidHeaderRaisesPivotError(self):
         input_string = \
 '''COORDINATE\tFORMAT\tsample_A\tsample_B
@@ -442,17 +443,17 @@ class PivotTestCase(unittest.TestCase):
     
     def test_validateSamplesForCallers_invalid(self):
         context = ["jacquard.foo=file1|13523|tumor(file1.vcf)", "jacquard.foo=file2|23|tumor(file2.vcf)", "jacquard.foo=file3|768|tumor(file3.vcf)"]
-        with self.assertRaises(SystemExit) as cm:
-            value = validate_samples_for_callers(context, False)
-            
-        self.assertEqual(cm.exception.code, 1)
     
+        self.assertRaisesRegexp(JQException,
+                                "Some samples were not present for all callers. Review log warnings and move/adjust input files as appropriate.",
+                                validate_samples_for_callers,
+                                context, False)
+        
     def test_validateSamplesForCallers_invalidAllow(self):
         context = ["jacquard.foo=file1|13523|tumor(file1.vcf)", "jacquard.foo=file2|23|tumor(file2.vcf)", "jacquard.foo=file3|768|tumor(file3.vcf)"]
         value = validate_samples_for_callers(context, True)
         self.assertEqual(1, value)
         
-class CombineFormatTestCase(unittest.TestCase):
     def test_createDict(self):
         input_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B
@@ -599,8 +600,12 @@ class CombineFormatTestCase(unittest.TestCase):
 13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tnan\tnan\tnan
 '''
         df = dataframe(input_string)
-        actual_df = combine_format_columns(df, 0)
+
+        actual_df = merge.combine_format_columns(df, 0)
         
+        global mock_log_called
+        self.assertTrue(mock_log_called)
+
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
 1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_AF:JQ_DP\t0.23:57\t0.4:57
@@ -623,7 +628,12 @@ class CombineFormatTestCase(unittest.TestCase):
 13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t5\t24\tJQ_DP_VS\t10\t29
 '''
         df = dataframe(input_string)
-        actual_df = combine_format_columns(df, 1)
+
+
+        actual_df = merge.combine_format_columns(df, 0)
+        
+        global mock_log_called
+        self.assertTrue(mock_log_called)
         
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_b\tfile1|sample_A\tfile1|sample_B\tfile1|sample_a
@@ -649,7 +659,11 @@ class CombineFormatTestCase(unittest.TestCase):
         
         df = dataframe(input_string)
 
-        actual_df = combine_format_columns(df, 0)
+        actual_df = merge.combine_format_columns(df, 0)
+        
+        global mock_log_called
+        self.assertTrue(mock_log_called)
+        
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
 1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_DP_MT\t1\t20
@@ -673,7 +687,11 @@ class CombineFormatTestCase(unittest.TestCase):
 13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t5\t24\tJQ_DP_VS\t10\t29
 '''
         df = dataframe(input_string)
-        actual_df = combine_format_columns(df, 0)
+
+        actual_df = merge.combine_format_columns(df, 0)
+        
+        global mock_log_called
+        self.assertTrue(mock_log_called)
         
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
@@ -698,7 +716,10 @@ class CombineFormatTestCase(unittest.TestCase):
 '''
         df = dataframe(input_string)
 
-        actual_df = combine_format_columns(df, 1)
+        actual_df = merge.combine_format_columns(df, 1)
+        
+        global mock_log_called
+        self.assertTrue(mock_log_called)
 
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_A\tfile2|sample_B\tfile1|sample_A\tfile1|sample_B
@@ -724,7 +745,11 @@ class CombineFormatTestCase(unittest.TestCase):
 '''
         df = dataframe(input_string)
 
-        actual_df = combine_format_columns(df, 0)
+
+        actual_df = merge.combine_format_columns(df, 0)
+        
+        global mock_log_called
+        self.assertTrue(mock_log_called)
 
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_A\tfile2|sample_B\tfile1|sample_A\tfile1|sample_B
@@ -747,7 +772,10 @@ class CombineFormatTestCase(unittest.TestCase):
 '''
         df = dataframe(input_string)
 
-        actual_df = combine_format_columns(df, 0)
+        actual_df = merge.combine_format_columns(df, 0)
+        
+        global mock_log_called
+        self.assertTrue(mock_log_called)
 
         expected_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_B\tfile1|sample_A
@@ -757,10 +785,6 @@ class CombineFormatTestCase(unittest.TestCase):
         
         expected_df = dataframe(expected_string)
 
-        print "##################"
-        print actual_df
-        print "##################"
-        print expected_df
         tm.assert_frame_equal(expected_df, actual_df)
         
     def test_removeNonJQTags(self):

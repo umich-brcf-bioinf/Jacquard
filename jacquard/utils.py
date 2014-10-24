@@ -20,6 +20,10 @@ jq_dp_tag = "JQ_DP_"
 
 
 class JQException(Exception):
+    def __init__(self, msg, *args):
+        error_msg = msg.format(*[str(i) for i in args])
+        super(JQException, self).__init__(error_msg)
+        
     """Base class for exceptions in this module."""
     pass
 

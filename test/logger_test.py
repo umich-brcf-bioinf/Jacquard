@@ -62,14 +62,14 @@ class LoggerTestCase(unittest.TestCase):
         output_lines = self.output.getvalue().rstrip().split("\n")
         self.assertRegexpMatches(output_lines[0], ""+current_time+r".*\|DEBUG\|foo\|bar")
     
-    def test_validation_messages(self):
-        tool = "foo"
-        logger.initialize_logger(self.output_dir.path,tool)
-        logger.validation_messages("bar","baz")
-        current_time = datetime.now().strftime('%Y/%m/%d')
-        output_lines = self.output.getvalue().rstrip().split("\n")
-        self.assertRegexpMatches(output_lines[0], ""+current_time+r".*\|WARNING\|foo\|baz")
-        self.assertRegexpMatches(output_lines[1], ""+current_time+r".*\|ERROR\|foo\|bar")
+#     def test_validation_messages(self):
+#         tool = "foo"
+#         logger.initialize_logger(self.output_dir.path,tool)
+#         logger.validation_messages("bar","baz")
+#         current_time = datetime.now().strftime('%Y/%m/%d')
+#         output_lines = self.output.getvalue().rstrip().split("\n")
+#         self.assertRegexpMatches(output_lines[0], ""+current_time+r".*\|WARNING\|foo\|baz")
+#         self.assertRegexpMatches(output_lines[1], ""+current_time+r".*\|ERROR\|foo\|bar")
         
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

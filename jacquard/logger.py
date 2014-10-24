@@ -41,12 +41,6 @@ def debug(message, *args):
     _printer("DEBUG", message, *args)
 #     logging.debug(message, extra=logging_dict)
 
-def validation_messages(message, warning_message):
-    if warning_message != "":
-        warning(warning_message)
-    if message != "":
-        error(message)
-
 def _printer(level, message, *args):
     print (_CONSOLE_LOG_FORMAT % {'asctime':datetime.now().strftime('%Y/%m/%d %I:%M:%S %p'),
                                   'levelname':level, 

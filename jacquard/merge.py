@@ -181,7 +181,7 @@ def validate_sample_caller_vcfs(fname_df):
         if val > 1:
             logger.error("Sample [{}] appears to be called by [{}] in multiple files.", sample, caller)
             error = 1
-    if error == 1:
+    if error:
         raise utils.JQException("Some samples have calls for the same caller in more than one file. Adjust or move problem input files and try again.")
         
     return fname_df
@@ -346,11 +346,11 @@ def remove_old_columns(df):
 
 def combine_format_columns(df, all_inconsistent_sample_sets):
     row_total = len(df.index)
-    utils.log("Processing merged matrix phase 1: [{} x {}] rows x columns", row_total, len(df.columns))
+    logger.info("Processing merged matrix phase 1: [{} x {}] rows x columns", row_total, len(df.columns))
     for row, col in df.T.iteritems():
         columns = col.index.values
         if row % 1000 == 1:
-            utils.log("Processing merged matrix phase 1: [{}/{}] rows processed ({}% complete)", row, row_total, int(100 * row/row_total))
+            logger.info("Processing merged matrix phase 1: [{}/{}] rows processed ({}% complete)", row, row_total, int(100 * row/row_total))
         file_dict, all_tags = create_dict(df, row, columns)
         file_dict = remove_non_jq_tags(df, file_dict)
 
@@ -368,10 +368,10 @@ def combine_format_columns(df, all_inconsistent_sample_sets):
                 df.ix[row, samp_dict["sample_name"]] = ":".join(sample)
     
     df = cleanup_df(df, file_dict)
-    utils.log("Processing merged matrix: phase 2 [{}] rows", len(df.index))
+    logger.info("Processing merged matrix: phase 2 [{}] rows", len(df.index))
     for row, col in df.T.iteritems():
         if row % 1000 == 1:
-            utils.log("Processing merged matrix phase 2: [{}/{}] rows processed ({}%)", row, row_total, int(100 * row/row_total))
+            logger.info("Processing merged matrix phase 2: [{}/{}] rows processed ({}%)", row, row_total, int(100 * row/row_total))
         columns = col.index.values
         file_dict = create_merging_dict(df, row, columns)
         merge_by = len(file_dict.items())
@@ -468,7 +468,7 @@ def determine_caller_and_split_mult_alts(reader, writer, unknown_callers):
                 writer.write("\t".join(fields))
 
     if caller == "unknown":
-        utils.log("ERROR: unable to determine variant caller for file [{}]", reader)
+        logger.error("Unable to determine variant caller for file [{}]", reader)
         unknown_callers += 1
     
     return caller, unknown_callers
@@ -486,7 +486,7 @@ def validate_samples_for_callers(all_merge_column_context, all_inconsistent_samp
         
         samples.append(sample)
         sample_dict[caller].append(sample)
-    utils.log("Detected VCFs from {}", sample_dict.keys())
+    logger.info("Detected VCFs from {}", sample_dict.keys())
     
     warn = 0
     for key, val in sample_dict.items():
@@ -495,14 +495,13 @@ def validate_samples_for_callers(all_merge_column_context, all_inconsistent_samp
             if sample not in val:
                 missing.append(sample)
         if missing != []:
-            utils.log("WARNING: Samples {} were not called by {}", missing, key)
+            logger.warning("Samples {} were not called by {}", missing, key)
             warn = 1
 #          
     if warn == 1 and all_inconsistent_sample_sets == False:
-        utils.log("ERROR: Some samples were not present for all callers. Review log warnings and move/adjust input files as appropriate.")
-        exit(1)
+        raise utils.JQException("Some samples were not present for all callers. Review log warnings and move/adjust input files as appropriate.")
     elif warn == 1 and all_inconsistent_sample_sets == True:
-        utils.log("WARNING: Some samples were not present for all callers.")
+        logger.warning("Some samples were not present for all callers.")
         
     return 1
 
@@ -531,12 +530,12 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
     new_dir = os.path.join(output_dir, "splitMultAlts", ) 
     if not os.path.isdir(new_dir):
         os.mkdir(new_dir)
-    utils.log("Splitting mult-alts in input files. Using [{}] as input directory.", new_dir)
+    logger.info("Splitting mult-alts in input files. Using [{}] as input directory.", new_dir)
     
     total_number_of_files = len(sample_file_readers)
     count = 1
     for sample_file in sample_file_readers:
-        utils.log("Reading [{}] ({}/{})", os.path.basename(sample_file), count, total_number_of_files)
+        logger.info("Reading [{}] ({}/{})", os.path.basename(sample_file), count, total_number_of_files)
         fname, extension = os.path.splitext(os.path.basename(sample_file))
 
         new_sample_file = os.path.join(new_dir, fname + ".splitMultAlts" + extension)
@@ -552,9 +551,7 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
         
         all_merge_context, all_merge_column_context = determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, new_sample_file, count)
     if unknown_callers != 0:
-        utils.log("ERROR: unable to determine variant caller for [{}] input files. Run (jacquard tag) first.", unknown_callers)
-        os.rmdir(new_dir)
-        exit(1)
+        raise utils.JQException("Unable to determine variant caller for [{}] input files. Run (jacquard tag) first.", unknown_callers)
     
 #     pivoter._combined_df = merge(pivoter._combined_df, pd.DataFrame(columns=pivoter._rows+["INFO"]), how="outer", on=pivoter._rows+["INFO"])
 #     print pivoter._combined_df
@@ -568,15 +565,15 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
     execution_context.extend(new_execution_context)
     writer = open(output_path, "w")
     
-    utils.log("Merging sample data (this may take a while)")
+    logger.info("Merging sample data (this may take a while)")
 
-    utils.log("Merging sample data: validating sample data (1/6)")
+    logger.info("Merging sample data: validating sample data (1/6)")
     pivoter.validate_sample_data()
 
-    utils.log("Merging sample data: combining format columns (2/6)")
+    logger.info("Merging sample data: combining format columns (2/6)")
     formatted_df = combine_format_columns(pivoter._combined_df, all_inconsistent_sample_sets)
 
-    utils.log("Merging sample data: rearranging columns (3/6)")
+    logger.info("Merging sample data: rearranging columns (3/6)")
     rearranged_df = rearrange_columns(formatted_df)
     try:
         rearranged_df.ix[:, "CHROM"] = rearranged_df.ix[:, "CHROM"].apply(lambda x: int(x.strip("chr")))
@@ -584,7 +581,7 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
         rearranged_df.ix[:, "CHROM"] = rearranged_df.ix[:, "CHROM"].apply(lambda x: x.strip("chr"))
     rearranged_df.ix[:, "POS"] = rearranged_df.ix[:, "POS"].apply(lambda x: int(x))
 
-    utils.log("Merging sample data: sorting rows (4/6)")
+    logger.info("Merging sample data: sorting rows (4/6)")
     sorted_df = pivoter.sort_rows(rearranged_df)
     sorted_df.ix[:, "CHROM"] = sorted_df.ix[:, "CHROM"].apply(lambda x: "chr" + str(x))
     sorted_df.ix[:, "POS"] = sorted_df.ix[:, "POS"].apply(lambda x: str(x))
@@ -592,15 +589,15 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
     if "index" in sorted_df:
         del sorted_df["index"]
 
-    utils.log("Merging sample data: cleanup (5/6)")
+    logger.info("Merging sample data: cleanup (5/6)")
     sorted_df = sorted_df.fillna(".")
     sorted_df.rename(columns={"CHROM": "#CHROM"}, inplace=True)
 
-    utils.log("Merging sample data: saving (6/6)")
+    logger.info("Merging sample data: saving (6/6)")
     with open(output_path, "a") as f:
         sorted_df.to_csv(f, index=False, sep="\t")  
 
-    utils.log("Merged [{}] VCf files to [{}]", len(sample_file_readers), output_path)
+    logger.info("Merged [{}] VCf files to [{}]", len(sample_file_readers), output_path)
     
 def determine_input_keys(input_dir):
     for file in listdir(input_dir):
@@ -636,15 +633,14 @@ def get_headers_and_readers(in_files):
             else:
                 first_line.append(line)
                 break
-        if invalid == 1:
+        if invalid:
             invalid_files.append(in_file)
 
         f.close()
         sample_file_readers.append(in_file)
 
-    if invalid_files != []:
-        utils.log("ERROR: VCF file(s) [{}] have no Jacquard tags. Run [jacquard tag] on these files and try again.", invalid_files)
-        exit(1)
+    if invalid_files:
+        raise utils.JQException("VCF file(s) [{}] have no Jacquard tags. Run [jacquard tag] on these files and try again.", invalid_files)
 
     header_names = header_names[0]
     header_names = re.sub(r'#CHROM', 'CHROM', header_names)
@@ -663,8 +659,6 @@ def execute(args, execution_context):
     input_dir = os.path.abspath(args.input_dir)
     output_path = os.path.abspath(args.output_file)
     
-    logger.initialize_logger(os.path.dirname(output_path), "merge") #TODO: May want to have this be instantiated at jacquard.py and then passed down.
-    
     output_dir, outfile_name = os.path.split(output_path)
     utils.validate_directories(input_dir, output_dir)
     input_keys = args.keys.split(",") if args.keys else determine_input_keys(input_dir)
@@ -672,13 +666,11 @@ def execute(args, execution_context):
 
     fname, extension = os.path.splitext(outfile_name)
     if extension != ".vcf": 
-        utils.log("Error. Specified output {} must have a .vcf extension", output_path)
-        exit(1)
+        raise utils.JQException("Error. Specified output {} must have a .vcf extension", output_path)
         
     in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
     if len(in_files) < 1:
-        utils.log("Error: Specified input directory [{}] contains no VCF files. Check parameters and try again.")
-        exit(1)
+        raise utils.JQException("Error: Specified input directory [{}] contains no VCF files. Check parameters and try again.")
         
     sample_file_readers, headers, header_names, first_line, meta_headers = get_headers_and_readers(in_files)
 
