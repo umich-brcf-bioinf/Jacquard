@@ -156,7 +156,7 @@ chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                               [strelka_file, unrecognized_file],
                               variant_caller_factory.get_caller)
 
-    def Xtest__partition_input_files(self):
+    def Ytest__partition_input_files(self):
         in_files = ["A.1.snps.vcf", "A.1.indels.vcf", "B.snps.vcf"]
         output_dir_path = "output_dir_path"
         caller = MockCaller()

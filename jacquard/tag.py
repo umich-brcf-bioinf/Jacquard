@@ -6,9 +6,9 @@ import shutil
 
 from variant_callers import variant_caller_factory
 import utils
-from utils import JQException, log
+from utils import JQException
 import vcf
-
+import logger
 
 #pylint: disable=C0301
 def add_subparser(subparser):
@@ -22,7 +22,7 @@ def tag_files(vcf_readers_to_writers, execution_context):
 #     for count, reader, writer in enumerate(vcf_readers_to_writers.items()):
     for count, item in enumerate(vcf_readers_to_writers.items()):
         reader,writer = item
-        log("INFO: Reading [{}] ({}/{})", reader.input_filepath,
+        logger.info("Reading [{}] ({}/{})", reader.input_filepath,
              count, total_number_of_files)
         reader.open()
         writer.open()
@@ -48,8 +48,8 @@ def _log_caller_info(vcf_readers):
     for vcf in vcf_readers:
         caller_count[vcf.caller.name] += 1
     for caller_name in sorted(caller_count):
-        log("INFO: Recognized [{0}] {1} file(s)",
-             caller_count[caller_name], caller_name)
+        logger.info("Recognized [{}] {} file(s)", 
+                    caller_count[caller_name], caller_name)
 
 
 def _build_vcf_readers(input_dir,
@@ -91,18 +91,18 @@ def execute(args, execution_context):
 
     #TODO cgates: move to jacquard.py
     for line in execution_context:
-        log("DEBUG: {}", line)
+        logger.debug("{}", line)
 
     vcf_readers = _build_vcf_readers(input_dir)
     if not vcf_readers:
-        log("ERROR: Specified input directory [{0}] contains no VCF files."
+        logger.error("Specified input directory [{0}] contains no VCF files."
              "Check parameters and try again.", input_dir)
         #TODO cgates: move to jacquard.py
         shutil.rmtree(output_dir)
         exit(1)
-
+        
     readers_to_writers = _build_vcf_readers_to_writers(vcf_readers, output_dir)
-    log("INFO: Processing [{}] VCF file(s) from [{}]", len(vcf_readers), input_dir)
+    logger.info("Processing [{}] VCF file(s) from [{}]", len(vcf_readers), input_dir)
     tag_files(readers_to_writers, execution_context)
-    log("INFO: Wrote [{}] VCF file(s) to [{}]",
+    logger.info("Wrote [{}] VCF file(s) to [{}]",
          len(readers_to_writers), output_dir)

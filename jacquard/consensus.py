@@ -6,7 +6,9 @@ from os import listdir
 from os.path import isfile, join
 import pandas as pd
 import re
+
 import utils
+import logger
 
 def calculate_zscore(af_mean, af_std, dp_mean, dp_std, combined_dict):
     af_range = float(combined_dict["JQ_AF_RANGE"])
@@ -56,17 +58,17 @@ def add_zscore(meta_headers, header, lines, writer, output_file, af_range, dp_ra
                               '##jacquard.consensus.JQ_DP_RANGE_ZSCORE.mean_DP_range={0}\n'.format(rounded_mean_dp),
                               '##jacquard.consensus.JQ_DP_RANGE_ZSCORE.standard deviation_DP_range={0}\n'.format(rounded_std_dp)]
     meta_headers.extend(consensus_meta_headers)
-    print "".join(consensus_meta_headers)
+    logger.info("".join(consensus_meta_headers))
     
     meta_headers.append(header)
     utils.write_output(writer, meta_headers, lines)
-    print "Wrote consensus-somatic-tagged VCF to [{0}]".format(output_file)
+    logger.info("Wrote consensus-somatic-tagged VCF to [{}]", output_file)
     
 def add_consensus(meta_headers, header, lines, writer, output_file):
     consensus_meta_headers = ['##FORMAT=<ID=JQ_SOM_SUM,Number=1,Type=Integer,Description="Jacquard consensus somatic call = sum({0}*)">\n'.format(utils.jq_somatic_tag), 
                               '##FORMAT=<ID=JQ_AF_AVERAGE,Number=A,Type=Integer,Description="Jacquard consensus somatic call = average({0}*)">\n'.format(utils.jq_af_tag),
                               '##FORMAT=<ID=JQ_DP_AVERAGE,Number=1,Type=Integer,Description="Jacquard consensus depth = average({0}*)">\n'.format(utils.jq_dp_tag)]
-    print "".join(consensus_meta_headers)
+    logger.info("".join(consensus_meta_headers))
     meta_headers.extend(consensus_meta_headers)
             
     meta_headers.append(header)
@@ -196,15 +198,15 @@ def execute(args, execution_context):
     
     fname, extension = os.path.splitext(os.path.basename(input_file))
     if not os.path.isfile(input_file) or extension != ".vcf":
-        print "ERROR: Input file [{0}] must be a VCF file.".format(input_file)
+        logger.error("Input file [{}] must be a VCF file.", input_file)
         exit(1)
         
     fname, extension = os.path.splitext(os.path.basename(output_file))
     if extension != ".vcf":
-        print "ERROR: Output file [{0}] must be a VCF file.".format(output_file)
+        logger.error("Output file [{}] must be a VCF file.", output_file)
         exit(1)
         
-    print "\n".join(execution_context)
+    logger.info("\n".join(execution_context))
     
     af_range = []
     dp_range = []
@@ -213,7 +215,7 @@ def execute(args, execution_context):
     input_file_reader = open(input_file, "r")
     tmp_file_writer = open(tmp_file, "w")
 
-    print "Adding consensus values to temporary file [{0}]".format(tmp_file)
+    logger.info("Adding consensus values to temporary file [{}]", tmp_file)
     meta_headers, header, lines = iterate_file(input_file_reader, tmp_file_writer, tmp_file, af_range, dp_range, "consensus")
     add_consensus(meta_headers, header, lines, tmp_file_writer, tmp_file)
     
@@ -223,7 +225,7 @@ def execute(args, execution_context):
     tmp_file_reader = open(tmp_file, "r")
     output_file_writer = open(output_file, "w")
     
-    print "Adding z-scores to [{0}]".format(output_file)
+    logger.info("Adding z-scores to [{}]", output_file)
     
     meta_headers, header, lines = iterate_file(tmp_file_reader, output_file_writer, output_file, af_range, dp_range, "zscore")
     add_zscore(meta_headers, header, lines, output_file_writer, output_file, af_range, dp_range)
@@ -232,5 +234,5 @@ def execute(args, execution_context):
     output_file_writer.close()
     
     os.remove(tmp_file)
-    print "Removed temporary file [{0}]".format(tmp_file)
+    logger.info("Removed temporary file [{}]", tmp_file)
     

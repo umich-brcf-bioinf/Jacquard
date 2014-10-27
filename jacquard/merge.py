@@ -16,10 +16,11 @@ import time
 import utils
 import logger
 
+print logger.info
+
 class PivotError(Exception):
     """Base class for exceptions in this module."""
     pass 
-
 
 class VariantPivoter():
     MISSING_REQUIRED_COLUMNS_ERROR="The columns of specified dataframe do not " +\

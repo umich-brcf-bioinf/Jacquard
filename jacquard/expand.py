@@ -15,6 +15,7 @@ from openpyxl import load_workbook
 from openpyxl.style import Color, Fill, Font
 
 import utils
+import logger
 
 class PivotError(Exception):
     """Base class for exceptions in this module."""
@@ -36,7 +37,6 @@ class VariantPivoter():
         expanded_df = expand_format(df, self._pivot_values, self._rows, fname)
 
         df, self._pivot_values = project_prepivot(expanded_df, self._pivot_values, self._rows, self._cols)
-#         print df
              
         return df
 
@@ -90,7 +90,6 @@ class VariantPivoter():
     def _check_required_columns_present(self, dataframe):
         required_columns = set(self._rows + self._cols)
         if not required_columns.issubset(dataframe.columns.values):
-            print "columns absent"
             raise PivotError("Missing required columns; contact sysadmin.")
          
     def _check_pivot_is_unique(self, dataframe):   
@@ -98,7 +97,6 @@ class VariantPivoter():
         grouped_df = dataframe.groupby(group)
 
         if len(grouped_df.groups) != len(dataframe):
-            print "not unique"
             raise PivotError("Duplicate keys would result in an invalid pivot; contact sysadmin.")
 
 def validate_parameters(input_keys, meta_headers, header_names, pivot_values):
@@ -382,10 +380,10 @@ def process_files(input_file, output_path, input_keys, format_tags, info_tags, h
 #     writer.save() 
 #     print "Wrote formatted Excel file to [{0}]".format(output_path)
 
-    print "writing to csv file: {0}".format(output_path)
+    logger.info("Writing to csv file: {}", output_path)
     expanded_df.to_csv(output_path, index=False, sep="\t")
 #     sorted_df.to_csv(output_path, index=False, sep="\t")    
-    print "wrote to csv file: {0}".format(output_path)
+    logger.info("Wrote to csv file: {}", output_path)
    
 def determine_input_keys(input_file):
     fname, extension = os.path.splitext(input_file)
@@ -457,7 +455,7 @@ def execute(args, execution_context):
 #         exit(1)
     
     meta_headers, headers, header_names, first_line = get_headers(input_file)
-    print "\n".join(execution_context) 
+    logger.info("\n".join(execution_context)) 
     execution_context.extend(meta_headers + ["##fileformat=VCFv4.2"])
     process_files(input_file, output_path, input_keys, format_tags, info_tags, headers, header_names, meta_headers, first_line)
     

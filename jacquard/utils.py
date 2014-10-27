@@ -6,6 +6,7 @@ from operator import itemgetter
 import os
 from os import listdir
 import sys
+import logger
 
 global caller_versions
 #TODO cgates: These should be in the callers or the caller factory, but not here.
@@ -27,18 +28,14 @@ class JQException(Exception):
     """Base class for exceptions in this module."""
     pass
 
-# pylint: disable=W0142
-def log(msg, *args):
-    print(msg.format(*[str(i) for i in args]), file=sys.stderr)
-
 def validate_directories(input_dir, output_dir):    
     if not os.path.isdir(input_dir):
-        log("ERROR. Specified input directory [{}] does not exist.", input_dir)
+        logger.error("Specified input directory [{}] does not exist.", input_dir)
         exit(1)
     try:
         listdir(input_dir)
     except:
-        log("ERROR. Specified input directory [{}] cannot be read. "+
+        logger.error("Specified input directory [{}] cannot be read. "+
             "Check permissions and try again.",input_dir)
         exit(1)
         
@@ -46,7 +43,7 @@ def validate_directories(input_dir, output_dir):
         try:
             os.makedirs(output_dir)
         except:
-            log("ERROR. Output directory [{}] could not be created. "+
+            logger.error("Output directory [{}] could not be created. "+
                 "Check parameters and try again", output_dir)
             exit(1)
             

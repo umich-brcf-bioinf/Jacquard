@@ -1,15 +1,22 @@
 # pylint: disable=C0103,C0301,R0903,R0904
-from StringIO import StringIO
 from argparse import Namespace
-from re import findall, MULTILINE
-from testfixtures import TempDirectory
-import jacquard.tag as tag
-import jacquard.utils as utils
 import os
+from re import findall, MULTILINE
+from StringIO import StringIO
 import sys
+from testfixtures import TempDirectory
 import unittest
 
-        
+import jacquard.utils as utils
+import jacquard.tag as tag
+import jacquard.logger as logger
+
+mock_log_called = False
+  
+def mock_log(msg, *args):
+    global mock_log_called
+    mock_log_called = True
+
 class MockWriter():
     def __init__(self):
         self._content = []
@@ -67,12 +74,32 @@ class TagTestCase(unittest.TestCase):
         self.output = StringIO()
         self.saved_stderr = sys.stderr
         sys.stderr = self.output
-
+        self.original_info = logger.info
+        self.original_error = logger.error
+        self.original_warning = logger.warning
+        self.original_debug = logger.debug
+        self._change_mock_logger()
+        
     def tearDown(self):
         self.output.close()
         sys.stderr = self.saved_stderr
-
-
+        self._reset_mock_logger()
+        
+    def _change_mock_logger(self):
+        global mock_log_called
+        mock_log_called = False
+        global mock_log
+        logger.info = mock_log
+        logger.error = mock_log
+        logger.warning = mock_log
+        logger.debug = mock_log
+        
+    def _reset_mock_logger(self):
+        logger.info = self.original_info
+        logger.error = self.original_error
+        logger.warning = self.original_warning
+        logger.debug = self.original_debug
+        
     def test_build_vcf_readers(self):
         vcf_content ='''##source=strelka
 #CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
@@ -125,7 +152,6 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
 
     def test_build_vcf_to_caller_multipleVcfLogs(self):
-        
         vcf_content ='''##source=strelka
 #CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
 chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
@@ -142,14 +168,10 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             tag._build_vcf_readers_to_writers(vcf_readers, output_dir.path)
     
             output_lines = self.output.getvalue().rstrip().split("\n")
-            print(self.output.getvalue())
-            self.assertEquals(3, len(output_lines))
-            line_iter = iter(output_lines)
-            self.assertEquals("DEBUG: VCF [A.vcf] recognized by caller [Strelka]", line_iter.next())
-            self.assertEquals("DEBUG: VCF [B.vcf] recognized by caller [Strelka]", line_iter.next())
-            self.assertEquals("INFO: Recognized [2] Strelka file(s)", line_iter.next())
-
-
+            self.assertEquals(1, len(output_lines))
+            global mock_log_called
+            self.assertTrue(mock_log_called)
+#             self.assertRegexpMatches(output_lines[0], 'Recognized \[2\] Strelka file\(s\)')
 
     def test_build_vcf_readers_exceptionIsRaisedDetailsLogged(self):
         vcf_content ='''##foo

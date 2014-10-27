@@ -3,7 +3,7 @@ import glob
 import os
 import re
 import shutil
-from utils import JQException, log
+from utils import JQException
 import collections
 
 import variant_callers.varscan 
@@ -13,6 +13,7 @@ import variant_callers.variant_caller_factory as variant_caller_factory
 
 import utils as utils
 import vcf as vcf
+import logger as logger
 
 #TODO: hook up to something
 def _validate_single_caller(filepaths, get_caller):
@@ -54,8 +55,10 @@ def _partition_input_files(in_files, output_dir, caller):
         output_file = caller.decorate_files(in_files, "normalized")
         file_writer = vcf.FileWriter(os.path.join(output_dir,output_file))
         file_readers = []
+        
         for file_path in patient_to_files[patient]:
             file_readers.append(vcf.FileReader(file_path))
+        
         writer_to_readers[file_writer] = file_readers
 
     return writer_to_readers
@@ -77,7 +80,7 @@ def _log_caller_info(vcf_readers):
         caller_count[vcf.caller.name] += 1
     
     for caller_name in sorted(caller_count):
-        log("INFO: Recognized [{0}] {1} file(s)",
+        logger.info("Recognized [{0}] {1} file(s)",
              caller_count[caller_name], caller_name)
         
 def execute(args, execution_context): 
@@ -88,19 +91,21 @@ def execute(args, execution_context):
     in_files = sorted(glob.glob(os.path.join(input_dir, "*")))
     
     caller = _determine_caller_per_directory(in_files)
-
+    logger.info("Recognized caller as {}", caller.name)
+    
     caller.validate_vcfs_in_directory(in_files)    
     
     writer_to_readers = _partition_input_files(in_files, output_dir, caller)
     
     if not writer_to_readers:
-        log("ERROR: Specified input directory [{0}] contains no files."
+        logger.error("Specified input directory [{0}] contains no files."
              "Check parameters and try again.", input_dir)
         
         #TODO cgates: move to jacquard.py
         shutil.rmtree(output_dir)
         exit(1)
         
+    logger.info("Normalizing input files")
     for writer, readers in writer_to_readers.items():  
         caller.normalize(writer, readers)
      

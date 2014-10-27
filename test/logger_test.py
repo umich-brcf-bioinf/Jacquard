@@ -81,15 +81,20 @@ class LoggerTestCase(unittest.TestCase):
         
     def test_debug_verbose(self):
         tool = "foo"
-        logger.initialize_logger(self.output_dir.path,tool,True)
+        logger.initialize_logger(tool,True)
         logger.debug("bar")
-        current_time = datetime.now().strftime('%Y/%m/%d')
+        root_logger = logger.logging.getLogger()
+        
+        current_time = datetime.now().strftime('%Y/%m/')
         output_lines = self.output.getvalue().rstrip().split("\n")
-        self.assertRegexpMatches(output_lines[0], ""+current_time+r".*\|DEBUG\|foo\|bar")
+#         self.assertRegexpMatches(output_lines[0], ""+current_time+r".*\|DEBUG\|foo\|bar")
+    
+        self.assertEquals(["root: DEBUG: bar"], root_logger.handlers[0].buffer)
+        self.assertRegexpMatches(output_lines[0], r""+current_time+"|DEBUG|foo|bar'")
     
     def test_debug_not_verbose(self):
         tool = "foo"
-        logger.initialize_logger(self.output_dir.path,tool)
+        logger.initialize_logger(tool)
         logger.debug("bar")
         current_time = datetime.now().strftime('%Y/%m/%d')
         output_lines = self.output.getvalue().rstrip().split("\n")

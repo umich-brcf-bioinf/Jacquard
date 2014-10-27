@@ -13,8 +13,9 @@ _CONSOLE_LOG_FORMAT = '%(asctime)s|%(levelname)s|%(tool)s|%(message)s' ### Conso
 logging_dict = {}
 _verbose = False
 
+
 def initialize_logger(tool, verbose=False):
-    log_dir =os.path.join(os.path.dirname(os.getcwd()),"logs")
+    log_dir=os.path.join(os.path.dirname(os.getcwd()), "logs")
     if not os.path.isdir(log_dir):
         os.mkdir(log_dir)
     time = datetime.now()
@@ -50,5 +51,5 @@ def debug(message, *args):
 def _printer(level, message, *args):
     print (_CONSOLE_LOG_FORMAT % {'asctime':datetime.now().strftime('%Y/%m/%d %I:%M:%S %p'),
                                   'levelname':level, 
-                                 'tool':logging_dict['tool'], 
-                                 'message':message.format(*[str(i) for i in args])}, file=sys.stderr)
+                                  'tool':logging_dict['tool'], 
+                                  'message':message.format(*[str(i) for i in args])}, file=sys.stderr)

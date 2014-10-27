@@ -10,14 +10,16 @@ from jacquard.merge import PivotError, VariantPivoter, merge_samples, _add_mult_
 import jacquard.merge as merge
 from argparse import Namespace
 import sys
-# import jacquard.logger as logger
+
+import jacquard.logger as logger
 from jacquard.utils import JQException
 from testfixtures.tempdirectory import TempDirectory
+import test.mock_module as mock_module
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
 mock_log_called = False
-
+  
 def mock_log(msg, *args):
     global mock_log_called
     mock_log_called = True
@@ -35,26 +37,36 @@ def dataframe(input_data, sep="\t", index_col=None):
     return df
 
 class MergeTestCase(unittest.TestCase):
-    
     def setUp(self):
-        self._reset_mock_logger()
         self.output = StringIO()
         self.saved_stderr = sys.stderr
         sys.stderr = self.output
+        self.original_info = logger.info
+        self.original_error = logger.error
+        self.original_warning = logger.warning
+        self.original_debug = logger.debug
+        self._change_mock_logger()
 
     def tearDown(self):
         self.output.close()
         sys.stderr = self.saved_stderr
+        self._reset_mock_logger()
         
-    def _reset_mock_logger(self):
+    def _change_mock_logger(self):
         global mock_log_called
         mock_log_called = False
         global mock_log
-        merge.logger.info = mock_log
-        merge.logger.error = mock_log
-        merge.logger.warning = mock_log
-        merge.logger.debug = mock_log
+        logger.info = mock_log
+        logger.error = mock_log
+        logger.warning = mock_log
+        logger.debug = mock_log
         
+    def _reset_mock_logger(self):
+        logger.info = self.original_info
+        logger.error = self.original_error
+        logger.warning = self.original_warning
+        logger.debug = self.original_debug
+    
     def testExecute_multAltsSplitCorrectly(self):
         
         vcfRecordFormat = "##jacquard.tag.caller={}\n" + \
@@ -76,7 +88,6 @@ class MergeTestCase(unittest.TestCase):
             actual_merged = output_dir.read('tmp.vcf').split("\n")
             
             self.assertEquals(4, len(actual_merged))
-            
 
     def test_addFiles(self):
         rows = ["CHROM", "POS", "REF", "ALT"]
@@ -125,7 +136,7 @@ class MergeTestCase(unittest.TestCase):
                                     "Some samples have calls for the same caller in more than one file. Adjust or move problem input files and try again.",
                                     merge.validate_sample_caller_vcfs,
                                     df)
-#             self.assertTrue("Sample [foo|sample_A] appears to be called by [MuTect] in multiple files." in self.output.getvalue())
+#         self.assertTrue("Sample [foo|sample_A] appears to be called by [MuTect] in multiple files." in self.output.getvalue())
         global mock_log_called
         self.assertTrue(mock_log_called)
         
@@ -176,7 +187,7 @@ class MergeTestCase(unittest.TestCase):
 
         self.assertRaises(PivotError, pivoter._check_pivot_is_unique, df)
         
-    def xtest_validateSampleData_nonUniqueRows(self):
+    def Ytest_validateSampleData_nonUniqueRows(self):
         rows = ["CHROM", "POS", "REF", "ALT"]
 
         input_string = \

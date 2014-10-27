@@ -19,6 +19,7 @@ import os
 import signal
 import sys
 import traceback
+
 import tag as tag
 import normalize as normalize
 import filter_hc_somatic as filter_hc_somatic
@@ -26,8 +27,9 @@ import merge as merge
 import consensus as consensus
 import expand as expand
 import utils as utils
-import utils as utils
-import logger as logger
+
+import logger
+
 
 _SUBCOMMANDS=[normalize,
               tag,
@@ -87,15 +89,17 @@ def dispatch(modules, arguments):
             "##jacquard.command={0}".format(" ".join(arguments)),
             "##jacquard.cwd={0}".format(cwd)]
         
+        args = parser.parse_args(arguments)
+        
         logger.initialize_logger(args.subparser_name)
         logger.info("Jacquard begins (v{})", utils.__version__)
         logger.info("Saving log to [{}]", os.getcwd())
         logger.debug("Command: {}", " ".join(arguments))
         logger.debug("Cwd: {}", os.path.dirname(os.getcwd()))
-        args = parser.parse_args(arguments)
+        
         module_dispatch[args.subparser_name].execute(args, execution_context)
         
-        logger.initialize_logger(cwd, args.subparser_name, args.verbose)
+        logger.initialize_logger(args.subparser_name, args.verbose)
         
         for message in execution_context:
             logger.debug(message)
@@ -104,8 +108,13 @@ def dispatch(modules, arguments):
         logger.error(str(exception))
         logger.error("Jacquard encountered an unanticipated problem. Please contact your sysadmin or Jacquard support for assistance.")
         logger.error(traceback.format_exc())
+
+#         print("ERROR: " + str(exception),
+#               file=sys.stderr)
+#         print("ERROR: Jacquard encountered an unanticipated problem. Please contact your sysadmin or Jacquard support for assistance.",
+#               file=sys.stderr)
         sys.exit(1)
-    
+
     logger.info("Done.")
 
 if __name__ == '__main__':
