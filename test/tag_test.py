@@ -1,15 +1,18 @@
 # pylint: disable=C0103,C0301,R0903,R0904
-from StringIO import StringIO
 from argparse import Namespace
-from re import findall, MULTILINE
-from testfixtures import TempDirectory
-import jacquard.tag as tag
-import jacquard.utils as utils
 import os
+from re import findall, MULTILINE
+from StringIO import StringIO
 import sys
+from testfixtures import TempDirectory
 import unittest
 
-        
+import jacquard.utils as utils
+import jacquard.tag as tag
+import jacquard.logger as logger
+
+logger.initialize_logger("tag")
+
 class MockWriter():
     def __init__(self):
         self._content = []
@@ -67,11 +70,15 @@ class TagTestCase(unittest.TestCase):
         self.output = StringIO()
         self.saved_stderr = sys.stderr
         sys.stderr = self.output
-
+        self.log_file = os.path.join(os.path.dirname(os.getcwd()), "logs", "jacquard.log")
+        try:
+            os.remove(self.log_file)
+        except:
+            pass
+        
     def tearDown(self):
         self.output.close()
         sys.stderr = self.saved_stderr
-
 
     def test_build_vcf_readers(self):
         vcf_content ='''##source=strelka
@@ -125,7 +132,6 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
 
     def test_build_vcf_to_caller_multipleVcfLogs(self):
-        
         vcf_content ='''##source=strelka
 #CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
 chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
@@ -142,14 +148,8 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             tag._build_vcf_readers_to_writers(vcf_readers, output_dir.path)
     
             output_lines = self.output.getvalue().rstrip().split("\n")
-            print(self.output.getvalue())
-            self.assertEquals(3, len(output_lines))
-            line_iter = iter(output_lines)
-            self.assertEquals("DEBUG: VCF [A.vcf] recognized by caller [Strelka]", line_iter.next())
-            self.assertEquals("DEBUG: VCF [B.vcf] recognized by caller [Strelka]", line_iter.next())
-            self.assertEquals("INFO: Recognized [2] Strelka file(s)", line_iter.next())
-
-
+            self.assertEquals(1, len(output_lines))
+            self.assertRegexpMatches(output_lines[0], 'Recognized \[2\] Strelka file\(s\)')
 
     def test_build_vcf_readers_exceptionIsRaisedDetailsLogged(self):
         vcf_content ='''##foo

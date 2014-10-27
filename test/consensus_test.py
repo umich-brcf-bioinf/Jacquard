@@ -1,10 +1,32 @@
 from collections import OrderedDict
 import numpy
+import os
+from StringIO import StringIO
+import sys
 import unittest
 
 from jacquard.consensus import iterate_file, add_consensus, process_line, calculate_consensus, create_consensus_dict, get_consensus_som, get_consensus, add_zscore, calculate_zscore
+import jacquard.consensus as consensus
+import jacquard.logger as logger
+
+logger.initialize_logger("consensus")
 
 class ConsensusTestCase(unittest.TestCase):
+    def setUp(self):
+        self.output = StringIO()
+        self.saved_stderr = sys.stderr
+        sys.stderr = self.output
+
+    def tearDown(self):
+        self.output.close()
+        sys.stderr = self.saved_stderr
+        self.log_file = os.path.join(os.path.dirname(os.getcwd()), "logs", "jacquard.log")
+        try:
+            os.remove(self.log_file)
+        except:
+            pass
+
+        
     def test_iterateFile_consensus(self):
         reader = MockReader("##FOO\n#CHROM\n1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_HC_SOM_VS:DP:JQ_AF_VS:JQ_AF_AVERAGE:JQ_DP_AVERAGE\t1:0:0.0:0.0:0\t0:1:1.2:1.2:0\t1:3:1.0:1.0:0\n")
         writer = MockWriter()

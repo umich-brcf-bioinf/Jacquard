@@ -13,14 +13,16 @@ import sys
 # import jacquard.logger as logger
 from jacquard.utils import JQException
 from testfixtures.tempdirectory import TempDirectory
+import jacquard.logger as logger
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
+logger.initialize_logger("merge")
 
-mock_log_called = False
-
-def mock_log(msg, *args):
-    global mock_log_called
-    mock_log_called = True
+# mock_log_called = False
+ 
+# def mock_log(msg, *args):
+#     global mock_log_called
+#     mock_log_called = True
     
 def dataframe(input_data, sep="\t", index_col=None):
     def tupelizer(thing):
@@ -35,9 +37,8 @@ def dataframe(input_data, sep="\t", index_col=None):
     return df
 
 class MergeTestCase(unittest.TestCase):
-    
     def setUp(self):
-        self._reset_mock_logger()
+#         self._reset_mock_logger()
         self.output = StringIO()
         self.saved_stderr = sys.stderr
         sys.stderr = self.output
@@ -46,14 +47,14 @@ class MergeTestCase(unittest.TestCase):
         self.output.close()
         sys.stderr = self.saved_stderr
         
-    def _reset_mock_logger(self):
-        global mock_log_called
-        mock_log_called = False
-        global mock_log
-        merge.logger.info = mock_log
-        merge.logger.error = mock_log
-        merge.logger.warning = mock_log
-        merge.logger.debug = mock_log
+#     def _reset_mock_logger(self):
+#         global mock_log_called
+#         mock_log_called = False
+#         global mock_log
+#         merge.logger.info = mock_log
+#         merge.logger.error = mock_log
+#         merge.logger.warning = mock_log
+#         merge.logger.debug = mock_log
         
     def testExecute_multAltsSplitCorrectly(self):
         
@@ -126,8 +127,8 @@ class MergeTestCase(unittest.TestCase):
                                     merge.validate_sample_caller_vcfs,
                                     df)
 #             self.assertTrue("Sample [foo|sample_A] appears to be called by [MuTect] in multiple files." in self.output.getvalue())
-        global mock_log_called
-        self.assertTrue(mock_log_called)
+#         global mock_log_called
+#         self.assertTrue(mock_log_called)
         
     def test_isCompatible_raiseIfMissingRequiredColumns(self): 
         rows = ['COORDINATE', 'foo']
@@ -603,8 +604,8 @@ class MergeTestCase(unittest.TestCase):
 
         actual_df = merge.combine_format_columns(df, 0)
         
-        global mock_log_called
-        self.assertTrue(mock_log_called)
+#         global mock_log_called
+#         self.assertTrue(mock_log_called)
 
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
@@ -632,8 +633,8 @@ class MergeTestCase(unittest.TestCase):
 
         actual_df = merge.combine_format_columns(df, 0)
         
-        global mock_log_called
-        self.assertTrue(mock_log_called)
+#         global mock_log_called
+#         self.assertTrue(mock_log_called)
         
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_b\tfile1|sample_A\tfile1|sample_B\tfile1|sample_a
@@ -661,8 +662,8 @@ class MergeTestCase(unittest.TestCase):
 
         actual_df = merge.combine_format_columns(df, 0)
         
-        global mock_log_called
-        self.assertTrue(mock_log_called)
+#         global mock_log_called
+#         self.assertTrue(mock_log_called)
         
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
@@ -690,8 +691,8 @@ class MergeTestCase(unittest.TestCase):
 
         actual_df = merge.combine_format_columns(df, 0)
         
-        global mock_log_called
-        self.assertTrue(mock_log_called)
+#         global mock_log_called
+#         self.assertTrue(mock_log_called)
         
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
@@ -718,8 +719,8 @@ class MergeTestCase(unittest.TestCase):
 
         actual_df = merge.combine_format_columns(df, 1)
         
-        global mock_log_called
-        self.assertTrue(mock_log_called)
+#         global mock_log_called
+#         self.assertTrue(mock_log_called)
 
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_A\tfile2|sample_B\tfile1|sample_A\tfile1|sample_B
@@ -748,8 +749,8 @@ class MergeTestCase(unittest.TestCase):
 
         actual_df = merge.combine_format_columns(df, 0)
         
-        global mock_log_called
-        self.assertTrue(mock_log_called)
+#         global mock_log_called
+#         self.assertTrue(mock_log_called)
 
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_A\tfile2|sample_B\tfile1|sample_A\tfile1|sample_B
@@ -774,8 +775,8 @@ class MergeTestCase(unittest.TestCase):
 
         actual_df = merge.combine_format_columns(df, 0)
         
-        global mock_log_called
-        self.assertTrue(mock_log_called)
+#         global mock_log_called
+#         self.assertTrue(mock_log_called)
 
         expected_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_B\tfile1|sample_A

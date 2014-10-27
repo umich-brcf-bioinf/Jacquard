@@ -34,6 +34,7 @@ class LoggerTestCase(unittest.TestCase):
         tool = "foo"
         logger.initialize_logger(tool)
         logger.error("bar")
+
         root_logger = logger.logging.getLogger()
         
         current_time = datetime.now().strftime('%Y/%m/%d')

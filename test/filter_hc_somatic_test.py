@@ -2,13 +2,33 @@ import glob
 import os
 import unittest
 import shutil
+from StringIO import StringIO
+import sys
 import testfixtures
 from testfixtures import TempDirectory
 from jacquard.filter_hc_somatic import filter_somatic_positions, write_somatic, find_somatic_positions
 
+import jacquard.filter_hc_somatic as filter_hc_somatic
+import jacquard.logger as logger
+
 VCF_HEADER="#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsampleA\tsampleB\n"
+logger.initialize_logger("filter_hc_somatic")
 
 class FilterSomaticTestCase(unittest.TestCase):
+    def setUp(self):
+        self.output = StringIO()
+        self.saved_stderr = sys.stderr
+        sys.stderr = self.output
+        self.log_file = os.path.join(os.path.dirname(os.getcwd()), "logs", "jacquard.log")
+        try:
+            os.remove(self.log_file)
+        except:
+            pass
+        
+    def tearDown(self):
+        self.output.close()
+        sys.stderr = self.saved_stderr
+        
     def test_findSomaticPositions(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             input_dir.write("A.snp.vcf","##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP:JQ_HC_SOM_VS\t234:1\n")

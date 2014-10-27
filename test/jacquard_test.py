@@ -1,10 +1,11 @@
 # pylint: disable=C0103,C0301,R0903,R0904
 import unittest
 import jacquard.jacquard as jacquard
-import test.mock_module as mock_module
+import os
 from StringIO import StringIO
 import sys
 
+import test.mock_module as mock_module
 
 class JacquardTestCase(unittest.TestCase):
     def setUp(self):
@@ -12,7 +13,12 @@ class JacquardTestCase(unittest.TestCase):
         self.output = StringIO()
         self.saved_stderr = sys.stderr
         sys.stderr = self.output
-
+        self.log_file = os.path.join(os.path.dirname(os.getcwd()), "logs", "jacquard.log")
+        try:
+            os.remove(self.log_file)
+        except:
+            pass
+        
     def tearDown(self):
         self.output.close()
         sys.stderr = self.saved_stderr

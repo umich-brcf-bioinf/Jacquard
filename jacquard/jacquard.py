@@ -102,6 +102,8 @@ def dispatch(modules, arguments):
 #         print("ERROR: Jacquard encountered an unanticipated problem. Please contact your sysadmin or Jacquard support for assistance.",
 #               file=sys.stderr)
         sys.exit(1)
+        
+    logger.info("Done.")
 
 if __name__ == '__main__':
     main()

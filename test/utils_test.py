@@ -1,13 +1,17 @@
 # pylint: disable=C0103,C0301,R0903,R0904
 from collections import OrderedDict
 import os
-import unittest
+from StringIO import StringIO
 import subprocess
 import sys
 from testfixtures import TempDirectory
-from jacquard.utils import validate_directories, write_output, sort_headers, sort_data, change_pos_to_int, combine_format_values
-from StringIO import StringIO
+import unittest
 
+from jacquard.utils import validate_directories, write_output, sort_headers, sort_data, change_pos_to_int, combine_format_values
+import jacquard.utils as utils
+import jacquard.logger as logger
+
+logger.initialize_logger("utils")
 
 class ValidateDirectoriesTestCase(unittest.TestCase):
     def setUp(self):
@@ -18,7 +22,7 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
     def tearDown(self):
         self.output.close()
         sys.stderr = self.saved_stderr
-
+        
     def test_validateDirectories_inputDirectoryDoesntExist(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/reference_files/tag_varscan_test/foo"
@@ -29,7 +33,7 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
         self.assertEqual(cm.exception.code, 1)
 
         self.assertRegexpMatches(self.output.getvalue(),
-                                 r"ERROR. Specified input directory \[.*\] does not exist.")
+                                 r"Specified input directory \[.*\] does not exist.")
 
     def test_validateDirectories_outputDirectoryNotCreated(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
@@ -48,7 +52,7 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
 
             self.assertEqual(cm.exception.code, 1)
             self.assertRegexpMatches(self.output.getvalue(),
-                                     r"ERROR. Output directory \[.*\] could not be created. Check parameters and try again")
+                                     r"Output directory \[.*\] could not be created. Check parameters and try again")
 
 class WriteOutputTestCase(unittest.TestCase):
     def test_writeOutput(self):
