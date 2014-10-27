@@ -18,6 +18,7 @@ import argparse
 import os
 import signal
 import sys
+import traceback
 
 import tag as tag
 import normalize as normalize
@@ -93,10 +94,13 @@ def dispatch(modules, arguments):
         module_dispatch[args.subparser_name].execute(args, execution_context)
     
     except Exception as exception:
-        print("ERROR: " + str(exception),
-              file=sys.stderr)
-        print("ERROR: Jacquard encountered an unanticipated problem. Please contact your sysadmin or Jacquard support for assistance.",
-              file=sys.stderr)
+        logger.error(str(exception))
+        logger.error("Jacquard encountered an unanticipated problem. Please contact your sysadmin or Jacquard support for assistance.")
+        logger.error(traceback.format_exc())
+#         print("ERROR: " + str(exception),
+#               file=sys.stderr)
+#         print("ERROR: Jacquard encountered an unanticipated problem. Please contact your sysadmin or Jacquard support for assistance.",
+#               file=sys.stderr)
         sys.exit(1)
 
 if __name__ == '__main__':

@@ -20,7 +20,6 @@ class PivotError(Exception):
     """Base class for exceptions in this module."""
     pass 
 
-
 class VariantPivoter():
     MISSING_REQUIRED_COLUMNS_ERROR="The columns of specified dataframe do not " +\
         "contain required columns {0}; review input data."

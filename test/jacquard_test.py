@@ -29,8 +29,11 @@ class JacquardTestCase(unittest.TestCase):
             jacquard.dispatch([mock_module], ["mock_module"])
             
         self.assertEqual(1, exit_code.exception.code)
-        actual_messages = self.output.getvalue().rstrip().split("\n")[2:]
-        self.assertEquals(["ERROR: I'm feeling angry",
-                           "ERROR: Jacquard encountered an unanticipated problem. Please contact your sysadmin or Jacquard support for assistance."],
-                          actual_messages)
+        
+        actual_messages = self.output.getvalue().rstrip().split("\n")
+        self.assertRegexpMatches(actual_messages[0], "Jacquard begins")
+        self.assertRegexpMatches(actual_messages[1], "Saving log to")
+        self.assertRegexpMatches(actual_messages[2], "I'm feeling angry")
+        self.assertRegexpMatches(actual_messages[3], "Jacquard encountered an unanticipated problem.")
+        self.assertRegexpMatches(actual_messages[4], "Traceback")
 

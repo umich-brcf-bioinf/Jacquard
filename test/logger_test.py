@@ -23,11 +23,6 @@ class LoggerTestCase(unittest.TestCase):
         
     def tearDown(self):
         self.output.close()
-#         sys.stderr = self.saved_stderr
-#         try:
-#             os.remove(self.log_file)
-#         except:
-#             pass
 
     def test_initialize_logger(self):
         tool = "foo"
@@ -44,7 +39,7 @@ class LoggerTestCase(unittest.TestCase):
         current_time = datetime.now().strftime('%Y/%m/%d')
         output_lines = self.output.getvalue().rstrip().split("\n")
 
-        self.assertEquals(["root: ERROR: bar"], root_logger.handlers[0].buffer)
+        self.assertEquals(["root: ERROR: bar"], root_logger.handlers[0].buffer) ##nosetests overwrites logger.FileHandler
         self.assertRegexpMatches(output_lines[0], ""+current_time+r".*\|ERROR\|foo\|bar")
          
     def test_warning(self):
