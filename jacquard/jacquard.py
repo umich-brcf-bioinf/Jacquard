@@ -18,7 +18,7 @@ import argparse
 import os
 import signal
 import sys
-
+import traceback
 import tag as tag
 import normalize as normalize
 import filter_hc_somatic as filter_hc_somatic
@@ -26,7 +26,8 @@ import merge as merge
 import consensus as consensus
 import expand as expand
 import utils as utils
-
+import utils as utils
+import logger as logger
 
 _SUBCOMMANDS=[normalize,
               tag,
@@ -62,12 +63,17 @@ def dispatch(modules, arguments):
         description='''type 'Jacquard -h <subcommand>' for help on a specific subcommand''',
         epilog="authors: Jessica Bene, Ashwini Bhasi, Chris Gates, Kevin Meng, Peter Ulintz; October 2014")
     parser.add_argument(\
-                        "-v",
+                        "-V",
                         "--version",
                         action='version',
                         version=version_text())
+    parser.add_argument(\
+                        "-v",
+                        "--verbose",
+                        action='store_true')
     subparsers = parser.add_subparsers(title="subcommands",
                                        dest="subparser_name")
+    
     try:
         module_dispatch = {}
         for module in modules:
@@ -75,19 +81,32 @@ def dispatch(modules, arguments):
             short_name = module.__name__.split('.')[-1]
             module_dispatch[short_name] = module
 
+        cwd = os.path.dirname(os.getcwd())
         execution_context = [\
             "##jacquard.version={0}".format(utils.__version__),
             "##jacquard.command={0}".format(" ".join(arguments)),
-            "##jacquard.cwd={0}".format(os.path.dirname(os.getcwd()))]
-
+            "##jacquard.cwd={0}".format(cwd)]
+        
+        logger.initialize_logger(args.subparser_name)
+        logger.info("Jacquard begins (v{})", utils.__version__)
+        logger.info("Saving log to [{}]", os.getcwd())
+        logger.debug("Command: {}", " ".join(arguments))
+        logger.debug("Cwd: {}", os.path.dirname(os.getcwd()))
         args = parser.parse_args(arguments)
         module_dispatch[args.subparser_name].execute(args, execution_context)
+        
+        logger.initialize_logger(cwd, args.subparser_name, args.verbose)
+        
+        for message in execution_context:
+            logger.debug(message)
+            
     except Exception as exception:
-        print("ERROR: " + str(exception),
-              file=sys.stderr)
-        print("ERROR: Jacquard encountered an unanticipated problem. Please contact your sysadmin or Jacquard support for assistance.",
-              file=sys.stderr)
+        logger.error(str(exception))
+        logger.error("Jacquard encountered an unanticipated problem. Please contact your sysadmin or Jacquard support for assistance.")
+        logger.error(traceback.format_exc())
         sys.exit(1)
+    
+    logger.info("Done.")
 
 if __name__ == '__main__':
     main()

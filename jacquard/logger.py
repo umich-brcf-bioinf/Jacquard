@@ -11,36 +11,42 @@ import sys
 _FILE_LOG_FORMAT = '%(asctime)s|%(levelname)s|%(time)s|%(host)s|%(user)s|%(tool)s|%(message)s'  ### File logs are not done yet
 _CONSOLE_LOG_FORMAT = '%(asctime)s|%(levelname)s|%(tool)s|%(message)s' ### Console prints are tested.
 logging_dict = {}
+_verbose = False
 
-def initialize_logger(output_dir, tool):
-    log_dir =os.path.join(output_dir + "/logs/")
+def initialize_logger(tool, verbose=False):
+    log_dir =os.path.join(os.path.dirname(os.getcwd()),"logs")
     if not os.path.isdir(log_dir):
         os.mkdir(log_dir)
     time = datetime.now()
-    logging.basicConfig(format=_FILE_LOG_FORMAT, level="DEBUG", datefmt='%Y/%m/%d %I:%M:%S %p', filename= output_dir + "/logs/jacquard.log")
+    logging.basicConfig(format=_FILE_LOG_FORMAT, level="DEBUG", datefmt='%Y/%m/%d %I:%M:%S %p', filename=os.path.join(log_dir, "jacquard.log"))
+    
+    global _verbose
+    _verbose = verbose
     
     global logging_dict
     logging_dict = {'user': getpass.getuser(), 'host': socket.gethostname(), 'time': time, 'tool': tool}
     
 # def error(message, logging_dict = {}, tool = ""):
 def error(message, *args):
-#     logging.error("Error: "+message, extra=logging_dict)
     _printer("ERROR", message, *args)
-    
+    logging.error(message.format(*[str(i) for i in args]), extra=logging_dict)
+
 # def warning(message, logging_dict = {}, tool = ""):
 def warning(message, *args):
     _printer("WARNING", message, *args)
-#     logging.warning(message, extra=logging_dict)
+    logging.warning(message.format(*[str(i) for i in args]), extra=logging_dict)
     
 def info(message, *args):
     _printer("INFO", message, *args)
-#     logging.info(message, extra=logging_dict)
+    logging.info(message.format(*[str(i) for i in args]), extra=logging_dict)
 
 # def debug(message, logging_dict = {}, tool = ""):
 def debug(message, *args):
-    _printer("DEBUG", message, *args)
-#     logging.debug(message, extra=logging_dict)
-
+    global _verbose
+    if _verbose:
+        _printer("DEBUG", message, *args)
+    logging.debug(message.format(*[str(i) for i in args]), extra=logging_dict)
+    
 def _printer(level, message, *args):
     print (_CONSOLE_LOG_FORMAT % {'asctime':datetime.now().strftime('%Y/%m/%d %I:%M:%S %p'),
                                   'levelname':level, 
