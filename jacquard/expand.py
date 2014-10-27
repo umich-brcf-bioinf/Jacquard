@@ -433,7 +433,7 @@ def add_subparser(subparser):
         help="FORMAT tags to be fielded out in the pivoting.")
     parser_pivot.add_argument("-i", "--info_tags",
         help="INFO tags to be fielded out in the pivoting.")
-        
+    parser_pivot.add_argument("-v", "--verbose", action='store_true')    
         
 def execute(args, execution_context):
     input_file = os.path.abspath(args.input_file)

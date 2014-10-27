@@ -655,6 +655,7 @@ def add_subparser(subparser):
     parser_pivot.add_argument("-k", "--keys",
         help="Columns to be used as keys for the pivoting. Default keys for VCF are CHROM,POS,ID,REF,ALT,QUAL,FILTER.")
     parser_pivot.add_argument("-a", "--allow_inconsistent_sample_sets", action="store_true", default=False, help="Allow inconsistent sample sets across callers. Not recommended.")
+    parser_pivot.add_argument("-v", "--verbose", action='store_true')
         
 def execute(args, execution_context):
     input_dir = os.path.abspath(args.input_dir)

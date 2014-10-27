@@ -191,6 +191,7 @@ def add_subparser(subparser):
     parser_tag = subparser.add_parser("consensus", help="Accepts a Jacquard-merged VCf file and creates a new file, adding consensus fields.")
     parser_tag.add_argument("input_file", help="Path to Jacquard-merged VCF (or any VCF with Jacquard tags (e.g. JQ_SOM_MT)")
     parser_tag.add_argument("output_file", help="Path to output VCf")
+    parser_tag.add_argument("-v", "--verbose", action='store_true')
 
 def execute(args, execution_context): 
     input_file = os.path.abspath(args.input_file)

@@ -107,6 +107,7 @@ def add_subparser(subparser):
     parser_normalize_vs = subparser.add_parser("filter_hc_somatic", help="Accepts a directory of Jacquard-tagged VCF results from one or more callers and creates a new directory of VCFs, where rows have been filtered to contain only positions that were called high-confidence somatic in any VCF.")
     parser_normalize_vs.add_argument("input_dir", help="Path to directory containing VCFs. All VCFs in this directory must have Jacquard-specific tags (see jacquard.py tag for more info")
     parser_normalize_vs.add_argument("output_dir", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
+    parser_normalize_vs.add_argument("-v", "--verbose", action='store_true')
 
 def execute(args, execution_context): 
     input_dir = os.path.abspath(args.input_dir)

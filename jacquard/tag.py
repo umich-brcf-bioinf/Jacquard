@@ -15,7 +15,7 @@ def add_subparser(subparser):
     parser_tag = subparser.add_parser("tag", help="Accepts a directory of VCf results and creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
     parser_tag.add_argument("input_dir", help="Path to directory containing VCFs. Other file types ignored")
     parser_tag.add_argument("output_dir", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
-
+    parser_tag.add_argument("-v", "--verbose", action='store_true')
 
 def tag_files(vcf_readers_to_writers, execution_context):
     total_number_of_files = len(vcf_readers_to_writers)
@@ -90,8 +90,8 @@ def execute(args, execution_context):
     utils.validate_directories(input_dir, output_dir)
 
     #TODO cgates: move to jacquard.py
-    for line in execution_context:
-        logger.debug("{}", line)
+#     for line in execution_context:
+#         logger.debug("{}", line)
 
     vcf_readers = _build_vcf_readers(input_dir)
     if not vcf_readers:
