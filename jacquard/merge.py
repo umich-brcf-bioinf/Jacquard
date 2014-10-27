@@ -598,6 +598,7 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
         sorted_df.to_csv(f, index=False, sep="\t")  
 
     logger.info("Merged [{}] VCf files to [{}]", len(sample_file_readers), output_path)
+    logger.info("Done.")
     
 def determine_input_keys(input_dir):
     for file in listdir(input_dir):

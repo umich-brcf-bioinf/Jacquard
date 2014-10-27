@@ -26,6 +26,7 @@ import merge as merge
 import consensus as consensus
 import expand as expand
 import utils as utils
+import logger as logger
 
 
 _SUBCOMMANDS=[normalize,
@@ -68,6 +69,7 @@ def dispatch(modules, arguments):
                         version=version_text())
     subparsers = parser.add_subparsers(title="subcommands",
                                        dest="subparser_name")
+    
     try:
         module_dispatch = {}
         for module in modules:
@@ -81,7 +83,15 @@ def dispatch(modules, arguments):
             "##jacquard.cwd={0}".format(os.path.dirname(os.getcwd()))]
 
         args = parser.parse_args(arguments)
+        
+        logger.initialize_logger(args.subparser_name)
+        logger.info("Jacquard begins (v{})", utils.__version__)
+        logger.info("Saving log to [{}]", os.getcwd())
+        logger.debug("Command: {}", " ".join(arguments))
+        logger.debug("Cwd: {}", os.path.dirname(os.getcwd()))
+        
         module_dispatch[args.subparser_name].execute(args, execution_context)
+    
     except Exception as exception:
         print("ERROR: " + str(exception),
               file=sys.stderr)

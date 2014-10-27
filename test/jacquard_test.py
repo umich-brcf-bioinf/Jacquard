@@ -24,10 +24,12 @@ class JacquardTestCase(unittest.TestCase):
 
     def test_gracefulErrorMessageWhenUnanticipatedProblem(self):
         mock_module.my_exception_string = "I'm feeling angry"
+        
         with self.assertRaises(SystemExit) as exit_code:
             jacquard.dispatch([mock_module], ["mock_module"])
+            
         self.assertEqual(1, exit_code.exception.code)
-        actual_messages = self.output.getvalue().rstrip().split("\n")
+        actual_messages = self.output.getvalue().rstrip().split("\n")[2:]
         self.assertEquals(["ERROR: I'm feeling angry",
                            "ERROR: Jacquard encountered an unanticipated problem. Please contact your sysadmin or Jacquard support for assistance."],
                           actual_messages)
