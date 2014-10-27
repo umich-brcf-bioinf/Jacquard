@@ -429,7 +429,7 @@ sample2	2	3	A	T	foo	.	GT	0/1	20	200'''
         tm.assert_frame_equal(expected_df, actual_df)
         
     # not sure how to test if numpy.ndarray
-    def xtest_validate_sample_data_non_unique_cells(self):
+    def Ytest_validate_sample_data_non_unique_cells(self):
         rows = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL"]
         cols = ["SAMPLE_NAME"]
         pivot_values = ['GT']

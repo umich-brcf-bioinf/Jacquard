@@ -55,8 +55,10 @@ def _partition_input_files(in_files, output_dir, caller):
         output_file = caller.decorate_files(in_files, "normalized")
         file_writer = vcf.FileWriter(os.path.join(output_dir,output_file))
         file_readers = []
+        
         for file_path in patient_to_files[patient]:
             file_readers.append(vcf.FileReader(file_path))
+        
         writer_to_readers[file_writer] = file_readers
 
     return writer_to_readers
@@ -89,7 +91,8 @@ def execute(args, execution_context):
     in_files = sorted(glob.glob(os.path.join(input_dir, "*")))
     
     caller = _determine_caller_per_directory(in_files)
-
+    logger.info("Recognized caller as {}", caller.name)
+    
     caller.validate_vcfs_in_directory(in_files)    
     
     writer_to_readers = _partition_input_files(in_files, output_dir, caller)
@@ -102,6 +105,7 @@ def execute(args, execution_context):
         shutil.rmtree(output_dir)
         exit(1)
         
+    logger.info("Normalizing input files")
     for writer, readers in writer_to_readers.items():  
         caller.normalize(writer, readers)
      

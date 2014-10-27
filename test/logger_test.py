@@ -13,7 +13,6 @@ import jacquard.logger as logger
 class LoggerTestCase(unittest.TestCase):
     def setUp(self):
         self.output = StringIO()
-#         self.saved_stderr = sys.stderr
         sys.stderr = self.output
         self.log_file = os.path.join(os.path.dirname(os.getcwd()), "logs", "jacquard.log")
         try:

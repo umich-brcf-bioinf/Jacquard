@@ -9,23 +9,42 @@ from jacquard.consensus import iterate_file, add_consensus, process_line, calcul
 import jacquard.consensus as consensus
 import jacquard.logger as logger
 
-logger.initialize_logger("consensus")
-
+mock_log_called = False
+  
+def mock_log(msg, *args):
+    global mock_log_called
+    mock_log_called = True
+    
 class ConsensusTestCase(unittest.TestCase):
     def setUp(self):
         self.output = StringIO()
         self.saved_stderr = sys.stderr
         sys.stderr = self.output
+        self.original_info = logger.info
+        self.original_error = logger.error
+        self.original_warning = logger.warning
+        self.original_debug = logger.debug
+        self._change_mock_logger()
 
     def tearDown(self):
         self.output.close()
         sys.stderr = self.saved_stderr
-        self.log_file = os.path.join(os.path.dirname(os.getcwd()), "logs", "jacquard.log")
-        try:
-            os.remove(self.log_file)
-        except:
-            pass
-
+        self._reset_mock_logger()
+        
+    def _change_mock_logger(self):
+        global mock_log_called
+        mock_log_called = False
+        global mock_log
+        logger.info = mock_log
+        logger.error = mock_log
+        logger.warning = mock_log
+        logger.debug = mock_log
+        
+    def _reset_mock_logger(self):
+        logger.info = self.original_info
+        logger.error = self.original_error
+        logger.warning = self.original_warning
+        logger.debug = self.original_debug
         
     def test_iterateFile_consensus(self):
         reader = MockReader("##FOO\n#CHROM\n1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_HC_SOM_VS:DP:JQ_AF_VS:JQ_AF_AVERAGE:JQ_DP_AVERAGE\t1:0:0.0:0.0:0\t0:1:1.2:1.2:0\t1:3:1.0:1.0:0\n")

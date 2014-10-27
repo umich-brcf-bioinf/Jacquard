@@ -11,10 +11,22 @@ from jacquard.utils import validate_directories, write_output, sort_headers, sor
 import jacquard.utils as utils
 import jacquard.logger as logger
 
-logger.initialize_logger("utils")
+# logger.initialize_logger("utils")
+mock_log_called = False
+mock_message = ""
 
+def mock_log(msg, *args):
+    global mock_log_called
+    mock_log_called = True
+#     print msg.format(*[str(i) for i in args])
+    
 class ValidateDirectoriesTestCase(unittest.TestCase):
     def setUp(self):
+        self.original_info = logger.info
+        self.original_error = logger.error
+        self.original_warning = logger.warning
+        self.original_debug = logger.debug
+        self._change_mock_logger()
         self.output = StringIO()
         self.saved_stderr = sys.stderr
         sys.stderr = self.output
@@ -22,6 +34,22 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
     def tearDown(self):
         self.output.close()
         sys.stderr = self.saved_stderr
+        self._reset_mock_logger()
+        
+    def _change_mock_logger(self):
+        global mock_log_called
+        mock_log_called = False
+        global mock_log
+        logger.info = mock_log
+        logger.error = mock_log
+        logger.warning = mock_log
+        logger.debug = mock_log
+        
+    def _reset_mock_logger(self):
+        logger.info = self.original_info
+        logger.error = self.original_error
+        logger.warning = self.original_warning
+        logger.debug = self.original_debug
         
     def test_validateDirectories_inputDirectoryDoesntExist(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -31,9 +59,11 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             validate_directories(input_dir, output_dir)
         self.assertEqual(cm.exception.code, 1)
-
-        self.assertRegexpMatches(self.output.getvalue(),
-                                 r"Specified input directory \[.*\] does not exist.")
+        
+        global mock_log_called
+        self.assertTrue(mock_log_called)
+#         self.assertRegexpMatches(self.output.getvalue(),
+#                                  r"Specified input directory \[.*\] does not exist.")
 
     def test_validateDirectories_outputDirectoryNotCreated(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
@@ -51,8 +81,10 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
                 cleanup_unwriteable_dir(unwriteable_dir)
 
             self.assertEqual(cm.exception.code, 1)
-            self.assertRegexpMatches(self.output.getvalue(),
-                                     r"Output directory \[.*\] could not be created. Check parameters and try again")
+            global mock_log_called
+            self.assertTrue(mock_log_called)
+#             self.assertRegexpMatches(self.output.getvalue(),
+#                                      r"Output directory \[.*\] could not be created. Check parameters and try again")
 
 class WriteOutputTestCase(unittest.TestCase):
     def test_writeOutput(self):

@@ -36,7 +36,6 @@ def info(message, *args):
     _printer("INFO", message, *args)
     logging.info(message.format(*[str(i) for i in args]), extra=logging_dict)
 
-
 def debug(message, *args):# def debug(message, logging_dict = {}, tool = ""):
 #     _printer("DEBUG", message, *args)
     logging.debug(message.format(*[str(i) for i in args]), extra=logging_dict)

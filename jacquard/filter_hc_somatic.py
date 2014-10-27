@@ -47,7 +47,7 @@ def find_somatic_positions(in_files, output_dir):
         
     logger.info("Found [{}] high-confidence somatic positions", len(somatic_positions.keys()))
     somatic_positions_header = "##jacquard.filterHCSomatic.total_highConfidence_somatic_positions={0}\n".format(len(somatic_positions.keys()))
-    logger.info("{}", somatic_positions_header)
+#     logger.info("{}", somatic_positions_header)
     
     return somatic_positions, somatic_positions_header
 
@@ -75,7 +75,7 @@ def write_somatic(in_files, output_dir, somatic_positions, execution_context):
                     non_somatic += 1
        
         excluded_variants = "##jacquard.filterHCSomatic.excluded_variants={0}\n".format(non_somatic)
-        logger.info("{}:{}", os.path.basename(file), excluded_variants)
+#         logger.info("{}:{}", os.path.basename(file), excluded_variants)
         headers.append(excluded_variants)
         headers.extend(execution_context)
         
@@ -94,8 +94,7 @@ def filter_somatic_positions(input_dir, output_dir, execution_context=[]):
     if len(in_files) < 1:
         logger.error("Specified input directory [{}] contains no VCF files. Check parameters and try again.", input_dir)
         exit(1)
-        
-    logger.info("\n".join(execution_context))
+
     logger.info("Processing [{}] VCF file(s) from [{}]", len(in_files), input_dir)
     
     
