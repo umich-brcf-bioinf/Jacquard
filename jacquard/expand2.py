@@ -48,13 +48,24 @@ def _get_headers(vcf_reader):
     (info_header, format_tags) = _parse_meta_headers(vcf_reader.metaheaders)
     format_sample_header = _append_format_tags_to_samples(format_tags, samples)
     
-    complete_header = column_header_no_samples + info_header + format_sample_header
+    return column_header_no_samples, info_header, format_sample_header
 
-    return "\t".join(complete_header)
+def _parse_info_field(vcf_record, info_header):
+    info_dict = vcf_record.get_info_dict()
+    write_info_columns = []
+    for tag in info_header:
+        info_cell = ""
+        if tag in info_dict:
+            info_cell = info_dict[tag]
+        write_info_columns.append(info_cell)
+    return write_info_columns
     
-def _write_vcf_records(vcf_reader, file_writer):
+def _write_vcf_records(vcf_reader, file_writer, info_header):
     for record in vcf_reader.vcf_records():
-        file_writer.write("\t".join([record.chrom,record.pos,record.id,record.ref,record.alt,record.qual,record.filter]))
+        write_info_columns = _parse_info_field(record, info_header)
+        write_row = [record.chrom,record.pos,record.id,record.ref,record.alt,record.qual,record.filter]
+        write_row.extend(write_info_columns)
+        file_writer.write("\t".join(write_row))
 
 def add_subparser(subparser):
     parser_pivot = subparser.add_parser("expand2", help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
@@ -73,12 +84,14 @@ def execute(args, execution_context):
         pass  
     
     vcf_reader = _get_vcf_reader(input_file)
-    complete_header = _get_headers(vcf_reader)
+    column_header_no_samples, info_header, format_sample_header = _get_headers(vcf_reader)
     
+    complete_header = column_header_no_samples + info_header + format_sample_header
+
     file_writer = vcf.FileWriter(output_path)
     file_writer.write(complete_header)
     
-    _write_vcf_records(vcf_reader,file_writer)
+    _write_vcf_records(vcf_reader, file_writer, info_header)
     
     file_writer.close()
     

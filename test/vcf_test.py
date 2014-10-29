@@ -75,6 +75,11 @@ class VcfRecordTestCase(unittest.TestCase):
     def testCreateKey(self):
         input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
         self.assertEquals("CHROM_POS_REF_ALT",VcfRecord(input_line).key)
+    
+    def testInfoDict(self):
+        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|k1=v1;k2=v2|F|S\n".replace('|',"\t")
+        vcf_record = VcfRecord(input_line)
+        self.assertEquals({"k1":"v1","k2":"v2"},vcf_record.get_info_dict())
 
 class VcfReaderTestCase(unittest.TestCase):
     def setUp(self):

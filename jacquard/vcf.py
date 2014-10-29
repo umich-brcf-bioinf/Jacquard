@@ -93,6 +93,15 @@ class VcfRecord(object):
             values = sample.split(":")
             self.sample_dict[i] = OrderedDict(zip(tags,values))
 
+    def get_info_dict(self):
+        info_list = self.info.split(";")
+        info_dict = {}
+        for key_value in info_list:
+            if "=" in key_value:
+                key,value = key_value.split("=")
+                info_dict[key] = value
+        return info_dict
+        
     def asText(self):
         stringifier = [self.chrom,self.pos,self.id,self.ref,self.alt,self.qual,self.filter,self.info,":".join(self.format_set)]
         for key in self.sample_dict:
