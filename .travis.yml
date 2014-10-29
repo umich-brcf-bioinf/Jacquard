@@ -11,8 +11,7 @@ before_script:
     - pip install python-coveralls
 
 script: 
-    #- nosetests --with-coverage --cover-package=jacquard,variant_callers
-    - nosetests
+    - nosetests --with-coverage --cover-package=jacquard,variant_callers
 
 after_success:
     - coveralls
