@@ -43,7 +43,6 @@ def _get_headers(vcf_reader):
     split_column_header = vcf_reader.column_header.split("\t")
     
     column_header_no_samples = split_column_header[0:7]
-    column_header_no_samples.append(split_column_header[8])
     samples = split_column_header[9:]
     
     (info_header, format_tags) = _parse_meta_headers(vcf_reader.metaheaders)
@@ -53,6 +52,10 @@ def _get_headers(vcf_reader):
 
     return "\t".join(complete_header)
     
+# def _write_vcf_records(vcf_reader):
+#     for record in vcf_reader.vcf_records():
+#         
+
 def add_subparser(subparser):
     parser_pivot = subparser.add_parser("expand2", help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
     parser_pivot.add_argument("input_file", help="Path to annotated VCF. Other file types ignored")

@@ -2,23 +2,24 @@ import os
 import unittest
 
 import jacquard.utils as utils
-from jacquard.expand2 import _parse_meta_headers, _append_format_tags_to_samples, _get_headers
+from jacquard.expand2 import _parse_meta_headers, _append_format_tags_to_samples, _get_headers#, _write_vcf_records
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
 class MockVcfReader(object):
-    def __init__(self, input_filepath="vcfName", metaheaders=["##metaheaders"], column_header="#header"):
+    def __init__(self, input_filepath="vcfName", metaheaders=["##metaheaders"], column_header="#header", content = ["foo"]):
         self.input_filepath = input_filepath
         self.metaheaders = metaheaders
         self.column_header = column_header
         self.opened = False
         self.closed = False
-
+        self.content = content
+        
     def open(self):
         self.opened = True
 
     def vcf_records(self):
-        return iter(["foo"])
+        return iter(self.content)
     
     def close(self):
         self.closed = True
@@ -66,8 +67,13 @@ class ExpandTestCase(unittest.TestCase):
         mock_reader = MockVcfReader(metaheaders=meta_headers, column_header="CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsampleA\tsampleB")
         actual = _get_headers(mock_reader)
         
-        expected = "CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tFORMAT\tAA\tAC\tSP|sampleA\tSP|sampleB"
+        expected = "CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tAA\tAC\tSP|sampleA\tSP|sampleB"
         
         self.assertEquals(expected, actual)
         
-    
+#     def test_write_vcf_records(self):
+#         mock_vcf_reader = MockVcfReader(content=["CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO","FORMAT","sampleA"])
+#         actual = _write_vcf_records(mock_vcf_reader)
+#         expected = ["CHROM","POS","ID","REF","ALT","QUAL","FILTER"]
+#         self.assertEquals(expected,actual)
+        
