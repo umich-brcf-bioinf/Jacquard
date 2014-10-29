@@ -56,6 +56,7 @@ def _parse_info_field(vcf_record, info_header):
     for tag in info_header:
         info_cell = ""
         if tag in info_dict:
+            print tag
             info_cell = info_dict[tag]
         write_info_columns.append(info_cell)
     return write_info_columns

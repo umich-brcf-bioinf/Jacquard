@@ -35,6 +35,8 @@ class MockVcfRecord(object):
             if "=" in key_value:
                 key,value = key_value.split("=")
                 info_dict[key] = value
+            else:
+                info_dict[key_value] = key_value
         return info_dict
 
 class MockFileWriter(object):
@@ -92,10 +94,12 @@ class ExpandTestCase(unittest.TestCase):
         self.assertEquals(expected, actual)
         
     def test_write_vcf_records(self):
-        mock_vcf_reader = MockVcfReader(content=[["CHROM","POS","ID","REF","ALT","QUAL","FILTER","tag1=val1;tag2=val2;tag3","FORMAT","sampleA"]])
+        mock_vcf_reader = MockVcfReader(content=[["CHROM","POS","ID","REF","ALT","QUAL","FILTER","tag1=val1;tag3=val3;tag4","FORMAT","sampleA"]])
         mock_file_writer = MockFileWriter()
-        _write_vcf_records(mock_vcf_reader, mock_file_writer, ["tag1", "tag2", "tag3"])
+        _write_vcf_records(mock_vcf_reader, mock_file_writer, ["tag1", "tag2", "tag3", "tag4"])
         actual = mock_file_writer.written
-        expected = ["CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tval1\tval2\t"]
+        expected = ["CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tval1\t\tval3\ttag4"]
         self.assertEquals(expected,actual)
+        
+        
         

@@ -100,6 +100,8 @@ class VcfRecord(object):
             if "=" in key_value:
                 key,value = key_value.split("=")
                 info_dict[key] = value
+            else:
+                info_dict[key_value] = key_value
         return info_dict
         
     def asText(self):
