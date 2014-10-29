@@ -52,9 +52,9 @@ def _get_headers(vcf_reader):
 
     return "\t".join(complete_header)
     
-# def _write_vcf_records(vcf_reader):
-#     for record in vcf_reader.vcf_records():
-#         
+def _write_vcf_records(vcf_reader, file_writer):
+    for record in vcf_reader.vcf_records():
+        file_writer.write("\t".join([record.chrom,record.pos,record.id,record.ref,record.alt,record.qual,record.filter]))
 
 def add_subparser(subparser):
     parser_pivot = subparser.add_parser("expand2", help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
@@ -75,6 +75,11 @@ def execute(args, execution_context):
     vcf_reader = _get_vcf_reader(input_file)
     complete_header = _get_headers(vcf_reader)
     
-    out_file = open(output_path, "w")
-    out_file.write(complete_header)
-    out_file.close()
+    file_writer = vcf.FileWriter(output_path)
+    file_writer.write(complete_header)
+    
+    _write_vcf_records(vcf_reader,file_writer)
+    
+    file_writer.close()
+    
+    

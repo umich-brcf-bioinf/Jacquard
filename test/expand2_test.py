@@ -2,7 +2,8 @@ import os
 import unittest
 
 import jacquard.utils as utils
-from jacquard.expand2 import _parse_meta_headers, _append_format_tags_to_samples, _get_headers#, _write_vcf_records
+from jacquard.expand2 import _parse_meta_headers, _append_format_tags_to_samples, _get_headers, _write_vcf_records
+from enaml.layout.geometry import Pos
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
@@ -19,10 +20,22 @@ class MockVcfReader(object):
         self.opened = True
 
     def vcf_records(self):
-        return iter(self.content)
+        for content in self.content:
+            yield MockVcfRecord(content)
     
     def close(self):
         self.closed = True
+        
+class MockVcfRecord(object):
+    def __init__(self, content):
+        self.chrom,self.pos,self.id,self.ref,self.alt,self.qual,self.filter = content[0:7]
+
+class MockFileWriter(object):
+    def __init__(self):
+        self.written = []
+        
+    def write(self, text):
+        self.written.append(text)
 
 class ExpandTestCase(unittest.TestCase):
     def test_parse_meta_headers(self):
@@ -71,9 +84,12 @@ class ExpandTestCase(unittest.TestCase):
         
         self.assertEquals(expected, actual)
         
-#     def test_write_vcf_records(self):
-#         mock_vcf_reader = MockVcfReader(content=["CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO","FORMAT","sampleA"])
-#         actual = _write_vcf_records(mock_vcf_reader)
-#         expected = ["CHROM","POS","ID","REF","ALT","QUAL","FILTER"]
-#         self.assertEquals(expected,actual)
+    def test_write_vcf_records(self):
+        mock_vcf_reader = MockVcfReader(content=[["CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO","FORMAT","sampleA"]])
+        mock_file_writer = MockFileWriter()
+        _write_vcf_records(mock_vcf_reader, mock_file_writer)
+        actual = mock_file_writer.written
+        expected = ["CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER"]
+        self.assertEquals(expected,actual)
+        
         
