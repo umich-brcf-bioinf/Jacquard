@@ -16,8 +16,6 @@ import time
 import utils
 import logger
 
-print logger.info
-
 class PivotError(Exception):
     """Base class for exceptions in this module."""
     pass 
