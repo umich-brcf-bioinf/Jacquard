@@ -3,7 +3,7 @@ import os
 import unittest
 
 import jacquard.utils as utils
-from jacquard.expand2 import _parse_meta_headers, _append_format_tags_to_samples, _get_headers, _write_vcf_records, _parse_info_field
+from jacquard.expand2 import _parse_meta_headers, _append_format_tags_to_samples, _get_headers, _write_vcf_records, _disambiguate_column_names
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
@@ -79,6 +79,17 @@ class ExpandTestCase(unittest.TestCase):
                                     "FORMAT fields. Review input and try again.",
                                     _parse_meta_headers,
                                     meta_headers)
+        
+    def test_disambiguate_column_names(self):
+        actual = _disambiguate_column_names(["CHROM", "POS", "ID", "REF"], ["HOM", "AA", "DP", "GT"])
+        expected = ["HOM", "AA", "DP", "GT"]
+        
+        self.assertEquals(expected, actual)
+        
+        actual = _disambiguate_column_names(["CHROM", "POS", "ID", "REF"], ["HOM", "AA", "ID", "DP", "GT"])
+        expected = ["INFO_HOM", "INFO_AA", "INFO_ID", "INFO_DP", "INFO_GT"]
+        
+        self.assertEquals(expected, actual)
         
     def test_append_format_tags_to_samples(self):
         format_tags = ["bar", "foo"] 
