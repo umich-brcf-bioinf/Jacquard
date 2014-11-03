@@ -67,18 +67,18 @@ def dispatch(modules, arguments):
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description='''type 'Jacquard -h <subcommand>' for help on a specific subcommand''',
         epilog="authors: Jessica Bene, Ashwini Bhasi, Chris Gates, Kevin Meng, Peter Ulintz; October 2014")
-    
+
     parser.add_argument(\
                         "-V",
                         "--version",
                         action='version',
                         version=version_text())
-    
+
     parser.add_argument("-v", "--verbose", action='store_true')
-    
+
     subparsers = parser.add_subparsers(title="subcommands",
                                        dest="subparser_name")
-    
+
     try:
         module_dispatch = {}
         for module in modules:
@@ -91,20 +91,20 @@ def dispatch(modules, arguments):
             "##jacquard.version={0}".format(utils.__version__),
             "##jacquard.command={0}".format(" ".join(arguments)),
             "##jacquard.cwd={0}".format(cwd)]
-        
+
         args = parser.parse_args(arguments)
-        
+
         logger.initialize_logger(args.subparser_name, args.verbose)
         logger.info("Jacquard begins (v{})", utils.__version__)
         logger.info("Saving log to [{}]", os.getcwd())
         logger.debug("Command: {}", " ".join(arguments))
         logger.debug("Cwd: {}", os.path.dirname(os.getcwd()))
-        
+
         module_dispatch[args.subparser_name].execute(args, execution_context)
-                
+
         for message in execution_context:
             logger.debug(message)
-            
+
     except Exception as exception:
         logger.error(str(exception))
         logger.error("Jacquard encountered an unanticipated problem. Please contact your sysadmin or Jacquard support for assistance.")
