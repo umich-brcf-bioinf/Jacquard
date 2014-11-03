@@ -1,10 +1,17 @@
+from collections import defaultdict
 import os
 import re
 
-import vcf as vcf
+import logger as logger
 import utils as utils
+import vcf as vcf
 
 def _read_col_spec(col_spec):
+    if not os.path.isfile(col_spec):
+        raise utils.JQException("The column specification file [{}] could "
+                     "not be read. Review inputs/usage and try again",
+                     col_spec)
+
     spec_file = open(col_spec, "r")
     columns = []
 
@@ -52,30 +59,25 @@ def _append_format_tags_to_samples(format_tags, samples):
 
     return format_sample_header
 
-def _create_filtered_header(header, filtered_header, desired_column):
-    for incoming_column in header:
-        if re.search(desired_column, incoming_column):
-            filtered_header.append(incoming_column)
+def _create_filtered_header(header_dict, filtered_header_dict, desired_column):
+    for key in header_dict.keys():
+        for incoming_column in header_dict[key]:
+            if re.search(desired_column, incoming_column):
+                filtered_header_dict[key].append(incoming_column)
 
-    return filtered_header
+    return filtered_header_dict
 
-def _filter_and_sort(column_header, info_header, format_header, columns_to_expand):
-    filtered_column_header = []
-    filtered_info_header = []
-    filtered_format_header = []
+def _filter_and_sort(header_dict, columns_to_expand):
+    filtered_header_dict = defaultdict(list)
 
     for desired_column in columns_to_expand:
-        filtered_column_header = _create_filtered_header(column_header,
-                                                         filtered_column_header,
-                                                         desired_column)
-        filtered_info_header = _create_filtered_header(info_header,
-                                                       filtered_info_header,
+        filtered_header_dict = _create_filtered_header(header_dict,
+                                                       filtered_header_dict,
                                                        desired_column)
-        filtered_format_header = _create_filtered_header(format_header,
-                                                         filtered_format_header,
-                                                         desired_column)
 
-    return filtered_column_header, filtered_info_header, filtered_format_header
+#     if len(filtered_column_header) = 0 and len(filtered_info_header) = 0 and len(filtered_format_header) = 0
+
+    return filtered_header_dict
 
 def _get_headers(vcf_reader, columns_to_expand=0):
     split_column_header = vcf_reader.column_header.split("\t")
@@ -86,11 +88,7 @@ def _get_headers(vcf_reader, columns_to_expand=0):
     (info_header, format_tags) = _parse_meta_headers(vcf_reader.metaheaders)
     format_header = _append_format_tags_to_samples(format_tags, samples)
 
-    if columns_to_expand:
-        return _filter_and_sort(split_column_header, info_header,
-                                format_header, columns_to_expand)
-    else:
-        return column_header_no_samples, info_header, format_header
+    return column_header_no_samples, info_header, format_header
 
 def _disambiguate_column_names(column_header, info_header):
     overlap = 0
@@ -132,15 +130,15 @@ def _parse_format_tags(vcf_record, format_header, column_header):
 
     return format_columns
 
-def _write_vcf_records(vcf_reader, file_writer, column_header, info_header, format_header):
+def _write_vcf_records(vcf_reader, file_writer, filtered_header_dict):
     vcf_reader.open()
 
     for record in vcf_reader.vcf_records():
-        info_columns = _parse_info_field(record, info_header)
-        format_columns = _parse_format_tags(record, format_header,
+        info_columns = _parse_info_field(record, filtered_header_dict["info_header"])
+        format_columns = _parse_format_tags(record, filtered_header_dict["format_header"],
                                             vcf_reader.column_header)
 
-        column_header = [i.strip("#").lower() for i in column_header]
+        column_header = [i.strip("#").lower() for i in filtered_header_dict["column_header"]]
         row = [getattr(record, i) for i in column_header]
 
         row.extend(info_columns)
@@ -177,14 +175,23 @@ def execute(args, execution_context):
 
     info_header = _disambiguate_column_names(column_header, info_header)
 
-    complete_header = column_header + info_header + format_header
+#     complete_header = column_header + info_header + format_header
+    header_dict = {"column_header": column_header, "info_header": info_header,
+                   "format_header": format_header}
+
+    if columns_to_expand:
+        header_dict = _filter_and_sort(header_dict, columns_to_expand)
+
+    complete_header = header_dict["column_header"] + \
+        header_dict["info_header"] + header_dict["format_header"]
+        
     complete_header = "\t".join(complete_header) + "\n"
 
     file_writer = vcf.FileWriter(output_path)
     file_writer.open()
     file_writer.write(complete_header)
 
-    _write_vcf_records(vcf_reader, file_writer, column_header, info_header, format_header)
+    _write_vcf_records(vcf_reader, file_writer, header_dict)
 
     file_writer.close()
 
