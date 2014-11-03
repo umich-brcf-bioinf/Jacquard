@@ -1,12 +1,14 @@
+from argparse import Namespace
 from collections import OrderedDict
-import os 
+import os
+from testfixtures import TempDirectory
 import unittest
 
 import jacquard.utils as utils
 import jacquard.logger as logger
 from jacquard.expand2 import _parse_meta_headers, \
     _append_format_tags_to_samples, _get_headers, _write_vcf_records, \
-    _disambiguate_column_names, _filter_and_sort
+    _disambiguate_column_names, _filter_and_sort, execute
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 mock_log_called = False
@@ -255,4 +257,28 @@ class ExpandTestCase(unittest.TestCase):
         self.assertEquals(expected_header, actual_header)
         global mock_log_called
         self.assertTrue(mock_log_called)
+
+#TODO (jebene) edit vcf_content so that it is an accurate VCf file
+    def Xtest_expand(self):
+        vcf_content = ('''##source=strelka
+##file1
+#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
+chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
+chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
+''').replace('|', "\t")
+
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("P1.vcf", vcf_content)
+            input_dir.write("P2.vcf", vcf_content)
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path,
+                             column_specification=0)
+
+            execute(args, ["extra_header1", "extra_header2"])
+
+            output_dir.check("P1.vcf", "P2.vcf")
+            with open(os.path.join(output_dir.path, "P1.vcf")) as actual_output_file:
+                actual_output_lines = actual_output_file.readlines()
+
+        self.assertEquals(1, len(actual_output_lines))
 

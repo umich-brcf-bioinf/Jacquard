@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import glob
 import os
 import re
 
@@ -9,9 +10,10 @@ import vcf as vcf
 def _read_col_spec(col_spec):
     if not os.path.isfile(col_spec):
         raise utils.JQException("The column specification file [{}] could "
-                                "not be read. Review inputs/usage and try again",
+                                "not be read. "
+                                "Review inputs/usage and try again",
                                 col_spec)
-        
+
     spec_file = open(col_spec, "r")
     columns = []
 
@@ -21,6 +23,29 @@ def _read_col_spec(col_spec):
     spec_file.close()
 
     return columns
+
+def _validate_input_and_output(input_path, output_path):
+    try:
+        os.mkdir(output_path)
+    except:
+        pass
+
+    if os.path.isfile(input_path):
+        output_fname = os.path.splitext(os.path.basename(input_path))[0] + ".txt"
+        output_path = os.path.join(output_path, output_fname)
+
+        return [input_path], [output_path]
+
+    elif os.path.isdir(input_path):
+        input_path = sorted(glob.glob(os.path.join(input_path,"*.vcf")))
+        if len(input_path) == 0:
+            raise utils.JQException("Specified input directory {} contains "
+                                    "no VCF files. Review input and try again.")
+
+        tmp_output_path = [os.path.splitext(os.path.basename(i))[0] + ".txt" for i in input_path]
+        output_path = [os.path.join(output_path, i) for i in tmp_output_path]
+
+        return input_path, output_path
 
 def _get_vcf_reader(input_file):
     file_reader = vcf.FileReader(input_file)
@@ -94,14 +119,14 @@ def _validate_column_specification(filtered_header_dict, not_found_regex):
 def _filter_and_sort(header_dict, columns_to_expand):
     filtered_header_dict = OrderedDict()
     not_found_regex = []
-    
+
     for desired_column in columns_to_expand:
         filtered_header_dict, not_found = _create_filtered_header(header_dict,
                                                        filtered_header_dict,
                                                        desired_column)
         if not_found:
             not_found_regex.append(desired_column)
-    
+
     _validate_column_specification(filtered_header_dict, not_found_regex)
 
     return filtered_header_dict
@@ -186,46 +211,49 @@ def _create_complete_header(header_dict):
     complete_header = []
     for i in header_dict.values():
         complete_header.extend(i)
-        
+
     return "\t".join(complete_header) + "\n"
-    
+
 # pylint: disable=C0301
 def add_subparser(subparser):
     parser = subparser.add_parser("expand2", help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
-    parser.add_argument("input_file", help="Path to annotated VCF. Other file types ignored")
-    parser.add_argument("output_file", help="Path to output variant-level XLSX file")
+    parser.add_argument("input", help="Path to annotated VCF file or path to directory of annotated VCF files. Other file types ignored")
+    parser.add_argument("output", help="Path to directory of output variant-level TXT files")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("-c", "--column_specification", help="Path to text file containing column regular expressions to be included in output file")
 
 def execute(args, execution_context):
-    input_file = os.path.abspath(args.input_file)
-    output_path = os.path.abspath(args.output_file)
+    input_path = os.path.abspath(args.input)
+    output_path = os.path.abspath(args.output)
     col_spec = args.column_specification if args.column_specification else 0
-
-    output_dir = os.path.split(output_path)[0]
-    try:
-        os.mkdir(output_dir)
-    except:
-        pass
 
     columns_to_expand = _read_col_spec(col_spec) if col_spec else 0
 
-    vcf_reader = _get_vcf_reader(input_file)
-    column_header, info_header, format_header = _get_headers(vcf_reader, columns_to_expand)
+    input_files, output_files = _validate_input_and_output(input_path, output_path)
+    logger.info("Expanding {} VCF files in {} to {}", len(input_files), input_path, output_path)
 
-    info_header = _disambiguate_column_names(column_header, info_header)
-    header_dict = OrderedDict([("column_header", column_header), 
-                               ("info_header", info_header),
-                               ("format_header", format_header)])
+    for i, input_file in enumerate(input_files):
+        output_file = output_files[i]
+        vcf_reader = _get_vcf_reader(input_file)
 
-    if columns_to_expand:
-        header_dict = _filter_and_sort(header_dict, columns_to_expand)
+        column_header, info_header, format_header = _get_headers(vcf_reader, columns_to_expand)
 
-    file_writer = vcf.FileWriter(output_path)
-    file_writer.open()
-    
-    file_writer.write(_create_complete_header(header_dict))
-    _write_vcf_records(vcf_reader, file_writer, header_dict)
+        info_header = _disambiguate_column_names(column_header, info_header)
+        header_dict = OrderedDict([("column_header", column_header), 
+                                   ("info_header", info_header),
+                                   ("format_header", format_header)])
+ 
+        if columns_to_expand:
+            header_dict = _filter_and_sort(header_dict, columns_to_expand)
 
-    file_writer.close()
+        file_writer = vcf.FileWriter(output_file)
+        file_writer.open()
+
+        logger.info("Writing {} to {}", input_file, output_file)
+        file_writer.write(_create_complete_header(header_dict))
+        _write_vcf_records(vcf_reader, file_writer, header_dict)
+
+        file_writer.close()
+
+    logger.info("Wrote {} VCF files to {}", len(input_files), output_path)
 
