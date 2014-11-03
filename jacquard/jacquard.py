@@ -96,27 +96,23 @@ def dispatch(modules, arguments):
 
         logger.initialize_logger(args.subparser_name, args.verbose)
         logger.info("Jacquard begins (v{})", utils.__version__)
-        logger.info("Saving log to [{}]", os.getcwd())
-        logger.debug("Command: {}", " ".join(arguments))
-        logger.debug("Cwd: {}", os.path.dirname(os.getcwd()))
+
+        logger.info("Saving log to [{}]", logger.log_filename)
+
+        logger.debug("cwd|{}", os.getcwd())
+        logger.debug("command|{}", " ".join(arguments))
+
 
         module_dispatch[args.subparser_name].execute(args, execution_context)
 
-        for message in execution_context:
-            logger.debug(message)
-
+    # pylint: disable=W0703
     except Exception as exception:
         logger.error(str(exception))
-        logger.error("Jacquard encountered an unanticipated problem. Please contact your sysadmin or Jacquard support for assistance.")
-        logger.error(traceback.format_exc())
-
-#         print("ERROR: " + str(exception),
-#               file=sys.stderr)
-#         print("ERROR: Jacquard encountered an unanticipated problem. Please contact your sysadmin or Jacquard support for assistance.",
-#               file=sys.stderr)
+        logger.error("Jacquard encountered an unanticipated problem. Please review log file and contact your sysadmin or Jacquard support for assistance.")
+        logger.debug(traceback.format_exc())
         sys.exit(1)
 
-    logger.info("Done.")
+    logger.info("Done")
 
 if __name__ == '__main__':
     main()

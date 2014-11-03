@@ -1,4 +1,3 @@
-
 # pylint: disable=C0103,C0301,R0903,R0904
 from StringIO import StringIO
 from argparse import Namespace

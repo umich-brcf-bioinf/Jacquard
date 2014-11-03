@@ -4,52 +4,70 @@ from datetime import datetime
 import logging
 import getpass
 import os
-import shutil
 import socket
 import sys
 
-_FILE_LOG_FORMAT = '%(asctime)s|%(levelname)s|%(time)s|%(host)s|%(user)s|%(tool)s|%(message)s'  ### File logs are not done yet
-_CONSOLE_LOG_FORMAT = '%(asctime)s|%(levelname)s|%(tool)s|%(message)s' ### Console prints are tested.
+_DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+_FILE_LOG_FORMAT = ('%(asctime)s|%(levelname)s|%(start_time)s|%(host)s|%(user)s'
+                    '|%(tool)s|%(message)s')
+_CONSOLE_LOG_FORMAT = '%(asctime)s|%(levelname)s|%(tool)s|%(message)s'
+# pylint: disable=C0103
 logging_dict = {}
 _verbose = False
+log_filename = None
 
-
+#pylint: disable=W0603
 def initialize_logger(tool, verbose=False):
-    log_dir=os.path.join(os.path.dirname(os.getcwd()), "logs")
-    if not os.path.isdir(log_dir):
-        os.mkdir(log_dir)
-    time = datetime.now()
-    logging.basicConfig(format=_FILE_LOG_FORMAT, level="DEBUG", datefmt='%Y/%m/%d %I:%M:%S %p', filename=os.path.join(log_dir, "jacquard.log"))
-    
+    global log_filename
+    log_filename = os.path.join(os.getcwd(), "jacquard.log")
+    logging.basicConfig(format=_FILE_LOG_FORMAT,
+                        level="DEBUG",
+                        datefmt=_DATE_FORMAT,
+                        filename=log_filename)
+
     global _verbose
     _verbose = verbose
-    
+
+    start_time = datetime.now().strftime(_DATE_FORMAT)
     global logging_dict
-    logging_dict = {'user': getpass.getuser(), 'host': socket.gethostname(), 'time': time, 'tool': tool}
-    
-# def error(message, logging_dict = {}, tool = ""):
+    logging_dict = {'user': getpass.getuser(),
+                    'host': socket.gethostname(),
+                    'start_time': start_time,
+                    'tool': tool}
+
 def error(message, *args):
-    _printer("ERROR", message, *args)
-    logging.error(message.format(*[str(i) for i in args]), extra=logging_dict)
+    _print("ERROR", message, args)
+    logging.error(_format(message, args), extra=logging_dict)
 
-# def warning(message, logging_dict = {}, tool = ""):
 def warning(message, *args):
-    _printer("WARNING", message, *args)
-    logging.warning(message.format(*[str(i) for i in args]), extra=logging_dict)
-    
-def info(message, *args):
-    _printer("INFO", message, *args)
-    logging.info(message.format(*[str(i) for i in args]), extra=logging_dict)
+    _print("WARNING", message, args)
+    logging.warning(_format(message, args), extra=logging_dict)
 
-# def debug(message, logging_dict = {}, tool = ""):
+def info(message, *args):
+    _print("INFO", message, args)
+    logging.info(_format(message, args), extra=logging_dict)
+
 def debug(message, *args):
-    global _verbose
     if _verbose:
-        _printer("DEBUG", message, *args)
-    logging.debug(message.format(*[str(i) for i in args]), extra=logging_dict)
-    
-def _printer(level, message, *args):
-    print (_CONSOLE_LOG_FORMAT % {'asctime':datetime.now().strftime('%Y/%m/%d %I:%M:%S %p'),
-                                  'levelname':level, 
-                                  'tool':logging_dict['tool'], 
-                                  'message':message.format(*[str(i) for i in args])}, file=sys.stderr)
+        _print("DEBUG", message, args)
+    logging.debug(_format(message, args), extra=logging_dict)
+
+def _print(level, message, args):
+    now = datetime.now().strftime(_DATE_FORMAT)
+    print(_CONSOLE_LOG_FORMAT % {'asctime': now,
+                                 'levelname':level,
+                                 'tool':logging_dict['tool'],
+                                 'message': _format(message, args)},
+          file=sys.stderr)
+
+# pylint: disable=W0703
+def _format(message, args):
+    try:
+        log_message = message.format(*[str(i) for i in args])
+    except Exception as err:
+        log_message = ("Malformed log message ({}: {})"
+                       "|{}|{}").format(type(err).__name__,
+                                        err,
+                                        message,
+                                        [str(i) for i in args])
+    return log_message
