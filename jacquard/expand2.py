@@ -7,6 +7,11 @@ import utils as utils
 import vcf as vcf
 
 def _read_col_spec(col_spec):
+    if not os.path.isfile(col_spec):
+        raise utils.JQException("The column specification file [{}] could "
+                                "not be read. Review inputs/usage and try again",
+                                col_spec)
+        
     spec_file = open(col_spec, "r")
     columns = []
 
@@ -203,10 +208,6 @@ def execute(args, execution_context):
     except:
         pass
 
-    if not os.path.isfile(col_spec):
-        raise utils.JQException("The column specification file [{}] could "
-                                "not be read. Review inputs/usage and try again",
-                                col_spec)
     columns_to_expand = _read_col_spec(col_spec) if col_spec else 0
 
     vcf_reader = _get_vcf_reader(input_file)
