@@ -1,9 +1,9 @@
+from collections import OrderedDict
 import os 
 import unittest
 
 import jacquard.utils as utils
-from jacquard.expand2 import _parse_meta_headers, _append_format_tags_to_samples, _get_headers, _write_vcf_records,\
-                            _parse_info_field
+from jacquard.expand2 import _parse_meta_headers, _append_format_tags_to_samples, _get_headers, _write_vcf_records, _parse_info_field
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
@@ -28,17 +28,27 @@ class MockVcfReader(object):
         
 class MockVcfRecord(object):
     def __init__(self, content):
-        self.chrom,self.pos,self.id,self.ref,self.alt,self.qual,self.filter,self.info,self.format = content[0:9]
+        self.chrom, self.pos, self.id, self.ref, self.alt, self.qual, self.filter, self.info, self.format = content[0:9]
+        self.samples = content[9:]
+        
+        tags = self.format.split(":")
+        self.sample_dict = {}
+        for i, sample in enumerate(self.samples):
+            values = sample.split(":")
+            self.sample_dict[i] = OrderedDict(zip(tags, values))
+            
     def get_info_dict(self):
         info_dict = {}
+        
         for key_value in self.info.split(";"):
             if "=" in key_value:
                 key,value = key_value.split("=")
                 info_dict[key] = value
             else:
                 info_dict[key_value] = key_value
+        
         return info_dict
-
+    
 class MockFileWriter(object):
     def __init__(self):
         self.written = []
@@ -94,12 +104,18 @@ class ExpandTestCase(unittest.TestCase):
         self.assertEquals(expected, actual)
         
     def test_write_vcf_records(self):
-        mock_vcf_reader = MockVcfReader(content=[["CHROM","POS","ID","REF","ALT","QUAL","FILTER","tag1=val1;tag3=val3;tag4","FORMAT","sampleA"]])
+        column_header = "CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsampleA"
+        
+        mock_vcf_reader = MockVcfReader(content=[["CHROM","POS","ID","REF","ALT","QUAL","FILTER","tag1=val1;tag3=val3;tag4","FOO:BAR","42:1"]], column_header=column_header)
         mock_file_writer = MockFileWriter()
-        _write_vcf_records(mock_vcf_reader, mock_file_writer, ["tag1", "tag2", "tag3", "tag4"])
+        
+        info_header = ["tag1", "tag2", "tag3", "tag4"]
+        format_sample_header = ["BAR|sampleA", "FOO|sampleA"]
+        
+        _write_vcf_records(mock_vcf_reader, mock_file_writer, info_header, format_sample_header)
+        
         actual = mock_file_writer.written
-        expected = ["CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tval1\t\tval3\ttag4"]
-        self.assertEquals(expected,actual)
+        expected = ["CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tval1\t\tval3\ttag4\t1\t42\n"]
         
-        
+        self.assertEquals(expected, actual)
         

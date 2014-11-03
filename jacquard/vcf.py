@@ -83,31 +83,36 @@ class VcfReader(object):
 class VcfRecord(object):
     def __init__(self, vcf_line):
         vcf_fields = vcf_line.rstrip("\n").split("\t")
-        self.chrom,self.pos,self.id,self.ref,self.alt,self.qual,self.filter,self.info,self.format = vcf_fields[0:9]
+        self.chrom, self.pos, self.id, self.ref, self.alt, self.qual, self.filter, self.info, self.format = vcf_fields[0:9]
         self.samples = vcf_fields[9:]
         self.key = self.chrom+"_"+self.pos+"_"+self.ref+"_"+self.alt
+        
         tags = self.format.split(":")
         self.format_set = tags
+        
         self.sample_dict = {}
-        for i,sample in enumerate(self.samples):
+        for i, sample in enumerate(self.samples):
             values = sample.split(":")
-            self.sample_dict[i] = OrderedDict(zip(tags,values))
+            self.sample_dict[i] = OrderedDict(zip(tags, values))
 
     def get_info_dict(self):
         info_list = self.info.split(";")
         info_dict = {}
+        
         for key_value in info_list:
             if "=" in key_value:
                 key,value = key_value.split("=")
                 info_dict[key] = value
             else:
                 info_dict[key_value] = key_value
+                
         return info_dict
         
     def asText(self):
-        stringifier = [self.chrom,self.pos,self.id,self.ref,self.alt,self.qual,self.filter,self.info,":".join(self.format_set)]
+        stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt, self.qual, self.filter, self.info, ":".join(self.format_set)]
         for key in self.sample_dict:
             stringifier.append(":".join(self.sample_dict[key].values()))
+        
         return "\t".join(stringifier) + "\n"
 
     def insert_format_field(self, fieldname, field_dict):

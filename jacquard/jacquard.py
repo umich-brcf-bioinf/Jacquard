@@ -56,6 +56,7 @@ def version_text():
     callers = utils.caller_versions.items()
     caller_versions = [key + " " + value for key, value in callers]
     caller_version_string = "\n\t".join(caller_versions)
+    
     return "Jacquard v{0}\nSupported variant callers:\n\t{1}".\
         format(utils.__version__, caller_version_string)
 
