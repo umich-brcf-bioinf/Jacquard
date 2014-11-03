@@ -19,11 +19,11 @@ import test.mock_module as mock_module
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
 mock_log_called = False
-  
+
 def mock_log(msg, *args):
     global mock_log_called
     mock_log_called = True
-    
+
 def dataframe(input_data, sep="\t", index_col=None):
     def tupelizer(thing):
         if isinstance(thing, str) and thing.startswith("(") and thing.endswith(")"):
@@ -33,7 +33,7 @@ def dataframe(input_data, sep="\t", index_col=None):
     df = pd.read_csv(StringIO(input_data), sep=sep, header=False, dtype='str', index_col=index_col)
     new_cols = [tupelizer(col) for col in list(df.columns.values)]
     df.columns = pd.core.index.Index(new_cols)
-    
+
     return df
 
 class MergeTestCase(unittest.TestCase):
@@ -51,7 +51,7 @@ class MergeTestCase(unittest.TestCase):
         self.output.close()
         sys.stderr = self.saved_stderr
         self._reset_mock_logger()
-        
+
     def _change_mock_logger(self):
         global mock_log_called
         mock_log_called = False
@@ -60,13 +60,13 @@ class MergeTestCase(unittest.TestCase):
         logger.error = mock_log
         logger.warning = mock_log
         logger.debug = mock_log
-        
+
     def _reset_mock_logger(self):
         logger.info = self.original_info
         logger.error = self.original_error
         logger.warning = self.original_warning
         logger.debug = self.original_debug
-    
+
     def testExecute_multAltsSplitCorrectly(self):
         
         vcfRecordFormat = "##jacquard.tag.caller={}\n" + \
@@ -111,7 +111,7 @@ class MergeTestCase(unittest.TestCase):
         
         actual_df = pivoter._combined_df
         actual_df.columns.names = [""]
-        print actual_df
+
         expected_string = \
 '''CHROM\tPOS\tREF\tALT\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|Samp1\tMuTect|file2|FORMAT\tMuTect|file2|Samp2
 1\t23\tA\tT\t.\tDP:ESAF\t1:0.2\tDP:ESAF\t5:0.2

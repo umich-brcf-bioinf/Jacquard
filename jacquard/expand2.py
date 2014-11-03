@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import OrderedDict
 import os
 import re
 
@@ -7,11 +7,6 @@ import utils as utils
 import vcf as vcf
 
 def _read_col_spec(col_spec):
-    if not os.path.isfile(col_spec):
-        raise utils.JQException("The column specification file [{}] could "
-                     "not be read. Review inputs/usage and try again",
-                     col_spec)
-
     spec_file = open(col_spec, "r")
     columns = []
 
@@ -60,22 +55,49 @@ def _append_format_tags_to_samples(format_tags, samples):
     return format_sample_header
 
 def _create_filtered_header(header_dict, filtered_header_dict, desired_column):
+    not_found = 1
+
     for key in header_dict.keys():
         for incoming_column in header_dict[key]:
             if re.search(desired_column, incoming_column):
-                filtered_header_dict[key].append(incoming_column)
+                if key in filtered_header_dict:
+                    filtered_header_dict[key].append(incoming_column)
+                else:
+                    filtered_header_dict[key] = [incoming_column]
 
-    return filtered_header_dict
+                not_found = 0
+
+    return filtered_header_dict, not_found
+
+def _validate_column_specification(filtered_header_dict, not_found_regex):
+    invalid = 1
+    for val in filtered_header_dict.values():
+        if len(val) != 0:
+            invalid = 0
+
+    if invalid:
+        raise utils.JQException("The column specification file would "
+                                "exclude all input columns. Review inputs/"
+                                "usage and try again")
+
+    if len(not_found_regex) != 0:
+        logger.warning("The expression {} in column specification file didn't "
+                       "match any input columns. Columns may have matched "
+                       "earlier expressions, or this expression may be "
+                       "irrelevant.", not_found_regex)
 
 def _filter_and_sort(header_dict, columns_to_expand):
-    filtered_header_dict = defaultdict(list)
-
+    filtered_header_dict = OrderedDict()
+    not_found_regex = []
+    
     for desired_column in columns_to_expand:
-        filtered_header_dict = _create_filtered_header(header_dict,
+        filtered_header_dict, not_found = _create_filtered_header(header_dict,
                                                        filtered_header_dict,
                                                        desired_column)
-
-#     if len(filtered_column_header) = 0 and len(filtered_info_header) = 0 and len(filtered_format_header) = 0
+        if not_found:
+            not_found_regex.append(desired_column)
+    
+    _validate_column_specification(filtered_header_dict, not_found_regex)
 
     return filtered_header_dict
 
@@ -130,25 +152,38 @@ def _parse_format_tags(vcf_record, format_header, column_header):
 
     return format_columns
 
-def _write_vcf_records(vcf_reader, file_writer, filtered_header_dict):
+def _write_vcf_records(vcf_reader, file_writer, header_dict):
     vcf_reader.open()
 
     for record in vcf_reader.vcf_records():
-        info_columns = _parse_info_field(record, filtered_header_dict["info_header"])
-        format_columns = _parse_format_tags(record, filtered_header_dict["format_header"],
+        row = []
+        for key in header_dict.keys():
+            if key == "column_header":
+                column_header = [i.strip("#").lower() for i in header_dict[key]]
+                column_values = [getattr(record, i) for i in column_header]
+                row.extend(column_values)
+
+            elif key == "info_header":
+                info_columns = _parse_info_field(record, header_dict[key])
+                row.extend(info_columns)
+
+            elif key == "format_header":
+                format_columns = _parse_format_tags(record, header_dict[key],
                                             vcf_reader.column_header)
-
-        column_header = [i.strip("#").lower() for i in filtered_header_dict["column_header"]]
-        row = [getattr(record, i) for i in column_header]
-
-        row.extend(info_columns)
-        row.extend(format_columns)
+                row.extend(format_columns)
 
         row_string = "\t".join(row) + "\n"
         file_writer.write(row_string)
 
     vcf_reader.close()
 
+def _create_complete_header(header_dict):
+    complete_header = []
+    for i in header_dict.values():
+        complete_header.extend(i)
+        
+    return "\t".join(complete_header) + "\n"
+    
 # pylint: disable=C0301
 def add_subparser(subparser):
     parser = subparser.add_parser("expand2", help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
@@ -168,29 +203,27 @@ def execute(args, execution_context):
     except:
         pass
 
+    if not os.path.isfile(col_spec):
+        raise utils.JQException("The column specification file [{}] could "
+                                "not be read. Review inputs/usage and try again",
+                                col_spec)
     columns_to_expand = _read_col_spec(col_spec) if col_spec else 0
 
     vcf_reader = _get_vcf_reader(input_file)
     column_header, info_header, format_header = _get_headers(vcf_reader, columns_to_expand)
 
     info_header = _disambiguate_column_names(column_header, info_header)
-
-#     complete_header = column_header + info_header + format_header
-    header_dict = {"column_header": column_header, "info_header": info_header,
-                   "format_header": format_header}
+    header_dict = OrderedDict([("column_header", column_header), 
+                               ("info_header", info_header),
+                               ("format_header", format_header)])
 
     if columns_to_expand:
         header_dict = _filter_and_sort(header_dict, columns_to_expand)
 
-    complete_header = header_dict["column_header"] + \
-        header_dict["info_header"] + header_dict["format_header"]
-        
-    complete_header = "\t".join(complete_header) + "\n"
-
     file_writer = vcf.FileWriter(output_path)
     file_writer.open()
-    file_writer.write(complete_header)
-
+    
+    file_writer.write(_create_complete_header(header_dict))
     _write_vcf_records(vcf_reader, file_writer, header_dict)
 
     file_writer.close()

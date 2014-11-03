@@ -3,11 +3,17 @@ import os
 import unittest
 
 import jacquard.utils as utils
+import jacquard.logger as logger
 from jacquard.expand2 import _parse_meta_headers, \
     _append_format_tags_to_samples, _get_headers, _write_vcf_records, \
     _disambiguate_column_names, _filter_and_sort
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
+mock_log_called = False
+  
+def mock_log(msg, *args):
+    global mock_log_called
+    mock_log_called = True
 
 class MockVcfReader(object):
     def __init__(self, input_filepath="vcfName", metaheaders=["##metaheaders"], column_header="#header", content = ["foo"]):
@@ -60,6 +66,31 @@ class MockFileWriter(object):
         self.written.append(text)
 
 class ExpandTestCase(unittest.TestCase):
+    def setUp(self):
+        self.original_info = logger.info
+        self.original_error = logger.error
+        self.original_warning = logger.warning
+        self.original_debug = logger.debug
+        self._change_mock_logger()
+
+    def tearDown(self):
+        self._reset_mock_logger()
+
+    def _change_mock_logger(self):
+        global mock_log_called
+        mock_log_called = False
+        global mock_log
+        logger.info = mock_log
+        logger.error = mock_log
+        logger.warning = mock_log
+        logger.debug = mock_log
+
+    def _reset_mock_logger(self):
+        logger.info = self.original_info
+        logger.error = self.original_error
+        logger.warning = self.original_warning
+        logger.debug = self.original_debug
+
     def test_parse_meta_headers(self):
         meta_headers = ['##ALT=<ID=DEL,Description="Deletion">',
                         '##INFO=<ID=AC,Number=.,Description="foo">]',
@@ -143,8 +174,10 @@ class ExpandTestCase(unittest.TestCase):
 
         split_column_header = column_header.split("\t")[0:7]
         
-        header_dict = {"column_header": split_column_header, "info_header":
-                       info_header, "format_header": format_sample_header}
+        header_dict = OrderedDict([("column_header", split_column_header),
+                                  ("info_header",info_header),
+                                  ("format_header", format_sample_header)])
+        
         _write_vcf_records(mock_vcf_reader, mock_file_writer, header_dict)
 
         actual = mock_file_writer.written
@@ -152,18 +185,74 @@ class ExpandTestCase(unittest.TestCase):
 
         self.assertEquals(expected, actual)
 
-    def xtest_filter_and_sort(self):
-        header = {"column_header": ["CHROM", "POS", "ID"], "info_header":
-                  ["infoA", "infoB", "infoC"], "format_header":
-                   ["tagA|sample1", "tagB|sample1", "tagC|sample1"]}
+    def test_filter_and_sort(self):
+        header = OrderedDict([("column_header", ["CHROM", "POS", "ID"]),
+                              ("info_header", ["infoA", "infoB", "infoC"]),
+                              ("format_header", ["tagA|sample1",
+                                                 "tagB|sample1",
+                                                 "tagC|sample1"])])
         columns_to_expand = ["^CHROM$", "^info*", "^tagA\|*"]
         actual_header_dict = _filter_and_sort(header, columns_to_expand)
-        expected_header = {'column_header': ["CHROM"], 'format_header': ['tagA|sample1'], 'info_header': ["infoA", "infoB", "infoC"]}
-        
+        expected_header = {'column_header': ["CHROM"],
+                           'format_header': ['tagA|sample1'],
+                           'info_header': ["infoA", "infoB", "infoC"]}
+
         self.assertEquals(expected_header, actual_header_dict)
+
+    def test_filter_and_sort_missingInfo(self):
+        header = OrderedDict([("column_header", ["CHROM", "POS", "ID"]),
+                              ("info_header", ["infoA", "infoB", "infoC"]),
+                              ("format_header", ["tagA|sample1",
+                                                 "tagB|sample1",
+                                                 "tagC|sample1"])])
+        
+        columns_to_expand = ["^CHROM$", "^tagA\|*"]
+        actual_header = _filter_and_sort(header, columns_to_expand)
+        
+        expected_header = {'column_header': ["CHROM"],
+                           'format_header': ['tagA|sample1']}
+
+        self.assertEquals(expected_header, actual_header)
+
+    def test_filter_and_sort_checkOrder(self):
+        header = OrderedDict([("column_header", ["CHROM", "POS", "ID", "REF"]),
+                              ("info_header", ["infoA", "infoB", "infoC"]),
+                              ("format_header", ["tagA|sample1",
+                                                 "tagB|sample1",
+                                                 "tagC|sample1"])])
         
         columns_to_expand = ["^CHROM$", "^tagA\|*", "ID", "POS"]
         actual_header = _filter_and_sort(header, columns_to_expand)
         
-        expected_header = {'column_header': ["CHROM", "ID", "POS"], 'format_header': ['tagA|sample1'], 'info_header': []}
+        expected_header = {'column_header': ["CHROM", "ID", "POS"],
+                           'format_header': ['tagA|sample1']}
+
         self.assertEquals(expected_header, actual_header)
+
+    def test_filter_and_sort_noColumsIncluded(self):
+        header = OrderedDict([("column_header", ["CHROM", "POS", "ID", "REF"]),
+                              ("info_header", ["infoA", "infoB", "infoC"]),
+                              ("format_header", ["tagA|sample1",
+                                                 "tagB|sample1",
+                                                 "tagC|sample1"])])
+
+        columns_to_expand = ["^foo$", "^bar*"]
+
+        self.assertRaises(utils.JQException, _filter_and_sort, header, columns_to_expand)
+        
+    def test_filter_and_sort_regexNotInFile(self):
+        header = OrderedDict([("column_header", ["CHROM", "POS", "ID", "REF"]),
+                              ("info_header", ["infoA", "infoB", "infoC"]),
+                              ("format_header", ["tagA|sample1",
+                                                 "tagB|sample1",
+                                                 "tagC|sample1"])])
+
+        columns_to_expand = ["^foo$", "^CHROM$"]
+        actual_header = _filter_and_sort(header, columns_to_expand)
+        
+        expected_header = {'column_header': ["CHROM"]}
+
+        self.assertEquals(expected_header, actual_header)
+        global mock_log_called
+        self.assertTrue(mock_log_called)
+
