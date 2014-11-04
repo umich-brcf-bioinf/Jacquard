@@ -8,7 +8,8 @@ import jacquard.utils as utils
 import jacquard.logger as logger
 from jacquard.expand2 import _parse_meta_headers, \
     _append_format_tags_to_samples, _get_headers, _write_vcf_records, \
-    _disambiguate_column_names, _filter_and_sort, execute
+    _disambiguate_column_names, _filter_and_sort, _validate_input_and_output, \
+    _parse_format_tags, _parse_info_field, _read_col_spec, execute
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 mock_log_called = False
@@ -240,7 +241,10 @@ class ExpandTestCase(unittest.TestCase):
 
         columns_to_expand = ["^foo$", "^bar*"]
 
-        self.assertRaises(utils.JQException, _filter_and_sort, header, columns_to_expand)
+        self.assertRaisesRegexp(utils.JQException, "The column specification file would "+
+                                "exclude all input columns. Review inputs/"+
+                                "usage and try again.", 
+                                _filter_and_sort, header, columns_to_expand)
         
     def test_filter_and_sort_regexNotInFile(self):
         header = OrderedDict([("column_header", ["CHROM", "POS", "ID", "REF"]),
@@ -259,9 +263,10 @@ class ExpandTestCase(unittest.TestCase):
         self.assertTrue(mock_log_called)
 
 #TODO (jebene) edit vcf_content so that it is an accurate VCf file
-    def Xtest_expand(self):
+    def test_expand(self):
         vcf_content = ('''##source=strelka
-##file1
+##FORMAT=foo
+##INFO=bar
 #CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
 chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
@@ -276,9 +281,44 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
             execute(args, ["extra_header1", "extra_header2"])
 
-            output_dir.check("P1.vcf", "P2.vcf")
-            with open(os.path.join(output_dir.path, "P1.vcf")) as actual_output_file:
+            output_dir.check("P1.txt", "P2.txt")
+            with open(os.path.join(output_dir.path, "P1.txt")) as actual_output_file:
                 actual_output_lines = actual_output_file.readlines()
+        
+        self.assertEquals(3, len(actual_output_lines))
 
-        self.assertEquals(1, len(actual_output_lines))
+    def test_expand_emptyInputDir(self):
+
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path,
+                             column_specification=0)
+
+            self.assertRaisesRegexp(utils.JQException, r"Specified input directory .* contains "+
+                            "no VCF files. Review input and try again.",
+                            execute, args, ["extra_header1", "extra_header2"])
+    
+    #TODO: Need to test col spec file in execute.
+    def Xtest_expand_colSpecWorking(self):
+
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path,
+                             column_specification=0)
+
+            self.assertRaisesRegexp(utils.JQException, r"Specified input directory .* contains "+
+                            "no VCF files. Review input and try again.",
+                            execute, args, ["extra_header1", "extra_header2"])
+
+    def Xtest_expand_colSpecBroken(self):
+
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path,
+                             column_specification=0)
+
+            self.assertRaisesRegexp(utils.JQException, r"Specified input directory .* contains "+
+                            "no VCF files. Review input and try again.",
+                            execute, args, ["extra_header1", "extra_header2"])
+
 

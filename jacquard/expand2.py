@@ -35,23 +35,16 @@ def _validate_input_and_output(input_path, output_path):
         output_path = os.path.join(output_path, output_fname)
 
         return [input_path], [output_path]
-
+        
     elif os.path.isdir(input_path):
-        input_path = sorted(glob.glob(os.path.join(input_path,"*.vcf")))
-        if len(input_path) == 0:
-            raise utils.JQException("Specified input directory {} contains "
-                                    "no VCF files. Review input and try again.")
-
-        tmp_output_path = [os.path.splitext(os.path.basename(i))[0] + ".txt" for i in input_path]
+        input_files= sorted(glob.glob(os.path.join(input_path,"*.vcf")))
+        if len(input_files) == 0:
+            raise utils.JQException("Specified input directory {} contains "+
+                                    "no VCF files. Review input and try again.", input_path)
+        tmp_output_path = [os.path.splitext(os.path.basename(i))[0] + ".txt" for i in input_files]
         output_path = [os.path.join(output_path, i) for i in tmp_output_path]
 
-        return input_path, output_path
-
-def _get_vcf_reader(input_file):
-    file_reader = vcf.FileReader(input_file)
-    vcf_reader = vcf.VcfReader(file_reader)
-
-    return vcf_reader
+        return input_files, output_path
 
 def _parse_meta_headers(meta_headers):
     info_fields = []
@@ -108,7 +101,7 @@ def _validate_column_specification(filtered_header_dict, not_found_regex):
     if invalid:
         raise utils.JQException("The column specification file would "
                                 "exclude all input columns. Review inputs/"
-                                "usage and try again")
+                                "usage and try again.")
 
     if len(not_found_regex) != 0:
         logger.warning("The expression {} in column specification file didn't "
@@ -234,7 +227,8 @@ def execute(args, execution_context):
 
     for i, input_file in enumerate(input_files):
         output_file = output_files[i]
-        vcf_reader = _get_vcf_reader(input_file)
+        file_reader = vcf.FileReader(input_file)
+        vcf_reader = vcf.VcfReader(file_reader)
 
         column_header, info_header, format_header = _get_headers(vcf_reader, columns_to_expand)
 
