@@ -6,7 +6,7 @@ import unittest
 
 import jacquard.utils as utils
 import jacquard.logger as logger
-from jacquard.expand2 import _parse_meta_headers, \
+from jacquard.expand import _parse_meta_headers, \
     _append_format_tags_to_samples, _get_headers, _write_vcf_records, \
     _disambiguate_column_names, _filter_and_sort, _validate_input_and_output, \
     _parse_format_tags, _parse_info_field, _read_col_spec, execute
@@ -275,8 +275,8 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             input_dir.write("P1.vcf", vcf_content)
             input_dir.write("P2.vcf", vcf_content)
-            args = Namespace(input=input_dir.path,
-                             output=output_dir.path,
+            args = Namespace(input_file=input_dir.path,
+                             output_file=output_dir.path,
                              column_specification=0)
 
             execute(args, ["extra_header1", "extra_header2"])
@@ -290,8 +290,8 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
     def test_expand_emptyInputDir(self):
 
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            args = Namespace(input=input_dir.path,
-                             output=output_dir.path,
+            args = Namespace(input_file=input_dir.path,
+                             output_file=output_dir.path,
                              column_specification=0)
 
             self.assertRaisesRegexp(utils.JQException, r"Specified input directory .* contains "+
@@ -302,8 +302,8 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
     def Xtest_expand_colSpecWorking(self):
 
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            args = Namespace(input=input_dir.path,
-                             output=output_dir.path,
+            args = Namespace(input_file=input_dir.path,
+                             output_file=output_dir.path,
                              column_specification=0)
 
             self.assertRaisesRegexp(utils.JQException, r"Specified input directory .* contains "+
@@ -313,8 +313,8 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
     def Xtest_expand_colSpecBroken(self):
 
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            args = Namespace(input=input_dir.path,
-                             output=output_dir.path,
+            args = Namespace(input_file=input_dir.path,
+                             output_file=output_dir.path,
                              column_specification=0)
 
             self.assertRaisesRegexp(utils.JQException, r"Specified input directory .* contains "+

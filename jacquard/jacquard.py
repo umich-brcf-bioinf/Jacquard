@@ -25,8 +25,8 @@ import normalize as normalize
 import filter_hc_somatic as filter_hc_somatic
 import merge as merge
 import consensus as consensus
-import expand as expand
-import expand2 as expand2
+import expand_old
+import expand
 import utils as utils
 
 import logger
@@ -37,8 +37,8 @@ _SUBCOMMANDS=[normalize,
               filter_hc_somatic,
               merge,
               consensus,
-              expand,
-              expand2]
+              expand_old,
+              expand]
 
 def main():
     #pylint: disable=W0613

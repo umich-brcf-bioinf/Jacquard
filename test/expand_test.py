@@ -7,7 +7,7 @@ from pandas.util.testing import assert_frame_equal
 import pandas.util.testing as tm
 from StringIO import StringIO
 
-from jacquard.expand import PivotError, VariantPivoter, pivot, expand_format, create_initial_df, project_prepivot, build_pivoter, append_to_annot_df, melt_samples, validate_parameters, validate_format_tags, rearrange_columns, change_order, determine_input_keys, get_headers, expand_info_column
+from jacquard.expand_old import PivotError, VariantPivoter, pivot, expand_format, create_initial_df, project_prepivot, build_pivoter, append_to_annot_df, melt_samples, validate_parameters, validate_format_tags, rearrange_columns, change_order, determine_input_keys, get_headers, expand_info_column
 
 pd.set_option('chained_assignment', None)
 
