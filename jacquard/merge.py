@@ -648,16 +648,16 @@ def get_headers_and_readers(in_files):
 
 def add_subparser(subparser):
     parser_pivot = subparser.add_parser("merge", help="Accepts a directory of VCFs and returns a single merged VCF file.")
-    parser_pivot.add_argument("input_dir", help="Path to directory containing VCFs. Other file types ignored")
-    parser_pivot.add_argument("output_file", help="Path to output variant-level VCF file")
+    parser_pivot.add_argument("input", help="Path to directory containing VCFs. Other file types ignored")
+    parser_pivot.add_argument("output", help="Path to output variant-level VCF file")
     parser_pivot.add_argument("-k", "--keys",
         help="Columns to be used as keys for the pivoting. Default keys for VCF are CHROM,POS,ID,REF,ALT,QUAL,FILTER.")
     parser_pivot.add_argument("-a", "--allow_inconsistent_sample_sets", action="store_true", default=False, help="Allow inconsistent sample sets across callers. Not recommended.")
     parser_pivot.add_argument("-v", "--verbose", action='store_true')
         
 def execute(args, execution_context):
-    input_dir = os.path.abspath(args.input_dir)
-    output_path = os.path.abspath(args.output_file)
+    input_dir = os.path.abspath(args.input)
+    output_path = os.path.abspath(args.output)
     
     output_dir, outfile_name = os.path.split(output_path)
     utils.validate_directories(input_dir, output_dir)

@@ -189,29 +189,29 @@ def process_line(line, af_range, af_mean, af_std, dp_range, dp_mean, dp_std, typ
 
 def add_subparser(subparser):
     parser_tag = subparser.add_parser("consensus", help="Accepts a Jacquard-merged VCf file and creates a new file, adding consensus fields.")
-    parser_tag.add_argument("input_file", help="Path to Jacquard-merged VCF (or any VCF with Jacquard tags (e.g. JQ_SOM_MT)")
-    parser_tag.add_argument("output_file", help="Path to output VCf")
+    parser_tag.add_argument("input", help="Path to Jacquard-merged VCF (or any VCF with Jacquard tags (e.g. JQ_SOM_MT)")
+    parser_tag.add_argument("output", help="Path to output VCf")
     parser_tag.add_argument("-v", "--verbose", action='store_true')
 
 def execute(args, execution_context): 
-    input_file = os.path.abspath(args.input_file)
-    output_file = os.path.abspath(args.output_file)
-    
+    input_file = os.path.abspath(args.input)
+    output_file = os.path.abspath(args.output)
+
     fname, extension = os.path.splitext(os.path.basename(input_file))
     if not os.path.isfile(input_file) or extension != ".vcf":
         logger.error("Input file [{}] must be a VCF file.", input_file)
         exit(1)
-        
+
     fname, extension = os.path.splitext(os.path.basename(output_file))
     if extension != ".vcf":
         logger.error("Output file [{}] must be a VCF file.", output_file)
         exit(1)
-        
+
     logger.info("\n".join(execution_context))
-    
+
     af_range = []
     dp_range = []
-    
+
     tmp_file = output_file + ".tmp"
     input_file_reader = open(input_file, "r")
     tmp_file_writer = open(tmp_file, "w")
@@ -219,21 +219,20 @@ def execute(args, execution_context):
     logger.info("Adding consensus values to temporary file [{}]", tmp_file)
     meta_headers, header, lines = iterate_file(input_file_reader, tmp_file_writer, tmp_file, af_range, dp_range, "consensus")
     add_consensus(meta_headers, header, lines, tmp_file_writer, tmp_file)
-    
+
     input_file_reader.close()
     tmp_file_writer.close()
-    
+
     tmp_file_reader = open(tmp_file, "r")
     output_file_writer = open(output_file, "w")
-    
+
     logger.info("Adding z-scores to [{}]", output_file)
-    
+
     meta_headers, header, lines = iterate_file(tmp_file_reader, output_file_writer, output_file, af_range, dp_range, "zscore")
     add_zscore(meta_headers, header, lines, output_file_writer, output_file, af_range, dp_range)
-    
+
     tmp_file_reader.close()
     output_file_writer.close()
-    
+
     os.remove(tmp_file)
     logger.info("Removed temporary file [{}]", tmp_file)
-    

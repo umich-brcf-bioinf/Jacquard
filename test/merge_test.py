@@ -79,8 +79,8 @@ class MergeTestCase(unittest.TestCase):
             input_dir.write("A.strelka.vcf", vcfRecordFormat.format("Strelka","T","A,C","INFO_Strelka","SK"))
             input_dir.write("A.varscan.vcf", vcfRecordFormat.format("VarScan","T","A,C","INFO_VarScan","VS"))
         
-            args = Namespace(input_dir=input_dir.path, 
-                         output_file=os.path.join(output_dir.path,"tmp.vcf"), 
+            args = Namespace(input=input_dir.path, 
+                         output=os.path.join(output_dir.path,"tmp.vcf"), 
                          allow_inconsistent_sample_sets=False,
                          keys=None) 
             merge.execute(args, [])
