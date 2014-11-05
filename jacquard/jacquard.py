@@ -48,7 +48,7 @@ def main():
 
     signal.signal(signal.SIGINT, handler)
     signal.signal(signal.SIGTERM, handler)
-
+    print (sys.argv)
     dispatch(_SUBCOMMANDS, sys.argv[1:])
 
 def version_text():
@@ -124,9 +124,8 @@ def dispatch(modules, arguments):
 
         original_output_dir = args.output
         tmp_dir = create_temp_directory(original_output_dir)
-        args.output = tmp_dir
         
-        logger.info("Writing output to tmp directory [{}]", args.output)
+        logger.info("Writing output to tmp directory [{}]", tmp_dir)
 
         module_dispatch[args.subparser_name].execute(args, execution_context)
 

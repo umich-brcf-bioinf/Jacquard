@@ -11,7 +11,7 @@ def _read_col_spec(col_spec):
     if not os.path.isfile(col_spec):
         raise utils.JQException("The column specification file [{}] could "
                                 "not be read. "
-                                "Review inputs/usage and try again",
+                                "Review inputs/usage and try again.",
                                 col_spec)
 
     spec_file = open(col_spec, "r")
@@ -29,8 +29,8 @@ def _validate_input_and_output(input_path, output_path):
     if os.path.isfile(input_path):
         if os.path.isdir(output_path):
             raise utils.JQException("Specified output {} must be a file "
-                                    "if input {} is given as a file. Review"
-                                    "inputs and try again", output_path,
+                                    "if input {} is given as a file. Review "
+                                    "inputs and try again.", output_path,
                                     input_path)
         return [input_path], [output_path]
 
@@ -39,13 +39,13 @@ def _validate_input_and_output(input_path, output_path):
         input_files= sorted(glob.glob(os.path.join(input_path,"*.vcf")))
         if len(input_files) == 0:
             raise utils.JQException("Specified input directory {} contains "+
-                                    "no VCF files. Review inputs and try again",
+                                    "no VCF files. Review inputs and try again.",
                                     input_path)
 
         if os.path.isfile(output_path):
             raise utils.JQException("Specified output {} must be a directory "
                                     "if input {} is given as a directory."
-                                    "Review inputs and try again", output_path,
+                                    "Review inputs and try again.", output_path,
                                     input_path)
         try:
             os.mkdir(output_path)
