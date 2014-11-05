@@ -74,8 +74,6 @@ def dispatch(modules, arguments):
                         action='version',
                         version=version_text())
 
-    parser.add_argument("-v", "--verbose", action='store_true')
-
     subparsers = parser.add_subparsers(title="subcommands",
                                        dest="subparser_name")
 
@@ -94,7 +92,7 @@ def dispatch(modules, arguments):
 
         args = parser.parse_args(arguments)
 
-        logger.initialize_logger(args.subparser_name, args.verbose)
+        logger.initialize_logger(args.subparser_name)
         logger.info("Jacquard begins (v{})", utils.__version__)
 
         logger.info("Saving log to [{}]", logger.log_filename)

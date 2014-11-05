@@ -25,22 +25,33 @@ def _read_col_spec(col_spec):
     return columns
 
 def _validate_input_and_output(input_path, output_path):
-    try:
-        os.mkdir(output_path)
-    except:
-        pass
-
+    ##input is a file
     if os.path.isfile(input_path):
-        output_fname = os.path.splitext(os.path.basename(input_path))[0] + ".txt"
-        output_path = os.path.join(output_path, output_fname)
-
+        if os.path.isdir(output_path):
+            raise utils.JQException("Specified output {} must be a file "
+                                    "if input {} is given as a file. Review"
+                                    "inputs and try again", output_path,
+                                    input_path)
         return [input_path], [output_path]
-        
+
+##input is a directory
     elif os.path.isdir(input_path):
         input_files= sorted(glob.glob(os.path.join(input_path,"*.vcf")))
         if len(input_files) == 0:
             raise utils.JQException("Specified input directory {} contains "+
-                                    "no VCF files. Review input and try again.", input_path)
+                                    "no VCF files. Review inputs and try again",
+                                    input_path)
+
+        if os.path.isfile(output_path):
+            raise utils.JQException("Specified output {} must be a directory "
+                                    "if input {} is given as a directory."
+                                    "Review inputs and try again", output_path,
+                                    input_path)
+        try:
+            os.mkdir(output_path)
+        except:
+            pass
+
         tmp_output_path = [os.path.splitext(os.path.basename(i))[0] + ".txt" for i in input_files]
         output_path = [os.path.join(output_path, i) for i in tmp_output_path]
 
@@ -49,7 +60,7 @@ def _validate_input_and_output(input_path, output_path):
 def _parse_meta_headers(meta_headers):
     info_fields = []
     format_tags = []
-  
+
     for meta_header in meta_headers:
         if meta_header.startswith("##FORMAT="):
             tag = meta_header.split(",")[0].split("=")[-1]
@@ -124,7 +135,7 @@ def _filter_and_sort(header_dict, columns_to_expand):
 
     return filtered_header_dict
 
-def _get_headers(vcf_reader, columns_to_expand=0):
+def _get_headers(vcf_reader):
     split_column_header = vcf_reader.column_header.split("\t")
 
     column_header_no_samples = split_column_header[0:7]
@@ -210,15 +221,14 @@ def _create_complete_header(header_dict):
 # pylint: disable=C0301
 def add_subparser(subparser):
     parser = subparser.add_parser("expand", help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
-    parser.add_argument("input_file", help="Path to annotated VCF file or path to directory of annotated VCF files. Other file types ignored")
-    parser.add_argument("output_file", help="Path to directory of output variant-level TXT files")
+    parser.add_argument("input", help="Path to annotated VCF file or path to directory of annotated VCF files. Other file types ignored")
+    parser.add_argument("output", help="Path to directory of output variant-level TXT files")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("-c", "--column_specification", help="Path to text file containing column regular expressions to be included in output file")
 
 def execute(args, execution_context):
-    
-    input_path = os.path.abspath(args.input_file)
-    output_path = os.path.abspath(args.output_file)
+    input_path = os.path.abspath(args.input)
+    output_path = os.path.abspath(args.output)
     col_spec = args.column_specification if args.column_specification else 0
 
     columns_to_expand = _read_col_spec(col_spec) if col_spec else 0
@@ -231,7 +241,7 @@ def execute(args, execution_context):
         file_reader = vcf.FileReader(input_file)
         vcf_reader = vcf.VcfReader(file_reader)
 
-        column_header, info_header, format_header = _get_headers(vcf_reader, columns_to_expand)
+        column_header, info_header, format_header = _get_headers(vcf_reader)
 
         info_header = _disambiguate_column_names(column_header, info_header)
         header_dict = OrderedDict([("column_header", column_header), 
