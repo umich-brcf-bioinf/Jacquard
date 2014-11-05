@@ -39,8 +39,8 @@ def _validate_single_caller(filepaths, get_caller):
 
 def add_subparser(subparser):
     parser_normalize_vs = subparser.add_parser("normalize", help="Accepts a directory containing VarScan VCF snp/indel results or Strelka VCF snvs/indels results and creates a new directory of merged, sorted VCFs with added high confidence tags")
-    parser_normalize_vs.add_argument("input_dir", help="Path to directory containing VCFs. Each sample must have exactly two files matching these patterns: <sample>.indel.vcf, <sample>.snp.vcf, <sample>.indel.Germline.hc, <sample>.snp.Germline.hc, <sample>.indel.LOH.hc, <sample>.snp.LOH.hc, <sample>.indel.Somatic.hc, <sample>.snp.somatic.hc, <sample>.indel.*.hc, <sample>.snp.*.hc ")
-    parser_normalize_vs.add_argument("output_dir", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
+    parser_normalize_vs.add_argument("input", help="Path to directory containing VCFs. Each sample must have exactly two files matching these patterns: <sample>.indel.vcf, <sample>.snp.vcf, <sample>.indel.Germline.hc, <sample>.snp.Germline.hc, <sample>.indel.LOH.hc, <sample>.snp.LOH.hc, <sample>.indel.Somatic.hc, <sample>.snp.somatic.hc, <sample>.indel.*.hc, <sample>.snp.*.hc ")
+    parser_normalize_vs.add_argument("output", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
     parser_normalize_vs.add_argument("-v", "--verbose", action='store_true')
     
 def _partition_input_files(in_files, output_dir, caller):
@@ -85,8 +85,8 @@ def _log_caller_info(vcf_readers):
              caller_count[caller_name], caller_name)
         
 def execute(args, execution_context): 
-    input_dir = os.path.abspath(args.input_dir)
-    output_dir = os.path.abspath(args.output_dir)
+    input_dir = os.path.abspath(args.input)
+    output_dir = os.path.abspath(args.output)
     
     utils.validate_directories(input_dir, output_dir)
     in_files = sorted(glob.glob(os.path.join(input_dir, "*")))

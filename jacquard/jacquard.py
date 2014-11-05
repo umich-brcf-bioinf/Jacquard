@@ -17,6 +17,7 @@ from __future__ import print_function
 import argparse
 import os
 import signal
+import shutil
 import sys
 import traceback
 
@@ -60,6 +61,29 @@ def version_text():
     return "Jacquard v{0}\nSupported variant callers:\n\t{1}".\
         format(utils.__version__, caller_version_string)
 
+def create_temp_directory(original_output_dir):
+    extension = os.path.splitext(os.path.basename(original_output_dir))[1]
+    if extension: ##output is a file
+        original_output_dir = os.path.dirname(original_output_dir)
+
+    tmp_dir = os.path.join(original_output_dir, "tmp")
+    try:
+        os.mkdir(tmp_dir)
+    except:
+        raise utils.JQException("A tmp directory already exists inside "
+                                "output directory {} or cannot be created",
+                                 original_output_dir)
+        
+    return tmp_dir
+        
+def move_tmp_contents_to_original(tmp_dir, original_output_dir):
+    for fname in os.listdir(tmp_dir):
+        full_fname = os.path.join(tmp_dir, fname)
+        if os.path.isfile(full_fname): ##necessary?
+            shutil.copy(full_fname, original_output_dir)
+
+    shutil.rmtree(tmp_dir)
+
 # pylint: disable=C0301
 def dispatch(modules, arguments):
     parser = argparse.ArgumentParser(
@@ -100,6 +124,11 @@ def dispatch(modules, arguments):
         logger.debug("cwd|{}", os.getcwd())
         logger.debug("command|{}", " ".join(arguments))
 
+        original_output_dir = args.output
+        tmp_dir = create_temp_directory(original_output_dir)
+        args.output = tmp_dir
+        
+        logger.info("Writing output to tmp directory [{}]", args.output)
 
         module_dispatch[args.subparser_name].execute(args, execution_context)
 
@@ -109,6 +138,12 @@ def dispatch(modules, arguments):
         logger.error("Jacquard encountered an unanticipated problem. Please review log file and contact your sysadmin or Jacquard support for assistance.")
         logger.debug(traceback.format_exc())
         sys.exit(1)
+
+    logger.info("Moving files from tmp directory {} to output directory", tmp_dir, original_output_dir)
+
+    move_tmp_contents_to_original(tmp_dir, original_output_dir)
+    
+    logger.info("Removed tmp directory {}", tmp_dir)
 
     logger.info("Done")
 

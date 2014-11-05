@@ -226,6 +226,8 @@ def add_subparser(subparser):
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("-c", "--column_specification", help="Path to text file containing column regular expressions to be included in output file")
 
+#     return parser
+
 def execute(args, execution_context):
     input_path = os.path.abspath(args.input)
     output_path = os.path.abspath(args.output)

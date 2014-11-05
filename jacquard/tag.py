@@ -13,8 +13,8 @@ import logger
 #pylint: disable=C0301
 def add_subparser(subparser):
     parser_tag = subparser.add_parser("tag", help="Accepts a directory of VCf results and creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
-    parser_tag.add_argument("input_dir", help="Path to directory containing VCFs. Other file types ignored")
-    parser_tag.add_argument("output_dir", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
+    parser_tag.add_argument("input", help="Path to directory containing VCFs. Other file types ignored")
+    parser_tag.add_argument("output", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
     parser_tag.add_argument("-v", "--verbose", action='store_true')
 
 def tag_files(vcf_readers_to_writers, execution_context):
@@ -85,8 +85,8 @@ def _build_vcf_readers_to_writers(vcf_readers, output_dir):
 
 
 def execute(args, execution_context):
-    input_dir = os.path.abspath(args.input_dir)
-    output_dir = os.path.abspath(args.output_dir)
+    input_dir = os.path.abspath(args.input)
+    output_dir = os.path.abspath(args.output)
     utils.validate_directories(input_dir, output_dir)
 
     #TODO cgates: move to jacquard.py

@@ -3,7 +3,8 @@ execute_called = False
 my_exception_string = None
 
 def add_subparser(subparser):
-    subparser.add_parser("mock_module", help="foo")
+    parser = subparser.add_parser("mock_module", help="foo")
+    parser.add_argument("output", help="foo")
 
 def execute(args, execution_context):
     global execute_called

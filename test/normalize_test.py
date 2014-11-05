@@ -1,25 +1,23 @@
 # pylint: disable=C0103,C0301,R0903,R0904
-from StringIO import StringIO
 from argparse import Namespace
-
-from jacquard.variant_callers import varscan, strelka, variant_caller_factory
-from testfixtures import TempDirectory
-
-from jacquard.normalize import _partition_input_files, _determine_caller_per_directory
-
-from jacquard.vcf import FileReader, FileWriter
-import jacquard.utils as utils
-    
-import jacquard.normalize as normalize
-import jacquard.utils as utils
 import os
+from StringIO import StringIO
 import sys
+from testfixtures import TempDirectory
 import unittest
 
-# def build_mock_get_caller_method(caller):
-#     def get_caller(metaheaders, column_header, name):
-#         return caller
-#     return get_caller
+from jacquard.variant_callers import varscan, strelka, variant_caller_factory
+from jacquard.normalize import _partition_input_files, _determine_caller_per_directory
+from jacquard.vcf import FileReader, FileWriter
+import jacquard.utils as utils
+import jacquard.normalize as normalize
+import jacquard.logger as logger
+
+mock_log_called = False
+
+def mock_log(msg, *args):
+    global mock_log_called
+    mock_log_called = True
 
 class MockCallerFactory(object):
     def __init__(self, caller):
@@ -29,7 +27,7 @@ class MockCallerFactory(object):
     def get_caller(self, metaheaders, column_header, name):
         self.last_filename = name
         return self.caller
-    
+
 class MockCaller(object):
     def __init__(self, name="MockCaller", metaheaders=["##mockMetaheader1"]):
         self.name = name
@@ -87,12 +85,32 @@ class NormalizeTestCase(unittest.TestCase):
         self.output = StringIO()
         self.saved_stderr = sys.stderr
         sys.stderr = self.output
+        self.original_info = logger.info
+        self.original_error = logger.error
+        self.original_warning = logger.warning
+        self.original_debug = logger.debug
+        self._change_mock_logger()
 
     def tearDown(self):
         self.output.close()
         sys.stderr = self.saved_stderr
         unittest.TestCase.tearDown(self)
+        self._reset_mock_logger()
 
+    def _change_mock_logger(self):
+        global mock_log_called
+        mock_log_called = False
+        global mock_log
+        logger.info = mock_log
+        logger.error = mock_log
+        logger.warning = mock_log
+        logger.debug = mock_log
+
+    def _reset_mock_logger(self):
+        logger.info = self.original_info
+        logger.error = self.original_error
+        logger.warning = self.original_warning
+        logger.debug = self.original_debug
     def test_execute(self):
         vcf_content1 = ('''##source=strelka
 ##file1
@@ -110,8 +128,8 @@ chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             input_dir.write("P1.strelka.snvs.vcf", vcf_content1)
             input_dir.write("P1.strelka.indels.vcf", vcf_content2)
-            args = Namespace(input_dir=input_dir.path,
-                             output_dir=output_dir.path)
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path)
 
             normalize.execute(args, ["extra_header1", "extra_header2"])
 

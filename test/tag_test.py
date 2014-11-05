@@ -226,8 +226,8 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             input_dir.write("A.vcf", vcf_content1)
             input_dir.write("B.vcf", vcf_content2)
 
-            args = Namespace(input_dir=input_dir.path,
-                             output_dir=output_dir.path)
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path)
 
             tag.execute(args, [])
 
