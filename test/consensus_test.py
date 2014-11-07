@@ -47,7 +47,7 @@ class ConsensusTestCase(unittest.TestCase):
         logger.debug = self.original_debug
         
     def test_iterateFile_consensus(self):
-        reader = MockReader("##FOO\n#CHROM\n1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_HC_SOM_VS:DP:JQ_AF_VS:JQ_AF_AVERAGE:JQ_DP_AVERAGE\t1:0:0.0:0.0:0\t0:1:1.2:1.2:0\t1:3:1.0:1.0:0\n")
+        reader = MockReader("##FOO\n#CHROM\n1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_HC_SOM_VS:DP:JQ_AF_VS:{0}AF:{0}DP\t1:0:0.0:0.0:0\t0:1:1.2:1.2:0\t1:3:1.0:1.0:0\n".format(consensus.JQ_CONSENSUS_TAG))
         writer = MockWriter()
         output_file = "output"
         af_range = []
@@ -57,10 +57,10 @@ class ConsensusTestCase(unittest.TestCase):
         
         self.assertEquals(["##FOO\n"], meta_headers)
         self.assertEquals("#CHROM\n", header)
-        self.assertEquals(["1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_HC_SOM_VS:DP:JQ_AF_VS:JQ_AF_AVERAGE:JQ_DP_AVERAGE:JQ_SOM_SUM:JQ_AF_RANGE:JQ_DP_RANGE\t1:0:0.0:0.0:0.0:1:0.0:0\t0:1:1.2:1.2:0.0:0:0.0:0\t1:3:1.0:1.0:0.0:1:0.0:0\n"], lines)
+        self.assertEquals(["1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_HC_SOM_VS:DP:JQ_AF_VS:{0}AF:{0}DP:{0}SOM_SUM:{0}AF_RANGE:{0}DP_RANGE\t1:0:0.0:0.0:0.0:1:0.0:0.0\t0:1:1.2:1.2:0.0:0:0.0:0.0\t1:3:1.0:1.0:0.0:1:0.0:0.0\n".format(consensus.JQ_CONSENSUS_TAG)], lines)
         
     def test_iterateFile_zscore(self):
-        reader = MockReader("##FOO\n#CHROM\n1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_HC_SOM_VS:DP:JQ_AF_VS:JQ_AF_AVERAGE:JQ_DP_AVERAGE:JQ_SOM_SUM:JQ_AF_RANGE:JQ_DP_RANGE\t1:0:0.0:0.0:0.0:1:0.0:0\t0:1:1.2:1.2:0.0:0:0.0:0\t1:3:1.0:1.0:0.0:1:0.0:0\n")
+        reader = MockReader("##FOO\n#CHROM\n1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_HC_SOM_VS:DP:JQ_AF_VS:{0}AF:{0}DP:{0}SOM_SUM:{0}AF_RANGE:{0}DP_RANGE\t1:0:0.0:0.0:0.0:1:0.0:0\t0:1:1.2:1.2:0.0:0:0.0:0\t1:3:1.0:1.0:0.0:1:0.0:0\n".format(consensus.JQ_CONSENSUS_TAG))
         writer = MockWriter()
         output_file = "output"
         af_range = [0.2, 0.45]
@@ -70,38 +70,38 @@ class ConsensusTestCase(unittest.TestCase):
         
         self.assertEquals(["##FOO\n"], meta_headers)
         self.assertEquals("#CHROM\n", header)
-        self.assertEquals(["1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_HC_SOM_VS:DP:JQ_AF_VS:JQ_AF_AVERAGE:JQ_DP_AVERAGE:JQ_SOM_SUM:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE\t1:0:0.0:0.0:0.0:1:0.0:0:-2.6:-3.21\t0:1:1.2:1.2:0.0:0:0.0:0:-2.6:-3.21\t1:3:1.0:1.0:0.0:1:0.0:0:-2.6:-3.21\n"], lines)
+        self.assertEquals(["1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_HC_SOM_VS:DP:JQ_AF_VS:{0}AF:{0}DP:{0}SOM_SUM:{0}AF_RANGE:{0}DP_RANGE:{0}AF_RANGE_ZSCORE:{0}DP_RANGE_ZSCORE\t1:0:0.0:0.0:0.0:1:0.0:0:-2.6:-3.21\t0:1:1.2:1.2:0.0:0:0.0:0:-2.6:-3.21\t1:3:1.0:1.0:0.0:1:0.0:0:-2.6:-3.21\n".format(consensus.JQ_CONSENSUS_TAG)], lines)
         
     def test_addConsensusSomatic(self):
         meta_headers = []
         header = "#CHROM"
-        lines = ["1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_SOM_VS:DP:JQ_AF_VS:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE\t1:0:0.0:0.0:1:0:0:0\t0:1:1.2:1.2:0:0:0:0\t1:3:1.0:1.0:1:0:0:0"]
+        lines = ["1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_SOM_VS:DP:JQ_AF_VS:{0}AF:{0}SOM_SUM:{0}DP:{0}AF_RANGE:{0}DP_RANGE\t1:0:0.0:0.0:1:0:0:0\t0:1:1.2:1.2:0:0:0:0\t1:3:1.0:1.0:1:0:0:0".format(consensus.JQ_CONSENSUS_TAG)]
         writer = MockWriter()
         output_file = "output"
         add_consensus(meta_headers, header, lines, writer, output_file)
-        self.assertEquals(['##FORMAT=<ID=JQ_SOM_SUM,Number=1,Type=Integer,Description="Jacquard consensus somatic call = sum(JQ_HC_SOM_*)">',
-                            '##FORMAT=<ID=JQ_AF_AVERAGE,Number=A,Type=Integer,Description="Jacquard consensus somatic call = average(JQ_AF_*)">',
-                            '##FORMAT=<ID=JQ_DP_AVERAGE,Number=1,Type=Integer,Description="Jacquard consensus depth = average(JQ_DP_*)">',
+        self.assertEquals(['##FORMAT=<ID={0}SOM_SUM,Number=1,Type=Integer,Description="Jacquard consensus somatic call = sum(*HC_SOM*)">'.format(consensus.JQ_CONSENSUS_TAG),
+                            '##FORMAT=<ID={0}AF,Number=A,Type=Integer,Description="Jacquard consensus somatic call = average(*AF*)">'.format(consensus.JQ_CONSENSUS_TAG),
+                            '##FORMAT=<ID={0}DP,Number=1,Type=Integer,Description="Jacquard consensus depth = average(*DP*)">'.format(consensus.JQ_CONSENSUS_TAG),
                             '#CHROM',
-                            '1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_SOM_VS:DP:JQ_AF_VS:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE\t1:0:0.0:0.0:1:0:0:0\t0:1:1.2:1.2:0:0:0:0\t1:3:1.0:1.0:1:0:0:0'], writer.lines())
+                            '1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_SOM_VS:DP:JQ_AF_VS:{0}AF:{0}SOM_SUM:{0}DP:{0}AF_RANGE:{0}DP_RANGE\t1:0:0.0:0.0:1:0:0:0\t0:1:1.2:1.2:0:0:0:0\t1:3:1.0:1.0:1:0:0:0'.format(consensus.JQ_CONSENSUS_TAG)], writer.lines())
         
     def test_addConsensusSomatic_multipleCallers(self):
         meta_headers = []
         header = "#CHROM"
-        lines = ["1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_SOM_VS:DP:JQ_SOM_MT:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE\t1:0:1:0:2:0:0:0\t0:1:0:0:0:0:0:0\t1:3:0:0:1:0:0:0\n"]
+        lines = ["1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_SOM_VS:DP:JQ_SOM_MT:{0}AF:{0}SOM_SUM:{0}DP:{0}AF_RANGE:{0}DP_RANGE\t1:0:1:0:2:0:0:0\t0:1:0:0:0:0:0:0\t1:3:0:0:1:0:0:0\n".format(consensus.JQ_CONSENSUS_TAG)]
         writer = MockWriter()
         output_file = "output"
         add_consensus(meta_headers, header, lines, writer, output_file)
-        self.assertEquals(['##FORMAT=<ID=JQ_SOM_SUM,Number=1,Type=Integer,Description="Jacquard consensus somatic call = sum(JQ_HC_SOM_*)">',
-                           '##FORMAT=<ID=JQ_AF_AVERAGE,Number=A,Type=Integer,Description="Jacquard consensus somatic call = average(JQ_AF_*)">',
-                           '##FORMAT=<ID=JQ_DP_AVERAGE,Number=1,Type=Integer,Description="Jacquard consensus depth = average(JQ_DP_*)">',
+        self.assertEquals(['##FORMAT=<ID={0}SOM_SUM,Number=1,Type=Integer,Description="Jacquard consensus somatic call = sum(*HC_SOM*)">'.format(consensus.JQ_CONSENSUS_TAG),
+                           '##FORMAT=<ID={0}AF,Number=A,Type=Integer,Description="Jacquard consensus somatic call = average(*AF*)">'.format(consensus.JQ_CONSENSUS_TAG),
+                           '##FORMAT=<ID={0}DP,Number=1,Type=Integer,Description="Jacquard consensus depth = average(*DP*)">'.format(consensus.JQ_CONSENSUS_TAG),
                            '#CHROM', 
-                           '1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_SOM_VS:DP:JQ_SOM_MT:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE\t1:0:1:0:2:0:0:0\t0:1:0:0:0:0:0:0\t1:3:0:0:1:0:0:0'], writer.lines())
+                           '1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_SOM_VS:DP:JQ_SOM_MT:{0}AF:{0}SOM_SUM:{0}DP:{0}AF_RANGE:{0}DP_RANGE\t1:0:1:0:2:0:0:0\t0:1:0:0:0:0:0:0\t1:3:0:0:1:0:0:0'.format(consensus.JQ_CONSENSUS_TAG)], writer.lines())
         
     def test_calculateConsensus(self):
         combined_dict = OrderedDict([("DP", "34"), ("JQ_HC_SOM_VS", "1"), ("JQ_HC_SOM_MT", "0"), ("JQ_AF_VS", "0.5"), ("JQ_DP_VS", "53")])
         actual_dict, af, dp = calculate_consensus(combined_dict, [], [])
-        expected_dict = OrderedDict([("DP", "34"), ("JQ_HC_SOM_VS", "1"), ("JQ_HC_SOM_MT", "0"), ("JQ_AF_VS", "0.5"), ("JQ_DP_VS", "53"), ("JQ_AF_AVERAGE", "0.5"), ("JQ_SOM_SUM", "1"), ("JQ_DP_AVERAGE", "53.0"), ('JQ_AF_RANGE', '0'), ('JQ_DP_RANGE', '0')])
+        expected_dict = OrderedDict([("DP", "34"), ("JQ_HC_SOM_VS", "1"), ("JQ_HC_SOM_MT", "0"), ("JQ_AF_VS", "0.5"), ("JQ_DP_VS", "53"), ("{0}AF".format(consensus.JQ_CONSENSUS_TAG), "0.5"), ("{0}SOM_SUM".format(consensus.JQ_CONSENSUS_TAG), "1"), ("{0}DP".format(consensus.JQ_CONSENSUS_TAG), "53.0"), ('{0}AF_RANGE'.format(consensus.JQ_CONSENSUS_TAG), '0.0'), ('{0}DP_RANGE'.format(consensus.JQ_CONSENSUS_TAG), '0.0')])
         self.assertEquals(expected_dict, actual_dict)
         self.assertEquals([0], af)
         self.assertEquals([0], dp)
@@ -109,7 +109,7 @@ class ConsensusTestCase(unittest.TestCase):
     def test_calculateConsensus_multipleCallers(self):
         combined_dict = OrderedDict([("DP", "34"), ("JQ_HC_SOM_VS", "1"), ("JQ_HC_SOM_MT", "1"), ("JQ_HC_SOM_FOO", "1"), ("JQ_AF_VS", "0.5"), ("JQ_AF_MT", "0.43"), ("JQ_DP_MT", "32"), ("JQ_DP_VS", "23")])
         actual_dict, af, dp = calculate_consensus(combined_dict, [], [])
-        expected_dict = OrderedDict([("DP", "34"), ("JQ_HC_SOM_VS", "1"), ("JQ_HC_SOM_MT", "1"), ("JQ_HC_SOM_FOO", "1"), ("JQ_AF_VS", "0.5"), ("JQ_AF_MT", "0.43"), ("JQ_DP_MT", "32"), ("JQ_DP_VS", "23"), ("JQ_AF_AVERAGE", "0"), ("JQ_AF_AVERAGE", "0.47"), ("JQ_SOM_SUM", "3"), ("JQ_DP_AVERAGE", "27.5"), ('JQ_AF_RANGE', '0.07'), ('JQ_DP_RANGE', '9.0')])
+        expected_dict = OrderedDict([("DP", "34"), ("JQ_HC_SOM_VS", "1"), ("JQ_HC_SOM_MT", "1"), ("JQ_HC_SOM_FOO", "1"), ("JQ_AF_VS", "0.5"), ("JQ_AF_MT", "0.43"), ("JQ_DP_MT", "32"), ("JQ_DP_VS", "23"), ("{0}AF".format(consensus.JQ_CONSENSUS_TAG), "0"), ("{0}AF".format(consensus.JQ_CONSENSUS_TAG), "0.47"), ("{0}SOM_SUM".format(consensus.JQ_CONSENSUS_TAG), "3"), ("{0}DP".format(consensus.JQ_CONSENSUS_TAG), "27.5"), ('{0}AF_RANGE'.format(consensus.JQ_CONSENSUS_TAG), '0.07'), ('{0}DP_RANGE'.format(consensus.JQ_CONSENSUS_TAG), '9.0')])
         self.assertEquals(expected_dict, actual_dict)
         self.assertEquals([0.07], af)
         self.assertEquals([9.0], dp)
@@ -117,13 +117,13 @@ class ConsensusTestCase(unittest.TestCase):
     def test_processLine_consensus(self):
         line = "1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_HC_SOM_VS:DP:JQ_HC_SOM_MT:JQ_AF_VS:JQ_DP_VS\t1:0:1:0.2:43\t0:1:0:0.42:0\t1:3:0:0.0:12\n"
         new_line = process_line(line, [], "", "", [], "", "", "consensus")
-        expected_line = "1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_HC_SOM_VS:DP:JQ_HC_SOM_MT:JQ_AF_VS:JQ_DP_VS:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE\t1:0:1:0.2:43:0.2:2:43.0:0:0\t0:1:0:0.42:0:0.42:0:0.0:0:0\t1:3:0:0.0:12:0.0:1:12.0:0:0\n"
+        expected_line = "1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_HC_SOM_VS:DP:JQ_HC_SOM_MT:JQ_AF_VS:JQ_DP_VS:{0}AF:{0}SOM_SUM:{0}DP:{0}AF_RANGE:{0}DP_RANGE\t1:0:1:0.2:43:0.2:2:43.0:0.0:0.0\t0:1:0:0.42:0:0.42:0:0.0:0.0:0.0\t1:3:0:0.0:12:0.0:1:12.0:0.0:0.0\n".format(consensus.JQ_CONSENSUS_TAG)
         self.assertEquals(expected_line, new_line)
     
     def test_processLine_consensusNoJQTags(self):
         line = "1\t1344\t.\tA\tT\t.\t.\tfoo\tFOO:DP\t1:0\t0:2\t1:3\n"
         new_line = process_line(line, [], "", "", [], "", "", "consensus")
-        expected_line = "1\t1344\t.\tA\tT\t.\t.\tfoo\tFOO:DP:JQ_AF_AVERAGE:JQ_SOM_SUM:JQ_DP_AVERAGE:JQ_AF_RANGE:JQ_DP_RANGE\t1:0:0:0:0:0:0\t0:2:0:0:0:0:0\t1:3:0:0:0:0:0\n"
+        expected_line = "1\t1344\t.\tA\tT\t.\t.\tfoo\tFOO:DP:{0}AF:{0}SOM_SUM:{0}DP:{0}AF_RANGE:{0}DP_RANGE\t1:0:0.0:0:0.0:0.0:0.0\t0:2:0.0:0:0.0:0.0:0.0\t1:3:0.0:0:0.0:0.0:0.0\n".format(consensus.JQ_CONSENSUS_TAG)
         self.assertEquals(expected_line, new_line)
     
     def test_processLine_zscore(self):
@@ -135,10 +135,10 @@ class ConsensusTestCase(unittest.TestCase):
         dp_mean = sum(dp_range)/len(dp_range) if dp_range != [] else ""
         dp_std = numpy.std(dp_range) if dp_range != [] else ""
         
-        line = "1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_SOM_VS:JQ_DP_VS:JQ_AF_VS:JQ_AF_RANGE:JQ_DP_RANGE\t1:10.0:0.1:0.1:10.0\t0:1.0:1.2:1.2:1.0\t1:3.0:1.0:1.0:3.0\n"
+        line = "1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_SOM_VS:JQ_DP_VS:JQ_AF_VS:{0}AF_RANGE:{0}DP_RANGE\t1:10.0:0.1:0.1:10.0\t0:1.0:1.2:1.2:1.0\t1:3.0:1.0:1.0:3.0\n".format(consensus.JQ_CONSENSUS_TAG)
         actual_line = process_line(line, af_range, af_mean, af_std, dp_range, dp_mean, dp_std, "zscore")
         
-        expected_line = "1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_SOM_VS:JQ_DP_VS:JQ_AF_VS:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE\t1:10.0:0.1:0.1:10.0:-1.39:1.38\t0:1.0:1.2:1.2:1.0:0.91:-0.95\t1:3.0:1.0:1.0:3.0:0.49:-0.43\n"
+        expected_line = "1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_SOM_VS:JQ_DP_VS:JQ_AF_VS:{0}AF_RANGE:{0}DP_RANGE:{0}AF_RANGE_ZSCORE:{0}DP_RANGE_ZSCORE\t1:10.0:0.1:0.1:10.0:-1.39:1.38\t0:1.0:1.2:1.2:1.0:0.91:-0.95\t1:3.0:1.0:1.0:3.0:0.49:-0.43\n".format(consensus.JQ_CONSENSUS_TAG)
         self.assertEquals(expected_line, actual_line)
     
     def test_createConsensusDict_som(self):
@@ -182,20 +182,20 @@ class ConsensusTestCase(unittest.TestCase):
     def test_addZscore(self):
         meta_headers = []
         header = "#CHROM"
-        lines = ["1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_SOM_VS:JQ_DP_VS:JQ_AF_VS:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE\t1:10.0:0.1:0.1:10.0:-1.39:1.38\t0:1.0:1.2:1.2:1.0:0.91:-0.95\t1:3.0:1.0:1.0:3.0:0.49:-0.43\n"]
+        lines = ["1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_SOM_VS:JQ_DP_VS:JQ_AF_VS:{0}AF_RANGE:{0}DP_RANGE:{0}AF_RANGE_ZSCORE:{0}DP_RANGE_ZSCORE\t1:10.0:0.1:0.1:10.0:-1.39:1.38\t0:1.0:1.2:1.2:1.0:0.91:-0.95\t1:3.0:1.0:1.0:3.0:0.49:-0.43\n".format(consensus.JQ_CONSENSUS_TAG)]
         writer = MockWriter()
         output_file = "output"
         af_range = [0.1, 1.2, 1.0]
         dp_range = [10.0, 1.0, 3.0]
         add_zscore(meta_headers, header, lines, writer, output_file, af_range, dp_range)
-        self.assertEquals(['##FORMAT=<ID=JQ_AF_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of allele frequencies among callers = (sample AF range - population mean AF range)/standard dev(population AF range)">',
-                           '##jacquard.consensus.JQ_AF_RANGE_ZSCORE.mean_AF_range=0.77',
-                            '##jacquard.consensus.JQ_AF_RANGE_ZSCORE.standard_deviation=0.48', 
-                            '##FORMAT=<ID=JQ_DP_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of depth among callers = (sample DP range - population mean DP range)/standard dev(population DP range)">', 
-                            '##jacquard.consensus.JQ_DP_RANGE_ZSCORE.mean_DP_range=4.67', 
-                            '##jacquard.consensus.JQ_DP_RANGE_ZSCORE.standard deviation_DP_range=3.86', 
+        self.assertEquals(['##FORMAT=<ID={0}AF_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of allele frequencies among callers = (sample AF range - population mean AF range)/standard dev(population AF range)">'.format(consensus.JQ_CONSENSUS_TAG),
+                           '##jacquard.consensus.{0}AF_RANGE_ZSCORE.mean_AF_range=0.77'.format(consensus.JQ_CONSENSUS_TAG),
+                            '##jacquard.consensus.{0}AF_RANGE_ZSCORE.standard_deviation=0.48'.format(consensus.JQ_CONSENSUS_TAG), 
+                            '##FORMAT=<ID={0}DP_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of depth among callers = (sample DP range - population mean DP range)/standard dev(population DP range)">'.format(consensus.JQ_CONSENSUS_TAG), 
+                            '##jacquard.consensus.{0}DP_RANGE_ZSCORE.mean_DP_range=4.67'.format(consensus.JQ_CONSENSUS_TAG), 
+                            '##jacquard.consensus.{0}DP_RANGE_ZSCORE.standard deviation_DP_range=3.86'.format(consensus.JQ_CONSENSUS_TAG), 
                             '#CHROM', 
-                            '1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_SOM_VS:JQ_DP_VS:JQ_AF_VS:JQ_AF_RANGE:JQ_DP_RANGE:JQ_AF_RANGE_ZSCORE:JQ_DP_RANGE_ZSCORE\t1:10.0:0.1:0.1:10.0:-1.39:1.38\t0:1.0:1.2:1.2:1.0:0.91:-0.95\t1:3.0:1.0:1.0:3.0:0.49:-0.43'], writer.lines())
+                            '1\t1344\t.\tA\tT\t.\t.\tfoo\tJQ_SOM_VS:JQ_DP_VS:JQ_AF_VS:{0}AF_RANGE:{0}DP_RANGE:{0}AF_RANGE_ZSCORE:{0}DP_RANGE_ZSCORE\t1:10.0:0.1:0.1:10.0:-1.39:1.38\t0:1.0:1.2:1.2:1.0:0.91:-0.95\t1:3.0:1.0:1.0:3.0:0.49:-0.43'.format(consensus.JQ_CONSENSUS_TAG)], writer.lines())
         
     def test_calculateZscore(self):
         af_range = [0.1, 1.2, 1.0]
@@ -206,10 +206,10 @@ class ConsensusTestCase(unittest.TestCase):
         dp_mean = sum(dp_range)/len(dp_range) if dp_range != [] else ""
         dp_std = numpy.std(dp_range) if dp_range != [] else ""
         
-        combined_dict = {"JQ_AF_RANGE" : "0.1", "JQ_DP_RANGE" : "10.0"}
+        combined_dict = {"{0}AF_RANGE".format(consensus.JQ_CONSENSUS_TAG) : "0.1", "{0}DP_RANGE".format(consensus.JQ_CONSENSUS_TAG) : "10.0"}
         combined_dict = calculate_zscore(af_mean, af_std, dp_mean, dp_std, combined_dict)
         
-        self.assertEquals({'JQ_DP_RANGE_ZSCORE': '1.38', 'JQ_AF_RANGE_ZSCORE': '-1.39', 'JQ_AF_RANGE': '0.1', 'JQ_DP_RANGE': '10.0'}, combined_dict)
+        self.assertEquals({'{0}DP_RANGE_ZSCORE'.format(consensus.JQ_CONSENSUS_TAG): '1.38', '{0}AF_RANGE_ZSCORE'.format(consensus.JQ_CONSENSUS_TAG): '-1.39', '{0}AF_RANGE'.format(consensus.JQ_CONSENSUS_TAG): '0.1', '{0}DP_RANGE'.format(consensus.JQ_CONSENSUS_TAG): '10.0'}, combined_dict)
         
 class MockWriter():
     def __init__(self):

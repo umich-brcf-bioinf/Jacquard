@@ -14,9 +14,13 @@ TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 mock_create_tmp_called = False
 mock_move_tmp_contents_called = False
 
-def mock_create_temp_directory(output_dir):
+def mock_create_temp_directory(output_dir, force=0):
     global mock_create_tmp_called
     mock_create_tmp_called = True
+    
+    if len(os.listdir(output_dir)) != 0:
+        if not force:
+            sys.exit(1)
     
 def mock_move_tmp_contents_to_original(tmp_output, output_dir):
     global mock_move_tmp_contents_called
@@ -117,7 +121,7 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
         with TempDirectory() as output_dir:
             output_dir.write("file1.vcf", "foo")
             mock_module.my_exception_string = ""
-            
+
             with self.assertRaises(SystemExit) as exit_code:
                 jacquard.dispatch([mock_module], ["mock_module", output_dir.path])
 

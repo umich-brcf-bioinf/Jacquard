@@ -59,25 +59,40 @@ def _version_text():
     return "Jacquard v{0}\nSupported variant callers:\n\t{1}".\
         format(utils.__version__, caller_version_string)
 
-def _create_temp_directory(original_output_dir):
+def _validate_temp_directory(tmp_dir, original_output_dir):
+    try:
+            os.mkdir(tmp_dir)
+    except:
+        raise utils.JQException("A tmp directory already exists inside "
+                                "output directory {} or cannot be created",
+                                original_output_dir)
+
+def _create_temp_directory(original_output_dir, force=0):
     extension = os.path.splitext(os.path.basename(original_output_dir))[1]
     if extension: ##output is a file
         original_output_dir = os.path.dirname(original_output_dir)
 
+    if len(os.listdir(original_output_dir)) != 0:
+        if not force:
+            raise utils.JQException("Specified output {} is not empty. "
+                                    "Please specify an empty directory or "
+                                    "use the flag '--force'. Type "
+                                    "'jacquard -h' for more details.",
+                                    original_output_dir)
+
     tmp_dir = os.path.join(original_output_dir, "tmp")
-    try:
-        os.mkdir(tmp_dir)
-    except:
-        raise utils.JQException("A tmp directory already exists inside "
-                                "output directory {} or cannot be created",
-                                 original_output_dir)
+    
+    _validate_temp_directory(tmp_dir, original_output_dir)
 
     return tmp_dir
 
 def _move_tmp_contents_to_original(tmp_dir, original_output_dir):
+    if os.path.isfile(tmp_dir):
+        tmp_dir = os.path.dirname(tmp_dir)
+
     for fname in os.listdir(tmp_dir):
         full_fname = os.path.join(tmp_dir, fname)
-        if os.path.isfile(full_fname): ##necessary?
+        if os.path.isfile(full_fname):
             shutil.move(full_fname, original_output_dir)
 
     os.rmdir(tmp_dir)
@@ -122,16 +137,9 @@ def dispatch(modules, arguments):
 
         original_output_dir = args.output
 
-        if len(os.listdir(original_output_dir)) != 0:
-            if not args.force:
-                raise utils.JQException("Specified output {} is not empty. "
-                                        "Please specify an empty directory or "
-                                        "use the flag '--force'. Type "
-                                        "'jacquard -h' for more details.",
-                                        original_output_dir)
-
-        tmp_dir = _create_temp_directory(original_output_dir)
-
+        tmp_dir = _create_temp_directory(original_output_dir, args.force)
+        args.output = tmp_dir
+        
         logger.info("Writing output to tmp directory [{}]", tmp_dir)
 
         module_dispatch[args.subparser_name].execute(args, execution_context)
@@ -141,6 +149,8 @@ def dispatch(modules, arguments):
         logger.error(str(exception))
         logger.error("Jacquard encountered an unanticipated problem. Please review log file and contact your sysadmin or Jacquard support for assistance.")
         logger.debug(traceback.format_exc())
+
+        shutil.rmtree(tmp_dir)
         sys.exit(1)
 
     logger.info("Moving files from tmp directory {} to output directory", tmp_dir, original_output_dir)

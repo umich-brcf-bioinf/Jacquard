@@ -15,9 +15,9 @@ caller_versions = {"VarScan":"v2.3", "MuTect": "v1.1.4", "Strelka": "v2.0.15"}
 global jq_somatic_tag
 global jq_af_tag
 global jq_dp_tag
-jq_somatic_tag = "JQ_HC_SOM_"
-jq_af_tag = "JQ_AF_"
-jq_dp_tag = "JQ_DP_"
+jq_somatic_tag = "HC_SOM"
+jq_af_tag = "AF"
+jq_dp_tag = "DP"
 
 
 class JQException(Exception):
@@ -30,7 +30,8 @@ class JQException(Exception):
 
 def validate_directories(input_dir, output_dir):    
     if not os.path.isdir(input_dir):
-        logger.error("Specified input directory [{}] does not exist.", input_dir)
+        logger.error("Specified input directory [{}] does not exist.",
+                     input_dir)
         exit(1)
     try:
         listdir(input_dir)
@@ -38,7 +39,7 @@ def validate_directories(input_dir, output_dir):
         logger.error("Specified input directory [{}] cannot be read. "+
             "Check permissions and try again.",input_dir)
         exit(1)
-        
+
     if not os.path.isdir(output_dir):
         try:
             os.makedirs(output_dir)
@@ -46,13 +47,13 @@ def validate_directories(input_dir, output_dir):
             logger.error("Output directory [{}] could not be created. "+
                 "Check parameters and try again", output_dir)
             exit(1)
-            
+
 def write_output(writer, headers, actual_sorted_variants):
     for line in headers:
         writer.write(line)
     for line in actual_sorted_variants:
         writer.write(line)
-        
+
 def sort_headers(headers):
     meta_headers = []
     field_header = ""
@@ -73,16 +74,17 @@ def sort_data(all_variants):
         split_variant = variant.split("\t")
         new_line = change_pos_to_int(split_variant)
         new_variants.append(new_line)
-        
-    sorted_variants = sorted(new_variants, key=itemgetter(0,1,3,4)) #sort by CHROM, POS, REF, ALT
-    
+
+    #sort by CHROM, POS, REF, ALT
+    sorted_variants = sorted(new_variants, key=itemgetter(0,1,3,4))
+
     actual_sorted_variants = []
     for variant in sorted_variants:
         new_field = [str(field) for field in variant]
         if "chr" not in new_field[0]:
             new_field[0] = "chr" + new_field[0]
         actual_sorted_variants.append("\t".join(new_field))
-        
+
     return actual_sorted_variants
 
 def change_pos_to_int(split_line):

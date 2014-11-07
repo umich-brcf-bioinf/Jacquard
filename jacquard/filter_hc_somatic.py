@@ -35,14 +35,14 @@ def find_somatic_positions(in_files, output_dir):
 
         if somatic == 0:
             no_jq_tags.append(file)
-            logger.warning("Input file [{}] has no high-confidence somatic actual_sorted_variants.", os.path.basename(file))
+            logger.warning("Input file [{}] has no high-confidence somatic variants.", os.path.basename(file))
             
         in_file.close()
         
         count += 1
         
     if no_jq_tags:
-        logger.error("[{}/{}] VCF files had no high-confidence somatic actual_sorted_variants. Review input and try again.", len(no_jq_tags), len(in_files))
+        logger.error("[{}/{}] VCF files had no high-confidence somatic variants. Review input and try again.", len(no_jq_tags), len(in_files))
         exit(1)
         
     logger.info("Found [{}] high-confidence somatic positions", len(somatic_positions.keys()))

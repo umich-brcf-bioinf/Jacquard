@@ -1,9 +1,8 @@
 import unittest
 
 import jacquard.variant_callers.mutect as mutect
-from jacquard.utils import __version__, jq_dp_tag, jq_somatic_tag,JQException
+from jacquard.utils import __version__, JQException
 from jacquard.vcf import VcfRecord 
-
 
 class MockWriter():
     def __init__(self):
@@ -13,7 +12,7 @@ class MockWriter():
 
     def open (self):
         self.opened = True
-        
+
     def write(self, content):
         self._content.extend(content.splitlines())
         
@@ -22,7 +21,7 @@ class MockWriter():
 
     def close(self):
         self.closed = True
-        
+
 class MockReader():
     def __init__(self, lines = []):
         self._lines_iter = iter(lines)
@@ -32,7 +31,7 @@ class MockReader():
 
     def open (self):
         self.opened = True
-        
+
     def read_lines(self):
         return self._lines_iter
 
@@ -41,10 +40,9 @@ class MockReader():
 
 
 class AlleleFreqTagTestCase(unittest.TestCase):
-
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_AF_MT,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)",Source="Jacquard",Version={0}>'.format(__version__), mutect._AlleleFreqTag().metaheader)
-                
+        self.assertEqual('##FORMAT=<ID={0}AF,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)",Source="Jacquard",Version={1}>'.format(mutect.JQ_MUTECT_TAG, __version__), mutect._AlleleFreqTag().metaheader)
+
     def test_format_missingAFTag(self):
         tag = mutect._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
@@ -52,28 +50,27 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         processedVcfRecord = VcfRecord(line)
         tag.format(processedVcfRecord)
         self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
-        
+
     def test_format_presentAFTag(self):
         tag = mutect._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3|0.567:SA.2:SA.3|0.834:SB.2:SB.3\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3:JQ_AF_MT|0.567:SA.2:SA.3:0.57|0.834:SB.2:SB.3:0.83\n".replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3:{0}AF|0.567:SA.2:SA.3:0.57|0.834:SB.2:SB.3:0.83\n".format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
         processedVcfRecord = VcfRecord(line)
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
-        
+
     def test_format_multAlt(self):
         tag = mutect._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3|0.5,0.8:SA.2:SA.3|0.7,0.6:SB.2:SB.3\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3:JQ_AF_MT|0.5,0.8:SA.2:SA.3:0.5,0.8|0.7,0.6:SB.2:SB.3:0.7,0.6\n".replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3:{0}AF|0.5,0.8:SA.2:SA.3:0.5,0.8|0.7,0.6:SB.2:SB.3:0.7,0.6\n".format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
         processedVcfRecord = VcfRecord(line)
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
-        
+
 class DepthTagTestCase(unittest.TestCase):
-    
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}MT,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP)",Source="Jacquard",Version={1}>'.format(jq_dp_tag, __version__), mutect._DepthTag().metaheader)
-        
+        self.assertEqual('##FORMAT=<ID={0}DP,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP)",Source="Jacquard",Version={1}>'.format(mutect.JQ_MUTECT_TAG, __version__), mutect._DepthTag().metaheader)
+
     def test_format_missingDPTag(self):
         tag = mutect._DepthTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
@@ -81,73 +78,70 @@ class DepthTagTestCase(unittest.TestCase):
         processedVcfRecord = VcfRecord(line)
         tag.format(processedVcfRecord)
         self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
-        
+
     def test_format_presentDPTag(self):
         tag = mutect._DepthTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP:F2:F3|2:SA.2:SA.3|4:SB.2:SB.3\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP:F2:F3:JQ_DP_MT|2:SA.2:SA.3:2|4:SB.2:SB.3:4\n".replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP:F2:F3:{0}DP|2:SA.2:SA.3:2|4:SB.2:SB.3:4\n".format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
         processedVcfRecord = VcfRecord(line)
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
-        
+
 class SomaticTagTestCase(unittest.TestCase):
- 
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)",Source="Jacquard",Version={1}>'.format(jq_somatic_tag, __version__), mutect._SomaticTag().metaheader)
-        
+        self.assertEqual('##FORMAT=<ID={0}HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)",Source="Jacquard",Version={1}>'.format(mutect.JQ_MUTECT_TAG, __version__), mutect._SomaticTag().metaheader)
+
     def test_format_missingSSTag(self):
         tag = mutect._SomaticTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
-        expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:"+jq_somatic_tag+"MT|SA.1:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n").replace('|',"\t")
+        expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:{0}HC_SOM|SA.1:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n").format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
         processedVcfRecord = VcfRecord(line)
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
-        
+
     def test_format_presentSSTag(self):
         tag = mutect._SomaticTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|SS:F2:F3|2:SA.2:SA.3|5:SB.2:SB.3\n".replace('|',"\t")
-        expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|SS:F2:F3:"+jq_somatic_tag+"MT|2:SA.2:SA.3:1|5:SB.2:SB.3:0\n").replace('|',"\t")
+        expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|SS:F2:F3:{0}HC_SOM|2:SA.2:SA.3:1|5:SB.2:SB.3:0\n").format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
         processedVcfRecord = VcfRecord(line)
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
-        
-        
+
 class MockTag(object):
     def __init__(self, field_name, field_value, metaheader=None):
         self.field_name = field_name
         self.field_value = field_value
         self.metaheader = metaheader
-    
+
     def format(self, vcfRecord):
         vcfRecord.insert_format_field(self.field_name, {0:self.field_value, 1:self.field_value})
-        
+
 class Mutect_TestCase(unittest.TestCase):
-    
     def setUp(self):
         self.caller = mutect.Mutect()
-        
+
     def test_validate_vcfs_in_directory(self):
         in_files = ["A.vcf","B.vcf"]
         self.caller.validate_vcfs_in_directory(in_files)
-        
+
         in_files = ["A.vcf","B"]
         self.assertRaisesRegexp(JQException, "ERROR: Non-VCF file in directory. Check parameters and try again", self.caller.validate_vcfs_in_directory, in_files)
-        
+
     def test_decorate_files(self):
         filenames = ["A/A.vcf"]
         decorator = "normalized"
         actual_filenames = self.caller.decorate_files(filenames, decorator)
         expected_filenames = "A.normalized.vcf"
         self.assertEquals(expected_filenames,actual_filenames)
-    
+
     def test_validateInputFile_isValid(self):
         metaheaders = ["##MuTect=blah"]
         self.assertTrue(self.caller.validate_input_file(metaheaders, "#column_header"))
-    
+
     def test_validateInputFile_isNotValid(self):
         metaheaders = ["Foo"]
         self.assertFalse(self.caller.validate_input_file(metaheaders, "#column_header"))
-    
+
     def test_addTags(self):
         input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
         self.caller.tags=[MockTag("mockTag", 42)]
@@ -156,19 +150,19 @@ class Mutect_TestCase(unittest.TestCase):
         expected_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:mockTag|SA.1:SA.2:SA.3:42|SB.1:SB.2:SB.3:42\n".replace('|',"\t")
 
         self.assertEquals(expected_line, actual_line)
-        
+
     def test_updateMetaheader(self):
         self.caller.tags=[MockTag("mockTag", 42, "##my_metaheader\n")]
         actual_metaheader = self.caller.get_new_metaheaders()
 
         self.assertEquals(["##my_metaheader\n"], actual_metaheader)
-        
+
     def test_normalize(self):
         writer = MockWriter()
         content = ["foo", "bar", "baz"]
         reader = MockReader(content)
         self.caller.normalize(writer,[reader])
-        
+
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
         self.assertTrue(writer.opened)
@@ -177,24 +171,24 @@ class Mutect_TestCase(unittest.TestCase):
 
     def test_normalize_raisesExceptionIfTwoInputFiles(self):
         self.assertRaisesRegexp(JQException, r"MuTect .* but found \[2\]\.", self.caller.normalize, MockWriter(), [MockReader(), MockReader()])
-        
+
     def test_normalize_changes_column_headers(self):
         writer = MockWriter()
         content = ["##MuTect=foo normal_sample_name=normal_sample tumor_sample_name=tumor_sample foo=bar", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ttumor_sample\tnormal_sample"]
         reader = MockReader(content)
         self.caller.normalize(writer,[reader])
-    
+
         expected_lines = ["##MuTect=foo normal_sample_name=normal_sample tumor_sample_name=tumor_sample foo=bar", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tTUMOR\tNORMAL"]
         self.assertEquals(expected_lines, writer.lines())
-        
+
     def test_normalize_doesnt_change_column_headers(self):
         writer = MockWriter()
         content = ["##MuTect=foo", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ttumor_sample\tnormal_sample"]
         reader = MockReader(content)
-        
+
         self.assertRaises(JQException, self.caller.normalize, writer, [reader])
-        
-        
+
+
 #     #TODO: (cgates/kmeng) Remove when switched to new VcfRecord
 #     def test_format_rounds(self):
 #         tag = mutect.AlleleFreqTag()
@@ -224,38 +218,3 @@ class Mutect_TestCase(unittest.TestCase):
 #  
 #         format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.204,0.3807,0.2784".split(":")))
 #         self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.204,0.3807,0.2784'), ('JQ_AF_MT', '0.2,0.38,0.28')]), tag.format("alt", "filter", "", format_dict, 0))
-# 
-# class Mutect_DepthTagTestCase(unittest.TestCase):
-#     def test_metaheader(self):
-#         self.assertEqual('##FORMAT=<ID=JQ_DP_MT,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP),Source="Jacquard",Version={0}>\n'.format(__version__), mutect.DepthTag().metaheader)
-#                 
-#     def test_format_missingDPTag(self):
-#         tag = mutect.DepthTag()
-#         format_param_string = "A:B"
-#         format_value_string = "1:2"
-#         format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('B', '2')]), tag.format("alt", "filter", "", format_dict, 0))
-#                 
-#     def test_format(self):
-#         tag = mutect.DepthTag()
-#         format_dict = OrderedDict(zip("A:DP".split(":"), "1:42".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('DP', '42'), ('JQ_DP_MT', '42')]), tag.format("alt", "filter", "", format_dict, 0))
-# 
-# class Mutect_SomaticTagTestCase(unittest.TestCase):
-#     def test_metaheader(self):
-#         self.assertEqual('##FORMAT=<ID=JQ_HC_SOM_MT,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1= somatic (based on SS FORMAT tag),Source="Jacquard",Version={0}>\n'.format(__version__), mutect.SomaticTag().metaheader)
-#                 
-#     def test_format_missingSSTag(self):
-#         tag = mutect.SomaticTag()
-#         format_param_string = "A:B"
-#         format_value_string = "1:2"
-#         format_dict = OrderedDict(zip(format_param_string.split(":"), format_value_string.split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('B', '2'), ("JQ_HC_SOM_MT", "0")]), tag.format("alt", "filter", "", format_dict, 0))
-#                 
-#     def test_format(self):
-#         tag = mutect.SomaticTag()
-#         format_dict = OrderedDict(zip( "A:SS".split(":"), "1:2".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('SS', '2'), ('JQ_HC_SOM_MT', '1')]), tag.format("alt", "filter", "", format_dict, 0))
-#         
-#         format_dict = OrderedDict(zip( "A:SS".split(":"), "1:1".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('SS', '1'), ('JQ_HC_SOM_MT', '0')]), tag.format("alt", "filter", "", format_dict, 0))

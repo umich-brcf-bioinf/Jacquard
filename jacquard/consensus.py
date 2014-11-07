@@ -1,79 +1,82 @@
-import argparse
-from collections import defaultdict, OrderedDict
+# import argparse
+from collections import OrderedDict
 import numpy
 import os
-from os import listdir
-from os.path import isfile, join
-import pandas as pd
-import re
+# from os import listdir
+# from os.path import isfile, join
+# import pandas as pd
+# import re
 
-import utils
-import logger
+import utils as utils
+import logger as logger
 
+JQ_CONSENSUS_TAG = "JQ_CONS_"
+ 
 def calculate_zscore(af_mean, af_std, dp_mean, dp_std, combined_dict):
-    af_range = float(combined_dict["JQ_AF_RANGE"])
+    af_range = float(combined_dict[JQ_CONSENSUS_TAG + "AF_RANGE"])
     af_zscore = (af_range - af_mean)/af_std
     rounded_af_zscore = roundTwoDigits([str(af_zscore)])
-    
-    dp_range = float(combined_dict["JQ_DP_RANGE"])
+
+    dp_range = float(combined_dict[JQ_CONSENSUS_TAG + "DP_RANGE"])
     dp_zscore = (dp_range - dp_mean)/dp_std
     rounded_dp_zscore = roundTwoDigits([str(dp_zscore)])
-    
-    combined_dict["JQ_AF_RANGE_ZSCORE"] = str(rounded_af_zscore)
-    combined_dict["JQ_DP_RANGE_ZSCORE"] = str(rounded_dp_zscore)
-    
+
+    combined_dict[JQ_CONSENSUS_TAG + "AF_RANGE_ZSCORE"] = str(rounded_af_zscore)
+    combined_dict[JQ_CONSENSUS_TAG + "DP_RANGE_ZSCORE"] = str(rounded_dp_zscore)
+
     return combined_dict
 
 def iterate_file(reader, writer, output_file, af_range, dp_range, type):
     meta_headers = []
     header = ""
     lines = []
-    
+
     af_mean = sum(af_range)/len(af_range) if af_range != [] else ""
     af_std = numpy.std(af_range) if af_range != [] else ""
     dp_mean = sum(dp_range)/len(dp_range) if dp_range != [] else ""
     dp_std = numpy.std(dp_range) if dp_range != [] else ""
-    
+
     for line in reader:
         if line.startswith("##"):
             meta_headers.append(line)
         elif line.startswith("#"):
             header = line
         else:
-            new_line = process_line(line, af_range, af_mean, af_std, dp_range, dp_mean, dp_std, type)
+            new_line = process_line(line, af_range, af_mean, af_std, dp_range,
+                                    dp_mean, dp_std, type)
             lines.append(new_line)
-    
+
     return meta_headers, header, lines
-            
+
 def add_zscore(meta_headers, header, lines, writer, output_file, af_range, dp_range):
     rounded_mean_af = roundTwoDigits([str(sum(af_range)/len(af_range))])
     rounded_mean_dp = roundTwoDigits([str(sum(dp_range)/len(dp_range))])
     rounded_std_af = roundTwoDigits([str(numpy.std(af_range))])
     rounded_std_dp = roundTwoDigits([str(numpy.std(dp_range))])
-    
-    consensus_meta_headers = ['##FORMAT=<ID=JQ_AF_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of allele frequencies among callers = (sample AF range - population mean AF range)/standard dev(population AF range)">\n',
-                              '##jacquard.consensus.JQ_AF_RANGE_ZSCORE.mean_AF_range={0}\n'.format(rounded_mean_af),
-                              '##jacquard.consensus.JQ_AF_RANGE_ZSCORE.standard_deviation={0}\n'.format(rounded_std_af),
-                              '##FORMAT=<ID=JQ_DP_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of depth among callers = (sample DP range - population mean DP range)/standard dev(population DP range)">\n',
-                              '##jacquard.consensus.JQ_DP_RANGE_ZSCORE.mean_DP_range={0}\n'.format(rounded_mean_dp),
-                              '##jacquard.consensus.JQ_DP_RANGE_ZSCORE.standard deviation_DP_range={0}\n'.format(rounded_std_dp)]
+
+    consensus_meta_headers = ['##FORMAT=<ID={0}AF_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of allele frequencies among callers = (sample AF range - population mean AF range)/standard dev(population AF range)">\n'.format(JQ_CONSENSUS_TAG),
+                              '##jacquard.consensus.{0}AF_RANGE_ZSCORE.mean_AF_range={1}\n'.format(JQ_CONSENSUS_TAG, rounded_mean_af),
+                              '##jacquard.consensus.{0}AF_RANGE_ZSCORE.standard_deviation={1}\n'.format(JQ_CONSENSUS_TAG, rounded_std_af),
+                              '##FORMAT=<ID={0}DP_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of depth among callers = (sample DP range - population mean DP range)/standard dev(population DP range)">\n'.format(JQ_CONSENSUS_TAG),
+                              '##jacquard.consensus.{0}DP_RANGE_ZSCORE.mean_DP_range={1}\n'.format(JQ_CONSENSUS_TAG, rounded_mean_dp),
+                              '##jacquard.consensus.{0}DP_RANGE_ZSCORE.standard deviation_DP_range={1}\n'.format(JQ_CONSENSUS_TAG, rounded_std_dp)]
     meta_headers.extend(consensus_meta_headers)
     logger.info("".join(consensus_meta_headers))
-    
+
     meta_headers.append(header)
     utils.write_output(writer, meta_headers, lines)
     logger.info("Wrote consensus-somatic-tagged VCF to [{}]", output_file)
-    
+
 def add_consensus(meta_headers, header, lines, writer, output_file):
-    consensus_meta_headers = ['##FORMAT=<ID=JQ_SOM_SUM,Number=1,Type=Integer,Description="Jacquard consensus somatic call = sum({0}*)">\n'.format(utils.jq_somatic_tag), 
-                              '##FORMAT=<ID=JQ_AF_AVERAGE,Number=A,Type=Integer,Description="Jacquard consensus somatic call = average({0}*)">\n'.format(utils.jq_af_tag),
-                              '##FORMAT=<ID=JQ_DP_AVERAGE,Number=1,Type=Integer,Description="Jacquard consensus depth = average({0}*)">\n'.format(utils.jq_dp_tag)]
+    consensus_meta_headers = ['##FORMAT=<ID={0}SOM_SUM,Number=1,Type=Integer,Description="Jacquard consensus somatic call = sum(*{1}*)">\n'.format(JQ_CONSENSUS_TAG, utils.jq_somatic_tag), 
+                              '##FORMAT=<ID={0}AF,Number=A,Type=Integer,Description="Jacquard consensus somatic call = average(*{1}*)">\n'.format(JQ_CONSENSUS_TAG, utils.jq_af_tag),
+                              '##FORMAT=<ID={0}DP,Number=1,Type=Integer,Description="Jacquard consensus depth = average(*{1}*)">\n'.format(JQ_CONSENSUS_TAG, utils.jq_dp_tag)]
     logger.info("".join(consensus_meta_headers))
     meta_headers.extend(consensus_meta_headers)
-            
+
     meta_headers.append(header)
     utils.write_output(writer, meta_headers, lines)
-    
+
 def roundTwoDigits(value): 
     new_values = []
     for val in value:
@@ -82,7 +85,7 @@ def roundTwoDigits(value):
         else:
             new_values.append(str(round(100 * float(val))/100))
     return ",".join(new_values) 
-        
+
 def create_consensus_dict(key, val, input_dict, consensus_dict, type):
     split_som = val.split(",")
     for index, af in enumerate(split_som):
@@ -90,7 +93,7 @@ def create_consensus_dict(key, val, input_dict, consensus_dict, type):
             consensus_dict[index] += int(af) if type == "int" else float(af)
         else:
             consensus_dict[index] = int(af) if type == "int" else float(af)
-    
+
     return consensus_dict
 
 def get_consensus_som(field_dict):
@@ -98,7 +101,7 @@ def get_consensus_som(field_dict):
     for key in field_dict.keys():
         field_list.append(str(field_dict[key]))
     consensus = ",".join(field_list) if field_list != [] else 0
-    
+
     return consensus
 
 def get_consensus(consensus_tags, consensus_dict):
@@ -110,7 +113,7 @@ def get_consensus(consensus_tags, consensus_dict):
             average.append(str(rounded_avg))
         consensus = ",".join(average)
     else:
-        consensus = 0
+        consensus = 0.0
     
     return consensus
 
@@ -123,7 +126,7 @@ def get_range(consensus_tags, combined_dict, range):
         this_range = float(max(values)) - float(min(values))
         range.append(this_range)
     else:
-        this_range = 0
+        this_range = 0.0
         range.append(this_range)
 
     return range, this_range
@@ -135,33 +138,43 @@ def calculate_consensus(combined_dict, af_range, dp_range):
     somatic = {}
     depth = {}
     for key in combined_dict.keys():
-        if key.startswith(utils.jq_somatic_tag):
+        if key.startswith("JQ_" + utils.jq_somatic_tag):
+            print key
             if combined_dict[key] != ".":
-                somatic = create_consensus_dict(key, combined_dict[key], combined_dict, somatic, "int")
-        elif key.startswith(utils.jq_af_tag):
+                somatic = create_consensus_dict(key, combined_dict[key],
+                                                combined_dict, somatic,
+                                                "int")
+        elif key.startswith("JQ_" + utils.jq_af_tag):
+            print key
             if combined_dict[key] != ".":
                 new_af = roundTwoDigits(combined_dict[key].split(","))
-                af = create_consensus_dict(key, new_af, combined_dict, af, "float")
+                af = create_consensus_dict(key, new_af, combined_dict, af,
+                                           "float")
                 consensus_af_tags.append(key)
-        elif key.startswith(utils.jq_dp_tag):
+        elif key.startswith("JQ_" + utils.jq_dp_tag):
+            print key
             if combined_dict[key] != ".":
-                depth = create_consensus_dict(key, combined_dict[key], combined_dict, depth, "float")
+                depth = create_consensus_dict(key, combined_dict[key],
+                                              combined_dict, depth,
+                                              "float")
                 consensus_dp_tags.append(key)
-                
+
     consensus_af = get_consensus(consensus_af_tags, af)
     consensus_som = get_consensus_som(somatic)
     consensus_dp = get_consensus(consensus_dp_tags, depth)
 
-    combined_dict["JQ_AF_AVERAGE"] = str(consensus_af)
-    combined_dict["JQ_SOM_SUM"] = str(consensus_som)
-    combined_dict["JQ_DP_AVERAGE"] = str(consensus_dp)
-    
-    af_range, this_af_range = get_range(consensus_af_tags, combined_dict, af_range)
-    dp_range, this_dp_range = get_range(consensus_dp_tags, combined_dict, dp_range)
-    
-    combined_dict["JQ_AF_RANGE"] = str(this_af_range)
-    combined_dict["JQ_DP_RANGE"] = str(this_dp_range)
-    
+    combined_dict[JQ_CONSENSUS_TAG + "AF"] = str(consensus_af)
+    combined_dict[JQ_CONSENSUS_TAG + "SOM_SUM"] = str(consensus_som)
+    combined_dict[JQ_CONSENSUS_TAG + "DP"] = str(consensus_dp)
+
+    af_range, this_af_range = get_range(consensus_af_tags,
+                                        combined_dict, af_range)
+    dp_range, this_dp_range = get_range(consensus_dp_tags,
+                                        combined_dict, dp_range)
+
+    combined_dict[JQ_CONSENSUS_TAG + "AF_RANGE"] = str(this_af_range)
+    combined_dict[JQ_CONSENSUS_TAG + "DP_RANGE"] = str(this_dp_range)
+
     return combined_dict, af_range, dp_range
 
 def combine_format_values(format, sample, sample_column_name):
@@ -173,18 +186,21 @@ def process_line(line, af_range, af_mean, af_std, dp_range, dp_mean, dp_std, typ
     format = split_line[8]
     samples = split_line[9:]
     new_samples = []
-    
+
     for sample in samples:
         combined_dict = utils.combine_format_values(format, sample)
-        
+
         if type == "zscore":
-            combined_dict = calculate_zscore(af_mean, af_std, dp_mean, dp_std, combined_dict)
+            combined_dict = calculate_zscore(af_mean, af_std, dp_mean,
+                                             dp_std, combined_dict)
         elif type == "consensus":
-            combined_dict, af_range, dp_range = calculate_consensus(combined_dict, af_range, dp_range)
+            combined_dict, af_range, dp_range=calculate_consensus(combined_dict,
+                                                                    af_range,
+                                                                    dp_range)
         new_samples.append(":".join(combined_dict.values()))
     new_format = [":".join(combined_dict.keys())]
     new_line = "\t".join(split_line[:8] + new_format + new_samples) + "\n"
-    
+
     return new_line
 
 def add_subparser(subparser):
@@ -198,12 +214,12 @@ def execute(args, execution_context):
     input_file = os.path.abspath(args.input)
     output_file = os.path.abspath(args.output)
 
-    fname, extension = os.path.splitext(os.path.basename(input_file))
+    extension = os.path.splitext(os.path.basename(input_file))[1]
     if not os.path.isfile(input_file) or extension != ".vcf":
         logger.error("Input file [{}] must be a VCF file.", input_file)
         exit(1)
 
-    fname, extension = os.path.splitext(os.path.basename(output_file))
+    extension = os.path.splitext(os.path.basename(output_file))[1]
     if extension != ".vcf":
         logger.error("Output file [{}] must be a VCF file.", output_file)
         exit(1)
@@ -218,7 +234,9 @@ def execute(args, execution_context):
     tmp_file_writer = open(tmp_file, "w")
 
     logger.info("Adding consensus values to temporary file [{}]", tmp_file)
-    meta_headers, header, lines = iterate_file(input_file_reader, tmp_file_writer, tmp_file, af_range, dp_range, "consensus")
+    meta_headers, header, lines = iterate_file(input_file_reader,
+                                               tmp_file_writer, tmp_file,
+                                               af_range, dp_range, "consensus")
     add_consensus(meta_headers, header, lines, tmp_file_writer, tmp_file)
 
     input_file_reader.close()
@@ -229,8 +247,11 @@ def execute(args, execution_context):
 
     logger.info("Adding z-scores to [{}]", output_file)
 
-    meta_headers, header, lines = iterate_file(tmp_file_reader, output_file_writer, output_file, af_range, dp_range, "zscore")
-    add_zscore(meta_headers, header, lines, output_file_writer, output_file, af_range, dp_range)
+    meta_headers, header, lines = iterate_file(tmp_file_reader,
+                                               output_file_writer, output_file,
+                                               af_range, dp_range, "zscore")
+    add_zscore(meta_headers, header, lines, output_file_writer, output_file,
+               af_range, dp_range)
 
     tmp_file_reader.close()
     output_file_writer.close()

@@ -10,6 +10,8 @@ import unittest
 import jacquard.utils as utils
 import jacquard.tag as tag
 import jacquard.logger as logger
+import jacquard.variant_callers.strelka as strelka
+import jacquard.variant_callers.varscan as varscan
 
 mock_log_called = False
   
@@ -235,9 +237,9 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             file_content1 = output_dir.read("A.jacquardTags.vcf")
             file_content2 = output_dir.read("B.jacquardTags.vcf")
 
-            self.assertTrue('##FORMAT=<ID=JQ_HC_SOM_SK' in file_content1)
+            self.assertTrue('##FORMAT=<ID={0}HC_SOM'.format(strelka.JQ_STRELKA_TAG) in file_content1)
             self.assertEquals(2,
-                              len(findall(r'^chr.*JQ_HC_SOM_SK', file_content1, MULTILINE)))
-            self.assertTrue('##FORMAT=<ID=JQ_HC_SOM_VS' in file_content2)
+                              len(findall(r'^chr.*{0}HC_SOM'.format(strelka.JQ_STRELKA_TAG), file_content1, MULTILINE)))
+            self.assertTrue('##FORMAT=<ID={0}HC_SOM'.format(varscan.JQ_VARSCAN_TAG) in file_content2)
             self.assertEquals(2,
-                              len(findall(r'^chr.*JQ_HC_SOM_VS', file_content2, MULTILINE)))
+                              len(findall(r'^chr.*{0}HC_SOM'.format(varscan.JQ_VARSCAN_TAG), file_content2, MULTILINE)))

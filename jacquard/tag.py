@@ -52,7 +52,6 @@ def _log_caller_info(vcf_readers):
         logger.info("Recognized [{}] {} file(s)", 
                     caller_count[caller_name], caller_name)
 
-
 def _build_vcf_readers(input_dir,
                          get_caller=variant_caller_factory.get_caller):
     in_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
