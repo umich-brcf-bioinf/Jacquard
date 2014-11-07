@@ -104,10 +104,11 @@ def filter_somatic_positions(input_dir, output_dir, execution_context=[]):
     write_somatic(in_files, output_dir, somatic_positions, execution_context)
 
 def add_subparser(subparser):
-    parser_normalize_vs = subparser.add_parser("filter_hc_somatic", help="Accepts a directory of Jacquard-tagged VCF results from one or more callers and creates a new directory of VCFs, where rows have been filtered to contain only positions that were called high-confidence somatic in any VCF.")
-    parser_normalize_vs.add_argument("input", help="Path to directory containing VCFs. All VCFs in this directory must have Jacquard-specific tags (see jacquard.py tag for more info")
-    parser_normalize_vs.add_argument("output", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
-    parser_normalize_vs.add_argument("-v", "--verbose", action='store_true')
+    parser = subparser.add_parser("filter_hc_somatic", help="Accepts a directory of Jacquard-tagged VCF results from one or more callers and creates a new directory of VCFs, where rows have been filtered to contain only positions that were called high-confidence somatic in any VCF.")
+    parser.add_argument("input", help="Path to directory containing VCFs. All VCFs in this directory must have Jacquard-specific tags (see jacquard.py tag for more info")
+    parser.add_argument("output", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
+    parser.add_argument("-v", "--verbose", action='store_true')
+    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
 def execute(args, execution_context): 
     input_dir = os.path.abspath(args.input)

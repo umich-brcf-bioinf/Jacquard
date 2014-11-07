@@ -51,15 +51,15 @@ def main():
     print (sys.argv)
     dispatch(_SUBCOMMANDS, sys.argv[1:])
 
-def version_text():
+def _version_text():
     callers = utils.caller_versions.items()
     caller_versions = [key + " " + value for key, value in callers]
     caller_version_string = "\n\t".join(caller_versions)
-    
+
     return "Jacquard v{0}\nSupported variant callers:\n\t{1}".\
         format(utils.__version__, caller_version_string)
 
-def create_temp_directory(original_output_dir):
+def _create_temp_directory(original_output_dir):
     extension = os.path.splitext(os.path.basename(original_output_dir))[1]
     if extension: ##output is a file
         original_output_dir = os.path.dirname(original_output_dir)
@@ -71,16 +71,16 @@ def create_temp_directory(original_output_dir):
         raise utils.JQException("A tmp directory already exists inside "
                                 "output directory {} or cannot be created",
                                  original_output_dir)
-        
+
     return tmp_dir
-        
-def move_tmp_contents_to_original(tmp_dir, original_output_dir):
+
+def _move_tmp_contents_to_original(tmp_dir, original_output_dir):
     for fname in os.listdir(tmp_dir):
         full_fname = os.path.join(tmp_dir, fname)
         if os.path.isfile(full_fname): ##necessary?
-            shutil.copy(full_fname, original_output_dir)
+            shutil.move(full_fname, original_output_dir)
 
-    shutil.rmtree(tmp_dir)
+    os.rmdir(tmp_dir)
 
 # pylint: disable=C0301
 def dispatch(modules, arguments):
@@ -94,7 +94,7 @@ def dispatch(modules, arguments):
                         "-V",
                         "--version",
                         action='version',
-                        version=version_text())
+                        version=_version_text())
 
     subparsers = parser.add_subparsers(title="subcommands",
                                        dest="subparser_name")
@@ -116,15 +116,22 @@ def dispatch(modules, arguments):
 
         logger.initialize_logger(args.subparser_name)
         logger.info("Jacquard begins (v{})", utils.__version__)
-
         logger.info("Saving log to [{}]", logger.log_filename)
-
         logger.debug("cwd|{}", os.getcwd())
         logger.debug("command|{}", " ".join(arguments))
 
         original_output_dir = args.output
-        tmp_dir = create_temp_directory(original_output_dir)
-        
+
+        if len(os.listdir(original_output_dir)) != 0:
+            if not args.force:
+                raise utils.JQException("Specified output {} is not empty. "
+                                        "Please specify an empty directory or "
+                                        "use the flag '--force'. Type "
+                                        "'jacquard -h' for more details.",
+                                        original_output_dir)
+
+        tmp_dir = _create_temp_directory(original_output_dir)
+
         logger.info("Writing output to tmp directory [{}]", tmp_dir)
 
         module_dispatch[args.subparser_name].execute(args, execution_context)
@@ -138,8 +145,8 @@ def dispatch(modules, arguments):
 
     logger.info("Moving files from tmp directory {} to output directory", tmp_dir, original_output_dir)
 
-    move_tmp_contents_to_original(tmp_dir, original_output_dir)
-    
+    _move_tmp_contents_to_original(tmp_dir, original_output_dir)
+
     logger.info("Removed tmp directory {}", tmp_dir)
 
     logger.info("Done")

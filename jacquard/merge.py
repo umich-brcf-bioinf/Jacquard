@@ -647,14 +647,15 @@ def get_headers_and_readers(in_files):
     return sample_file_readers, headers, header_names, first_line, meta_headers
 
 def add_subparser(subparser):
-    parser_pivot = subparser.add_parser("merge", help="Accepts a directory of VCFs and returns a single merged VCF file.")
-    parser_pivot.add_argument("input", help="Path to directory containing VCFs. Other file types ignored")
-    parser_pivot.add_argument("output", help="Path to output variant-level VCF file")
-    parser_pivot.add_argument("-k", "--keys",
+    parser = subparser.add_parser("merge", help="Accepts a directory of VCFs and returns a single merged VCF file.")
+    parser.add_argument("input", help="Path to directory containing VCFs. Other file types ignored")
+    parser.add_argument("output", help="Path to output variant-level VCF file")
+    parser.add_argument("-k", "--keys",
         help="Columns to be used as keys for the pivoting. Default keys for VCF are CHROM,POS,ID,REF,ALT,QUAL,FILTER.")
-    parser_pivot.add_argument("-a", "--allow_inconsistent_sample_sets", action="store_true", default=False, help="Allow inconsistent sample sets across callers. Not recommended.")
-    parser_pivot.add_argument("-v", "--verbose", action='store_true')
-        
+    parser.add_argument("-a", "--allow_inconsistent_sample_sets", action="store_true", default=False, help="Allow inconsistent sample sets across callers. Not recommended.")
+    parser.add_argument("-v", "--verbose", action='store_true')
+    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+    
 def execute(args, execution_context):
     input_dir = os.path.abspath(args.input)
     output_path = os.path.abspath(args.output)

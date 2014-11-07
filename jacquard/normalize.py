@@ -38,10 +38,11 @@ def _validate_single_caller(filepaths, get_caller):
         return iter(callers).next()
 
 def add_subparser(subparser):
-    parser_normalize_vs = subparser.add_parser("normalize", help="Accepts a directory containing VarScan VCF snp/indel results or Strelka VCF snvs/indels results and creates a new directory of merged, sorted VCFs with added high confidence tags")
-    parser_normalize_vs.add_argument("input", help="Path to directory containing VCFs. Each sample must have exactly two files matching these patterns: <sample>.indel.vcf, <sample>.snp.vcf, <sample>.indel.Germline.hc, <sample>.snp.Germline.hc, <sample>.indel.LOH.hc, <sample>.snp.LOH.hc, <sample>.indel.Somatic.hc, <sample>.snp.somatic.hc, <sample>.indel.*.hc, <sample>.snp.*.hc ")
-    parser_normalize_vs.add_argument("output", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
-    parser_normalize_vs.add_argument("-v", "--verbose", action='store_true')
+    parser = subparser.add_parser("normalize", help="Accepts a directory containing VarScan VCF snp/indel results or Strelka VCF snvs/indels results and creates a new directory of merged, sorted VCFs with added high confidence tags")
+    parser.add_argument("input", help="Path to directory containing VCFs. Each sample must have exactly two files matching these patterns: <sample>.indel.vcf, <sample>.snp.vcf, <sample>.indel.Germline.hc, <sample>.snp.Germline.hc, <sample>.indel.LOH.hc, <sample>.snp.LOH.hc, <sample>.indel.Somatic.hc, <sample>.snp.somatic.hc, <sample>.indel.*.hc, <sample>.snp.*.hc ")
+    parser.add_argument("output", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
+    parser.add_argument("-v", "--verbose", action='store_true')
+    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
     
 def _partition_input_files(in_files, output_dir, caller):
     patient_to_files = defaultdict(list)

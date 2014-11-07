@@ -188,10 +188,11 @@ def process_line(line, af_range, af_mean, af_std, dp_range, dp_mean, dp_std, typ
     return new_line
 
 def add_subparser(subparser):
-    parser_tag = subparser.add_parser("consensus", help="Accepts a Jacquard-merged VCf file and creates a new file, adding consensus fields.")
-    parser_tag.add_argument("input", help="Path to Jacquard-merged VCF (or any VCF with Jacquard tags (e.g. JQ_SOM_MT)")
-    parser_tag.add_argument("output", help="Path to output VCf")
-    parser_tag.add_argument("-v", "--verbose", action='store_true')
+    parser = subparser.add_parser("consensus", help="Accepts a Jacquard-merged VCf file and creates a new file, adding consensus fields.")
+    parser.add_argument("input", help="Path to Jacquard-merged VCF (or any VCF with Jacquard tags (e.g. JQ_SOM_MT)")
+    parser.add_argument("output", help="Path to output VCf")
+    parser.add_argument("-v", "--verbose", action='store_true')
+    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
 def execute(args, execution_context): 
     input_file = os.path.abspath(args.input)

@@ -225,8 +225,7 @@ def add_subparser(subparser):
     parser.add_argument("output", help="Path to directory of output variant-level TXT files")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("-c", "--column_specification", help="Path to text file containing column regular expressions to be included in output file")
-
-#     return parser
+    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
 def execute(args, execution_context):
     input_path = os.path.abspath(args.input)

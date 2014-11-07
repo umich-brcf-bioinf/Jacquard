@@ -12,11 +12,12 @@ import logger
 
 #pylint: disable=C0301
 def add_subparser(subparser):
-    parser_tag = subparser.add_parser("tag", help="Accepts a directory of VCf results and creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
-    parser_tag.add_argument("input", help="Path to directory containing VCFs. Other file types ignored")
-    parser_tag.add_argument("output", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
-    parser_tag.add_argument("-v", "--verbose", action='store_true')
-
+    parser = subparser.add_parser("tag", help="Accepts a directory of VCf results and creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
+    parser.add_argument("input", help="Path to directory containing VCFs. Other file types ignored")
+    parser.add_argument("output", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
+    parser.add_argument("-v", "--verbose", action='store_true')
+    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+    
 def tag_files(vcf_readers_to_writers, execution_context):
     total_number_of_files = len(vcf_readers_to_writers)
 #     for count, reader, writer in enumerate(vcf_readers_to_writers.items()):
