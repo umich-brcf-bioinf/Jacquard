@@ -28,23 +28,24 @@ def _validate_input_and_output(input_path, output_path):
     ##input is a file
     if os.path.isfile(input_path):
         if os.path.isdir(output_path):
-            raise utils.JQException("Specified output {} must be a file "
-                                    "if input {} is given as a file. Review "
+            raise utils.JQException("Specified output [{}] must be a file "
+                                    "if input [{}] is given as a file. Review "
                                     "inputs and try again.", output_path,
                                     input_path)
         return [input_path], [output_path]
 
 ##input is a directory
     elif os.path.isdir(input_path):
-        input_files= sorted(glob.glob(os.path.join(input_path,"*.vcf")))
+        input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
         if len(input_files) == 0:
-            raise utils.JQException("Specified input directory {} contains "+
-                                    "no VCF files. Review inputs and try again.",
+            raise utils.JQException(("Specified input directory [{}] contains "
+                                     "no VCF files. Review inputs and try "
+                                     "again."),
                                     input_path)
 
         if os.path.isfile(output_path):
-            raise utils.JQException("Specified output {} must be a directory "
-                                    "if input {} is given as a directory."
+            raise utils.JQException("Specified output [{}] must be a directory "
+                                    "if input [{}] is given as a directory."
                                     "Review inputs and try again.", output_path,
                                     input_path)
         try:
@@ -91,9 +92,10 @@ def _append_format_tags_to_samples(format_tags, samples):
 def _create_filtered_header(header_dict, filtered_header_dict, desired_column):
     not_found = 1
 
+    desired_regex = "^" + desired_column + "$"
     for key in header_dict.keys():
         for incoming_column in header_dict[key]:
-            if re.search(desired_column, incoming_column):
+            if re.search(desired_regex, incoming_column):
                 if key in filtered_header_dict:
                     filtered_header_dict[key].append(incoming_column)
                 else:
@@ -115,8 +117,8 @@ def _validate_column_specification(filtered_header_dict, not_found_regex):
                                 "usage and try again.")
 
     if len(not_found_regex) != 0:
-        logger.warning("The expression {} in column specification file didn't "
-                       "match any input columns. Columns may have matched "
+        logger.warning("The expression [{}] in column specification file did "
+                       "not match any input columns. Columns may have matched "
                        "earlier expressions, or this expression may be "
                        "irrelevant.", not_found_regex)
 
@@ -125,9 +127,10 @@ def _filter_and_sort(header_dict, columns_to_expand):
     not_found_regex = []
 
     for desired_column in columns_to_expand:
-        filtered_header_dict, not_found = _create_filtered_header(header_dict,
-                                                       filtered_header_dict,
-                                                       desired_column)
+        filtered_header_dict, not_found = \
+                _create_filtered_header(header_dict,
+                                        filtered_header_dict,
+                                        desired_column)
         if not_found:
             not_found_regex.append(desired_column)
 
@@ -202,8 +205,9 @@ def _write_vcf_records(vcf_reader, file_writer, header_dict):
                 row.extend(info_columns)
 
             elif key == "format_header":
-                format_columns = _parse_format_tags(record, header_dict[key],
-                                            vcf_reader.column_header)
+                format_columns = _parse_format_tags(record,
+                                                    header_dict[key],
+                                                    vcf_reader.column_header)
                 row.extend(format_columns)
 
         row_string = "\t".join(row) + "\n"
@@ -235,7 +239,7 @@ def execute(args, execution_context):
     columns_to_expand = _read_col_spec(col_spec) if col_spec else 0
 
     input_files, output_files = _validate_input_and_output(input_path, output_path)
-    logger.info("Expanding {} VCF files in {} to {}", len(input_files), input_path, output_path)
+    logger.info("Expanding {} VCF files in [{}] to [{}]", len(input_files), input_path, output_path)
 
     for i, input_file in enumerate(input_files):
         output_file = output_files[i]
@@ -245,21 +249,21 @@ def execute(args, execution_context):
         column_header, info_header, format_header = _get_headers(vcf_reader)
 
         info_header = _disambiguate_column_names(column_header, info_header)
-        header_dict = OrderedDict([("column_header", column_header), 
+        header_dict = OrderedDict([("column_header", column_header),
                                    ("info_header", info_header),
                                    ("format_header", format_header)])
- 
+
         if columns_to_expand:
             header_dict = _filter_and_sort(header_dict, columns_to_expand)
 
         file_writer = vcf.FileWriter(output_file)
         file_writer.open()
 
-        logger.info("Writing {} to {}", input_file, output_file)
+        logger.info("Writing [{}] to [{}]", input_file, output_file)
         file_writer.write(_create_complete_header(header_dict))
         _write_vcf_records(vcf_reader, file_writer, header_dict)
 
         file_writer.close()
 
-    logger.info("Wrote {} VCF files to {}", len(input_files), output_path)
+    logger.info("Wrote [{}] VCF files to [{}]", len(input_files), output_path)
 

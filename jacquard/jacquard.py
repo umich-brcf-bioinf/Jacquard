@@ -120,21 +120,29 @@ def dispatch(modules, arguments):
         logger.debug("cwd|{}", os.getcwd())
         logger.debug("command|{}", " ".join(arguments))
 
-        original_output_dir = args.output
-
-        if len(os.listdir(original_output_dir)) != 0:
-            if not args.force:
-                raise utils.JQException("Specified output {} is not empty. "
-                                        "Please specify an empty directory or "
-                                        "use the flag '--force'. Type "
-                                        "'jacquard -h' for more details.",
-                                        original_output_dir)
-
-        tmp_dir = _create_temp_directory(original_output_dir)
-
-        logger.info("Writing output to tmp directory [{}]", tmp_dir)
+#         original_output_dir = args.output
+#
+#         if len(os.listdir(original_output_dir)) != 0:
+#             if not args.force:
+#                 raise utils.JQException("Specified output {} is not empty. "
+#                                         "Please specify an empty directory or "
+#                                         "use the flag '--force'. Type "
+#                                         "'jacquard -h' for more details.",
+#                                         original_output_dir)
+#
+#         tmp_dir = _create_temp_directory(original_output_dir)
+#
+#         logger.debug("Writing output to tmp directory [{}]", tmp_dir)
 
         module_dispatch[args.subparser_name].execute(args, execution_context)
+
+#    logger.debug("Moving files from tmp directory {} to output directory", tmp_dir, original_output_dir)
+#
+#     _move_tmp_contents_to_original(tmp_dir, original_output_dir)
+#
+#     logger.debug("Removed tmp directory {}", tmp_dir)
+
+        logger.info("Done")
 
     # pylint: disable=W0703
     except Exception as exception:
@@ -143,13 +151,6 @@ def dispatch(modules, arguments):
         logger.debug(traceback.format_exc())
         sys.exit(1)
 
-    logger.info("Moving files from tmp directory {} to output directory", tmp_dir, original_output_dir)
-
-    _move_tmp_contents_to_original(tmp_dir, original_output_dir)
-
-    logger.info("Removed tmp directory {}", tmp_dir)
-
-    logger.info("Done")
 
 if __name__ == '__main__':
     main()
