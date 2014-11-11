@@ -140,11 +140,11 @@ class ExpandTestCase(unittest.TestCase):
         self.assertEquals(expected, actual)
 
     def test_append_format_tags_to_samples(self):
-        format_tags = ["bar", "foo"]
-        samples = ["sampleA", "sampleB"]
+        format_tags = ["foo", "bar"]
+        samples = ["sampleB", "sampleA"]
         actual = _append_format_tags_to_samples(format_tags, samples)
 
-        expected = ["bar|sampleA", "foo|sampleA", "bar|sampleB", "foo|sampleB"]
+        expected = ["bar|sampleA", "bar|sampleB", "foo|sampleA", "foo|sampleB"]
 
         self.assertEquals(expected, actual)
 
@@ -377,7 +377,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
             self.assertRaisesRegexp(utils.JQException,
                                     ("Specified output .* must be a file if "
-                                     "input .* is given as a file."),
+                                     "input .* is a file."),
                                     execute,
                                     args,
                                     ["extra_header1", "extra_header2"])
@@ -401,7 +401,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
             self.assertRaisesRegexp(utils.JQException,
                                     ("Specified output .* must be a directory "
-                                     "if input .* is given as a directory."),
+                                     "if input .* is a directory."),
                                     execute,
                                     args,
                                     ["extra_header1", "extra_header2"])

@@ -24,39 +24,40 @@ def _read_col_spec(col_spec):
 
     return columns
 
+
+def _path_type(path):
+    return "file" if os.path.isfile(path) else "directory"
+
+
+def _build_output_file_names(input_path, output_path):
+    input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
+    if len(input_files) == 0:
+        raise utils.JQException(("Specified input directory [{}] contains "
+                                 "no VCF files. Review inputs and try "
+                                 "again."),
+                                input_path)
+
+    basenames = [os.path.splitext(os.path.basename(i))[0] + ".txt" \
+                       for i in input_files]
+    output_path = [os.path.join(output_path, i) for i in basenames]
+
+    return input_files, output_path
+
+
 def _validate_input_and_output(input_path, output_path):
-    ##input is a file
+    input_path_type = _path_type(input_path)
+    if os.path.exists(output_path) and \
+            input_path_type != _path_type(output_path):
+        raise utils.JQException(("Specified output [{0}] must be a {1} "
+                                 "if input [{2}] is a {1}. Review "
+                                 "arguments and try again."),
+                                output_path,
+                                input_path_type,
+                                input_path)
     if os.path.isfile(input_path):
-        if os.path.isdir(output_path):
-            raise utils.JQException("Specified output [{}] must be a file "
-                                    "if input [{}] is given as a file. Review "
-                                    "inputs and try again.", output_path,
-                                    input_path)
         return [input_path], [output_path]
-
-##input is a directory
-    elif os.path.isdir(input_path):
-        input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
-        if len(input_files) == 0:
-            raise utils.JQException(("Specified input directory [{}] contains "
-                                     "no VCF files. Review inputs and try "
-                                     "again."),
-                                    input_path)
-
-        if os.path.isfile(output_path):
-            raise utils.JQException("Specified output [{}] must be a directory "
-                                    "if input [{}] is given as a directory."
-                                    "Review inputs and try again.", output_path,
-                                    input_path)
-        try:
-            os.mkdir(output_path)
-        except:
-            pass
-
-        tmp_output_path = [os.path.splitext(os.path.basename(i))[0] + ".txt" for i in input_files]
-        output_path = [os.path.join(output_path, i) for i in tmp_output_path]
-
-        return input_files, output_path
+    else:
+        return _build_output_file_names(input_path, output_path)
 
 def _parse_meta_headers(meta_headers):
     info_fields = []
@@ -86,7 +87,7 @@ def _append_format_tags_to_samples(format_tags, samples):
         for tag in format_tags:
             modified_field = tag + "|" + sample
             format_sample_header.append(modified_field)
-
+    format_sample_header.sort()
     return format_sample_header
 
 def _create_filtered_header(header_dict, filtered_header_dict, desired_column):
