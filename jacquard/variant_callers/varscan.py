@@ -122,7 +122,7 @@ class Varscan():
                                                                 and tmp[0] ==
                                                                 "indel"):
             raise utils.JQException("Each patient in a VarScan directory should "
-                                    "have a somatic HC snp file and indel file.")
+                                    "have a high-confidence snp file and indel file.")
 
         pass
 
@@ -196,8 +196,8 @@ class Varscan():
     
     def validate_vcfs_in_directory(self, in_files):
         for in_file in in_files:
-            if not in_file.lower().endswith("vcf") and not in_file.lower().endswith("somatic.hc"):
-                raise utils.JQException("ERROR: Non-VCF or non-somatic.hc file "
+            if not in_file.lower().endswith("vcf") and not in_file.lower().endswith("fpfilter.pass"):
+                raise utils.JQException("ERROR: Non-VCF or high-confidence file "
                                         "in directory. Check parameters and "
                                         "try again")
 

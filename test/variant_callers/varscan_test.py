@@ -146,11 +146,11 @@ class VarscanTestCase(unittest.TestCase):
         self.caller = varscan.Varscan()
 
     def test_validate_vcfs_in_directory(self):
-        in_files = ["A.vcf","B.vcf","A.somatic.hc"]
+        in_files = ["A.vcf","B.vcf","A.fpfilter.pass"]
         self.caller.validate_vcfs_in_directory(in_files)
 
         in_files = ["A.vcf","B"]
-        self.assertRaisesRegexp(JQException, "ERROR: Non-VCF or non-somatic.hc file in directory. Check parameters and try again", self.caller.validate_vcfs_in_directory, in_files)
+        self.assertRaisesRegexp(JQException, "ERROR: Non-VCF or high-confidence file in directory. Check parameters and try again", self.caller.validate_vcfs_in_directory, in_files)
 
     def test_decorate_files(self):
         filenames = ["A/A.varscan.snp.vcf","A.varscan.indel.vcf","A.snp.somatic.hc","A.indel.somatic.hc"]
