@@ -529,7 +529,7 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
     first_file_reader = sample_file_readers[0]
     first_file      = first_file_reader
 
-    raise_err, message = validate_parameters(input_keys, first_line, header_names)  
+    raise_err, message = validate_parameters(input_keys, first_line, header_names)
     if raise_err == 1:
         raise PivotError(message)
 
@@ -586,8 +586,8 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
     new_execution_context = all_merge_context + all_merge_column_context
 
     execution_context.extend(new_execution_context)
-    writer = open(output_path, "w")
-
+#     writer = open(output_path, "w")
+    
     logger.info("Merging sample data (this may take a while)")
 
     logger.info("Merging sample data: validating sample data (1/6)")
@@ -618,6 +618,7 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
 
     logger.info("Merging sample data: saving (6/6)")
     with open(output_path, "a") as f:
+        f.write("\n".join(execution_context))
         sorted_df.to_csv(f, index=False, sep="\t")
 
     logger.info("Merged [{}] VCf files to [{}]", len(sample_file_readers), output_path)
@@ -706,7 +707,7 @@ def execute(args, execution_context):
 
     sample_file_readers, headers, header_names, first_line, meta_headers = get_headers_and_readers(in_files)
 
-#     print("\n".join(execution_context)) 
+#     print("\n".join(execution_context))
     execution_context.extend(meta_headers + ["##fileformat=VCFv4.2"])
 
     process_files(sample_file_readers, input_dir, output_path, input_keys,

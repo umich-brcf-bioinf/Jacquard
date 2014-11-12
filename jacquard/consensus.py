@@ -11,12 +11,13 @@ JQ_CONSENSUS_TAG = "JQ_CONS_"
 
 def calculate_zscore(af_mean, af_std, dp_mean, dp_std, combined_dict):
     af_range = float(combined_dict[JQ_CONSENSUS_TAG + "AF_RANGE"])
-    af_zscore = (af_range - af_mean)/af_std
+    af_zscore = (af_range - af_mean)/af_std if af_std != 0.0 else 0.0
 
     rounded_af_zscore = roundTwoDigits([str(af_zscore)])
 
     dp_range = float(combined_dict[JQ_CONSENSUS_TAG + "DP_RANGE"])
-    dp_zscore = (dp_range - dp_mean)/dp_std
+    dp_zscore = (dp_range - dp_mean)/dp_std if dp_std != 0.0 else 0.0
+
     rounded_dp_zscore = roundTwoDigits([str(dp_zscore)])
 
     combined_dict[JQ_CONSENSUS_TAG + "AF_RANGE_ZSCORE"] = str(rounded_af_zscore)

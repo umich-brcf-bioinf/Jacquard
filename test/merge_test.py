@@ -87,7 +87,7 @@ class MergeTestCase(unittest.TestCase):
 
             actual_merged = output_dir.read('tmp.vcf').split("\n")
 
-            self.assertEquals(4, len(actual_merged))
+            self.assertEquals(13, len(actual_merged))
 
     def test_addFiles(self):
         rows = ["CHROM", "POS", "REF", "ALT"]

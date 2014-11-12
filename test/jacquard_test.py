@@ -12,10 +12,10 @@ mock_create_tmp_called = False
 mock_move_tmp_contents_called = False
 
 # pylint: disable=W0603,W0613
-def mock_create_temp_directory(output_dir):
+def mock_create_temp_directory(output_dir, force=0):
     global mock_create_tmp_called
     mock_create_tmp_called = True
-    
+
     if len(os.listdir(output_dir)) != 0:
         if not force:
             sys.exit(1)
