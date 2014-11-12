@@ -163,7 +163,7 @@ def dispatch(modules, arguments):
         tmp_output = _create_temp_directory(original_output_dir, args.force)
         args.output = tmp_output
 
-        logger.info("Writing output to tmp directory [{}]", tmp_output)
+        logger.debug("Writing output to tmp directory [{}]", tmp_output)
 
         module_dispatch[args.subparser_name].execute(args, execution_context)
 
@@ -176,12 +176,13 @@ def dispatch(modules, arguments):
 #         shutil.rmtree(tmp_output)
         sys.exit(1)
 
-    logger.info("Moving files from tmp directory {} to output directory", tmp_output, original_output_dir)
+    logger.debug("Moving files from tmp directory {} to output directory", tmp_output, original_output_dir)
 
     _move_tmp_contents_to_original(tmp_output, original_output_dir)
 
-    logger.info("Removed tmp directory {}", tmp_output)
+    logger.debug("Removed tmp directory {}", tmp_output)
 
+    logger.info("Output saved to [{}]", original_output_dir)
     logger.info("Done")
 
 if __name__ == '__main__':
