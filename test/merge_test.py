@@ -30,7 +30,8 @@ def dataframe(input_data, sep="\t", index_col=None):
             return ast.literal_eval(thing)
         return thing
 
-    df = pd.read_csv(StringIO(input_data), sep=sep, header=False, dtype='str', index_col=index_col)
+    df = pd.read_csv(StringIO(input_data), sep=sep, header=False, dtype='str',
+                     index_col=index_col)
     new_cols = [tupelizer(col) for col in list(df.columns.values)]
     df.columns = pd.core.index.Index(new_cols)
 
@@ -68,25 +69,24 @@ class MergeTestCase(unittest.TestCase):
         logger.debug = self.original_debug
 
     def testExecute_multAltsSplitCorrectly(self):
-        
         vcfRecordFormat = "##jacquard.tag.caller={}\n" + \
             "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|A|B\n" + \
             "chr1|42|.|{}|{}|.|.|{}|JQ_AF_{}|0.1|0.2\n"
         vcfRecordFormat = vcfRecordFormat.replace("|", "\t")
-        
+
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             input_dir.write("A.mutect.vcf", vcfRecordFormat.format("MuTect","T","A,C","INFO_Mutect","MT"))
             input_dir.write("A.strelka.vcf", vcfRecordFormat.format("Strelka","T","A,C","INFO_Strelka","SK"))
             input_dir.write("A.varscan.vcf", vcfRecordFormat.format("VarScan","T","A,C","INFO_VarScan","VS"))
-        
+
             args = Namespace(input=input_dir.path, 
                          output=os.path.join(output_dir.path,"tmp.vcf"), 
                          allow_inconsistent_sample_sets=False,
                          keys=None) 
             merge.execute(args, [])
-    
+
             actual_merged = output_dir.read('tmp.vcf').split("\n")
-            
+
             self.assertEquals(4, len(actual_merged))
 
     def test_addFiles(self):

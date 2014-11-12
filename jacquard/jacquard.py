@@ -13,6 +13,9 @@
 ##   See the License for the specific language governing permissions and
 ##   limitations under the License.
 
+# pylint: disable=C0111
+# pylint: disable-msg=W0403
+
 from __future__ import print_function
 import argparse
 import os
@@ -28,8 +31,7 @@ import merge as merge
 import consensus as consensus
 import expand
 import utils as utils
-
-import logger
+import logger as logger
 
 
 _SUBCOMMANDS=[normalize,
@@ -48,7 +50,7 @@ def main():
 
     signal.signal(signal.SIGINT, handler)
     signal.signal(signal.SIGTERM, handler)
-    print (sys.argv)
+
     dispatch(_SUBCOMMANDS, sys.argv[1:])
 
 def _version_text():
@@ -59,9 +61,15 @@ def _version_text():
     return "Jacquard v{0}\nSupported variant callers:\n\t{1}".\
         format(utils.__version__, caller_version_string)
 
-def _validate_temp_directory(tmp_dir, original_output_dir):
+def _validate_temp(tmp_output, original_output_dir):
+    extension = os.path.splitext(os.path.basename(tmp_output))[1]
+    if extension: ##output is a file
+        tmp_dir = os.path.dirname(tmp_output)
+    else:
+        tmp_dir = tmp_output
+
     try:
-            os.mkdir(tmp_dir)
+        os.mkdir(tmp_dir)
     except:
         raise utils.JQException("A tmp directory already exists inside "
                                 "output directory {} or cannot be created",
@@ -69,8 +77,19 @@ def _validate_temp_directory(tmp_dir, original_output_dir):
 
 def _create_temp_directory(original_output_dir, force=0):
     extension = os.path.splitext(os.path.basename(original_output_dir))[1]
+
     if extension: ##output is a file
+        original_output_fname = os.path.basename(original_output_dir)
         original_output_dir = os.path.dirname(original_output_dir)
+        tmp_output = os.path.join(original_output_dir, "tmp",
+                                  original_output_fname)
+    else:
+        tmp_output = os.path.join(original_output_dir, "tmp")
+
+    try:
+        os.mkdir(original_output_dir)
+    except:
+        pass
 
     if len(os.listdir(original_output_dir)) != 0:
         if not force:
@@ -80,20 +99,24 @@ def _create_temp_directory(original_output_dir, force=0):
                                     "'jacquard -h' for more details.",
                                     original_output_dir)
 
-    tmp_dir = os.path.join(original_output_dir, "tmp")
-    
-    _validate_temp_directory(tmp_dir, original_output_dir)
+    _validate_temp(tmp_output, original_output_dir)
 
-    return tmp_dir
+    return tmp_output
 
-def _move_tmp_contents_to_original(tmp_dir, original_output_dir):
+def _move_tmp_contents_to_original(tmp_dir, original_output):
     if os.path.isfile(tmp_dir):
         tmp_dir = os.path.dirname(tmp_dir)
 
-    for fname in os.listdir(tmp_dir):
+    tmp_contents = os.listdir(tmp_dir)
+    for fname in tmp_contents:
         full_fname = os.path.join(tmp_dir, fname)
+
         if os.path.isfile(full_fname):
-            shutil.move(full_fname, original_output_dir)
+            shutil.move(full_fname, original_output)
+        else:
+            if not os.path.isdir(original_output):
+                output_dir = os.path.dirname(original_output)
+                shutil.move(full_fname, output_dir)
 
     os.rmdir(tmp_dir)
 
@@ -137,10 +160,10 @@ def dispatch(modules, arguments):
 
         original_output_dir = args.output
 
-        tmp_dir = _create_temp_directory(original_output_dir, args.force)
-        args.output = tmp_dir
-        
-        logger.info("Writing output to tmp directory [{}]", tmp_dir)
+        tmp_output = _create_temp_directory(original_output_dir, args.force)
+        args.output = tmp_output
+
+        logger.info("Writing output to tmp directory [{}]", tmp_output)
 
         module_dispatch[args.subparser_name].execute(args, execution_context)
 
@@ -150,14 +173,14 @@ def dispatch(modules, arguments):
         logger.error("Jacquard encountered an unanticipated problem. Please review log file and contact your sysadmin or Jacquard support for assistance.")
         logger.debug(traceback.format_exc())
 
-        shutil.rmtree(tmp_dir)
+#         shutil.rmtree(tmp_output)
         sys.exit(1)
 
-    logger.info("Moving files from tmp directory {} to output directory", tmp_dir, original_output_dir)
+    logger.info("Moving files from tmp directory {} to output directory", tmp_output, original_output_dir)
 
-    _move_tmp_contents_to_original(tmp_dir, original_output_dir)
+    _move_tmp_contents_to_original(tmp_output, original_output_dir)
 
-    logger.info("Removed tmp directory {}", tmp_dir)
+    logger.info("Removed tmp directory {}", tmp_output)
 
     logger.info("Done")
 
