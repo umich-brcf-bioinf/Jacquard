@@ -203,18 +203,52 @@ chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                           writer_to_readers)
         
     def test__determine_caller_per_directory(self):
-            with TempDirectory() as input_dir:
-                A = input_dir.write("A.vcf","##source=strelka\n#colHeader")
-                B = input_dir.write("B.vcf","##source=strelka\n#colHeader")
-                input_files = [A, B]
-                
-                mock_caller = MockCaller()
-                mock_caller_factory = MockCallerFactory(mock_caller)
-                
-                caller = _determine_caller_per_directory(input_files, mock_caller_factory.get_caller)
-                
-                self.assertEquals(mock_caller,caller)
-                self.assertEquals(mock_caller_factory.last_filename, "A.vcf")
+        with TempDirectory() as input_dir:
+            A = input_dir.write("A.vcf","##source=strelka\n#colHeader")
+            B = input_dir.write("B.vcf","##source=strelka\n#colHeader")
+            input_files = [A, B]
+            
+            mock_caller = MockCaller()
+            mock_caller_factory = MockCallerFactory(mock_caller)
+            
+            caller = _determine_caller_per_directory(input_files, mock_caller_factory.get_caller)
+            
+            self.assertEquals(mock_caller,caller)
+            self.assertEquals(mock_caller_factory.last_filename, "A.vcf")
+
+    def test_functional_normalize(self):
+        with TempDirectory() as output_dir:
+            module_testdir = os.path.dirname(os.path.realpath(__file__))+"\\functional_tests\\01_normalize"
+            input_dir = os.path.join(module_testdir,"input")
+            args = Namespace(input=input_dir, 
+                         output=output_dir.path)
+            normalize.execute(args,[])
+            
+            output_file = os.listdir(os.path.join(output_dir.path))[0]
+            
+            actual_file = FileReader(os.path.join(output_dir.path,output_file))
+            actual_file.open()
+            actual = []
+            for line in actual_file.read_lines():
+                actual.append(line)
+            actual_file.close()
+            
+            module_outdir = os.path.join(module_testdir,"output")
+            output_file = os.listdir(module_outdir)[0]
+            expected_file = FileReader(os.path.join(module_outdir,output_file))
+            expected_file.open()
+            expected = []
+            for line in expected_file.read_lines():
+                expected.append(line)
+            expected_file.close()
+            
+            self.assertEquals(len(expected), len(actual))
+            
+            self.assertEquals(124, len(actual))
+            
+            for i in xrange(len(expected)):
+                self.assertEquals(expected[i], actual[i]) 
+            
         
 class MockWriter():
     def __init__(self):

@@ -9,6 +9,7 @@ import unittest
 
 import jacquard.utils as utils
 import jacquard.tag as tag
+from jacquard.vcf import FileReader
 import jacquard.logger as logger
 import jacquard.variant_callers.strelka as strelka
 import jacquard.variant_callers.varscan as varscan
@@ -243,3 +244,46 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             self.assertTrue('##FORMAT=<ID={0}HC_SOM'.format(varscan.JQ_VARSCAN_TAG) in file_content2)
             self.assertEquals(2,
                               len(findall(r'^chr.*{0}HC_SOM'.format(varscan.JQ_VARSCAN_TAG), file_content2, MULTILINE)))
+
+    def test_functional_tag(self):
+        with TempDirectory() as output_dir:
+            module_testdir = os.path.dirname(os.path.realpath(__file__))+"\\functional_tests\\02_tag"
+            input_dir = os.path.join(module_testdir,"input")
+            args = Namespace(input=input_dir, 
+                         output=output_dir.path)
+            
+            execution_context = ["##jacquard.version={0}".format(utils.__version__),
+                "##jacquard.command={0}".format(" ".join(["tag",
+                                        os.path.join(module_testdir,"input"),
+                                        os.path.join(module_testdir,"output")])),
+                "##jacquard.cwd="
+                ]
+            tag.execute(args,execution_context)
+            
+            output_file = os.listdir(os.path.join(output_dir.path))[0]
+            
+            actual_file = FileReader(os.path.join(output_dir.path,output_file))
+            actual_file.open()
+            actual = []
+            for line in actual_file.read_lines():
+                actual.append(line)
+            actual_file.close()
+            
+            module_outdir = os.path.join(module_testdir,"output")
+            output_file = os.listdir(module_outdir)[0]
+            expected_file = FileReader(os.path.join(module_outdir,output_file))
+            expected_file.open()
+            expected = []
+            for line in expected_file.read_lines():
+                expected.append(line)
+            expected_file.close()
+            
+            self.assertEquals(len(expected), len(actual))
+            
+            self.assertEquals(131, len(actual))
+            
+            for i in xrange(len(expected)):
+                if expected[i].startswith("##jacquard.cwd="):
+                    self.assertTrue(actual[i].rstrip() in expected[i])
+                else:
+                    self.assertEquals(expected[i], actual[i]) 

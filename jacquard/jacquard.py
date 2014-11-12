@@ -42,6 +42,7 @@ _SUBCOMMANDS=[normalize,
               expand]
 
 def main():
+    
     #pylint: disable=W0613
     def handler(signum, frame):
         print("WARNING: Jacquard was interrupted before completing.",
@@ -122,6 +123,7 @@ def _move_tmp_contents_to_original(tmp_dir, original_output):
 
 # pylint: disable=C0301
 def dispatch(modules, arguments):
+    
     parser = argparse.ArgumentParser(
         usage="jacquard",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -159,7 +161,7 @@ def dispatch(modules, arguments):
         logger.debug("command|{}", " ".join(arguments))
 
         original_output_dir = args.output
-
+        
         tmp_output = _create_temp_directory(original_output_dir, args.force)
         args.output = tmp_output
 
