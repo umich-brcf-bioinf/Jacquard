@@ -42,12 +42,10 @@ def find_somatic_positions(in_files, output_dir):
         count += 1
         
     if no_jq_tags:
-        logger.error("[{}/{}] VCF files had no high-confidence somatic variants. Review input and try again.", len(no_jq_tags), len(in_files))
-        exit(1)
+        logger.warning("[{}] VCF file(s) had no high-confidence somatic variants. See log for details.", len(no_jq_tags))
         
     logger.info("Found [{}] high-confidence somatic positions", len(somatic_positions.keys()))
     somatic_positions_header = "##jacquard.filterHCSomatic.total_highConfidence_somatic_positions={0}\n".format(len(somatic_positions.keys()))
-#     logger.info("{}", somatic_positions_header)
     
     return somatic_positions, somatic_positions_header
 
@@ -75,7 +73,6 @@ def write_somatic(in_files, output_dir, somatic_positions, execution_context):
                     non_somatic += 1
        
         excluded_variants = "##jacquard.filterHCSomatic.excluded_variants={0}\n".format(non_somatic)
-#         logger.info("{}:{}", os.path.basename(file), excluded_variants)
         headers.append(excluded_variants)
         headers.extend(execution_context)
         
@@ -87,8 +84,6 @@ def write_somatic(in_files, output_dir, somatic_positions, execution_context):
         
     logger.info("Jacquard wrote [{}] VCF files to [{}]", len(in_files), output_dir)
         
-    return excluded_variants
-    
 def filter_somatic_positions(input_dir, output_dir, execution_context=[]):
     in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
     if len(in_files) < 1:

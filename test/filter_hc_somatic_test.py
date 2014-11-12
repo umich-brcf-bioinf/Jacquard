@@ -14,10 +14,13 @@ import jacquard.logger as logger
 VCF_HEADER="#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsampleA\tsampleB\n"
 
 mock_log_called = False
-  
+mock_log_messages = []
+
 def mock_log(msg, *args):
     global mock_log_called
     mock_log_called = True
+    global mock_log_messages
+    mock_log_messages.append(msg.format(*[str(i) for i in args]))
     
 class FilterSomaticTestCase(unittest.TestCase):
     def setUp(self):
@@ -38,6 +41,8 @@ class FilterSomaticTestCase(unittest.TestCase):
     def _change_mock_logger(self):
         global mock_log_called
         mock_log_called = False
+        global mock_log_messages
+        mock_log_messages=[]
         global mock_log
         logger.info = mock_log
         logger.error = mock_log
@@ -67,18 +72,17 @@ class FilterSomaticTestCase(unittest.TestCase):
     
     def test_findSomaticPositions_invalidInput(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("A.snp.vcf","##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234:1\n")
-            input_dir.write("A.indel.vcf","##source=VarScan2\n#CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tSAMPLE\n1\t2353\t.\tA\tGT\t.\t.\tfoo\tDP:JQ_SOM_VS\t234:1\n")
+            input_dir.write("A.vcf","##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234:1\n")
+            input_dir.write("B.vcf","##source=VarScan2\n#CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tSAMPLE\n1\t2353\t.\tA\tGT\t.\t.\tfoo\tDP:JQ_SOM_VS\t234:1\n")
             
-            file1 = os.path.join(input_dir.path, "A.snp.vcf")
-            file2 = os.path.join(input_dir.path, "A.indel.vcf")
+            file1 = os.path.join(input_dir.path, "A.vcf")
+            file2 = os.path.join(input_dir.path, "B.vcf")
             
-            with self.assertRaises(SystemExit) as cm:
-                somatic_positions = find_somatic_positions([file1, file2], output_dir.path)
-            self.assertEqual(cm.exception.code, 1)
+            find_somatic_positions([file1, file2], output_dir.path)
+            self.assertIn('Input file [A.vcf] has no high-confidence somatic variants.', mock_log_messages)
+            self.assertIn('Input file [B.vcf] has no high-confidence somatic variants.', mock_log_messages)
+            self.assertIn('[2] VCF file(s) had no high-confidence somatic variants. See log for details.', mock_log_messages)
             
-            input_dir.cleanup()
-            output_dir.cleanup()
             
     def test_writeSomatic_outputFileForEachInputFile(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
@@ -92,36 +96,3 @@ class FilterSomaticTestCase(unittest.TestCase):
             self.assertEqual(["mutect_HCsomatic.vcf", "varscan_HCsomatic.vcf"], output_dir.actual())
 
     
-    def Ytest_writeSomatic5(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/reference_files/filter_somatic_test/input/"
-        in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
-        output_dir = script_dir + "/reference_files/filter_somatic_test/output"
-        try:
-            os.mkdir(output_dir)
-        except:
-            pass
-        somatic_positions = {'1^2353': 1, '1^2352': 1}
-        execution_context = ["##foo.version=0.1", "##bar"]
-        excluded_variants = write_somatic(in_files, output_dir, somatic_positions, execution_context)
-        
-        self.assertEqual("##jacquard.filterHCSomatic.excluded_variants=5\n", excluded_variants)
-        shutil.rmtree(output_dir)
-        
-    def Ytest_writeSomatic32(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/reference_files/filter_somatic_test/input/"
-        in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
-        output_dir = script_dir + "/reference_files/filter_somatic_test/output"
-        try:
-            os.mkdir(output_dir)
-        except:
-            pass
-        somatic_positions = {'1^15996': 1, '1^2352': 1}
-        execution_context = ["##foo.version=0.1", "##bar"]
-        excluded_variants = write_somatic(in_files, output_dir, somatic_positions, execution_context)
-        
-        self.assertEqual("##jacquard.filterHCSomatic.excluded_variants=32\n", excluded_variants)
-        shutil.rmtree(output_dir)
-
-            
