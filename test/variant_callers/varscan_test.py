@@ -277,15 +277,15 @@ class VarscanTestCase(unittest.TestCase):
         readers = []
         readers.append(MockFileReader("indel.vcf", content1))
         readers.append(MockFileReader("snp.vcf", content2))
-        readers.append(MockFileReader("snp.somatic.hc", []))
-        self.assertRaisesRegexp(JQException, r"VarScan directories should have exactly 2 input somatic HC files per patient, but found \[1\].",
+        readers.append(MockFileReader("snp.fpfilter.pass", []))
+        self.assertRaisesRegexp(JQException, r"VarScan directories should have exactly 2 high-confidence files per patient, but found \[1\].",
                                 self.caller.normalize, writer, readers)
         readers = []
         readers.append(MockFileReader("indel.vcf", content1))
         readers.append(MockFileReader("snp.vcf", content2))
         readers.append(MockFileReader("foo", []))
         readers.append(MockFileReader("bar", []))
-        self.assertRaisesRegexp(JQException, r"VarScan directories should have exactly 2 input somatic HC files per patient, but found \[0\].",
+        self.assertRaisesRegexp(JQException, r"VarScan directories should have exactly 2 high-confidence files per patient, but found \[0\].",
                                 self.caller.normalize, writer, readers)
 
     def test_normalize_wrongHCFilesRaisesException(self):
@@ -318,6 +318,6 @@ class VarscanTestCase(unittest.TestCase):
         with self.assertRaisesRegexp(JQException,r"Each patient in a VarScan directory should have a snp file and an indel file."):
             self.caller.normalize(MockWriter(), readers)
 
-    def append_hc_files(self, readers, file1="snp.somatic.hc", file2="indel.somatic.hc", content1=[], content2=[]):
+    def append_hc_files(self, readers, file1="snp.fpfilter.pass", file2="indel.fpfilter.pass", content1=[], content2=[]):
         readers.append(MockFileReader(file1, content1))
         readers.append(MockFileReader(file2, content2))
