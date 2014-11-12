@@ -82,7 +82,7 @@ class JacquardTestCase(unittest.TestCase):
             jacquard._move_tmp_contents_to_original(tmp_dir, output_dir.path)
             actual_files = os.listdir(output_dir.path)
             self.assertEquals(2, len(actual_files))
-            self.assertEquals(["A.txt", "B.txt"], actual_files)
+            self.assertEquals(["A.txt", "B.txt"], sorted(actual_files))
 
 class JacquardTestCase_dispatchOnly(unittest.TestCase):
     def setUp(self):
