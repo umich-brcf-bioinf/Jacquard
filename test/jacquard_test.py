@@ -64,10 +64,12 @@ class JacquardTestCase(unittest.TestCase):
             self.assertRegexpMatches(actual_messages[4], "Jacquard encountered an unanticipated problem.")
 
     def test_create_temp_directory(self):
-        with TempDirectory() as output_dir:
-            actual_tmp_dir = jacquard._create_temp_directory(output_dir.path)
+        with TempDirectory() as test_dir:
+            output_dir = test_dir.makedir("output")
+            actual_tmp_dir = jacquard._create_temp_directory(output_dir)
+
             self.assertTrue(os.path.exists(actual_tmp_dir), "temp dir created")
-            self.assertEquals(os.path.join(output_dir.path, "tmp"),
+            self.assertEquals(os.path.join(output_dir, "jacquard.tmp"),
                               actual_tmp_dir)
 
 
