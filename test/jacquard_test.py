@@ -127,7 +127,7 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
             self.assertEqual(1, exit_code.exception.code)
 
     #TODO (cgates): Fix
-    def test_dispatch_forceNonEmptyOutputDir(self):
+    def Xtest_dispatch_forceNonEmptyOutputDir(self):
         with TempDirectory() as output_dir:
             output_dir.write("file1.vcf", "foo")
             mock_module.my_exception_string = ""

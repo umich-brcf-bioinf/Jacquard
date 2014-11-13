@@ -173,18 +173,18 @@ def dispatch(modules, arguments):
         logger.debug("cwd|{}", os.getcwd())
         logger.debug("command|{}", " ".join(arguments))
 
-        original_output_dir = args.output
-
-        global TMP_OUTPUT_PATH
-        TMP_OUTPUT_PATH = _create_temp_directory(original_output_dir, args.force)
-        args.output = TMP_OUTPUT_PATH
-        logger.debug("Writing output to tmp directory [{}]", TMP_OUTPUT_PATH)
+#        original_output_dir = args.output
+#
+#        global TMP_OUTPUT_PATH
+#        TMP_OUTPUT_PATH = _create_temp_directory(original_output_dir, args.force)
+#        args.output = TMP_OUTPUT_PATH
+#        logger.debug("Writing output to tmp directory [{}]", TMP_OUTPUT_PATH)
 
         module_dispatch[args.subparser_name].execute(args, execution_context)
 
-        logger.debug("Moving files from tmp directory {} to output directory", TMP_OUTPUT_PATH, original_output_dir)
-        _move_tmp_contents_to_original(TMP_OUTPUT_PATH, original_output_dir)
-        logger.debug("Removed tmp directory {}", TMP_OUTPUT_PATH)
+#        logger.debug("Moving files from tmp directory {} to output directory", TMP_OUTPUT_PATH, original_output_dir)
+#        _move_tmp_contents_to_original(TMP_OUTPUT_PATH, original_output_dir)
+#        logger.debug("Removed tmp directory {}", TMP_OUTPUT_PATH)
 
         logger.info("Output saved to [{}]", original_output_dir)
         logger.info("Done")
