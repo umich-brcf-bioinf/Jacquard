@@ -173,7 +173,7 @@ def dispatch(modules, arguments):
         logger.debug("cwd|{}", os.getcwd())
         logger.debug("command|{}", " ".join(arguments))
 
-#        original_output_dir = args.output
+        original_output_dir = args.output
 #
 #        global TMP_OUTPUT_PATH
 #        TMP_OUTPUT_PATH = _create_temp_directory(original_output_dir, args.force)
