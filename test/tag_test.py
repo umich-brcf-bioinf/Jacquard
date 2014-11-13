@@ -285,5 +285,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             for i in xrange(len(expected)):
                 if expected[i].startswith("##jacquard.cwd="):
                     self.assertTrue(actual[i].rstrip() in expected[i])
+                elif expected[i].startswith("##jacquard.command="):
+                    self.assertTrue(actual[i].startswith("##jacquard.command="))
                 else:
                     self.assertEquals(expected[i], actual[i]) 

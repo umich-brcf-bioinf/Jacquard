@@ -126,17 +126,16 @@ class FilterSomaticTestCase(unittest.TestCase):
         self.assertEqual("##jacquard.filterHCSomatic.excluded_variants=32\n", excluded_variants)
         shutil.rmtree(output_dir)
 
-    def Xtest_functional_tag(self):
+    def test_functional_filter_hc_somatic(self):
         with TempDirectory() as output_dir:
-            module_testdir = os.getcwd()+"\\functional_tests\\03_filter_hc_somatic"
+            module_testdir = os.path.dirname(os.path.realpath(__file__))+"\\functional_tests\\03_filter_hc_somatic"
             input_dir = os.path.join(module_testdir,"input")
             args = Namespace(input=input_dir, 
                          output=output_dir.path)
             
             execution_context = ["##jacquard.version={0}".format(utils.__version__),
                 "##jacquard.command=",
-                "##jacquard.cwd="
-                ]
+                "##jacquard.cwd="]
             filter_hc_somatic.execute(args,execution_context)
             
             output_file = os.listdir(os.path.join(output_dir.path))[0]
@@ -159,7 +158,7 @@ class FilterSomaticTestCase(unittest.TestCase):
             
             self.assertEquals(len(expected), len(actual))
             
-            self.assertEquals(98, len(actual))
+            self.assertEquals(101, len(actual))
             
             for i in xrange(len(expected)):
                 if expected[i].startswith("##jacquard.cwd="):
@@ -167,6 +166,5 @@ class FilterSomaticTestCase(unittest.TestCase):
                 elif expected[i].startswith("##jacquard.command="):
                     self.assertTrue(actual[i].startswith("##jacquard.command="))
                 else:
-                    
                     self.assertEquals(expected[i], actual[i]) 
                                 

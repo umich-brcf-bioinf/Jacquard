@@ -247,7 +247,12 @@ chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             self.assertEquals(124, len(actual))
             
             for i in xrange(len(expected)):
-                self.assertEquals(expected[i], actual[i]) 
+                if expected[i].startswith("##jacquard.cwd="):
+                    self.assertTrue(actual[i].startswith("##jacquard.cwd="))
+                elif expected[i].startswith("##jacquard.command="):
+                    self.assertTrue(actual[i].startswith("##jacquard.command="))
+                else:
+                    self.assertEquals(expected[i], actual[i]) 
             
         
 class MockWriter():
