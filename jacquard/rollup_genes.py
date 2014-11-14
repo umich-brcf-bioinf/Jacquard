@@ -52,7 +52,7 @@ def gene_rollup_highest_impact(initial_df, samples, cols):
     col_array = []
     col_array.extend(sample_col_array)
 
-    columns = cols + ["SNPEFF_TOP_EFFECT_IMPACT"]
+    columns = cols + ["IMPACT"]
 
     required_columns = set(columns +  col_array)
     for col in initial_df.columns:
@@ -61,13 +61,14 @@ def gene_rollup_highest_impact(initial_df, samples, cols):
     try:
         melted_df = pd.melt(initial_df, id_vars=columns, var_name="Sample", value_name="Sample_Data")
     except Exception as e :
+        print e
         raise RollupError("Cannot melt dataframe. {0}".format(e))
         
     melted_df = melted_df.fillna(".")
 
     filtered_df = melted_df[melted_df["Sample_Data"] != "."]
 
-    pivoted_df = pd.pivot_table(filtered_df, index=["GENE_SYMBOL", "Sample"], columns=["SNPEFF_TOP_EFFECT_IMPACT"], values=["Sample_Data"], aggfunc=np.count_nonzero, fill_value=0)
+    pivoted_df = pd.pivot_table(filtered_df, index=["GENE_SYMBOL", "Sample"], columns=["IMPACT"], values=["Sample_Data"], aggfunc=np.count_nonzero, fill_value=0)
 
     pivoted_df = pivoted_df["Sample_Data"]
 
@@ -96,9 +97,9 @@ def gene_rollup_damaging_impact(initial_df, samples, cols):
     col_array.extend(sample_col_array) 
     
     if "Impact_Damaging" in initial_df.columns:
-        initial_df.rename(columns={"Impact_Damaging": "dbNSFP_Impact_Damaging"}, inplace=True)
+        initial_df.rename(columns={"Impact_Damaging": "dbNSFP_rollup_damaging"}, inplace=True)
     
-    columns = cols + ["dbNSFP_Impact_Damaging"]
+    columns = cols + ["dbNSFP_rollup_damaging"]
     
     required_columns = set(columns +  col_array)
     for col in initial_df.columns:
@@ -112,14 +113,14 @@ def gene_rollup_damaging_impact(initial_df, samples, cols):
     
     filtered_df = melted_df.fillna(0)
     
-    filtered_df = filtered_df[filtered_df["dbNSFP_Impact_Damaging"] != "0"]
+    filtered_df = filtered_df[filtered_df["dbNSFP_rollup_damaging"] != "0"]
     filtered_df = filtered_df[filtered_df["Sample_Data"] != 0]
 
     try:
-        filtered_df["dbNSFP_Impact_Damaging"] = filtered_df["dbNSFP_Impact_Damaging"].apply(lambda x: int(x))
-        df_impact = pd.pivot_table(filtered_df, index=["GENE_SYMBOL"], columns=["Sample"], values=["dbNSFP_Impact_Damaging"], aggfunc=np.sum)
+        filtered_df["dbNSFP_rollup_damaging"] = filtered_df["dbNSFP_rollup_damaging"].apply(lambda x: int(x))
+        df_impact = pd.pivot_table(filtered_df, index=["GENE_SYMBOL"], columns=["Sample"], values=["dbNSFP_rollup_damaging"], aggfunc=np.sum)
     except:
-        df_impact = pd.pivot_table(filtered_df, index=["GENE_SYMBOL"], columns=["Sample"], values=["dbNSFP_Impact_Damaging"], aggfunc=lambda x: "*")
+        df_impact = pd.pivot_table(filtered_df, index=["GENE_SYMBOL"], columns=["Sample"], values=["dbNSFP_rollup_damaging"], aggfunc=lambda x: "*")
     
     return df_impact
     
@@ -135,22 +136,22 @@ def combine_dfs(df1, df2):
     
 def calculate_ranks(df):
     df["SnpEff_Impact_Rank"] = df["Impact_score"].sum(axis=1)
-    df["dbNSFP_Impact_Damaging_Rank"] = df["dbNSFP_Impact_Damaging"].sum(axis=1)
+    df["dbNSFP_rollup_damaging_Rank"] = df["dbNSFP_rollup_damaging"].sum(axis=1)
     
     lst = ["HIGH", "MODERATE", "LOW", "MODIFIER"]
 
     for item in lst:
         df[item + "_sum"] = df[item + "_initial_sum"].sum(axis=1)
 
-    df["dbNSFP_Impact_Damaging"] = df["dbNSFP_Impact_Damaging"].applymap(lambda x: "" if x == 0.0 else x)
+    df["dbNSFP_rollup_damaging"] = df["dbNSFP_rollup_damaging"].applymap(lambda x: "" if x == 0.0 else x)
     
     df["Impact_Score"] = df["SnpEff_Impact_Rank"]
     
     df = df.sort("SnpEff_Impact_Rank", ascending=0)
-    df = df.sort("dbNSFP_Impact_Damaging_Rank", ascending=0)
+    df = df.sort("dbNSFP_rollup_damaging_Rank", ascending=0)
     
     df["SnpEff_Impact_Rank"] = df["SnpEff_Impact_Rank"].rank(ascending=0, method="min")
-    df["dbNSFP_Impact_Damaging_Rank"] = df["dbNSFP_Impact_Damaging_Rank"].rank(ascending=0, method="min")
+    df["dbNSFP_rollup_damaging_Rank"] = df["dbNSFP_rollup_damaging_Rank"].rank(ascending=0, method="min")
 
     del df["Impact_score"]
     lst = ["HIGH", "MODERATE", "LOW", "MODIFIER"]
@@ -191,7 +192,7 @@ def change_order(lst):
             sum_lst.append(header)
         elif re.search("Score", header):
             score_lst.append(header)
-        elif re.search("dbNSFP_Impact_Damaging", header):
+        elif re.search("dbNSFP_rollup_damaging", header):
             level_lst.append(header)
    
     lst = gene_lst + impact_lst + sum_lst + score_lst + level_lst
@@ -262,7 +263,7 @@ def process_files(input, output, samples, delim):
 
 def add_subparser(subparser):
     parser_rollup = subparser.add_parser("rollup_genes", help="Summarizes variant-level Excel file to create a gene-level rollup. Returns an Excel file containing concatenation of all input files.")
-    parser_rollup.add_argument("input_file", help="Path to input variant-level CSV file")
+    parser_rollup.add_argument("input_file", help="Path to input variant-level tab-separated file")
     parser_rollup.add_argument("output_file", help="Path to output gene-level XLSX file")
     parser_rollup.add_argument("-s", "--sample_identifier", required=True,
             help="Identifier for all samples. This should be a string that is present in all samples.")
@@ -276,11 +277,26 @@ def execute(args, execution_context):
     input   = os.path.abspath(args.input_file)
     output  = os.path.abspath(args.output_file)
     samples = args.sample_identifier
-    delim   = args.input_delimiter if args.input_delimiter else ","
+    delim   = args.input_delimiter if args.input_delimiter else "\t"
 # 
     if not os.path.isfile(input):
         print "Error. Specified input file {0} does not exist".format(input)
         exit(1)
  
     process_files(input, output, samples, delim)
-    
+
+def main():
+    parser = argparse.ArgumentParser(
+        usage="jacquard",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description='''---''',
+        epilog="---")
+
+    subparsers = parser.add_subparsers(title="subcommands",
+                                       dest="subparser_name")
+    add_subparser(subparsers)
+    args = parser.parse_args(sys.argv[1:])
+    execute(args, [])
+
+if __name__ == '__main__':
+    main()

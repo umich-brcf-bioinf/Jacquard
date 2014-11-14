@@ -20,11 +20,12 @@ def add_subparser(subparser):
     
 def tag_files(vcf_readers_to_writers, execution_context):
     total_number_of_files = len(vcf_readers_to_writers)
-#     for count, reader, writer in enumerate(vcf_readers_to_writers.items()):
     for count, item in enumerate(vcf_readers_to_writers.items()):
         reader,writer = item
-        logger.info("Reading [{}] ({}/{})", reader.input_filepath,
-             count, total_number_of_files)
+        logger.info("Reading [{}] ({}/{})",
+                    reader.input_filepath,
+                    count + 1, 
+                    total_number_of_files)
         reader.open()
         writer.open()
 
