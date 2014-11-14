@@ -234,7 +234,7 @@ chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                 actual.append(line)
             actual_file.close()
             
-            module_outdir = os.path.join(module_testdir,"output")
+            module_outdir = os.path.join(module_testdir,"benchmark")
             output_file = os.listdir(module_outdir)[0]
             expected_file = FileReader(os.path.join(module_outdir,output_file))
             expected_file.open()

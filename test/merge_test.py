@@ -881,7 +881,7 @@ class MergeTestCase(unittest.TestCase):
                 actual.append(line)
             actual_file.close()
             
-            module_outdir = os.path.join(module_testdir,"output")
+            module_outdir = os.path.join(module_testdir,"benchmark")
             output_file = glob.glob(os.path.join(module_outdir, "*.vcf"))[0]
             expected_file = FileReader(os.path.join(module_outdir,output_file))
             expected_file.open()

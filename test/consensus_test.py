@@ -235,7 +235,7 @@ class ConsensusTestCase(unittest.TestCase):
                 actual.append(line)
             actual_file.close()
             
-            module_outdir = os.path.join(module_testdir,"output")
+            module_outdir = os.path.join(module_testdir,"benchmark")
             print os.listdir(module_outdir)
             output_file = os.listdir(module_outdir)[0]
             expected_file = FileReader(os.path.join(module_outdir,output_file))
