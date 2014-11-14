@@ -6,6 +6,7 @@ from StringIO import StringIO
 import sys
 from testfixtures import TempDirectory
 import unittest
+import glob
 
 import jacquard.utils as utils
 import jacquard.tag as tag
@@ -247,7 +248,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
     def test_functional_tag(self):
         with TempDirectory() as output_dir:
-            module_testdir = os.path.dirname(os.path.realpath(__file__))+"\\functional_tests\\02_tag"
+            module_testdir = os.path.dirname(os.path.realpath(__file__))+"/functional_tests/02_tag"
             input_dir = os.path.join(module_testdir,"input")
             args = Namespace(input=input_dir, 
                          output=output_dir.path)
@@ -260,7 +261,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                 ]
             tag.execute(args,execution_context)
             
-            output_file = os.listdir(os.path.join(output_dir.path))[0]
+            output_file = glob.glob(os.path.join(output_dir.path, "*.vcf"))[0]
             
             actual_file = FileReader(os.path.join(output_dir.path,output_file))
             actual_file.open()

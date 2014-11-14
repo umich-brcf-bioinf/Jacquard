@@ -5,11 +5,12 @@ import os
 from testfixtures import TempDirectory
 import unittest
 from jacquard.vcf import FileReader
+import glob
 import jacquard.utils as utils
 import jacquard.logger as logger
 from jacquard.expand import _parse_meta_headers, \
     _append_format_tags_to_samples, _get_headers, _write_vcf_records, \
-    _disambiguate_column_names, _filter_and_sort, execute
+    _disambiguate_column_names, _filter_and_sort, _glossary, execute
 import jacquard.expand as expand
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
@@ -437,7 +438,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
     def test_functional_expand(self):
         with TempDirectory() as output_dir:
-            module_testdir = os.path.dirname(os.path.realpath(__file__))+"\\functional_tests\\06_expand"
+            module_testdir = os.path.dirname(os.path.realpath(__file__))+"/functional_tests/06_expand"
             input_dir = os.path.join(module_testdir,"input")
             args = Namespace(input=input_dir, 
                          output=output_dir.path,
@@ -448,9 +449,9 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                 "##jacquard.cwd="]
             expand.execute(args,execution_context)
             
-            output_file = os.listdir(os.path.join(output_dir.path))[0]
+            output_file = glob.glob(os.path.join(output_dir.path, "consensus.txt"))[0]
             
-            actual_file = FileReader(os.path.join(output_dir.path,output_file))
+            actual_file = FileReader(output_file)
             actual_file.open()
             actual = []
             for line in actual_file.read_lines():
@@ -478,3 +479,10 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                 else:
                     self.assertEquals(expected[i], actual[i]) 
                                 
+    def test_glossary(self):
+        writer = MockFileWriter()
+        
+#         _glossary(header,writer)
+        
+        
+        

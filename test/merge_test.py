@@ -859,7 +859,7 @@ class MergeTestCase(unittest.TestCase):
     
     def test_functional_merge(self):
         with TempDirectory() as output_dir:
-            module_testdir = os.path.dirname(os.path.realpath(__file__))+"\\functional_tests\\04_merge"
+            module_testdir = os.path.dirname(os.path.realpath(__file__))+"/functional_tests/04_merge"
             input_dir = os.path.join(module_testdir,"input")
             args = Namespace(input=input_dir, 
                          output=os.path.join(output_dir.path,"merged.vcf"),
@@ -872,9 +872,9 @@ class MergeTestCase(unittest.TestCase):
             
             merge.execute(args,execution_context)
             
-            output_file = "merged.vcf"
+            output_file = glob.glob(os.path.join(output_dir.path, "*.vcf"))[0]
             
-            actual_file = FileReader(os.path.join(output_dir.path,output_file))
+            actual_file = FileReader(output_file)
             actual_file.open()
             actual = []
             for line in actual_file.read_lines():

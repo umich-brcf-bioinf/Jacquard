@@ -6,6 +6,7 @@ import sys
 import unittest
 from argparse import Namespace
 import jacquard.utils as utils
+import glob
 from testfixtures import TempDirectory
 import os
 from jacquard.consensus import iterate_file, add_consensus, process_line, calculate_consensus, create_consensus_dict, get_consensus_som, get_consensus, add_zscore, calculate_zscore
@@ -214,7 +215,7 @@ class ConsensusTestCase(unittest.TestCase):
         
     def test_functional_consensus(self):
         with TempDirectory() as output_dir:
-            module_testdir = os.path.dirname(os.path.realpath(__file__))+"\\functional_tests\\05_consensus"
+            module_testdir = os.path.dirname(os.path.realpath(__file__))+"/functional_tests/05_consensus"
             input_dir = os.path.join(module_testdir,"input")
             args = Namespace(input=os.path.join(input_dir,os.listdir(input_dir)[0]), 
                          output=os.path.join(output_dir.path,"consensus.vcf"))
@@ -225,9 +226,9 @@ class ConsensusTestCase(unittest.TestCase):
             
             consensus.execute(args,execution_context)
             
-            output_file = "consensus.vcf"
+            output_file = glob.glob(os.path.join(output_dir.path, "*.vcf"))[0]
             
-            actual_file = FileReader(os.path.join(output_dir.path,output_file))
+            actual_file = FileReader(output_file)
             actual_file.open()
             actual = []
             for line in actual_file.read_lines():

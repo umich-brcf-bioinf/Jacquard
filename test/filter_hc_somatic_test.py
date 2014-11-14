@@ -5,6 +5,7 @@ import unittest
 import shutil
 from StringIO import StringIO
 import sys
+import glob
 import testfixtures
 import jacquard.utils as utils
 from testfixtures import TempDirectory
@@ -128,7 +129,7 @@ class FilterSomaticTestCase(unittest.TestCase):
 
     def test_functional_filter_hc_somatic(self):
         with TempDirectory() as output_dir:
-            module_testdir = os.path.dirname(os.path.realpath(__file__))+"\\functional_tests\\03_filter_hc_somatic"
+            module_testdir = os.path.dirname(os.path.realpath(__file__))+"/functional_tests/03_filter_hc_somatic"
             input_dir = os.path.join(module_testdir,"input")
             args = Namespace(input=input_dir, 
                          output=output_dir.path)
@@ -138,7 +139,7 @@ class FilterSomaticTestCase(unittest.TestCase):
                 "##jacquard.cwd="]
             filter_hc_somatic.execute(args,execution_context)
             
-            output_file = os.listdir(os.path.join(output_dir.path))[0]
+            output_file = glob.glob(os.path.join(output_dir.path, "*.vcf"))[0]
             
             actual_file = FileReader(os.path.join(output_dir.path,output_file))
             actual_file.open()

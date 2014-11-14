@@ -5,6 +5,7 @@ from StringIO import StringIO
 import sys
 from testfixtures import TempDirectory
 import unittest
+import glob
 
 from jacquard.variant_callers import varscan, strelka, variant_caller_factory
 from jacquard.normalize import _partition_input_files, _determine_caller_per_directory
@@ -218,13 +219,13 @@ chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
     def test_functional_normalize(self):
         with TempDirectory() as output_dir:
-            module_testdir = os.path.dirname(os.path.realpath(__file__))+"\\functional_tests\\01_normalize"
+            module_testdir = os.path.dirname(os.path.realpath(__file__))+"/functional_tests/01_normalize"
             input_dir = os.path.join(module_testdir,"input")
             args = Namespace(input=input_dir, 
                          output=output_dir.path)
             normalize.execute(args,[])
             
-            output_file = os.listdir(os.path.join(output_dir.path))[0]
+            output_file = glob.glob(os.path.join(output_dir.path, "*.vcf"))[0]
             
             actual_file = FileReader(os.path.join(output_dir.path,output_file))
             actual_file.open()

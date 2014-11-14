@@ -223,6 +223,9 @@ def _create_complete_header(header_dict):
 
     return "\t".join(complete_header) + "\n"
 
+def _glossary(header,writer):
+    pass
+
 # pylint: disable=C0301
 def add_subparser(subparser):
     parser = subparser.add_parser("expand", help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
