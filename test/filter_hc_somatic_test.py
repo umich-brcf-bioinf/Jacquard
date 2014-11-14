@@ -1,29 +1,23 @@
-from argparse import Namespace
 import glob
 import os
 import unittest
 import shutil
 from StringIO import StringIO
 import sys
-import glob
 import testfixtures
-import jacquard.utils as utils
 from testfixtures import TempDirectory
 from jacquard.filter_hc_somatic import filter_somatic_positions, write_somatic, find_somatic_positions
-from jacquard.vcf import FileReader
+
 import jacquard.filter_hc_somatic as filter_hc_somatic
 import jacquard.logger as logger
 
 VCF_HEADER="#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsampleA\tsampleB\n"
 
 mock_log_called = False
-mock_log_messages = []
-
+  
 def mock_log(msg, *args):
     global mock_log_called
     mock_log_called = True
-    global mock_log_messages
-    mock_log_messages.append(msg.format(*[str(i) for i in args]))
     
 class FilterSomaticTestCase(unittest.TestCase):
     def setUp(self):
@@ -44,8 +38,6 @@ class FilterSomaticTestCase(unittest.TestCase):
     def _change_mock_logger(self):
         global mock_log_called
         mock_log_called = False
-        global mock_log_messages
-        mock_log_messages=[]
         global mock_log
         logger.info = mock_log
         logger.error = mock_log
@@ -75,17 +67,18 @@ class FilterSomaticTestCase(unittest.TestCase):
     
     def test_findSomaticPositions_invalidInput(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("A.vcf","##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234:1\n")
-            input_dir.write("B.vcf","##source=VarScan2\n#CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tSAMPLE\n1\t2353\t.\tA\tGT\t.\t.\tfoo\tDP:JQ_SOM_VS\t234:1\n")
+            input_dir.write("A.snp.vcf","##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234:1\n")
+            input_dir.write("A.indel.vcf","##source=VarScan2\n#CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tSAMPLE\n1\t2353\t.\tA\tGT\t.\t.\tfoo\tDP:JQ_SOM_VS\t234:1\n")
             
-            file1 = os.path.join(input_dir.path, "A.vcf")
-            file2 = os.path.join(input_dir.path, "B.vcf")
+            file1 = os.path.join(input_dir.path, "A.snp.vcf")
+            file2 = os.path.join(input_dir.path, "A.indel.vcf")
             
-            find_somatic_positions([file1, file2], output_dir.path)
-            self.assertIn('Input file [A.vcf] has no high-confidence somatic variants.', mock_log_messages)
-            self.assertIn('Input file [B.vcf] has no high-confidence somatic variants.', mock_log_messages)
-            self.assertIn('[2] VCF file(s) had no high-confidence somatic variants. See log for details.', mock_log_messages)
+            with self.assertRaises(SystemExit) as cm:
+                somatic_positions = find_somatic_positions([file1, file2], output_dir.path)
+            self.assertEqual(cm.exception.code, 1)
             
+            input_dir.cleanup()
+            output_dir.cleanup()
             
     def test_writeSomatic_outputFileForEachInputFile(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
@@ -98,6 +91,7 @@ class FilterSomaticTestCase(unittest.TestCase):
             excluded_variants = write_somatic(in_files, output_dir.path, somatic_positions, execution_context)
             self.assertEqual(["mutect_HCsomatic.vcf", "varscan_HCsomatic.vcf"], output_dir.actual())
 
+    
     def Ytest_writeSomatic5(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = script_dir + "/reference_files/filter_somatic_test/input/"
@@ -130,46 +124,4 @@ class FilterSomaticTestCase(unittest.TestCase):
         self.assertEqual("##jacquard.filterHCSomatic.excluded_variants=32\n", excluded_variants)
         shutil.rmtree(output_dir)
 
-    def test_functional_filter_hc_somatic(self):
-        with TempDirectory() as output_dir:
-            module_testdir = os.path.dirname(os.path.realpath(__file__))+"/functional_tests/03_filter_hc_somatic"
-            input_dir = os.path.join(module_testdir,"input")
-            args = Namespace(input=input_dir, 
-                         output=output_dir.path)
             
-            execution_context = ["##jacquard.version={0}".format(utils.__version__),
-                "##jacquard.command=",
-                "##jacquard.cwd="]
-            filter_hc_somatic.execute(args,execution_context)
-            
-            output_file = glob.glob(os.path.join(output_dir.path, "*.vcf"))[0]
-            
-            actual_file = FileReader(os.path.join(output_dir.path,output_file))
-            actual_file.open()
-            actual = []
-            for line in actual_file.read_lines():
-                actual.append(line)
-            actual_file.close()
-            
-            module_outdir = os.path.join(module_testdir,"output")
-            output_file = os.listdir(module_outdir)[0]
-            expected_file = FileReader(os.path.join(module_outdir,output_file))
-            expected_file.open()
-            expected = []
-            for line in expected_file.read_lines():
-                expected.append(line)
-            expected_file.close()
-            
-            self.assertEquals(len(expected), len(actual))
-            
-            self.assertEquals(101, len(actual))
-            
-            for i in xrange(len(expected)):
-                if expected[i].startswith("##jacquard.cwd="):
-                    self.assertTrue(actual[i].startswith("##jacquard.cwd="))
-                elif expected[i].startswith("##jacquard.command="):
-                    self.assertTrue(actual[i].startswith("##jacquard.command="))
-                else:
-                    self.assertEquals(expected[i], actual[i]) 
-                                
-

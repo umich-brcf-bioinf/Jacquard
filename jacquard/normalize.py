@@ -107,13 +107,7 @@ def execute(args, execution_context):
         shutil.rmtree(output_dir)
         exit(1)
         
-    i = 1
+    logger.info("Normalizing input files")
     for writer, readers in writer_to_readers.items():  
-        logger.info("Normalizing file(s) to [{}] ({}/{})",
-                    os.path.basename(writer.output_filepath), 
-                    i,
-                    len(writer_to_readers))
-        i += 1
         caller.normalize(writer, readers)
-    logger.info("Wrote {} normalized files", len(writer_to_readers))
-
+     

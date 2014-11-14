@@ -618,14 +618,13 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
 
     logger.info("Merging sample data: saving (6/6)")
     with open(output_path, "a") as f:
-        f.write("\n".join(execution_context)+"\n")
+        f.write("\n".join(execution_context))
         sorted_df.to_csv(f, index=False, sep="\t")
 
     logger.info("Merged [{}] VCf files to [{}]", len(sample_file_readers), output_path)
 
 def determine_input_keys(input_dir):
     for file in listdir(input_dir):
-        print file
         if isfile(join(input_dir, file)):
             fname, extension = os.path.splitext(file)
             if extension == ".vcf":
