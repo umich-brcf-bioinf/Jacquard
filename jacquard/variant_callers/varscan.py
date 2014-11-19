@@ -140,7 +140,7 @@ class Varscan():
         self._validate_hc_fileset(hc_candidates)
 
         return vcf_readers, hc_candidates
-        
+
     def _parse_vcf_readers(self,vcf_readers,hc_keys):
         all_records = []
         metaheader_list = []

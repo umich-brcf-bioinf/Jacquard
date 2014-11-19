@@ -1,4 +1,4 @@
-# pylint: disable=C0103,C0301,R0904
+# pylint: disable=C0103,C0301,R0904,C0111
 import os
 import unittest
 
@@ -49,16 +49,32 @@ class ConsensusHelperTestCase(unittest.TestCase):
 
     def test_format(self):
         tag = consensus_helper._AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|0:1:2|2:3:4\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE|0:1:2:1|2:3:4:3\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|X:0:0.1:0.2|Y:0.2:0.3:0.4\n".replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE|X:0:0.1:0.2:0.1|Y:0.2:0.3:0.4:0.3\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
         processedVcfRecord = VcfRecord(line)
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_format_multAlts(self):
         tag = consensus_helper._AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF|0,0:2,4|0,0:1,3\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:{0}AF_AVERAGE|0,0:2,4:1,2|0,0:1,3:0.5,1.5\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF|0,0:0.2,0.4|0,0:0.1,0.3\n".replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:{0}AF_AVERAGE|0,0:0.2,0.4:0.1,0.2|0,0:0.1,0.3:0.05,0.15\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
         processedVcfRecord = VcfRecord(line)
         tag.format(processedVcfRecord)
+        self.assertEquals(expected, processedVcfRecord.asText())
+
+    def test_format_unequalMultAlts(self):
+        tag = consensus_helper._AlleleFreqTag()
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF|0,0:0.4|0,0:0.1\n".replace('|',"\t")
+#         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:{0}AF_AVERAGE|0,0:0.2,0.4:0.1,0.2|0,0:0.1,0.3:0.05,0.15\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
+        processedVcfRecord = VcfRecord(line)
+        self.assertRaisesRegexp(utils.JQException, "Inconsistent number of mult-alts found in VCF file", tag.format, processedVcfRecord)
+
+    def test_format_noJQ_AFTags(self):
+        tag = consensus_helper._AlleleFreqTag()
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP|X|Y\n".replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{0}AF_AVERAGE|X:.|Y:.\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
+        processedVcfRecord = VcfRecord(line)
+        tag.format(processedVcfRecord)
+
         self.assertEquals(expected, processedVcfRecord.asText())
