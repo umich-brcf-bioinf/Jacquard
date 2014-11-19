@@ -1,20 +1,10 @@
-'''
-Created on Nov 18, 2014
-
-@author: kmeng
-'''
 # pylint: disable=C0103,C0301,R0904
-from collections import OrderedDict,defaultdict
 import os
 import unittest
 
-from jacquard.utils import __version__,jq_af_tag,jq_dp_tag,jq_somatic_tag,\
-    JQException
 import jacquard.utils as utils
 from jacquard.variant_callers import consensus_helper
-
-from jacquard.vcf import VcfRecord, FileReader
-from testfixtures import TempDirectory
+from jacquard.vcf import VcfRecord
 
 class MockWriter():
     def __init__(self):
@@ -64,7 +54,7 @@ class ConsensusHelperTestCase(unittest.TestCase):
         processedVcfRecord = VcfRecord(line)
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
-        
+
     def test_format_multAlts(self):
         tag = consensus_helper._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF|0,0:2,4|0,0:1,3\n".replace('|',"\t")
@@ -72,7 +62,3 @@ class ConsensusHelperTestCase(unittest.TestCase):
         processedVcfRecord = VcfRecord(line)
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
-        
-
-        
-        

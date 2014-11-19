@@ -1,14 +1,6 @@
-'''
-Created on Nov 18, 2014
-
-@author: kmeng
-'''
+import numpy as np
 
 import jacquard.utils as utils
-import re
-import os
-import numpy as np
-from collections import defaultdict
 
 JQ_CONSENSUS_TAG = "JQ_CONS_"
 
