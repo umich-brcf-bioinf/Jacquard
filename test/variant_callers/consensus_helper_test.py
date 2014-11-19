@@ -42,8 +42,7 @@ class MockFileReader(object):
     def close(self):
         self.close_was_called = True
 
-
-class ConsensusHelperTestCase(unittest.TestCase):
+class AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
         self.assertEqual('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].", Source="Jacquard", Version="{1}">'.format(consensus_helper.JQ_CONSENSUS_TAG, utils.__version__), consensus_helper._AlleleFreqTag().metaheader)
 
@@ -66,7 +65,6 @@ class ConsensusHelperTestCase(unittest.TestCase):
     def test_format_unequalMultAlts(self):
         tag = consensus_helper._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF|0,0:0.4|0,0:0.1\n".replace('|',"\t")
-#         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:{0}AF_AVERAGE|0,0:0.2,0.4:0.1,0.2|0,0:0.1,0.3:0.05,0.15\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
         processedVcfRecord = VcfRecord(line)
         self.assertRaisesRegexp(utils.JQException, "Inconsistent number of mult-alts found in VCF file", tag.format, processedVcfRecord)
 
@@ -78,3 +76,24 @@ class ConsensusHelperTestCase(unittest.TestCase):
         tag.format(processedVcfRecord)
 
         self.assertEquals(expected, processedVcfRecord.asText())
+
+class ConsensusHelperTestCase(unittest.TestCase):
+    def test_add_tags(self):
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|X:0:0.1:0.2|Y:0.2:0.3:0.4\n".replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE|X:0:0.1:0.2:0.1|Y:0.2:0.3:0.4:0.3\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
+        vcf_record = VcfRecord(line)
+        cons_help = consensus_helper.ConsensusHelper()
+        actual = cons_help.add_tags(vcf_record)
+        self.assertEqual(expected, actual)
+    
+    def test_get_new_metaheaders(self):
+        expected = [('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,'+
+        'Description="Average allele frequency across recognized variant '+
+        'callers that reported frequency for this position '+
+        '[average(JQ_*_AF)].", Source="Jacquard", '+
+        'Version="{1}">').format(consensus_helper.JQ_CONSENSUS_TAG, 
+                                 utils.__version__)]
+
+        cons_help = consensus_helper.ConsensusHelper()
+        actual = cons_help.get_new_metaheaders()
+        self.assertEqual(expected, actual)

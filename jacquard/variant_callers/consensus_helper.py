@@ -72,3 +72,15 @@ class _AlleleFreqTag():
         else:
             return str(round(100 * float(value))/100)
 
+class ConsensusHelper():
+    def __init__(self):
+        self.tags = [_AlleleFreqTag()]
+        
+    def add_tags(self,vcfRecord):
+        for tag in self.tags:
+            tag.format(vcfRecord)
+        return vcfRecord.asText()
+    
+    def get_new_metaheaders(self):
+        return [tag.metaheader for tag in self.tags]
+    

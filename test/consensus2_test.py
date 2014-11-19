@@ -1,0 +1,143 @@
+# pylint: disable=C0111
+from collections import OrderedDict
+import numpy
+from StringIO import StringIO
+import sys
+import unittest
+from argparse import Namespace
+import jacquard.utils as utils
+import glob
+from testfixtures import TempDirectory
+import os
+from jacquard.consensus2 import _write_metaheaders,_add_consensus_tags
+import jacquard.consensus2 as consensus2
+from jacquard.variant_callers import consensus_helper
+import jacquard.logger as logger
+import jacquard.vcf as vcf
+
+class MockFileWriter(object):
+    def __init__(self):
+        self._content = []
+        self.opened = False
+        self.closed = False
+
+    def open (self):
+        self.opened = True
+        
+    def write(self, content):
+        if content == None:
+            return
+        self._content.extend(content.splitlines())
+        
+    def lines(self):
+        return self._content
+
+    def close(self):
+        self.closed = True
+
+class MockVcfReader(object):
+    def __init__(self, input_filepath="vcfName", metaheaders=["##metaheaders"], 
+                 column_header="#header"):
+        self.input_filepath = input_filepath
+        self.metaheaders = metaheaders
+        self.column_header = column_header
+        self.opened = False
+        self.closed = False
+
+    def open(self):
+        self.opened = True
+
+    def vcf_records(self):
+        return iter(["foo"])
+    
+    def close(self):
+        self.closed = True
+
+class MockConsensusTag(object):
+    def __init__(self, metaheader = "##consensus_metaheader"):
+        self.metaheader = metaheader
+        self.format_called = False
+    def format(self):
+        self.format_called = True
+        
+class MockConsensusHelper(object):
+    def __init__(self, tag):
+        self.tags = [tag]
+        self.add_tags_called = False
+    def add_tags(self,vcfRecord):
+        for tag in self.tags:
+            tag.format_called = True
+        self.add_tags_called = True
+        
+    def get_new_metaheaders(self):
+        return [tag.metaheader for tag in self.tags]
+        
+mock_log_called = False
+
+def mock_log(msg, *args):
+    global mock_log_called
+    mock_log_called = True
+
+class Consensus2TestCase(unittest.TestCase):
+    def setUp(self):
+        self.output = StringIO()
+        self.saved_stderr = sys.stderr
+        sys.stderr = self.output
+        self.original_info = logger.info
+        self.original_error = logger.error
+        self.original_warning = logger.warning
+        self.original_debug = logger.debug
+        self._change_mock_logger()
+
+    def tearDown(self):
+        self.output.close()
+        sys.stderr = self.saved_stderr
+        self._reset_mock_logger()
+
+    def _change_mock_logger(self):
+        global mock_log_called
+        mock_log_called = False
+        global mock_log
+        logger.info = mock_log
+        logger.error = mock_log
+        logger.warning = mock_log
+        logger.debug = mock_log
+
+    def _reset_mock_logger(self):
+        logger.info = self.original_info
+        logger.error = self.original_error
+        logger.warning = self.original_warning
+        logger.debug = self.original_debug
+    
+    
+    
+    def test_write_metaheaders(self):
+        file_writer = MockFileWriter()
+        vcf_reader = MockVcfReader()
+        cons_help = MockConsensusHelper(MockConsensusTag())
+        _write_metaheaders(cons_help, ["execution_context"], vcf_reader, 
+                           file_writer)
+        expected = ["##metaheaders", "execution_context", 
+                    "##consensus_metaheader", "#header"]
+        self.assertEquals(expected,file_writer._content)
+        
+    def test_add_consensus_tags(self):
+        file_writer = MockFileWriter()
+        vcf_reader = MockVcfReader()
+        tag = MockConsensusTag()
+        cons_help = MockConsensusHelper(tag)
+        _add_consensus_tags(cons_help, vcf_reader, file_writer)
+        self.assertTrue(cons_help.add_tags_called)
+        self.assertTrue(tag.format_called)
+        
+    def Xtest_add_consensus_integrative(self):
+        file_writer = vcf.FileWriter()
+        vcf_reader = vcf.VcfReader()
+        cons_help = MockConsensusHelper(MockConsensusTag())
+        _write_metaheaders(cons_help, ["execution_context"], vcf_reader, 
+                           file_writer)
+        expected = ["##metaheaders", "execution_context", 
+                    "##consensus_metaheader", "#header"]
+        self.assertEquals(expected,file_writer._content)
+        
+        
