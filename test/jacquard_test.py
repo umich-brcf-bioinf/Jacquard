@@ -69,7 +69,7 @@ class JacquardTestCase(unittest.TestCase):
             actual_tmp_dir = jacquard._create_temp_directory(output_dir)
 
             self.assertTrue(os.path.exists(actual_tmp_dir), "temp dir created")
-            self.assertEquals(os.path.join(output_dir, "jacquard.tmp"),
+            self.assertEquals(os.path.join(output_dir, "jacquard_tmp"),
                               actual_tmp_dir)
 
 

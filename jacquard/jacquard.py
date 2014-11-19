@@ -41,7 +41,7 @@ _SUBCOMMANDS = [normalize,
                 consensus,
                 expand]
 
-TMP_DIR_NAME = "jacquard.tmp"
+TMP_DIR_NAME = "jacquard_tmp"
 TMP_OUTPUT_PATH = None
 
 def main():
@@ -68,7 +68,8 @@ def _version_text():
 
 #TODO (cgates): This cannot be the simplest thing that could possibly work
 def _validate_temp(tmp_output, original_output_dir, force=0):
-    if os.path.isfile(original_output_dir):
+    extension = os.path.splitext(os.path.basename(tmp_output))[1]
+    if extension:
         tmp_dir = os.path.dirname(tmp_output)
     else:
         tmp_dir = tmp_output
@@ -93,7 +94,9 @@ def _validate_temp(tmp_output, original_output_dir, force=0):
                                     original_output_dir)
 
 def _create_temp_directory(original_output_dir, force=0):
-    if os.path.isfile(original_output_dir):
+    extension = os.path.splitext(os.path.basename(original_output_dir))[1]
+
+    if extension:
         original_output_fname = os.path.basename(original_output_dir)
         original_output_dir = os.path.dirname(original_output_dir)
         tmp_output = os.path.join(original_output_dir,
@@ -101,7 +104,7 @@ def _create_temp_directory(original_output_dir, force=0):
                                   original_output_fname)
     else:
         tmp_output = os.path.join(original_output_dir, TMP_DIR_NAME)
-
+    
     try:
         os.mkdir(original_output_dir)
     except:
@@ -176,17 +179,17 @@ def dispatch(modules, arguments):
         logger.debug("command|{}", " ".join(arguments))
 
         original_output_dir = args.output
-#
-#        global TMP_OUTPUT_PATH
-#        TMP_OUTPUT_PATH = _create_temp_directory(original_output_dir, args.force)
-#        args.output = TMP_OUTPUT_PATH
-#        logger.debug("Writing output to tmp directory [{}]", TMP_OUTPUT_PATH)
+
+        global TMP_OUTPUT_PATH
+        TMP_OUTPUT_PATH = _create_temp_directory(original_output_dir, args.force)
+        args.output = TMP_OUTPUT_PATH
+        logger.debug("Writing output to tmp directory [{}]", TMP_OUTPUT_PATH)
 
         module_dispatch[args.subparser_name].execute(args, execution_context)
 
-#        logger.debug("Moving files from tmp directory {} to output directory", TMP_OUTPUT_PATH, original_output_dir)
-#        _move_tmp_contents_to_original(TMP_OUTPUT_PATH, original_output_dir)
-#        logger.debug("Removed tmp directory {}", TMP_OUTPUT_PATH)
+        logger.debug("Moving files from tmp directory {} to output directory", TMP_OUTPUT_PATH, original_output_dir)
+        _move_tmp_contents_to_original(TMP_OUTPUT_PATH, original_output_dir)
+        logger.debug("Removed tmp directory {}", TMP_OUTPUT_PATH)
 
         logger.info("Output saved to [{}]", original_output_dir)
         logger.info("Done")
