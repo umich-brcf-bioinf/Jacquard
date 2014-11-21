@@ -108,7 +108,7 @@ class Varscan():
     def _validate_hc_fileset(self, hc_candidates):
         if len(hc_candidates) != 2:
             raise utils.JQException("VarScan directories should have exactly 2 "
-                                    "input somatic HC files per patient, but "
+                                    "input somatic fpfilter files per patient, but "
                                     "found [{}].".format(len(hc_candidates)))
 
         tmp = [hc_candidates[0].file_name,hc_candidates[1].file_name]
@@ -122,7 +122,7 @@ class Varscan():
                                                                 and tmp[0] ==
                                                                 "indel"):
             raise utils.JQException("Each patient in a VarScan directory should "
-                                    "have a somatic HC snp file and indel file.")
+                                    "have a somatic fpfilter snp file and indel file.")
 
         pass
 
@@ -131,7 +131,7 @@ class Varscan():
         hc_candidates = []
 
         for file_reader in file_readers:
-            if file_reader.file_name.lower().endswith(".somatic.hc"):
+            if file_reader.file_name.lower().endswith("fpfilter.pass"):
                 hc_candidates.append(file_reader)
             elif file_reader.file_name.lower().endswith(".vcf"):
                 vcf_readers.append(VcfReader(file_reader))
@@ -185,7 +185,7 @@ class Varscan():
         output_file = None
         file_name_search = "snp|indel"
         for filename in filenames:
-            if not filename.lower().endswith("somatic.hc"):
+            if not filename.lower().endswith("fpfilter.pass"):
                 if re.search("("+file_name_search+")", filename):
                     prefix,suffix = re.split(file_name_search,filename)
                     output_file = os.path.basename(prefix+decorator+suffix)
@@ -196,8 +196,8 @@ class Varscan():
     
     def validate_vcfs_in_directory(self, in_files):
         for in_file in in_files:
-            if not in_file.lower().endswith("vcf") and not in_file.lower().endswith("somatic.hc"):
-                raise utils.JQException("ERROR: Non-VCF or non-somatic.hc file "
+            if not in_file.lower().endswith("vcf") and not in_file.lower().endswith("fpfilter.pass"):
+                raise utils.JQException("ERROR: Non-VCF or fpfilter file "
                                         "in directory. Check parameters and "
                                         "try again")
 
