@@ -1,3 +1,4 @@
+# pylint: disable=W0212,C0111
 from collections import OrderedDict
 import glob
 import os
@@ -215,6 +216,24 @@ def _write_vcf_records(vcf_reader, file_writer, header_dict):
         file_writer.write(row_string)
 
     vcf_reader.close()
+
+def _create_row_dict(column_list, vcf_record):
+    row_dict = {"CHROM" : vcf_record.chrom,
+                "POS" : vcf_record.pos,
+                "ID" : vcf_record.id,
+                "REF" : vcf_record.ref,
+                "ALT" : vcf_record.alt,
+                "QUAL" : vcf_record.qual,
+                "FILTER" : vcf_record.filter}
+
+    for i,sample_name in enumerate(column_list[9:]):
+        format_key_values = vcf_record.sample_dict[i]
+        for format_key, format_value in format_key_values.items():
+            row_dict[format_key + "|" + sample_name] = format_value
+
+    row_dict = dict(row_dict.items() + vcf_record.get_info_dict().items())
+
+    return row_dict
 
 def _create_complete_header(header_dict):
     complete_header = []

@@ -1,4 +1,4 @@
-# pylint: disable=C0103,C0301,R0903,R0904,W0603,W0613
+# pylint: disable=C0103,C0301,R0903,R0904,W0603,W0613,W0212,C0111
 from argparse import Namespace
 from collections import OrderedDict
 import os
@@ -8,9 +8,6 @@ from jacquard.vcf import FileReader
 import glob
 import jacquard.utils as utils
 import jacquard.logger as logger
-from jacquard.expand import _parse_meta_headers, \
-    _append_format_tags_to_samples, _get_headers, _write_vcf_records, \
-    _disambiguate_column_names, _filter_and_sort, _glossary, execute
 import jacquard.expand as expand
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
@@ -107,7 +104,7 @@ class ExpandTestCase(unittest.TestCase):
                         '##INFO=<ID=AA,Number=1,Description="Ancestral Allele"',
                         '##FORMAT=<ID=SP,Type=Integer,Description="bar">',
                         '##RUNTIME_ARG=allele freq. cutoff: 5']
-        (info_fields, format_tags) = _parse_meta_headers(meta_headers)
+        (info_fields, format_tags) = expand._parse_meta_headers(meta_headers)
 
         self.assertEquals(["AA", "AC"], info_fields)
         self.assertEquals(["SP"], format_tags)
@@ -122,21 +119,44 @@ class ExpandTestCase(unittest.TestCase):
                                 ("Unable to parse meta_headers for INFO "
                                  "and/or FORMAT fields. Review input and "
                                  "try again."),
-                                _parse_meta_headers,
+                                expand._parse_meta_headers,
                                 meta_headers)
+
+    def test_create_row_dict(self):
+        column_list = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", "SAMPLE_A|NORMAL", "SAMPLE_A|TUMOR"]
+        row = ["1", "42", "rs32", "A", "AT", "30", "PASS",
+               "SNP;SOMATIC=1", "DP:AF", "50:0.2", "87:0.3"]
+        vcf_record = MockVcfRecord(row)
+
+        actual_dict = expand._create_row_dict(column_list, vcf_record)
+
+        expected_dict = {"CHROM": "1",
+                         "POS": "42",
+                         "ID": "rs32",
+                         "REF": "A",
+                         "ALT": "AT",
+                         "QUAL": "30",
+                         "FILTER": "PASS",
+                         "SNP": "SNP",
+                         "SOMATIC": "1",
+                         "DP|SAMPLE_A|NORMAL": "50",
+                         "DP|SAMPLE_A|TUMOR": "87",
+                         "AF|SAMPLE_A|NORMAL": "0.2",
+                         "AF|SAMPLE_A|TUMOR": "0.3"}
+        self.assertEquals(expected_dict, actual_dict)
 
     def test_disambiguate_column_names(self):
         column_header = ["CHROM", "POS", "ID", "REF"]
         info_header = ["HOM", "AA", "SOM"]
 
-        actual = _disambiguate_column_names(column_header, info_header)
+        actual = expand._disambiguate_column_names(column_header, info_header)
         expected = ["HOM", "AA", "SOM"]
 
         self.assertEquals(expected, actual)
 
         column_header = ["CHROM", "POS", "ID", "REF"]
         info_header = ["HOM", "AA", "ID", "SOM"]
-        actual = _disambiguate_column_names(column_header, info_header)
+        actual = expand._disambiguate_column_names(column_header, info_header)
         expected = ["INFO_HOM", "INFO_AA", "INFO_ID", "INFO_SOM"]
 
         self.assertEquals(expected, actual)
@@ -144,7 +164,7 @@ class ExpandTestCase(unittest.TestCase):
     def test_append_format_tags_to_samples(self):
         format_tags = ["foo", "bar"]
         samples = ["sampleB", "sampleA"]
-        actual = _append_format_tags_to_samples(format_tags, samples)
+        actual = expand._append_format_tags_to_samples(format_tags, samples)
 
         expected = ["bar|sampleA", "bar|sampleB", "foo|sampleA", "foo|sampleB"]
 
@@ -160,7 +180,7 @@ class ExpandTestCase(unittest.TestCase):
         col_header = "CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsampleA\tsampleB"
         mock_reader = MockVcfReader(metaheaders=meta_headers,
                                     column_header=col_header)
-        actual = _get_headers(mock_reader)
+        actual = expand._get_headers(mock_reader)
 
         expected = (["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER"],
                     ["AA", "AC"],
@@ -194,7 +214,7 @@ class ExpandTestCase(unittest.TestCase):
                                    ("info_header", info_header),
                                    ("format_header", format_sample_header)])
 
-        _write_vcf_records(mock_vcf_reader, mock_file_writer, header_dict)
+        expand._write_vcf_records(mock_vcf_reader, mock_file_writer, header_dict)
 
         actual = mock_file_writer.written
         expected = ["CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tval1\t\tval3\ttag4\t1\t42\n"]
@@ -207,34 +227,31 @@ class ExpandTestCase(unittest.TestCase):
                               ("format_header", ["tagA|sample1",
                                                  "tagB|sample1",
                                                  "tagC|sample1"])])
-        columns_to_expand = [r"CHROM", r"info.*", r"tagA\|.*"]
-        actual_header_dict = _filter_and_sort(header, columns_to_expand)
+        columns_to_expand = ["CHROM", "infoA", r"tagA\|.*", "infoB"]
+        actual_header_dict = expand._filter_and_sort(header, columns_to_expand)
         expected_header = {'column_header': ["CHROM"],
                            'format_header': ['tagA|sample1'],
-                           'info_header': ["infoA", "infoB", "infoC"]}
+                           'info_header': ["infoA", "infoB"]}
 
         self.assertEquals(expected_header, actual_header_dict)
-
 
     def test_filter_and_sort_matchesBeginningOfColumnByDefault(self):
         header = OrderedDict([("column_header", ["POS"]),
                               ("info_header", ["A_POS", "A_POS_B", "POS_B"])])
 
-        actual_header_dict = _filter_and_sort(header, [r"POS"])
+        actual_header_dict = expand._filter_and_sort(header, [r"POS"])
         expected_header = {'column_header': ["POS"]}
         self.assertEquals(actual_header_dict, expected_header)
 
-        actual_header_dict = _filter_and_sort(header, [r".*POS.*"])
+        actual_header_dict = expand._filter_and_sort(header, [r".*POS.*"])
         expected_header = {'column_header': ["POS"],
                            'info_header': ["A_POS", "A_POS_B", "POS_B"]}
         self.assertEquals(actual_header_dict, expected_header)
 
-        actual_header_dict = _filter_and_sort(header, [r"^POS.*"])
+        actual_header_dict = expand._filter_and_sort(header, [r"^POS.*"])
         expected_header = {'column_header': ["POS"],
                            'info_header': ["POS_B"]}
         self.assertEquals(actual_header_dict, expected_header)
-
-
 
     def test_filter_and_sort_missingInfo(self):
         header = OrderedDict([("column_header", ["CHROM", "POS", "ID"]),
@@ -244,7 +261,7 @@ class ExpandTestCase(unittest.TestCase):
                                                  "tagC|sample1"])])
 
         columns_to_expand = [r"CHROM", r"tagA\|.*"]
-        actual_header = _filter_and_sort(header, columns_to_expand)
+        actual_header = expand._filter_and_sort(header, columns_to_expand)
 
         expected_header = {'column_header': ["CHROM"],
                            'format_header': ['tagA|sample1']}
@@ -259,7 +276,7 @@ class ExpandTestCase(unittest.TestCase):
                                                  "tagC|sample1"])])
 
         columns_to_expand = [r"CHROM", r"tagA\|.*", r"ID", r"POS"]
-        actual_header = _filter_and_sort(header, columns_to_expand)
+        actual_header = expand._filter_and_sort(header, columns_to_expand)
 
         expected_header = {'column_header': ["CHROM", "ID", "POS"],
                            'format_header': ['tagA|sample1']}
@@ -279,7 +296,7 @@ class ExpandTestCase(unittest.TestCase):
                                 ("The column specification file would "
                                  "exclude all input columns. Review inputs/"
                                  "usage and try again."),
-                                _filter_and_sort, header, columns_to_expand)
+                                expand._filter_and_sort, header, columns_to_expand)
 
     def test_filter_and_sort_regexNotInFile(self):
         header = OrderedDict([("column_header", ["CHROM", "POS", "ID", "REF"]),
@@ -289,7 +306,7 @@ class ExpandTestCase(unittest.TestCase):
                                                  "tagC|sample1"])])
 
         columns_to_expand = ["^foo$", "^CHROM$"]
-        actual_header = _filter_and_sort(header, columns_to_expand)
+        actual_header = expand._filter_and_sort(header, columns_to_expand)
 
         expected_header = {'column_header': ["CHROM"]}
 
@@ -314,7 +331,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                              output=output_file,
                              column_specification=0)
 
-            execute(args, ["extra_header1", "extra_header2"])
+            expand.execute(args, ["extra_header1", "extra_header2"])
 
             output_dir.check("P1.txt")
             with open(os.path.join(output_dir.path, "P1.txt")) as actual_output_file:
@@ -338,7 +355,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                              output=output_dir.path,
                              column_specification=0)
 
-            execute(args, ["extra_header1", "extra_header2"])
+            expand.execute(args, ["extra_header1", "extra_header2"])
 
             output_dir.check("P1.txt", "P2.txt")
             with open(os.path.join(output_dir.path, "P1.txt")) as actual_output_file:
@@ -356,7 +373,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             self.assertRaisesRegexp(utils.JQException,
                                     ("Specified input directory .* contains "
                                      "no VCF files. Review inputs and .*"),
-                                    execute,
+                                    expand.execute,
                                     args,
                                     ["extra_header1", "extra_header2"])
 
@@ -380,7 +397,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             self.assertRaisesRegexp(utils.JQException,
                                     ("Specified output .* must be a file if "
                                      "input .* is a file."),
-                                    execute,
+                                    expand.execute,
                                     args,
                                     ["extra_header1", "extra_header2"])
 
@@ -404,7 +421,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             self.assertRaisesRegexp(utils.JQException,
                                     ("Specified output .* must be a directory "
                                      "if input .* is a directory."),
-                                    execute,
+                                    expand.execute,
                                     args,
                                     ["extra_header1", "extra_header2"])
 
@@ -419,7 +436,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             self.assertRaisesRegexp(utils.JQException,
                                     ("Specified input directory .* contains "
                                      "no VCF files. Review inputs .*"),
-                                    execute,
+                                    expand.execute,
                                     args,
                                     ["extra_header1", "extra_header2"])
 
@@ -433,31 +450,31 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             self.assertRaisesRegexp(utils.JQException, "The column "
                                     "specification file .* could not be "
                                     "read. Review inputs/usage and try again",
-                                    execute, args,
+                                    expand.execute, args,
                                     ["extra_header1", "extra_header2"])
 
     def test_functional_expand(self):
         with TempDirectory() as output_dir:
             module_testdir = os.path.dirname(os.path.realpath(__file__))+"/functional_tests/06_expand"
             input_dir = os.path.join(module_testdir,"input")
-            args = Namespace(input=input_dir, 
+            args = Namespace(input=input_dir,
                          output=output_dir.path,
                          column_specification=None)
-            
+
             execution_context = ["##jacquard.version={0}".format(utils.__version__),
                 "##jacquard.command=",
                 "##jacquard.cwd="]
             expand.execute(args,execution_context)
-            
+
             output_file = glob.glob(os.path.join(output_dir.path, "consensus.txt"))[0]
-            
+
             actual_file = FileReader(output_file)
             actual_file.open()
             actual = []
             for line in actual_file.read_lines():
                 actual.append(line)
             actual_file.close()
-            
+
             module_outdir = os.path.join(module_testdir,"benchmark")
             output_file = os.listdir(module_outdir)[0]
             expected_file = FileReader(os.path.join(module_outdir,output_file))
@@ -466,23 +483,16 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             for line in expected_file.read_lines():
                 expected.append(line)
             expected_file.close()
-            
+
             self.assertEquals(len(expected), len(actual))
-            
+
             self.assertEquals(11, len(actual))
-            
+
             for i in xrange(len(expected)):
                 if expected[i].startswith("##jacquard.cwd="):
                     self.assertTrue(actual[i].startswith("##jacquard.cwd="))
                 elif expected[i].startswith("##jacquard.command="):
                     self.assertTrue(actual[i].startswith("##jacquard.command="))
                 else:
-                    self.assertEquals(expected[i], actual[i]) 
-                                
-    def test_glossary(self):
-        writer = MockFileWriter()
-        
-#         _glossary(header,writer)
-        
-        
-        
+                    self.assertEquals(expected[i], actual[i])
+
