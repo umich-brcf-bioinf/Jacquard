@@ -9,7 +9,7 @@ import jacquard.utils as utils
 import glob
 from testfixtures import TempDirectory
 import os
-from jacquard.consensus2 import _write_metaheaders,_add_consensus_tags
+from jacquard.consensus2 import _write_metaheaders,_add_consensus_tags, execute
 import jacquard.consensus2 as consensus2
 from jacquard.variant_callers import consensus_helper
 import jacquard.logger as logger
@@ -120,7 +120,7 @@ class Consensus2TestCase(unittest.TestCase):
         expected = ["##metaheaders", "execution_context", 
                     "##consensus_metaheader", "#header"]
         self.assertEquals(expected,file_writer._content)
-        
+
     def test_add_consensus_tags(self):
         file_writer = MockFileWriter()
         vcf_reader = MockVcfReader()
@@ -129,15 +129,56 @@ class Consensus2TestCase(unittest.TestCase):
         _add_consensus_tags(cons_help, vcf_reader, file_writer)
         self.assertTrue(cons_help.add_tags_called)
         self.assertTrue(tag.format_called)
-        
-    def Xtest_add_consensus_integrative(self):
-        file_writer = vcf.FileWriter()
-        vcf_reader = vcf.VcfReader()
-        cons_help = MockConsensusHelper(MockConsensusTag())
-        _write_metaheaders(cons_help, ["execution_context"], vcf_reader, 
-                           file_writer)
-        expected = ["##metaheaders", "execution_context", 
-                    "##consensus_metaheader", "#header"]
-        self.assertEquals(expected,file_writer._content)
-        
-        
+
+    def test_execute_outputFile(self):
+        input_data = ("##blah\n#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"+
+                    "SAMPLE\n1|42|.|A|G|.|PASS|INFO|DP|57").replace("|","\t")
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("foo.vcf", input_data)
+            input_file = os.path.join(input_dir.path,"foo.vcf")
+            output_file = os.path.join(output_dir.path,"baz.vcf")
+            args = Namespace(input=input_file, 
+                             output=output_file,
+                             column_specification=None)
+            execute(args,["foo"])
+            output_dir.check("baz.vcf")
+            
+    def test_execute_badInputFile(self):
+        input_data = ("##blah\n#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"+
+                    "SAMPLE\n1|42|.|A|G|.|PASS|INFO|DP|57").replace("|","\t")
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("foo.txt", input_data)
+            input_file = os.path.join(input_dir.path,"foo.txt")
+            output_file = os.path.join(output_dir.path,"baz.vcf")
+            args = Namespace(input=input_file, 
+                             output=output_file,
+                             column_specification=None)
+            self.assertRaisesRegexp(utils.JQException, "Input file "+
+                                    "\[.*foo.txt\] must be a VCF file.",
+                                    execute, args, ["foo"])
+
+    def test_execute_badOutputFile(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("foo.vcf","")
+            input_file = os.path.join(input_dir.path,"foo.vcf")
+            output_file = os.path.join(output_dir.path,"baz.txt")
+            args = Namespace(input=input_file, 
+                             output=output_file,
+                             column_specification=None)
+            self.assertRaisesRegexp(utils.JQException, "Output file "+
+                                    "\[.*baz.txt\] must be a VCF file.",
+                                    execute, args, ["foo"])
+            
+    def test_execute_outputDirectory(self):
+        input_data = ("##blah\n#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"+
+                    "SAMPLE\n1|42|.|A|G|.|PASS|INFO|DP|57").replace("|","\t")
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("foo.vcf", input_data)
+            input_file = os.path.join(input_dir.path,"foo.vcf")
+            args = Namespace(input=input_file, 
+                             output=output_dir.path,
+                             column_specification=None)
+            execute(args,["foo"])
+            output_dir.check("consensus.vcf")
+    
+    

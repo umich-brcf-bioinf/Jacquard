@@ -221,13 +221,7 @@ def execute(args, execution_context):
     extension = os.path.splitext(os.path.basename(output))[1]
 
     if extension != ".vcf":
-        if not os.path.isdir(output):
-            try:
-                os.makedirs(output)
-            except:
-                logger.error("Output directory [{}] could not be created. "+
-                    "Check parameters and try again", output)
-                exit(1)
+        utils.validate_directories(os.path.dirname(input), output)
         output_file = os.path.join(output,"consensus.vcf")
         tmp_file = output_file+".tmp" ## TODO: This tmp_file may be causing consensus not to work for the tmp directory jira ticket.
         tmp_file_writer = open(tmp_file, "w")
