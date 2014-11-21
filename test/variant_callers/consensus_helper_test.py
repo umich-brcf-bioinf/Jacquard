@@ -1,10 +1,36 @@
 # pylint: disable=C0103,C0301,R0904,C0111
+from collections import OrderedDict
 import os
 import unittest
 
 import jacquard.utils as utils
 from jacquard.variant_callers import consensus_helper
 from jacquard.vcf import VcfRecord
+
+class MockVcfRecord(object):
+    def __init__(self, content):
+        content = content.split("\t")
+        self.chrom, self.pos, self.id, self.ref, self.alt, self.qual, \
+            self.filter, self.info, self.format = content[0:9]
+        self.samples = content[9:]
+
+        tags = self.format.split(":")
+        self.format_set = tags
+
+        self.sample_dict = {}
+        for i, sample in enumerate(self.samples):
+            values = sample.split(":")
+            self.sample_dict[i] = OrderedDict(zip(tags, values))
+
+    def asText(self):
+        stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
+                       self.qual, self.filter, self.info,
+                       ":".join(self.format_set)]
+
+        for key in self.sample_dict:
+            stringifier.append(":".join(self.sample_dict[key].values()))
+
+        return "\t".join(stringifier) + "\n"
 
 class MockWriter():
     def __init__(self):
@@ -49,7 +75,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
     def test_format(self):
         tag = consensus_helper._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|X:0:0.1:0.2|Y:0.2:0.3:0.4\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE|X:0:0.1:0.2:0.1|Y:0.2:0.3:0.4:0.3\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE|X:0:0.1:0.2:0.1:0.2|Y:0.2:0.3:0.4:0.3:0.2\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
         processedVcfRecord = VcfRecord(line)
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
@@ -57,7 +83,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
     def test_format_multAlts(self):
         tag = consensus_helper._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF|0,0:0.2,0.4|0,0:0.1,0.3\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:{0}AF_AVERAGE|0,0:0.2,0.4:0.1,0.2|0,0:0.1,0.3:0.05,0.15\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:{0}AF_AVERAGE:{0}AF_RANGE|0,0:0.2,0.4:0.1,0.2:0.2,0.4|0,0:0.1,0.3:0.05,0.15:0.1,0.3\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
         processedVcfRecord = VcfRecord(line)
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
@@ -71,19 +97,44 @@ class AlleleFreqTagTestCase(unittest.TestCase):
     def test_format_noJQ_AFTags(self):
         tag = consensus_helper._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP|X|Y\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{0}AF_AVERAGE|X:.|Y:.\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{0}AF_AVERAGE:{0}AF_RANGE|X:.:.|Y:.:.\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
         processedVcfRecord = VcfRecord(line)
         tag.format(processedVcfRecord)
 
         self.assertEquals(expected, processedVcfRecord.asText())
 
+    def test_calculate_range(self):
+        tag = consensus_helper._AlleleFreqTag()
+        cons_freq = [[0.2], [0.4], [0.5]]
+        actual_af_range = tag._calculate_range(cons_freq)
+
+        self.assertEquals("0.3", actual_af_range)
+        self.assertEquals(["0.3"], tag.all_ranges)
+
+    def test_calculate_range_oneCaller(self):
+        tag = consensus_helper._AlleleFreqTag()
+        cons_freq = [[0.2]]
+        actual_af_range = tag._calculate_range(cons_freq)
+
+        self.assertEquals(".", actual_af_range)
+        self.assertEquals([], tag.all_ranges)
+
+    def test_calculate_range_multAlts(self):
+        tag = consensus_helper._AlleleFreqTag()
+        cons_freq = [[0.2, 0.3], [0.5, 0.7], [0.2, 0.4]]
+        actual_af_range = tag._calculate_range(cons_freq)
+
+        self.assertEquals("0.3,0.4", actual_af_range)
+        self.assertEquals(["0.3", "0.4"], tag.all_ranges)
+
 class ConsensusHelperTestCase(unittest.TestCase):
     def test_add_tags(self):
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|X:0:0.1:0.2|Y:0.2:0.3:0.4\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE|X:0:0.1:0.2:0.1|Y:0.2:0.3:0.4:0.3\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE|X:0:0.1:0.2:0.1:0.2|Y:0.2:0.3:0.4:0.3:0.2\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
         vcf_record = VcfRecord(line)
         cons_help = consensus_helper.ConsensusHelper()
         actual = cons_help.add_tags(vcf_record)
+
         self.assertEqual(expected, actual)
     
     def test_get_new_metaheaders(self):

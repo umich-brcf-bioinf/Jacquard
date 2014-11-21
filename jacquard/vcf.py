@@ -111,10 +111,10 @@ class VcfRecord(object):
         return info_dict
 
     def asText(self):
-        stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt, 
-                       self.qual, self.filter, self.info, 
+        stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
+                       self.qual, self.filter, self.info,
                        ":".join(self.format_set)]
-        
+
         for key in self.sample_dict:
             stringifier.append(":".join(self.sample_dict[key].values()))
 
@@ -131,7 +131,7 @@ class VcfRecord(object):
             self.sample_dict[key][fieldname] = str(field_dict[key])
 
 
-#TODO cgates: add context management to open/close 
+#TODO cgates: add context management to open/close
 class FileWriter(object):
     def __init__(self, output_filepath):
         self.output_filepath = output_filepath

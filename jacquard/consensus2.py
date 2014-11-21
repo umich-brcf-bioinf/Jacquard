@@ -1,23 +1,25 @@
-from collections import OrderedDict
-import numpy
+import numpy as np
 import os
-from variant_callers import consensus_helper
-import glob
 
+from variant_callers import consensus_helper
 import vcf as vcf
 import utils as utils
 import logger as logger
 
-def _write_metaheaders(cons_help, execution_context,vcf_reader,file_writer):
+def _write_metaheaders(cons_helper, execution_context,vcf_reader,file_writer):
     new_headers = vcf_reader.metaheaders
     new_headers.extend(execution_context)
-    new_headers.extend(cons_help.get_new_metaheaders())
+    new_headers.extend(cons_helper.get_new_metaheaders())
     new_headers.append(vcf_reader.column_header)
     file_writer.write("\n".join(new_headers) +"\n")
     
-def _add_consensus_tags(cons_help, vcf_reader, file_writer):
+def _add_consensus_tags(cons_helper, vcf_reader, file_writer):
     for vcf_record in vcf_reader.vcf_records():
-        file_writer.write(cons_help.add_tags(vcf_record))
+        file_writer.write(cons_helper.add_tags(vcf_record))
+
+def _add_zscore(cons_helper, vcf_reader, file_writer):
+    for vcf_record in vcf_reader.vcf_records():
+        file_writer.write(cons_helper.add_zscore(vcf_record))
 
 def add_subparser(subparser):
     parser = subparser.add_parser("consensus2", help="Accepts a Jacquard-merged VCf file and creates a new file, adding consensus fields.")
@@ -46,15 +48,29 @@ def execute(args, execution_context):
         output_file = os.path.join(output,"consensus.vcf")
 
     vcf_reader =  vcf.VcfReader(vcf.FileReader(input_file))
-    file_writer = vcf.FileWriter(output_file)
+    tmp_output_file = output_file + ".tmp"
+    tmp_writer = vcf.FileWriter(tmp_output_file)
 
-    cons_help = consensus_helper.ConsensusHelper()
+    cons_helper = consensus_helper.ConsensusHelper()
 
     vcf_reader.open()
-    file_writer.open()
+    tmp_writer.open()
 
-    _write_metaheaders(cons_help, execution_context, vcf_reader, file_writer)
-    _add_consensus_tags(cons_help, vcf_reader, file_writer)
+    _write_metaheaders(cons_helper, execution_context, vcf_reader, tmp_writer)
+    _add_consensus_tags(cons_helper, vcf_reader, tmp_writer)
 
     vcf_reader.close()
+    tmp_writer.close()
+
+#     os.rename(tmp_output_file, output_file)
+
+    tmp_reader = vcf.VcfReader(vcf.FileReader(tmp_output_file))
+    file_writer = vcf.FileWriter(output_file)
+
+    tmp_reader.open()
+    file_writer.open()
+
+#     _add_zscore(cons_helper, tmp_reader, file_writer)
+
+    tmp_reader.close()
     file_writer.close()

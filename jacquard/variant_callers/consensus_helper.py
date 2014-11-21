@@ -1,4 +1,5 @@
 # pylint: disable=C0111
+from collections import defaultdict
 import numpy as np
 
 import jacquard.utils as utils
@@ -13,27 +14,32 @@ class _AlleleFreqTag():
                           'frequency for this position [average(JQ_*_AF)].", ' \
                           'Source="Jacquard", Version="{1}">'\
                           .format(JQ_CONSENSUS_TAG, utils.__version__)
+        self.all_ranges = []
 
-    def format(self, vcfRecord):
+    def format(self, vcf_record):
         cons_freqs = {}
-        tags = self._get_allele_freq_tags(vcfRecord)
+        range_freqs = {}
+        tags = self._get_allele_freq_tags(vcf_record)
 
-        for sample in vcfRecord.sample_dict.keys():
+        for sample in vcf_record.sample_dict.keys():
             freqs = []
             for tag in tags:
-                freq = vcfRecord.sample_dict[sample][tag].split(",")
+                freq = vcf_record.sample_dict[sample][tag].split(",")
                 freqs.append(freq)
 
             if len(freqs) == 0:
                 cons_freqs[sample] = "."
             else:
                 self._validate_multAlts(freqs)
-    
-                freqs = self._calculate_average(freqs)
-                cons_freqs[sample] = freqs
+                avg_freqs = self._calculate_average(freqs)
+                cons_freqs[sample] = avg_freqs
 
-        vcfRecord.insert_format_field(JQ_CONSENSUS_TAG + "AF_AVERAGE",
+            range_freqs[sample] = self._calculate_range(freqs)
+
+        vcf_record.insert_format_field(JQ_CONSENSUS_TAG + "AF_AVERAGE",
                                       cons_freqs)
+        vcf_record.insert_format_field(JQ_CONSENSUS_TAG + "AF_RANGE",
+                                      range_freqs)
 
     def _validate_multAlts(self, freqs):
         length = len(freqs[0])
@@ -72,15 +78,62 @@ class _AlleleFreqTag():
         else:
             return str(round(100 * float(value))/100)
 
+    def _calculate_range(self, freqs):
+        #don't calculate range if only called by one caller
+        if len(freqs) > 1:
+            cons_freq_array = np.array(freqs)
+            af_range = []
+
+            for i in xrange(len(cons_freq_array[0,])):
+                freq_values = cons_freq_array.astype(float)[:,i]
+                this_af_range = np.max(freq_values) - np.min(freq_values)
+                rounded_af_range = self._roundTwoDigits(str(this_af_range))
+                af_range.append(rounded_af_range)
+
+                self.all_ranges.append(rounded_af_range)
+            return ",".join(af_range)
+
+        else:
+            return "."
+    
+    def get_pop_values(self):
+        all_ranges = [float(i) for i in self.all_ranges]
+        pop_mean_range = str(sum(all_ranges)/len(all_ranges))
+        pop_std_range = str(np.std(all_ranges))
+
+        rounded_pop_mean_range = self._roundTwoDigits(pop_mean_range)
+        rounded_pop_std_range = self._roundTwoDigits(pop_std_range)
+        
+        return (rounded_pop_mean_range, rounded_pop_std_range)
+    
+    def calculate_zscore(self, vcf_record, pop_mean_range, pop_std_range):
+        tag = vcf_record.format_set[JQ_CONSENSUS_TAG + "AF_RANGE"]
+        zscore_dict = {}
+
+        for sample in vcf_record.sample_dict.keys():
+            samp_range = vcf_record.sample_dict[sample][tag]
+            zscore = (samp_range - pop_mean_range)/pop_std_range
+            zscore_dict[sample] = [zscore]
+
+        return zscore_dict
+#         vcf_record.insert_format_field(JQ_CONSENSUS_TAG + "AF_ZSCORE",
+#                               zscore_dict)
+
 class ConsensusHelper():
     def __init__(self):
         self.tags = [_AlleleFreqTag()]
-        
-    def add_tags(self,vcfRecord):
+
+    def add_tags(self, vcf_record):
         for tag in self.tags:
-            tag.format(vcfRecord)
-        return vcfRecord.asText()
+            tag.format(vcf_record)
+
+        return vcf_record.asText()
     
+    def add_zscore(self, vcf_record):
+        for tag in self.tags:
+            (pop_mean_range, pop_std_range) = tag.get_pop_values()
+            tag.calculate_zscore(vcf_record, pop_mean_range, pop_std_range)
+
     def get_new_metaheaders(self):
         return [tag.metaheader for tag in self.tags]
-    
+
