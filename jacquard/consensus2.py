@@ -2,6 +2,7 @@ from collections import OrderedDict
 import numpy
 import os
 from variant_callers import consensus_helper
+import glob
 
 import vcf as vcf
 import utils as utils
