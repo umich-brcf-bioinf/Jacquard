@@ -143,7 +143,6 @@ def _move_tmp_contents_to_original(tmp_dir, original_output):
 
 # pylint: disable=C0301
 def dispatch(modules, arguments):
-    
     parser = argparse.ArgumentParser(
         usage="jacquard",
         formatter_class=argparse.RawDescriptionHelpFormatter,

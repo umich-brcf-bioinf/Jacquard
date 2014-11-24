@@ -70,7 +70,8 @@ class MockFileReader(object):
 
 class AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].", Source="Jacquard", Version="{1}">'.format(consensus_helper.JQ_CONSENSUS_TAG, utils.__version__), consensus_helper._AlleleFreqTag().metaheader)
+        split_meta_header = consensus_helper._AlleleFreqTag().metaheader.split("\n")
+        self.assertEqual('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].",Source="Jacquard",Version="{1}">'.format(consensus_helper.JQ_CONSENSUS_TAG, utils.__version__), split_meta_header[0])
 
     def test_format(self):
         tag = consensus_helper._AlleleFreqTag()
@@ -137,7 +138,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
     def test_get_pop_values(self):
         tag = consensus_helper._AlleleFreqTag()
         all_ranges = {0: [0.2, 0.6, 0.8, 0.1, 0.0, 0.3]}
-        pop_mean_range, pop_std_range = tag.get_pop_values(all_ranges)
+        pop_mean_range, pop_std_range = tag.calculate_pop_values(all_ranges)
 
         self.assertEquals(0.33, pop_mean_range)
         self.assertEquals(0.28, pop_std_range)
@@ -173,15 +174,21 @@ class ConsensusHelperTestCase(unittest.TestCase):
         actual = cons_help.add_tags(vcf_record)
 
         self.assertEqual(expected, actual)
-    
+
     def test_get_new_metaheaders(self):
-        expected = [('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,'+
+        expected = ('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,'+
         'Description="Average allele frequency across recognized variant '+
         'callers that reported frequency for this position '+
-        '[average(JQ_*_AF)].", Source="Jacquard", '+
-        'Version="{1}">').format(consensus_helper.JQ_CONSENSUS_TAG, 
-                                 utils.__version__)]
+        '[average(JQ_*_AF)].",Source="Jacquard",'+
+        'Version="{1}">').format(consensus_helper.JQ_CONSENSUS_TAG,
+                                 utils.__version__)
 
         cons_help = consensus_helper.ConsensusHelper()
         actual = cons_help.get_new_metaheaders()
-        self.assertEqual(expected, actual)
+
+        split_actual = actual[0].split("\n")
+        first_meta_header = split_actual[0]
+        self.assertEqual(expected, first_meta_header)
+        self.assertEqual(1, len(actual))
+        self.assertEqual(3, len(split_actual))
+        

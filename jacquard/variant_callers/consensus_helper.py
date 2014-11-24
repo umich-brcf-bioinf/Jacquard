@@ -8,13 +8,30 @@ JQ_CONSENSUS_TAG = "JQ_CONS_"
 
 class _AlleleFreqTag():
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,' \
-                          'Description="Average allele frequency across ' \
-                          'recognized variant callers that reported ' \
-                          'frequency for this position [average(JQ_*_AF)].", ' \
-                          'Source="Jacquard", Version="{1}">'\
-                          .format(JQ_CONSENSUS_TAG, utils.__version__)
+        self.metaheader = self.get_metaheader()
         self.all_ranges = []
+        self.name = "af"
+
+    def get_metaheader(self):
+        af_average = '##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,' \
+                      'Description="Average allele frequency across ' \
+                      'recognized variant callers that reported ' \
+                      'frequency for this position [average(JQ_*_AF)].",' \
+                      'Source="Jacquard",Version="{1}">'\
+                      .format(JQ_CONSENSUS_TAG, utils.__version__)
+        af_range = '##FORMAT=<ID={0}AF_RANGE, Number=1,Type=Float,' \
+                   'Description="Max(allele frequency) - min (allele '\
+                   'frequency) across recognized callers.",Source="Jacquard",'\
+                   'Version="<{1}>">'\
+                   .format(JQ_CONSENSUS_TAG, utils.__version__)
+        af_zscore = '##FORMAT=<ID={0}AF_ZSCORE,Number=1,Type=Float,'\
+                    'Description="Jacquard measure of concordance of reported '\
+                    'allele frequencies across callers. [(this AF range - '\
+                    'mean AF range)/standard dev(all AF ranges)]. If '\
+                    'consensus value from <2 values will be [.]",Source="'\
+                    'Jacquard",Version="<{1}>"'\
+                    .format(JQ_CONSENSUS_TAG, utils.__version__)
+        return "\n".join([af_average, af_range, af_zscore])
 
     def format(self, vcf_record):
         cons_freqs = {}
@@ -100,7 +117,7 @@ class _AlleleFreqTag():
         else:
             return "."
 
-    def get_pop_values(self, all_ranges):
+    def calculate_pop_values(self, all_ranges):
         for ranges in all_ranges.values():
             pop_mean_range = str(sum(ranges)/len(ranges))
             pop_std_range = str(np.std(ranges))
@@ -137,13 +154,21 @@ class ConsensusHelper():
     def add_tags(self, vcf_record):
         for tag in self.tags:
             tag.format(vcf_record)
-            self.ranges[tag] = tag.all_ranges
+            self.ranges[tag.name] = tag.all_ranges
 
         return vcf_record.asText()
 
-    def add_zscore(self, vcf_record, all_ranges):
+    def get_population_values(self):
+        pop_values ={}
         for tag in self.tags:
-            (pop_mean_range, pop_std_range) = tag.get_pop_values(all_ranges)
+            (pop_mean_range, pop_std_range) = tag.calculate_pop_values(self.ranges)
+            pop_values[tag.name] = [pop_mean_range, pop_std_range]
+
+        return pop_values
+
+    def add_zscore(self, vcf_record, pop_values):
+        for tag in self.tags:
+            pop_mean_range, pop_std_range = pop_values[tag.name]
             tag.calculate_zscore(vcf_record, pop_mean_range, pop_std_range)
 
         return vcf_record.asText()

@@ -8,7 +8,7 @@ import unittest
 
 import jacquard.utils as utils
 from jacquard.consensus2 import _write_metaheaders,_add_consensus_tags,\
-_add_zscore, execute
+_add_zscore, execute, _write_execution_metaheaders
 import jacquard.consensus2 as consensus2
 from jacquard.variant_callers import consensus_helper
 import jacquard.logger as logger
@@ -57,6 +57,7 @@ class MockConsensusTag(object):
         self.metaheader = metaheader
         self.format_called = False
         self.all_ranges = all_ranges
+        self.name = "af"
 
     def format(self):
         self.format_called = True
@@ -73,17 +74,18 @@ class MockConsensusTag(object):
             return str(round(100 * float(value))/100)
 
 class MockConsensusHelper(object):
-    def __init__(self, tag):
+    def __init__(self, tag, ranges=[0.0]):
         self.tags = [tag]
         self.add_tags_called = False
         self.add_zscore_called = False
+        self.ranges = ranges
 
     def add_tags(self, vcf_record):
         for tag in self.tags:
             tag.format_called = True
         self.add_tags_called = True
-    
-    def add_zscore(self, vcf_record , all_ranges):
+
+    def add_zscore(self, vcf_record, pop_values):
         for tag in self.tags:
             tag.format_called = True
         self.add_zscore_called = True
@@ -131,11 +133,20 @@ class Consensus2TestCase(unittest.TestCase):
     def test_write_metaheaders(self):
         file_writer = MockFileWriter()
         vcf_reader = MockVcfReader()
-        cons_help = MockConsensusHelper(MockConsensusTag())
-        _write_metaheaders(cons_help, ["execution_context"], vcf_reader,
+        cons_helper = MockConsensusHelper(MockConsensusTag())
+        _write_metaheaders(cons_helper, ["execution_context"], vcf_reader,
                            file_writer)
         expected = ["##metaheaders", "execution_context",
                     "##consensus_metaheader", "#header"]
+        self.assertEquals(expected,file_writer._content)
+
+    def test_write_execution_metaheaders(self):
+        file_writer = MockFileWriter()
+        cons_helper = MockConsensusHelper(MockConsensusTag())
+        pop_values = {"af": [0.3, 0.1]}
+        _write_execution_metaheaders(cons_helper, file_writer, pop_values)
+        expected = ["##jacquard.consensus.JQ_CONS_AF_RANGE.mean_af_range=0.3",
+                    "##jacquard.consensus.JQ_CONS_AF_ZSCORE.std_af_range=0.1"]
         self.assertEquals(expected,file_writer._content)
 
     def test_add_consensus_tags(self):
@@ -153,10 +164,10 @@ class Consensus2TestCase(unittest.TestCase):
         file_writer = MockFileWriter()
         vcf_reader = MockVcfReader()
         tag = MockConsensusTag(all_ranges=[])
-        cons_helper = MockConsensusHelper(tag)
-        
-        all_ranges=["0.3", "0.5", "0.2"]
-        _add_zscore(cons_helper, vcf_reader, file_writer, all_ranges)
+        ranges = [0.2, 0.3, 0.4]
+        cons_helper = MockConsensusHelper(tag, ranges)
+        pop_values = {"allele_freq_tag": [0.3, 0.1]}
+        _add_zscore(cons_helper, vcf_reader, file_writer, pop_values)
         self.assertTrue(cons_helper.add_zscore_called)
         self.assertTrue(tag.format_called)
 
