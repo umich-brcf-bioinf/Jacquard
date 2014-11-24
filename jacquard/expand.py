@@ -312,10 +312,14 @@ def execute(args, execution_context):
         file_writer.open()
 
 #         potential_columns = _create_potential_column_list(vcf_reader)
-#         actual_columns = _create_actual_column_list(col_spec_columns,
-#                                                     potential_columns,
-#                                                     col_spec)
+#         if col_spec_columns:
+#             actual_columns = _create_actual_column_list(col_spec_columns,
+#                                                         potential_columns,
+#                                                         col_spec)
+#         else:
+#             actual_columns = potential_columns
 # 
+#         vcf_reader.open()
 #         for vcf_record in vcf_reader.vcf_records():
 #             original_col_header = vcf_reader.get_col_header_list()
 #             row_dict = _create_row_dict(original_col_header, vcf_record)
@@ -328,23 +332,25 @@ def execute(args, execution_context):
 # 
 #         file_writer.close()
 
+
+##OLD CODE:
         column_header, info_header, format_header = _get_headers(vcf_reader)
- 
+   
         info_header = _disambiguate_column_names(column_header, info_header)
         header_dict = OrderedDict([("column_header", column_header),
                                    ("info_header", info_header),
                                    ("format_header", format_header)])
- 
+   
         if col_spec_columns:
             header_dict = _filter_and_sort(header_dict, col_spec_columns)
- 
+   
         file_writer = vcf.FileWriter(output_file)
         file_writer.open()
- 
+   
         logger.info("Writing [{}] to [{}]", input_file, output_file)
         file_writer.write(_create_complete_header(header_dict))
         _write_vcf_records(vcf_reader, file_writer, header_dict)
- 
+   
         file_writer.close()
 
     logger.info("Wrote [{}] VCF files to [{}]", len(input_files), output_path)

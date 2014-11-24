@@ -389,11 +389,11 @@ class ExpandTestCase(unittest.TestCase):
 
     def test_execute_files(self):
         vcf_content = ('''##source=strelka
-##FORMAT=foo
-##INFO=bar
+##INFO=<ID=SOMATIC,Number=1,Description="foo">
+##FORMAT=<ID=GT,Number=1,Description="bar">
 #CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
-chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
-chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
+chr1|1|.|A|C|.|.|SOMATIC|GT|0/1|0/1
+chr2|1|.|A|C|.|.|SOMATIC|GT|0/1|0/1
 ''').replace('|', "\t")
 
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
@@ -404,7 +404,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                              output=output_file,
                              column_specification=0)
 
-            expand.execute(args, ["extra_header1", "extra_header2"])
+            expand.execute(args, ["##extra_header1", "##extra_header2"])
 
             output_dir.check("P1.txt")
             with open(os.path.join(output_dir.path, "P1.txt")) as actual_output_file:
@@ -414,8 +414,8 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
     def test_execute_dirs(self):
         vcf_content = ('''##source=strelka
-##FORMAT=foo
-##INFO=bar
+##INFO=<ID=SOMATIC,Number=1,Description="foo">
+##FORMAT=<ID=GT,Number=1,Description="bar">
 #CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
 chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
@@ -428,7 +428,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                              output=output_dir.path,
                              column_specification=0)
 
-            expand.execute(args, ["extra_header1", "extra_header2"])
+            expand.execute(args, ["##extra_header1", "##extra_header2"])
 
             output_dir.check("P1.txt", "P2.txt")
             with open(os.path.join(output_dir.path, "P1.txt")) as actual_output_file:
@@ -452,8 +452,8 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
     def test_execute_inputFileOutputDir(self):
         vcf_content = ('''##source=strelka
-##FORMAT=foo
-##INFO=bar
+##INFO=<ID=SOMATIC,Number=1,Description="foo">
+##FORMAT=<ID=GT,Number=1,Description="bar">
 #CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
 chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
@@ -475,8 +475,8 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
     def test_execute_inputDirOutputFile(self):
         vcf_content = ('''##source=strelka
-##FORMAT=foo
-##INFO=bar
+##INFO=<ID=AA,Number=1,Description="Ancestral Allele"'
+##FORMAT=<ID=SP,Number=1,Description="bar">'r
 #CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
 chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR

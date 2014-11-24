@@ -40,7 +40,7 @@ class _SomaticTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID={0}HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)",Source="Jacquard",Version={1}>'.format(JQ_MUTECT_TAG, utils.__version__)
         self.good = True
-        
+
     def format(self, vcfRecord):
         mutect_tag = JQ_MUTECT_TAG + "HC_SOM"
         sample_values = {}
