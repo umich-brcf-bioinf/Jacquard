@@ -1,14 +1,15 @@
 # pylint: disable=C0103,C0301,R0903,R0904,W0603,W0613,W0212,C0111
 from argparse import Namespace
 from collections import OrderedDict
+import glob
 import os
 from testfixtures import TempDirectory
 import unittest
-from jacquard.vcf import FileReader
-import glob
+
 import jacquard.utils as utils
 import jacquard.logger as logger
 import jacquard.expand as expand
+from jacquard.vcf import FileReader, VcfReader
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 mock_log_called = False
@@ -32,6 +33,23 @@ def _change_mock_logger():
     logger.warning = mock_warning
     logger.debug = mock_log
 
+class MockFileReader(object):
+    def __init__(self, input_filepath="/foo/mockFileReader.txt", content = []):
+        self.input_filepath = input_filepath
+        self.file_name = os.path.basename(input_filepath)
+        self._content = content
+        self.open_was_called = False
+        self.close_was_called = False
+
+    def open(self):
+        self.open_was_called = True
+
+    def read_lines(self):
+        for line in self._content:
+            yield line
+
+    def close(self):
+        self.close_was_called = True
 
 # pylint: disable=W0102
 class MockVcfReader(object):
@@ -199,6 +217,23 @@ class ExpandTestCase(unittest.TestCase):
 
         self.assertEquals([exp_warning_1, exp_warning_2], mock_warnings)
 
+    def test_create_potential_column_list(self):
+        file_contents = ['##INFO=<ID=AF,Number=1>\n',
+                         '##INFO=<ID=AA,Number=1>\n',
+                         '##FORMAT=<ID=GT,Number=1>\n',
+                         '##FORMAT=<ID=GQ,Number=1,Description="bar">\n',
+                         '#chrom\tpos\tid\tref\talt\n',
+                         'record1\n',
+                         'record2']
+        mock_file_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+        vcf_reader = VcfReader(mock_file_reader)
+
+        actual_col_list = expand._create_potential_column_list(vcf_reader)
+        expected_col_list = ["chrom", "pos", "id", "ref", "alt",
+                             "AF", "AA",
+                             "GT", "GQ"]
+        self.assertEquals(expected_col_list, actual_col_list)
+
     def test_disambiguate_column_names(self):
         column_header = ["CHROM", "POS", "ID", "REF"]
         info_header = ["HOM", "AA", "SOM"]
@@ -352,7 +387,6 @@ class ExpandTestCase(unittest.TestCase):
                                  "usage and try again."),
                                 expand._filter_and_sort, header, columns_to_expand)
 
-#TODO (jebene) edit vcf_content so that it is an accurate VCf file
     def test_execute_files(self):
         vcf_content = ('''##source=strelka
 ##FORMAT=foo
@@ -416,7 +450,6 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                                     args,
                                     ["extra_header1", "extra_header2"])
 
-    #TODO: Need to test col spec file in execute.
     def test_execute_inputFileOutputDir(self):
         vcf_content = ('''##source=strelka
 ##FORMAT=foo

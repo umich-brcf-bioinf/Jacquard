@@ -178,7 +178,7 @@ def dispatch(modules, arguments):
         logger.debug("cwd|{}", os.getcwd())
         logger.debug("command|{}", " ".join(arguments))
 
-        _validate_input_and_output(args.input, args.output)
+#         _validate_input_and_output(args.input, args.output)
         
         original_output_dir = args.output
         global TMP_OUTPUT_PATH

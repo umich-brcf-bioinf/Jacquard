@@ -1,7 +1,9 @@
 # pylint: disable=W0212,C0111
 from __future__ import print_function
 from collections import OrderedDict
+from sets import Set
 import os
+import re
 
 import utils
 
@@ -73,6 +75,29 @@ class VcfReader(object):
             if line.startswith("#"):
                 continue
             yield VcfRecord(line)
+
+    def _create_header_dict(self, regex_pattern):
+        tags = []
+        for meta_header in self.metaheaders:
+            match = re.search(regex_pattern, meta_header)
+
+            if match:
+                contents = match.group(1)
+                pairs = [i.split("=", 1) for i in contents.split(",")]
+                header_dict = dict((k,v) for (k,v) in pairs)
+                tags.append(header_dict["ID"])
+
+        return tags
+
+    def get_format_tag_list(self):
+        return self._create_header_dict("##FORMAT=<(.*)>")
+
+    def get_info_field_list(self):
+        return self._create_header_dict("##INFO=<(.*)>")
+
+    def get_col_header_list(self):
+        col_header = self.column_header.strip("#\n")
+        return col_header.split("\t")
 
     def open(self):
         self._file_reader.open()

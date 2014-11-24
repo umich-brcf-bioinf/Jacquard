@@ -240,11 +240,12 @@ def _create_row_dict(column_list, vcf_record):
 
     return row_dict
 
-def _create_actual_column_list(column_spec,
+def _create_actual_column_list(column_spec_list,
                                potential_col_list,
                                column_spec_filename):
+
     actual_column_list = []
-    for i, column_regex in enumerate(column_spec):
+    for i, column_regex in enumerate(column_spec_list):
         no_columns_found = True
         for column_name in potential_col_list:
             if re.search(column_regex, column_name):
@@ -264,6 +265,13 @@ def _create_actual_column_list(column_spec,
                                 "exclude all input columns. Review "
                                 "inputs/usage and try again.",
                                 column_spec_filename)
+
+def _create_potential_column_list(vcf_reader):
+    column_headers = vcf_reader.get_col_header_list()
+    info_fields = vcf_reader.get_info_field_list()
+    format_tags = vcf_reader.get_format_tag_list()
+
+    return column_headers + info_fields + format_tags
 
 def _create_complete_header(header_dict):
     complete_header = []
@@ -289,33 +297,54 @@ def execute(args, execution_context):
     output_path = os.path.abspath(args.output)
     col_spec = args.column_specification if args.column_specification else 0
 
-    columns_to_expand = _read_col_spec(col_spec) if col_spec else 0
+    col_spec_columns = _read_col_spec(col_spec) if col_spec else 0
 
     input_files, output_files = _validate_input_and_output(input_path, output_path)
     logger.info("Expanding {} VCF files in [{}] to [{}]", len(input_files), input_path, output_path)
 
     for i, input_file in enumerate(input_files):
+
         output_file = output_files[i]
         file_reader = vcf.FileReader(input_file)
         vcf_reader = vcf.VcfReader(file_reader)
 
-        column_header, info_header, format_header = _get_headers(vcf_reader)
+        file_writer = vcf.FileWriter(output_file)
+        file_writer.open()
 
+#         potential_columns = _create_potential_column_list(vcf_reader)
+#         actual_columns = _create_actual_column_list(col_spec_columns,
+#                                                     potential_columns,
+#                                                     col_spec)
+# 
+#         for vcf_record in vcf_reader.vcf_records():
+#             original_col_header = vcf_reader.get_col_header_list()
+#             row_dict = _create_row_dict(original_col_header, vcf_record)
+# 
+#             new_line = []
+#             for col in actual_columns:
+#                 if row_dict[col]:
+#                     new_line.append(row_dict[col])
+#             file_writer.write(new_line)
+# 
+#         file_writer.close()
+
+        column_header, info_header, format_header = _get_headers(vcf_reader)
+ 
         info_header = _disambiguate_column_names(column_header, info_header)
         header_dict = OrderedDict([("column_header", column_header),
                                    ("info_header", info_header),
                                    ("format_header", format_header)])
-
-        if columns_to_expand:
-            header_dict = _filter_and_sort(header_dict, columns_to_expand)
-
+ 
+        if col_spec_columns:
+            header_dict = _filter_and_sort(header_dict, col_spec_columns)
+ 
         file_writer = vcf.FileWriter(output_file)
         file_writer.open()
-
+ 
         logger.info("Writing [{}] to [{}]", input_file, output_file)
         file_writer.write(_create_complete_header(header_dict))
         _write_vcf_records(vcf_reader, file_writer, header_dict)
-
+ 
         file_writer.close()
 
     logger.info("Wrote [{}] VCF files to [{}]", len(input_files), output_path)

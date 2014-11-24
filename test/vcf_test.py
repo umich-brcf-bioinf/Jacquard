@@ -1,6 +1,7 @@
-# pylint: disable=C0103,C0301,R0903,R0904
+# pylint: disable=C0103,C0301,R0903,R0904,C0111
 import os
 import unittest
+from sets import Set
 import sys
 from StringIO import StringIO
 from testfixtures import TempDirectory
@@ -15,14 +16,14 @@ class MockFileReader(object):
         self._content = content
         self.open_was_called = False
         self.close_was_called = False
-    
+
     def open(self):
         self.open_was_called = True
-    
+
     def read_lines(self):
         for line in self._content:
             yield line
-         
+
     def close(self):
         self.close_was_called = True
 
@@ -40,7 +41,7 @@ class VcfRecordTestCase(unittest.TestCase):
         self.assertEquals("INFO", record.info)
         self.assertEquals("FORMAT", record.format)
         self.assertEquals(["SAMPLE1","SAMPLE2"], record.samples)
-        
+
     def testInit_format_set(self):
         input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
         record = VcfRecord(input_line)
@@ -75,7 +76,7 @@ class VcfRecordTestCase(unittest.TestCase):
     def testCreateKey(self):
         input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
         self.assertEquals("CHROM_POS_REF_ALT",VcfRecord(input_line).key)
-    
+
     def testInfoDict(self):
         input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|k1=v1;k2=v2|F|S\n".replace('|',"\t")
         vcf_record = VcfRecord(input_line)
@@ -90,8 +91,7 @@ class VcfReaderTestCase(unittest.TestCase):
     def tearDown(self):
         self.output.close()
         sys.stderr = self.saved_stderr        
-    
-    
+
     def test_init(self):
         file_contents = ["##metaheader1\n",
                          "##metaheader2\n",
@@ -115,10 +115,10 @@ class VcfReaderTestCase(unittest.TestCase):
                          "record2"]
         mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
         reader = VcfReader(mock_reader)
-        
+
         original_length = len(reader.metaheaders)
         reader.metaheaders.append("foo")
-        
+
         self.assertEquals(original_length, len(reader.metaheaders))
 
     def test_vcf_records(self):
@@ -142,16 +142,43 @@ class VcfReaderTestCase(unittest.TestCase):
         self.assertTrue(mock_reader.open_was_called)
         self.assertTrue(mock_reader.close_was_called)
 
-        
     def test_noColumnHeaders(self):
         mock_reader = MockFileReader("my_dir/my_file.txt", ["##metaheader\n"])
         self.assertRaises(utils.JQException, VcfReader, mock_reader)
-            
+
     def test_noMetaheaders(self):
         mock_reader = MockFileReader("my_dir/my_file.txt", ["#columnHeader\n"])
         self.assertRaises(utils.JQException, VcfReader, mock_reader)
-            
-        
+
+    def test_get_format_tag_list(self):
+        file_contents = ['##FORMAT=<ID=GT,Number=1>\n',
+                         '##FORMAT=<ID=GQ,Number=1,Description="bar">\n',
+                         '#columnHeader\n',
+                         'record1\n',
+                         'record2']
+        mock_file_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+
+        vcf_reader = VcfReader(mock_file_reader)
+        actual_format_set = vcf_reader.get_format_tag_list()
+        expected_format_set = ["GT", "GQ"]
+
+        self.assertEquals(expected_format_set, actual_format_set)
+
+    def test_get_info_field_list(self):
+        file_contents = ['##INFO=<ID=AF,Number=1>\n',
+                         '##FORMAT=<ID=GQ,Number=1,Description="bar">\n',
+                         '##INFO=<ID=AA,Number=1>\n',
+                         '#columnHeader\n',
+                         'record1\n',
+                         'record2']
+        mock_file_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+
+        vcf_reader = VcfReader(mock_file_reader)
+        actual_format_set = vcf_reader.get_info_field_list()
+        expected_format_set = ["AF", "AA"]
+
+        self.assertEquals(expected_format_set, actual_format_set)
+
 class VcfWriterTestCase(unittest.TestCase):
     def test_write(self):
         with TempDirectory() as output_dir:
@@ -167,7 +194,7 @@ class VcfWriterTestCase(unittest.TestCase):
             actual_output = output_dir.read('test.tmp')
             expected_output = "AB|CD|".replace('|', os.linesep)
             self.assertEquals(expected_output, actual_output)
-            
+
 class FileReaderTestCase(unittest.TestCase):
     def test_equality(self):
         self.assertEquals(FileReader("foo"),FileReader("foo"))
@@ -178,7 +205,7 @@ class FileReaderTestCase(unittest.TestCase):
         s = set([FileReader("foo")])
         s.add(FileReader("foo"))
         self.assertEquals(1, len(s))
-    
+
     def test_read_lines(self):
         with TempDirectory() as input_dir:
             input_dir.write("A.tmp","1\n2\n3")
@@ -194,22 +221,22 @@ class FileWriterTestCase(unittest.TestCase):
         self.assertEquals(FileWriter("foo"),FileWriter("foo"))
         self.assertNotEquals(FileWriter("foo"),FileWriter("bar"))
         self.assertNotEquals(FileWriter("foo"), 1)
-            
+
     def test_hashable(self):
         s = set([FileWriter("foo")])
         s.add(FileWriter("foo"))
         self.assertEquals(1, len(s))
-            
+
     def test_write_lines(self):
         with TempDirectory() as output_dir:
             writer = FileWriter(os.path.join(output_dir.path, "A.tmp"))
             writer.open()
             writer.write("1\n2\n")
-            writer.write("3")      
+            writer.write("3")
             writer.close()
 
             actual_file = open(os.path.join(output_dir.path, "A.tmp"))
             actual_output = actual_file.readlines()
             actual_file.close()
-            
+
             self.assertEquals(["1\n","2\n","3"], actual_output)
