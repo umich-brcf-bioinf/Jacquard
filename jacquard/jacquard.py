@@ -177,8 +177,6 @@ def dispatch(modules, arguments):
         logger.info("Saving log to [{}]", logger.log_filename)
         logger.debug("cwd|{}", os.getcwd())
         logger.debug("command|{}", " ".join(arguments))
-
-        _validate_input_and_output(args.input, args.output)
         
         original_output_dir = args.output
         global TMP_OUTPUT_PATH
