@@ -12,17 +12,24 @@ import jacquard.expand as expand
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 mock_log_called = False
+mock_warnings = []
 
 def mock_log(msg, *args):
     global mock_log_called
     mock_log_called = True
 
+def mock_warning(msg, *args):
+    global mock_warnings
+    mock_warnings.append(msg.format(*[str(i) for i in args]))
+
 def _change_mock_logger():
     global mock_log_called
     mock_log_called = False
+    global mock_warnings
+    mock_warnings = []
     logger.info = mock_log
     logger.error = mock_log
-    logger.warning = mock_log
+    logger.warning = mock_warning
     logger.debug = mock_log
 
 
@@ -123,7 +130,8 @@ class ExpandTestCase(unittest.TestCase):
                                 meta_headers)
 
     def test_create_row_dict(self):
-        column_list = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", "SAMPLE_A|NORMAL", "SAMPLE_A|TUMOR"]
+        column_list = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER",
+                       "INFO", "FORMAT", "SAMPLE_A|NORMAL", "SAMPLE_A|TUMOR"]
         row = ["1", "42", "rs32", "A", "AT", "30", "PASS",
                "SNP;SOMATIC=1", "DP:AF", "50:0.2", "87:0.3"]
         vcf_record = MockVcfRecord(row)
@@ -144,6 +152,52 @@ class ExpandTestCase(unittest.TestCase):
                          "AF|SAMPLE_A|NORMAL": "0.2",
                          "AF|SAMPLE_A|TUMOR": "0.3"}
         self.assertEquals(expected_dict, actual_dict)
+
+    def test_create_actual_column_list(self):
+        potential_col_list = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL",
+                              "FILTER", "MULT_ALT", "DP|SAMPLE_A|NORMAL",
+                              "AF|SAMPLE_A|NORMAL", "DP|SAMPLE_B|NORMAL",
+                              "AF|SAMPLE_B|NORMAL"]
+        col_spec = ["CHROM", r"DP\|.*", "POS"]
+        actual_column_list = expand._create_actual_column_list(col_spec,
+                                                               potential_col_list,
+                                                               "col_spec.txt")
+        expected_column_list = ["CHROM",
+                                "DP|SAMPLE_A|NORMAL",
+                                "DP|SAMPLE_B|NORMAL",
+                                "POS"]
+
+        self.assertEquals(expected_column_list, actual_column_list)
+
+    def test_create_actual_column_list_noColsIncluded(self):
+        potential_col_list = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL"]
+        col_spec = ["FOO", "BAR", "BAZ"]
+
+        self.assertRaises(utils.JQException, 
+                          expand._create_actual_column_list,
+                          col_spec, 
+                          potential_col_list,
+                          "col_spec.txt")
+
+    def test_create_actual_column_list_regexNotInCols(self):
+        potential_col_list = ["CHROM", "POS", "ID", "REF", "ALT"]
+        col_spec = ["CHROM", "FOO", "POS", "BAR"]
+        col_spec_fname = "spec.txt"
+        actual_column_list = expand._create_actual_column_list(col_spec,
+                                                               potential_col_list,
+                                                               col_spec_fname)
+        self.assertEquals(["CHROM", "POS"], actual_column_list)
+
+        exp_warning_1 = ("The expression [FOO] in column specification "+
+                         "file [spec.txt:2] didn't match any input columns; "+
+                         "columns may have matched earlier expressions, or "+
+                         "this expression may be irrelevant.")
+        exp_warning_2 = ("The expression [BAR] in column specification "+
+                         "file [spec.txt:4] didn't match any input columns; "+
+                         "columns may have matched earlier expressions, or "+
+                         "this expression may be irrelevant.")
+
+        self.assertEquals([exp_warning_1, exp_warning_2], mock_warnings)
 
     def test_disambiguate_column_names(self):
         column_header = ["CHROM", "POS", "ID", "REF"]
@@ -297,21 +351,6 @@ class ExpandTestCase(unittest.TestCase):
                                  "exclude all input columns. Review inputs/"
                                  "usage and try again."),
                                 expand._filter_and_sort, header, columns_to_expand)
-
-    def test_filter_and_sort_regexNotInFile(self):
-        header = OrderedDict([("column_header", ["CHROM", "POS", "ID", "REF"]),
-                              ("info_header", ["infoA", "infoB", "infoC"]),
-                              ("format_header", ["tagA|sample1",
-                                                 "tagB|sample1",
-                                                 "tagC|sample1"])])
-
-        columns_to_expand = ["^foo$", "^CHROM$"]
-        actual_header = expand._filter_and_sort(header, columns_to_expand)
-
-        expected_header = {'column_header': ["CHROM"]}
-
-        self.assertEquals(expected_header, actual_header)
-        self.assertTrue(mock_log_called)
 
 #TODO (jebene) edit vcf_content so that it is an accurate VCf file
     def test_execute_files(self):

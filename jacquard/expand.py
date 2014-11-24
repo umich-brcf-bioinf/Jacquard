@@ -8,6 +8,11 @@ import logger as logger
 import utils as utils
 import vcf as vcf
 
+UNUSED_REGEX_WARNING_FORMAT = ("The expression [{}] in column specification " +
+                               "file [{}:{}] didn't match any input columns; " +
+                               "columns may have matched earlier expressions, "+
+                               "or this expression may be irrelevant.")
+
 def _read_col_spec(col_spec):
     if not os.path.isfile(col_spec):
         raise utils.JQException("The column specification file [{}] could "
@@ -234,6 +239,31 @@ def _create_row_dict(column_list, vcf_record):
     row_dict = dict(row_dict.items() + vcf_record.get_info_dict().items())
 
     return row_dict
+
+def _create_actual_column_list(column_spec,
+                               potential_col_list,
+                               column_spec_filename):
+    actual_column_list = []
+    for i, column_regex in enumerate(column_spec):
+        no_columns_found = True
+        for column_name in potential_col_list:
+            if re.search(column_regex, column_name):
+                actual_column_list.append(column_name)
+                no_columns_found = False
+        if no_columns_found:
+            logger.warning(UNUSED_REGEX_WARNING_FORMAT,
+                           column_regex,
+                           column_spec_filename,
+                           i + 1
+                           )
+
+    if actual_column_list:
+        return actual_column_list
+    else:
+        raise utils.JQException("The column specification file [{}] would "
+                                "exclude all input columns. Review "
+                                "inputs/usage and try again.",
+                                column_spec_filename)
 
 def _create_complete_header(header_dict):
     complete_header = []
