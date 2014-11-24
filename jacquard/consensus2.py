@@ -17,9 +17,9 @@ def _add_consensus_tags(cons_helper, vcf_reader, file_writer):
     for vcf_record in vcf_reader.vcf_records():
         file_writer.write(cons_helper.add_tags(vcf_record))
 
-def _add_zscore(cons_helper, vcf_reader, file_writer):
+def _add_zscore(cons_helper, vcf_reader, file_writer, all_ranges):
     for vcf_record in vcf_reader.vcf_records():
-        file_writer.write(cons_helper.add_zscore(vcf_record))
+        file_writer.write(cons_helper.add_zscore(vcf_record, all_ranges))
 
 def add_subparser(subparser):
     parser = subparser.add_parser("consensus2", help="Accepts a Jacquard-merged VCf file and creates a new file, adding consensus fields.")
@@ -59,10 +59,10 @@ def execute(args, execution_context):
     _write_metaheaders(cons_helper, execution_context, vcf_reader, tmp_writer)
     _add_consensus_tags(cons_helper, vcf_reader, tmp_writer)
 
+    all_ranges = cons_helper.ranges
+
     vcf_reader.close()
     tmp_writer.close()
-
-#     os.rename(tmp_output_file, output_file)
 
     tmp_reader = vcf.VcfReader(vcf.FileReader(tmp_output_file))
     file_writer = vcf.FileWriter(output_file)
@@ -70,7 +70,7 @@ def execute(args, execution_context):
     tmp_reader.open()
     file_writer.open()
 
-#     _add_zscore(cons_helper, tmp_reader, file_writer)
+    _add_zscore(cons_helper, tmp_reader, file_writer, all_ranges)
 
     tmp_reader.close()
     file_writer.close()

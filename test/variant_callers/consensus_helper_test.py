@@ -22,15 +22,15 @@ class MockVcfRecord(object):
             values = sample.split(":")
             self.sample_dict[i] = OrderedDict(zip(tags, values))
 
-    def asText(self):
-        stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
-                       self.qual, self.filter, self.info,
-                       ":".join(self.format_set)]
+    def insert_format_field(self, fieldname, field_dict):
+        if fieldname in self.format_set:
+            raise KeyError
+        self.format_set.append(fieldname)
 
-        for key in self.sample_dict:
-            stringifier.append(":".join(self.sample_dict[key].values()))
-
-        return "\t".join(stringifier) + "\n"
+        if field_dict.keys() != self.sample_dict.keys():
+            raise KeyError()
+        for key in self.sample_dict.keys():
+            self.sample_dict[key][fieldname] = str(field_dict[key])
 
 class MockWriter():
     def __init__(self):
@@ -100,7 +100,14 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{0}AF_AVERAGE:{0}AF_RANGE|X:.:.|Y:.:.\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
         processedVcfRecord = VcfRecord(line)
         tag.format(processedVcfRecord)
+        self.assertEquals(expected, processedVcfRecord.asText())
 
+    def test_format_noNullValuesInAvgCalculation(self):
+        tag = consensus_helper._AlleleFreqTag()
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|X:0:0.1:.|Y:0.2:0.3:.\n".replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE|X:0:0.1:.:0.05:0.1|Y:0.2:0.3:.:0.25:0.1\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
+        processedVcfRecord = VcfRecord(line)
+        tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_calculate_range(self):
@@ -109,7 +116,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         actual_af_range = tag._calculate_range(cons_freq)
 
         self.assertEquals("0.3", actual_af_range)
-        self.assertEquals(["0.3"], tag.all_ranges)
+        self.assertEquals([0.3], tag.all_ranges)
 
     def test_calculate_range_oneCaller(self):
         tag = consensus_helper._AlleleFreqTag()
@@ -125,7 +132,37 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         actual_af_range = tag._calculate_range(cons_freq)
 
         self.assertEquals("0.3,0.4", actual_af_range)
-        self.assertEquals(["0.3", "0.4"], tag.all_ranges)
+        self.assertEquals([0.3, 0.4], tag.all_ranges)
+
+    def test_get_pop_values(self):
+        tag = consensus_helper._AlleleFreqTag()
+        all_ranges = {0: [0.2, 0.6, 0.8, 0.1, 0.0, 0.3]}
+        pop_mean_range, pop_std_range = tag.get_pop_values(all_ranges)
+
+        self.assertEquals(0.33, pop_mean_range)
+        self.assertEquals(0.28, pop_std_range)
+
+    def test_calculate_zscore(self):
+        tag = consensus_helper._AlleleFreqTag()
+        content = "1\t42\t.\tA\tG\t.\tPASS\tINFO\tJQ_CONS_AF_RANGE\t0.4\t0.2"
+        mock_vcf_record = MockVcfRecord(content)
+        pop_mean_range = 0.5
+        pop_std_range = 0.02
+        tag.calculate_zscore(mock_vcf_record, pop_mean_range, pop_std_range)
+
+        self.assertTrue("JQ_CONS_AF_ZSCORE" in mock_vcf_record.format_set)
+        self.assertEquals("-5.0", mock_vcf_record.sample_dict[0]["JQ_CONS_AF_ZSCORE"])
+
+    def test_calculate_zscore_nullValue(self):
+        tag = consensus_helper._AlleleFreqTag()
+        content = "1\t42\t.\tA\tG\t.\tPASS\tINFO\tJQ_CONS_AF_RANGE\t.\t."
+        mock_vcf_record = MockVcfRecord(content)
+        pop_mean_range = 0.5
+        pop_std_range = 0.02
+        tag.calculate_zscore(mock_vcf_record, pop_mean_range, pop_std_range)
+
+        self.assertTrue("JQ_CONS_AF_ZSCORE" in mock_vcf_record.format_set)
+        self.assertEquals(".", mock_vcf_record.sample_dict[0]["JQ_CONS_AF_ZSCORE"])
 
 class ConsensusHelperTestCase(unittest.TestCase):
     def test_add_tags(self):

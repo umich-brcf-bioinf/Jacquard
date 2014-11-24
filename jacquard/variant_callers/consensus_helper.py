@@ -25,7 +25,11 @@ class _AlleleFreqTag():
             freqs = []
             for tag in tags:
                 freq = vcf_record.sample_dict[sample][tag].split(",")
-                freqs.append(freq)
+
+                #don't include null values in avg calculation
+                altered_freq = [x for x in freq if x != "."]
+                if len(altered_freq) != 0:
+                    freqs.append(altered_freq)
 
             if len(freqs) == 0:
                 cons_freqs[sample] = "."
@@ -58,8 +62,8 @@ class _AlleleFreqTag():
 
     def _calculate_average(self, freqs):
         freq_array = np.array(freqs)
-
         rounded_freqs = []
+
         for i in xrange(len(freq_array[0,])):
             freq_values = freq_array.astype(float)[:,i]
             rounded_freq = self._roundTwoDigits(str(np.mean(freq_values)))
@@ -90,49 +94,59 @@ class _AlleleFreqTag():
                 rounded_af_range = self._roundTwoDigits(str(this_af_range))
                 af_range.append(rounded_af_range)
 
-                self.all_ranges.append(rounded_af_range)
+                self.all_ranges.append(float(rounded_af_range))
             return ",".join(af_range)
 
         else:
             return "."
-    
-    def get_pop_values(self):
-        all_ranges = [float(i) for i in self.all_ranges]
-        pop_mean_range = str(sum(all_ranges)/len(all_ranges))
-        pop_std_range = str(np.std(all_ranges))
 
-        rounded_pop_mean_range = self._roundTwoDigits(pop_mean_range)
-        rounded_pop_std_range = self._roundTwoDigits(pop_std_range)
-        
-        return (rounded_pop_mean_range, rounded_pop_std_range)
-    
+    def get_pop_values(self, all_ranges):
+        for ranges in all_ranges.values():
+            pop_mean_range = str(sum(ranges)/len(ranges))
+            pop_std_range = str(np.std(ranges))
+
+            rounded_pop_mean_range = self._roundTwoDigits(pop_mean_range)
+            rounded_pop_std_range = self._roundTwoDigits(pop_std_range)
+
+            pop_mean_range = float(rounded_pop_mean_range)
+            pop_std_range = float(rounded_pop_std_range)
+
+            return (pop_mean_range, pop_std_range)
+
     def calculate_zscore(self, vcf_record, pop_mean_range, pop_std_range):
-        tag = vcf_record.format_set[JQ_CONSENSUS_TAG + "AF_RANGE"]
+        tag = JQ_CONSENSUS_TAG + "AF_RANGE"
         zscore_dict = {}
 
         for sample in vcf_record.sample_dict.keys():
             samp_range = vcf_record.sample_dict[sample][tag]
-            zscore = (samp_range - pop_mean_range)/pop_std_range
-            zscore_dict[sample] = [zscore]
+            if samp_range != ".":
+                samp_range = float(samp_range)
+                zscore = (samp_range - pop_mean_range)/pop_std_range if pop_std_range != 0.0 else "."
+                zscore_dict[sample] = zscore
+            else:
+                zscore_dict[sample] = "."
 
-        return zscore_dict
-#         vcf_record.insert_format_field(JQ_CONSENSUS_TAG + "AF_ZSCORE",
-#                               zscore_dict)
+        vcf_record.insert_format_field(JQ_CONSENSUS_TAG + "AF_ZSCORE",
+                                       zscore_dict)
 
 class ConsensusHelper():
     def __init__(self):
         self.tags = [_AlleleFreqTag()]
+        self.ranges = {}
 
     def add_tags(self, vcf_record):
         for tag in self.tags:
             tag.format(vcf_record)
+            self.ranges[tag] = tag.all_ranges
 
         return vcf_record.asText()
-    
-    def add_zscore(self, vcf_record):
+
+    def add_zscore(self, vcf_record, all_ranges):
         for tag in self.tags:
-            (pop_mean_range, pop_std_range) = tag.get_pop_values()
+            (pop_mean_range, pop_std_range) = tag.get_pop_values(all_ranges)
             tag.calculate_zscore(vcf_record, pop_mean_range, pop_std_range)
+
+        return vcf_record.asText()
 
     def get_new_metaheaders(self):
         return [tag.metaheader for tag in self.tags]

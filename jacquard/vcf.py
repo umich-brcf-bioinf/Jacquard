@@ -125,7 +125,7 @@ class VcfRecord(object):
             raise KeyError
         self.format_set.append(fieldname)
 
-        if (field_dict.keys() != self.sample_dict.keys()):
+        if field_dict.keys() != self.sample_dict.keys():
             raise KeyError()
         for key in self.sample_dict.keys():
             self.sample_dict[key][fieldname] = str(field_dict[key])
