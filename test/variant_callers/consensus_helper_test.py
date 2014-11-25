@@ -165,10 +165,51 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         self.assertTrue("JQ_CONS_AF_ZSCORE" in mock_vcf_record.format_set)
         self.assertEquals(".", mock_vcf_record.sample_dict[0]["JQ_CONS_AF_ZSCORE"])
 
+class DepthTagTestCase(unittest.TestCase):
+    def test_metaheader(self):
+        split_meta_header = consensus_helper._DepthTag().metaheader.split("\n")
+        self.assertEqual('##FORMAT=<ID={0}DP_AVERAGE,Number=1,Type=Float,' \
+                      'Description="Average allele frequency across ' \
+                      'recognized variant callers that reported ' \
+                      'frequency for this position [average(JQ_*_DP)].",' \
+                      'Source="Jacquard",Version="{1}">'\
+                      .format(consensus_helper.JQ_CONSENSUS_TAG, \
+                              utils.__version__), split_meta_header[0])
+
+    def test_format(self):
+        tag = consensus_helper._DepthTag()
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF:JQ_foo_DP:JQ_bar_DP:JQ_baz_DP|X:1:2:3|Y:4:5:6\n".replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF:JQ_foo_DP:JQ_bar_DP:JQ_baz_DP:{0}DP_AVERAGE|X:1:2:3:2|Y:4:5:6:5\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
+        processedVcfRecord = VcfRecord(line)
+        tag.format(processedVcfRecord)
+        self.assertEquals(expected, processedVcfRecord.asText())
+  
+    def test_format_multAlts(self):
+        tag = consensus_helper._DepthTag()
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_DP:JQ_bar_DP|0,0:1,2|0,0:3,4\n".replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_DP:JQ_bar_DP:{0}DP_AVERAGE|0,0:1,2:0.5,1|0,0:3,4:1.5,2\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
+        processedVcfRecord = VcfRecord(line)
+        tag.format(processedVcfRecord)
+        self.assertEquals(expected, processedVcfRecord.asText())
+ 
+    def test_format_unequalMultAlts(self):
+        tag = consensus_helper._DepthTag()
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_DP:JQ_bar_DP|0,0:1|0,0:2\n".replace('|',"\t")
+        processedVcfRecord = VcfRecord(line)
+        self.assertRaisesRegexp(utils.JQException, "Inconsistent number of mult-alts found in VCF file", tag.format, processedVcfRecord)
+ 
+    def test_format_noJQ_DPTags(self):
+        tag = consensus_helper._DepthTag()
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF|X|Y\n".replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF:{0}DP_AVERAGE|X:.|Y:.\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
+        processedVcfRecord = VcfRecord(line)
+        tag.format(processedVcfRecord)
+        self.assertEquals(expected, processedVcfRecord.asText())
+
 class ConsensusHelperTestCase(unittest.TestCase):
     def test_add_tags(self):
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|X:0:0.1:0.2|Y:0.2:0.3:0.4\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE|X:0:0.1:0.2:0.1:0.2|Y:0.2:0.3:0.4:0.3:0.2\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|0:0.1:0.2|0.2:0.3:0.4\n".replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE:{0}DP_AVERAGE|0:0.1:0.2:0.1:0.2:.|0.2:0.3:0.4:0.3:0.2:.\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
         vcf_record = VcfRecord(line)
         cons_help = consensus_helper.ConsensusHelper()
         actual = cons_help.add_tags(vcf_record)
@@ -189,6 +230,7 @@ class ConsensusHelperTestCase(unittest.TestCase):
         split_actual = actual[0].split("\n")
         first_meta_header = split_actual[0]
         self.assertEqual(expected, first_meta_header)
-        self.assertEqual(1, len(actual))
+        print actual
+        self.assertEqual(2, len(actual))
         self.assertEqual(3, len(split_actual))
         

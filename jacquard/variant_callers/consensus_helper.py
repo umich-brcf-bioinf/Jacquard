@@ -145,10 +145,98 @@ class _AlleleFreqTag():
 
         vcf_record.insert_format_field(JQ_CONSENSUS_TAG + "AF_ZSCORE",
                                        zscore_dict)
+class _DepthTag():
+    def __init__(self):
+        self.metaheader = self.get_metaheader()
+        self.all_ranges = []
+        self.name = "af"
 
+    def get_metaheader(self):
+        dp_average = '##FORMAT=<ID={0}DP_AVERAGE,Number=1,Type=Float,' \
+                      'Description="Average allele frequency across ' \
+                      'recognized variant callers that reported ' \
+                      'frequency for this position [average(JQ_*_DP)].",' \
+                      'Source="Jacquard",Version="{1}">'\
+                      .format(JQ_CONSENSUS_TAG, utils.__version__)
+#         af_range = '##FORMAT=<ID={0}DP_RANGE, Number=1,Type=Float,' \
+#                    'Description="Max(allele frequency) - min (allele '\
+#                    'frequency) across recognized callers.",Source="Jacquard",'\
+#                    'Version="<{1}>">'\
+#                    .format(JQ_CONSENSUS_TAG, utils.__version__)
+#         af_zscore = '##FORMAT=<ID={0}DP_ZSCORE,Number=1,Type=Float,'\
+#                     'Description="Jacquard measure of concordance of reported '\
+#                     'allele frequencies across callers. [(this AF range - '\
+#                     'mean AF range)/standard dev(all AF ranges)]. If '\
+#                     'consensus value from <2 values will be [.]",Source="'\
+#                     'Jacquard",Version="<{1}>"'\
+#                     .format(JQ_CONSENSUS_TAG, utils.__version__)
+#         return "\n".join([af_average, af_range, af_zscore])
+        return "\n".join([dp_average])
+
+    def format(self, vcf_record):
+        cons_depths = {}
+        tags = self._get_depth_tags(vcf_record)
+        for sample in vcf_record.sample_dict.keys():
+            depths = []
+            for tag in tags:
+                depth = vcf_record.sample_dict[sample][tag].split(",")
+
+                #don't include null values in avg calculation
+                altered_depth = [x for x in depth if x != "."]
+                if len(altered_depth) != 0:
+                    depths.append(altered_depth)
+
+            if len(depths) == 0:
+                cons_depths[sample] = "."
+            else:
+                self._validate_multAlts(depths)
+                avg_depths = self._calculate_average(depths)
+                cons_depths[sample] = avg_depths
+
+        vcf_record.insert_format_field(JQ_CONSENSUS_TAG + "DP_AVERAGE",
+                                      cons_depths)
+        
+    def _get_depth_tags(self, vcfRecord):
+        tags = []
+        for tag in vcfRecord.format_set:
+            if tag.startswith("JQ_") and tag.endswith("_DP"):
+                tags.append(tag)
+
+        return tags
+    
+    def _validate_multAlts(self, depths):
+        length = len(depths[0])
+        print depths
+        for depth in depths:
+            if len(depth) != length:
+                raise utils.JQException("Inconsistent number of mult-alts "
+                                        "found in VCF file.")
+                
+    def _calculate_average(self, depths):
+        depth_array = np.array(depths)
+        rounded_depths = []
+
+        for i in xrange(len(depth_array[0,])):
+            depth_values = depth_array.astype(float)[:,i]
+            rounded_depth = self._roundTwoDigits(str(np.mean(depth_values)))
+            rounded_depths.append(rounded_depth)
+
+        return ",".join(rounded_depths)
+
+    def _roundTwoDigits(self, value):
+        split_value = value.split(".")
+
+        if len(split_value[1]) <= 2:
+            if split_value[1] == '0':
+                return split_value[0]
+            return value
+
+        else:
+            return str(round(100 * float(value))/100)
+        
 class ConsensusHelper():
     def __init__(self):
-        self.tags = [_AlleleFreqTag()]
+        self.tags = [_AlleleFreqTag(),_DepthTag()]
         self.ranges = {}
 
     def add_tags(self, vcf_record):
@@ -159,7 +247,7 @@ class ConsensusHelper():
         return vcf_record.asText()
 
     def get_population_values(self):
-        pop_values ={}
+        pop_values = {}
         for tag in self.tags:
             (pop_mean_range, pop_std_range) = tag.calculate_pop_values(self.ranges)
             pop_values[tag.name] = [pop_mean_range, pop_std_range]
