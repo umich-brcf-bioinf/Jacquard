@@ -1,5 +1,5 @@
 ##jacquard.version=0.21
-##jacquard.command=merge C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\04_merge\input C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\04_merge\output\tiny_strelka.merged.vcf
+##jacquard.command=merge C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\04_merge\input C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\04_merge\benchmark\tiny_strelka.merged.vcf
 ##jacquard.cwd=C:\Users\kmeng
 ##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version=0.21>

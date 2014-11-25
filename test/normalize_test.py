@@ -5,6 +5,7 @@ from StringIO import StringIO
 import sys
 from testfixtures import TempDirectory
 import unittest
+import glob
 
 from jacquard.variant_callers import varscan, strelka, variant_caller_factory
 from jacquard.normalize import _partition_input_files, _determine_caller_per_directory
@@ -203,18 +204,57 @@ chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                           writer_to_readers)
         
     def test__determine_caller_per_directory(self):
-            with TempDirectory() as input_dir:
-                A = input_dir.write("A.vcf","##source=strelka\n#colHeader")
-                B = input_dir.write("B.vcf","##source=strelka\n#colHeader")
-                input_files = [A, B]
-                
-                mock_caller = MockCaller()
-                mock_caller_factory = MockCallerFactory(mock_caller)
-                
-                caller = _determine_caller_per_directory(input_files, mock_caller_factory.get_caller)
-                
-                self.assertEquals(mock_caller,caller)
-                self.assertEquals(mock_caller_factory.last_filename, "A.vcf")
+        with TempDirectory() as input_dir:
+            A = input_dir.write("A.vcf","##source=strelka\n#colHeader")
+            B = input_dir.write("B.vcf","##source=strelka\n#colHeader")
+            input_files = [A, B]
+            
+            mock_caller = MockCaller()
+            mock_caller_factory = MockCallerFactory(mock_caller)
+            
+            caller = _determine_caller_per_directory(input_files, mock_caller_factory.get_caller)
+            
+            self.assertEquals(mock_caller,caller)
+            self.assertEquals(mock_caller_factory.last_filename, "A.vcf")
+
+    def test_functional_normalize(self):
+        with TempDirectory() as output_dir:
+            module_testdir = os.path.dirname(os.path.realpath(__file__))+"/functional_tests/01_normalize"
+            input_dir = os.path.join(module_testdir,"input")
+            args = Namespace(input=input_dir, 
+                         output=output_dir.path)
+            normalize.execute(args,[])
+            
+            output_file = glob.glob(os.path.join(output_dir.path, "*.vcf"))[0]
+            
+            actual_file = FileReader(os.path.join(output_dir.path,output_file))
+            actual_file.open()
+            actual = []
+            for line in actual_file.read_lines():
+                actual.append(line)
+            actual_file.close()
+            
+            module_outdir = os.path.join(module_testdir,"benchmark")
+            output_file = os.listdir(module_outdir)[0]
+            expected_file = FileReader(os.path.join(module_outdir,output_file))
+            expected_file.open()
+            expected = []
+            for line in expected_file.read_lines():
+                expected.append(line)
+            expected_file.close()
+            
+            self.assertEquals(len(expected), len(actual))
+            
+            self.assertEquals(124, len(actual))
+            
+            for i in xrange(len(expected)):
+                if expected[i].startswith("##jacquard.cwd="):
+                    self.assertTrue(actual[i].startswith("##jacquard.cwd="))
+                elif expected[i].startswith("##jacquard.command="):
+                    self.assertTrue(actual[i].startswith("##jacquard.command="))
+                else:
+                    self.assertEquals(expected[i], actual[i]) 
+            
         
 class MockWriter():
     def __init__(self):

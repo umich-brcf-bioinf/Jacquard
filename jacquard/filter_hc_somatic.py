@@ -77,6 +77,10 @@ def write_somatic(in_files, output_dir, somatic_positions, execution_context):
         headers.extend(execution_context)
         
         sorted_headers = utils.sort_headers(headers)
+        for i,header in enumerate(sorted_headers):
+            if not header.endswith("\n") and i!=len(sorted_headers)-1:
+                sorted_headers[i]+="\n"
+                
         utils.write_output(out_file, sorted_headers, actual_sorted_variants)
         
         in_file.close()

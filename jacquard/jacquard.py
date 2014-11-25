@@ -41,10 +41,11 @@ _SUBCOMMANDS = [normalize,
                 consensus,
                 expand]
 
-TMP_DIR_NAME = "jacquard.tmp"
+TMP_DIR_NAME = "jacquard_tmp"
 TMP_OUTPUT_PATH = None
 
 def main():
+    
     #pylint: disable=W0613
     def handler(signum, frame):
         print("WARNING: Jacquard was interrupted before completing.",
@@ -67,7 +68,8 @@ def _version_text():
 
 #TODO (cgates): This cannot be the simplest thing that could possibly work
 def _validate_temp(tmp_output, original_output_dir, force=0):
-    if os.path.isfile(original_output_dir):
+    extension = os.path.splitext(os.path.basename(tmp_output))[1]
+    if extension:
         tmp_dir = os.path.dirname(tmp_output)
     else:
         tmp_dir = tmp_output
@@ -92,7 +94,9 @@ def _validate_temp(tmp_output, original_output_dir, force=0):
                                     original_output_dir)
 
 def _create_temp_directory(original_output_dir, force=0):
-    if os.path.isfile(original_output_dir):
+    extension = os.path.splitext(os.path.basename(original_output_dir))[1]
+
+    if extension:
         original_output_fname = os.path.basename(original_output_dir)
         original_output_dir = os.path.dirname(original_output_dir)
         tmp_output = os.path.join(original_output_dir,
@@ -100,7 +104,7 @@ def _create_temp_directory(original_output_dir, force=0):
                                   original_output_fname)
     else:
         tmp_output = os.path.join(original_output_dir, TMP_DIR_NAME)
-
+    
     try:
         os.mkdir(original_output_dir)
     except:
@@ -137,6 +141,7 @@ def _move_tmp_contents_to_original(tmp_dir, original_output):
 
 # pylint: disable=C0301
 def dispatch(modules, arguments):
+    
     parser = argparse.ArgumentParser(
         usage="jacquard",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -172,10 +177,10 @@ def dispatch(modules, arguments):
         logger.info("Saving log to [{}]", logger.log_filename)
         logger.debug("cwd|{}", os.getcwd())
         logger.debug("command|{}", " ".join(arguments))
-
+        
         original_output_dir = args.output
-
         global TMP_OUTPUT_PATH
+        
         TMP_OUTPUT_PATH = _create_temp_directory(original_output_dir, args.force)
         args.output = TMP_OUTPUT_PATH
         logger.debug("Writing output to tmp directory [{}]", TMP_OUTPUT_PATH)

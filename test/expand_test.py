@@ -4,12 +4,14 @@ from collections import OrderedDict
 import os
 from testfixtures import TempDirectory
 import unittest
-
+from jacquard.vcf import FileReader
+import glob
 import jacquard.utils as utils
 import jacquard.logger as logger
 from jacquard.expand import _parse_meta_headers, \
     _append_format_tags_to_samples, _get_headers, _write_vcf_records, \
-    _disambiguate_column_names, _filter_and_sort, execute
+    _disambiguate_column_names, _filter_and_sort, _glossary, execute
+import jacquard.expand as expand
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 mock_log_called = False
@@ -433,3 +435,54 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                                     "read. Review inputs/usage and try again",
                                     execute, args,
                                     ["extra_header1", "extra_header2"])
+
+    def test_functional_expand(self):
+        with TempDirectory() as output_dir:
+            module_testdir = os.path.dirname(os.path.realpath(__file__))+"/functional_tests/06_expand"
+            input_dir = os.path.join(module_testdir,"input")
+            args = Namespace(input=input_dir, 
+                         output=output_dir.path,
+                         column_specification=None)
+            
+            execution_context = ["##jacquard.version={0}".format(utils.__version__),
+                "##jacquard.command=",
+                "##jacquard.cwd="]
+            expand.execute(args,execution_context)
+            
+            output_file = glob.glob(os.path.join(output_dir.path, "consensus.txt"))[0]
+            
+            actual_file = FileReader(output_file)
+            actual_file.open()
+            actual = []
+            for line in actual_file.read_lines():
+                actual.append(line)
+            actual_file.close()
+            
+            module_outdir = os.path.join(module_testdir,"benchmark")
+            output_file = os.listdir(module_outdir)[0]
+            expected_file = FileReader(os.path.join(module_outdir,output_file))
+            expected_file.open()
+            expected = []
+            for line in expected_file.read_lines():
+                expected.append(line)
+            expected_file.close()
+            
+            self.assertEquals(len(expected), len(actual))
+            
+            self.assertEquals(11, len(actual))
+            
+            for i in xrange(len(expected)):
+                if expected[i].startswith("##jacquard.cwd="):
+                    self.assertTrue(actual[i].startswith("##jacquard.cwd="))
+                elif expected[i].startswith("##jacquard.command="):
+                    self.assertTrue(actual[i].startswith("##jacquard.command="))
+                else:
+                    self.assertEquals(expected[i], actual[i]) 
+                                
+    def test_glossary(self):
+        writer = MockFileWriter()
+        
+#         _glossary(header,writer)
+        
+        
+        
