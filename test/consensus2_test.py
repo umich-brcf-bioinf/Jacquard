@@ -142,12 +142,14 @@ class Consensus2TestCase(unittest.TestCase):
 
     def test_write_execution_metaheaders(self):
         file_writer = MockFileWriter()
-        cons_helper = MockConsensusHelper(MockConsensusTag())
-        pop_values = {"af": [0.3, 0.1]}
-        _write_execution_metaheaders(cons_helper, file_writer, pop_values)
-        expected = ["##jacquard.consensus.JQ_CONS_AF_RANGE.mean_af_range=0.3",
-                    "##jacquard.consensus.JQ_CONS_AF_ZSCORE.std_af_range=0.1"]
-        self.assertEquals(expected,file_writer._content)
+        pop_values = {"AF": [0.3, 0.1], "DP": [5, 18]}
+        _write_execution_metaheaders(file_writer, pop_values)
+        expected = ["##jacquard.consensus.JQ_CONS_DP_RANGE.mean_DP_range=5",
+                    "##jacquard.consensus.JQ_CONS_DP_ZSCORE.std_DP_range=18",
+                    "##jacquard.consensus.JQ_CONS_AF_RANGE.mean_AF_range=0.3",
+                    "##jacquard.consensus.JQ_CONS_AF_ZSCORE.std_AF_range=0.1"]
+
+        self.assertEquals(expected, file_writer._content)
 
     def test_add_consensus_tags(self):
         file_writer = MockFileWriter()
@@ -167,13 +169,15 @@ class Consensus2TestCase(unittest.TestCase):
         ranges = [0.2, 0.3, 0.4]
         cons_helper = MockConsensusHelper(tag, ranges)
         pop_values = {"allele_freq_tag": [0.3, 0.1]}
+
         _add_zscore(cons_helper, vcf_reader, file_writer, pop_values)
+
         self.assertTrue(cons_helper.add_zscore_called)
         self.assertTrue(tag.format_called)
 
     def test_execute_outputFile(self):
         input_data = ("##blah\n#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"+
-                    "SAMPLE\n1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF|0.2:0.4")\
+                    "SAMPLE\n1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF:JQ_VS_DP:JQ_MT_DP|0.2:0.4:30:45")\
                     .replace("|","\t")
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             input_dir.write("foo.vcf", input_data)
@@ -187,7 +191,7 @@ class Consensus2TestCase(unittest.TestCase):
 
     def test_execute_badInputFile(self):
         input_data = ("##blah\n#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"+
-                    "SAMPLE\n1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF|0.2:0.4")\
+                    "SAMPLE\n1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF:JQ_VS_DP:JQ_MT_DP|0.2:0.4:30:45")\
                     .replace("|","\t")
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             input_dir.write("foo.txt", input_data)
@@ -214,7 +218,7 @@ class Consensus2TestCase(unittest.TestCase):
 
     def test_execute_outputDirectory(self):
         input_data = ("##blah\n#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"+
-                    "SAMPLE\n1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF|0.2:0.4")\
+                    "SAMPLE\n1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF:JQ_VS_DP:JQ_MT_DP|0.2:0.4:30:45")\
                     .replace("|","\t")
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             input_dir.write("foo.vcf", input_data)

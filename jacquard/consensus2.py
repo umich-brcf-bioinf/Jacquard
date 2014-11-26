@@ -13,14 +13,16 @@ def _write_metaheaders(cons_helper, execution_context, vcf_reader, file_writer):
     new_headers.append(vcf_reader.column_header)
     file_writer.write("\n".join(new_headers) +"\n")
 
-def _write_execution_metaheaders(cons_helper, file_writer, pop_values):
+def _write_execution_metaheaders(file_writer, pop_values):
     for tag, value_list in pop_values.items():
         pop_mean_range, pop_std_range = value_list
 
-        pop_mean_header = "##jacquard.consensus.{}AF_RANGE.mean_{}_range={}"\
+        pop_mean_header = "##jacquard.consensus.{0}{1}_RANGE."\
+                          "mean_{1}_range={2}"\
                           .format(consensus_helper.JQ_CONSENSUS_TAG, tag,
                                   str(pop_mean_range))
-        pop_std_header = "##jacquard.consensus.{}AF_ZSCORE.std_{}_range={}"\
+        pop_std_header = "##jacquard.consensus.{0}{1}_ZSCORE."\
+                         "std_{1}_range={2}"\
                          .format(consensus_helper.JQ_CONSENSUS_TAG, tag,
                                  str(pop_std_range))
 
@@ -38,15 +40,20 @@ def write_to_tmp_file(cons_helper, execution_context, vcf_reader, tmp_writer):
     vcf_reader.close()
     tmp_writer.close()
 
-def write_to_output_file(cons_helper, execution_context, tmp_reader, file_writer):
+def write_to_output_file(cons_helper,
+                         execution_context,
+                         tmp_reader,
+                         file_writer):
+
     tmp_reader.open()
     file_writer.open()
 
     _write_metaheaders(cons_helper, execution_context, tmp_reader, file_writer)
     pop_values = cons_helper.get_population_values()
 
-    _write_execution_metaheaders(cons_helper, file_writer, pop_values)
-    logger.info("Calculating zscore and writing to {}", file_writer.output_filepath)
+    _write_execution_metaheaders(file_writer, pop_values)
+    logger.info("Calculating zscore and writing to {}",
+                file_writer.output_filepath)
     _add_zscore(cons_helper, tmp_reader, file_writer, pop_values)
 
     tmp_reader.close()
