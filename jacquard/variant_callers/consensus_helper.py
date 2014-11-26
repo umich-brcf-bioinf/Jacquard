@@ -16,25 +16,29 @@ def _round_two_digits(value):
     else:
         return str(round(100 * float(value))/100)
 
+def _build_desired_tags(vcf_record, tags, sample):
+    desired_tags = []
+    for tag in tags:
+        desired_tag = vcf_record.sample_dict[sample][tag].split(",")
+
+        #don't include null values in avg calculation
+        altered_tag = [x for x in desired_tag if x != "."]
+        if len(altered_tag) != 0:
+            desired_tags.append(altered_tag)
+
+    return desired_tags
+
 def _get_tag_consensus_and_range(vcf_record, tags, all_ranges):
     tag_consensus = {}
     tag_range = {}
 
     for sample in vcf_record.sample_dict.keys():
-        desired_tags = []
-        for tag in tags:
-            desired_tag = vcf_record.sample_dict[sample][tag].split(",")
-
-            #don't include null values in avg calculation
-            altered_tag = [x for x in desired_tag if x != "."]
-            if len(altered_tag) != 0:
-                desired_tags.append(altered_tag)
+        desired_tags = _build_desired_tags(vcf_record, tags, sample)
 
         if len(desired_tags) == 0:
             tag_consensus[sample] = "."
         else:
-            avg_tags = _calculate_average(desired_tags)
-            tag_consensus[sample] = avg_tags
+            tag_consensus[sample] = _calculate_average(desired_tags)
 
         tag_range[sample] = _calculate_range(desired_tags, all_ranges)
 
@@ -82,7 +86,7 @@ def _calculate_population_values(all_ranges):
 
         return (pop_mean_range, pop_std_range)
 
-def calculate_zscore(vcf_record, tag, pop_mean_range, pop_std_range):
+def _calculate_zscore(vcf_record, tag, pop_mean_range, pop_std_range):
     zscore_dict = {}
     for sample in vcf_record.sample_dict.keys():
         samp_range = vcf_record.sample_dict[sample][tag]
@@ -97,6 +101,30 @@ def calculate_zscore(vcf_record, tag, pop_mean_range, pop_std_range):
             zscore_dict[sample] = "."
 
     return zscore_dict
+
+def _get_somatic_count(vcf_record, tags):
+    somatic_count = {}
+
+    for sample in vcf_record.sample_dict.keys():
+        desired_tags = _build_desired_tags(vcf_record, tags, sample)
+
+        if len(desired_tags) == 0:
+            somatic_count[sample] = "."
+        else:
+            somatic_count[sample] = _calculate_count(desired_tags)
+
+    return somatic_count
+
+def _calculate_count(tags):
+    tag_array = np.array(tags)
+    counts = []
+
+    for i in xrange(len(tag_array[0,])):
+        tag_values = tag_array.astype(int)[:,i]
+        count = sum(i == 1 for i in tag_values)
+        counts.append(str(count))
+
+    return ",".join(counts)
 
 class _AlleleFreqTag():
     def __init__(self):
@@ -133,7 +161,7 @@ class _AlleleFreqTag():
 
         return tags
 
-    def insert_average_and_range(self, vcf_record):
+    def insert_consensus(self, vcf_record):
         tags = self._get_allele_freq_tags(vcf_record)
         tag_consensus, tag_range = _get_tag_consensus_and_range(vcf_record,
                                                                 tags,
@@ -146,7 +174,7 @@ class _AlleleFreqTag():
 
     def insert_zscore(self, vcf_record, pop_mean_range, pop_std_range):
         tag = JQ_CONSENSUS_TAG + "AF_RANGE"
-        zscore_dict = calculate_zscore(vcf_record,
+        zscore_dict = _calculate_zscore(vcf_record,
                                        tag,
                                        pop_mean_range,
                                        pop_std_range)
@@ -190,7 +218,7 @@ class _DepthTag():
 
         return tags
 
-    def insert_average_and_range(self, vcf_record):
+    def insert_consensus(self, vcf_record):
         tags = self._get_depth_tags(vcf_record)
         tag_consensus, tag_range = _get_tag_consensus_and_range(vcf_record,
                                                                 tags,
@@ -203,13 +231,42 @@ class _DepthTag():
 
     def insert_zscore(self, vcf_record, pop_mean_range, pop_std_range):
         tag = JQ_CONSENSUS_TAG + "DP_RANGE"
-        zscore_dict = calculate_zscore(vcf_record,
+        zscore_dict = _calculate_zscore(vcf_record,
                                        tag,
                                        pop_mean_range,
                                        pop_std_range)
 
         vcf_record.insert_format_field(JQ_CONSENSUS_TAG + "DP_ZSCORE",
                                        zscore_dict)
+
+class _SomaticTag():
+    def __init__(self):
+        self.metaheader = self._get_metaheader()
+        self.all_ranges = []
+        self.name = "SOM"
+
+    def _get_metaheader(self):
+        som_count = '##FORMAT=<ID={0}SOM_COUNT,Number=1,Type=Integer,' \
+                      'Description="Count of recognized variant callers,' \
+                      'which reported confident somatic call for this'\
+                      'sample-position.",Source="Jacquard",Version="{1}">'\
+                      .format(JQ_CONSENSUS_TAG, utils.__version__)
+        return som_count
+
+    def _get_somatic_tags(self, vcf_record):
+        tags = []
+        for tag in vcf_record.format_set:
+            if tag.startswith("JQ_") and tag.endswith("_HC_SOM"):
+                tags.append(tag)
+
+        return tags
+
+    def insert_consensus(self, vcf_record):
+        tags = self._get_somatic_tags(vcf_record)
+        somatic_count = _get_somatic_count(vcf_record, tags)
+
+        vcf_record.insert_format_field(JQ_CONSENSUS_TAG + "SOM_COUNT",
+                                      somatic_count)
 
 class ConsensusHelper():
     def __init__(self):
@@ -218,7 +275,7 @@ class ConsensusHelper():
 
     def add_tags(self, vcf_record):
         for tag in self.tags:
-            tag.insert_average_and_range(vcf_record)
+            tag.insert_consensus(vcf_record)
             self.ranges[tag.name] = tag.all_ranges
 
         return vcf_record.asText()
