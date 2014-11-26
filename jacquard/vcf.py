@@ -84,6 +84,7 @@ class VcfReader(object):
             if match:
                 contents = match.group(1)
                 pairs = [i.split("=", 1) for i in contents.split(",")]
+#                 print(pairs)
                 header_dict = dict((k,v) for (k,v) in pairs)
                 tags.append(header_dict["ID"])
 
