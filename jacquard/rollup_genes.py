@@ -11,6 +11,8 @@ import sys
 import openpyxl
 from openpyxl import load_workbook
 
+SNPEFF_IMPACT_COLUMN = "SNPEFF_TOP_EFFECT_IMPACT"
+DBNSFP_IMPACT_DAMAGING_COLUMN = "dbNSFP_Impact_Damaging"
 
 class RollupError(Exception):
     """Base class for exceptions in this module."""
@@ -52,7 +54,7 @@ def gene_rollup_highest_impact(initial_df, samples, cols):
     col_array = []
     col_array.extend(sample_col_array)
 
-    columns = cols + ["SNPEFF_TOP_EFFECT_IMPACT"]
+    columns = cols + [SNPEFF_IMPACT_COLUMN]
 
     required_columns = set(columns +  col_array)
     for col in initial_df.columns:
@@ -67,7 +69,7 @@ def gene_rollup_highest_impact(initial_df, samples, cols):
 
     filtered_df = melted_df[melted_df["Sample_Data"] != "."]
 
-    pivoted_df = pd.pivot_table(filtered_df, index=["GENE_SYMBOL", "Sample"], columns=["SNPEFF_TOP_EFFECT_IMPACT"], values=["Sample_Data"], aggfunc=np.count_nonzero, fill_value=0)
+    pivoted_df = pd.pivot_table(filtered_df, index=["GENE_SYMBOL", "Sample"], columns=[SNPEFF_IMPACT_COLUMN], values=["Sample_Data"], aggfunc=np.count_nonzero, fill_value=0)
 
     pivoted_df = pivoted_df["Sample_Data"]
 
@@ -95,9 +97,9 @@ def gene_rollup_damaging_impact(initial_df, samples, cols):
     col_array = []
     col_array.extend(sample_col_array) 
     
-    if "Impact_Damaging" in initial_df.columns:
-        initial_df.rename(columns={"Impact_Damaging": "dbNSFP_Impact_Damaging"}, inplace=True)
-    
+    if DBNSFP_IMPACT_DAMAGING_COLUMN in initial_df.columns:
+        initial_df.rename(columns={DBNSFP_IMPACT_DAMAGING_COLUMN: "dbNSFP_rollup_damaging"}, inplace=True)
+
     columns = cols + ["dbNSFP_Impact_Damaging"]
     
     required_columns = set(columns +  col_array)
