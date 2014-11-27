@@ -145,8 +145,9 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
     def test_dispatch_doneWithWarnings(self):
         with TempDirectory() as output_dir:
             mock_module.my_exception_string = ""
-            mock_module.TEST_WARN = True
+            logger.SHOW_WARNING = True
             jacquard.dispatch([mock_module], ["mock_module", output_dir.path])
             actual_messages = self.output.getvalue().rstrip().split("\n")
-            self.assertRegexpMatches(actual_messages[4], r"Done. \(See warnings above\)")
-            
+            self.assertRegexpMatches(actual_messages[3], r"Done. \(See warnings above\)")
+            logger.SHOW_WARNING = False
+        

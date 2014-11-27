@@ -1,9 +1,6 @@
 # pylint: disable=C0103,C0301,R0903,R0904,W0613,W0603
 execute_called = False
 my_exception_string = None
-import jacquard.logger as logger
-
-TEST_WARN = False
 
 def add_subparser(subparser):
     parser = subparser.add_parser("mock_module", help="foo")
@@ -11,8 +8,6 @@ def add_subparser(subparser):
     parser.add_argument("--force", action='store_true', help="foo")
 
 def execute(args, execution_context):
-    if TEST_WARN:
-        logger.warning("Warning")
     global execute_called
     execute_called = True
     if my_exception_string:
