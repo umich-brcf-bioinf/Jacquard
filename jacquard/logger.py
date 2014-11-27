@@ -7,6 +7,8 @@ import os
 import socket
 import sys
 
+SHOW_WARNING = False
+
 _DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 _FILE_LOG_FORMAT = ('%(asctime)s|%(levelname)s|%(start_time)s|%(host)s|%(user)s'
                     '|%(tool)s|%(message)s')
@@ -42,6 +44,8 @@ def error(message, *args):
 def warning(message, *args):
     _print("WARNING", message, args)
     logging.warning(_format(message, args), extra=logging_dict)
+    global SHOW_WARNING
+    SHOW_WARNING = True
 
 def info(message, *args):
     _print("INFO", message, args)

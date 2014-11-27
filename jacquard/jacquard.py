@@ -34,7 +34,6 @@ import expand
 import utils as utils
 import logger as logger
 
-
 _SUBCOMMANDS = [normalize,
                 tag,
                 filter_hc_somatic,
@@ -193,7 +192,10 @@ def dispatch(modules, arguments):
         logger.debug("Removed tmp directory {}", TMP_OUTPUT_PATH)
 
         logger.info("Output saved to [{}]", original_output_dir)
-        logger.info("Done")
+        if logger.SHOW_WARNING:
+            logger.info("Done. (See warnings above)")
+        else:
+            logger.info("Done")
 
     # pylint: disable=W0703
     except Exception as exception:
