@@ -58,8 +58,11 @@ class FilterSomaticTestCase(unittest.TestCase):
         
     def test_findSomaticPositions(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("A.snp.vcf","##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP:JQ_HC_SOM_VS\t234:1\n")
-            input_dir.write("A.indel.vcf","##source=VarScan2\n#CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tSAMPLE\n1\t2353\t.\tA\tGT\t.\t.\tfoo\tDP:JQ_HC_SOM_VS\t234:1\n")
+            input_dir.write("A.snp.vcf","##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\t"+
+                            "INFO\tFORMAT\tSAMPLE\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234\n1\t2352\t.\t"+
+                            "A\tG\t.\t.\tfoo\tDP:JQ_HC_SOM_VS\t234:1\n")
+            input_dir.write("A.indel.vcf","##source=VarScan2\n#CHROM\tPOS\tREF\tALT\tQUAL\tFILTER\t"+
+                            "INFO\tFORMAT\tSAMPLE\n1\t2353\t.\tA\tGT\t.\t.\tfoo\tDP:JQ_HC_SOM_VS\t234:1\n")
             
             file1 = os.path.join(input_dir.path, "A.snp.vcf")
             file2 = os.path.join(input_dir.path, "A.indel.vcf")
@@ -67,6 +70,24 @@ class FilterSomaticTestCase(unittest.TestCase):
             somatic_positions, somatic_positions_header  = find_somatic_positions([file1, file2], output_dir.path)
             self.assertEqual({'1^2353': 1, '1^2352': 1}, somatic_positions)
             self.assertEqual("##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=2\n", somatic_positions_header)
+            
+            input_dir.cleanup()
+            output_dir.cleanup()
+
+    def test_filterJQExclude(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("A.snp.vcf","##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\t"+
+                            "INFO\tFORMAT\tSAMPLE\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234\n1\t2352"+
+                            "\t.\tA\tG\t.\tJQ_EXCLUDE\tfoo\tDP:JQ_HC_SOM_VS\t234:1\n")
+            input_dir.write("A.indel.vcf","##source=VarScan2\n#CHROM\tPOS\tREF\tALT\tQUAL\tFILTER\tINFO"+
+                            "\tFORMAT\tSAMPLE\n1\t2353\t.\tA\tGT\t.\t.\tfoo\tDP:JQ_HC_SOM_VS\t234:1\n")
+            
+            file1 = os.path.join(input_dir.path, "A.snp.vcf")
+            file2 = os.path.join(input_dir.path, "A.indel.vcf")
+            
+            somatic_positions, somatic_positions_header  = find_somatic_positions([file1, file2], output_dir.path)
+            self.assertEqual({'1^2353': 1}, somatic_positions)
+            self.assertEqual("##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=1\n", somatic_positions_header)
             
             input_dir.cleanup()
             output_dir.cleanup()

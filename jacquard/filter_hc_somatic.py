@@ -17,9 +17,14 @@ def find_somatic_positions(in_files, output_dir):
         in_file = open(file, "r")
         
         for line in in_file:
+            
             if line.startswith("#"):
                 continue
+            elif "JQ_EXCLUDE" in line:
+                print line
+                continue
             else:
+                print line
                 split_line = line.split("\t")
                 format_col = split_line[8]
                 sample_cols = split_line[9:]
@@ -64,6 +69,8 @@ def write_somatic(in_files, output_dir, somatic_positions, execution_context):
         for line in in_file:
             if line.startswith("#"):
                 headers.append(line)
+            elif "JQ_EXCLUDE" in line:
+                continue
             else:
                 split_line = line.split("\t")
                 key = "^".join([split_line[0], split_line[1]])
@@ -71,7 +78,7 @@ def write_somatic(in_files, output_dir, somatic_positions, execution_context):
                     actual_sorted_variants.append(line)
                 else: 
                     non_somatic += 1
-       
+        
         excluded_variants = "##jacquard.filterHCSomatic.excluded_variants={0}\n".format(non_somatic)
         headers.append(excluded_variants)
         headers.extend(execution_context)
@@ -95,7 +102,6 @@ def filter_somatic_positions(input_dir, output_dir, execution_context=[]):
         exit(1)
 
     logger.info("Processing [{}] VCF file(s) from [{}]", len(in_files), input_dir)
-
 
     somatic_positions, somatic_positions_header = find_somatic_positions(in_files, output_dir)
     execution_context.append(somatic_positions_header)
