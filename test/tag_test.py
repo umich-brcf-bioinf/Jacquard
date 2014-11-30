@@ -16,7 +16,16 @@ import jacquard.variant_callers.strelka as strelka
 import jacquard.variant_callers.varscan as varscan
 
 mock_log_called = False
+
+class MockVcfRecord(object):
+    def __init__(self, ref = "foo", alt = "bar", filter = "baz"):
+        self.ref = "foo"
+        self.alt = "bar"
+        self.filter = "baz"
+        self.content = "foo"
   
+mock_vcf_record = MockVcfRecord()
+
 def mock_log(msg, *args):
     global mock_log_called
     mock_log_called = True
@@ -24,6 +33,7 @@ def mock_log(msg, *args):
 class MockWriter():
     def __init__(self):
         self._content = []
+        self.output_filepath = "foo"
         self.opened = False
         self.closed = False
 
@@ -45,11 +55,11 @@ class MockCaller(object):
         self.metaheaders = metaheaders
 
     def add_tags(self, vcfRecord):
-        return vcfRecord
+        return vcfRecord.content
 
     def get_new_metaheaders(self):
         return self.metaheaders
-
+        
 class MockVcfReader(object):
     def __init__(self, input_filepath="vcfName", metaheaders=["##metaheaders"], column_header="#header"):
         self.input_filepath = input_filepath
@@ -63,7 +73,8 @@ class MockVcfReader(object):
         self.opened = True
 
     def vcf_records(self):
-        return iter(["foo"])
+        global mock_vcf_record
+        yield mock_vcf_record
     
     def close(self):
         self.closed = True
@@ -201,6 +212,42 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
         tag.tag_files(vcf_readers_to_writers, execution_context)
+        
+        self.assertTrue(reader.opened)
+        self.assertTrue(reader.closed)
+        self.assertEquals(["##originalMeta1", 
+                           "##originalMeta2",
+                           "##jacquard.tag.caller=MockCaller",
+                           "##mockCallerMetaheader1",
+                           '##FILTER=<ID=JQ_EXCLUDE,Description="This variant record is problematic and will be excluded from downstream Jacquard processing.",Source="Jacquard", Version="">',
+                           '##FILTER=<ID=JQ_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.",Source="Jacquard", Version="">',
+                           '##FILTER=<ID=JQ_MALFORMED_ALT,Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.",Source="Jacquard", Version="">',
+                           "#columnHeader",
+                           "foo"], writer.lines())
+        
+        self.assertTrue(writer.opened)
+        self.assertTrue(writer.closed)
+        
+    def test_tag_files_proper(self):
+        
+        class MockVcfRecord(object):
+            def __init__(self):
+                self.ref = "A"
+                self.alt = "A"
+                self.filter = "A"
+                self.content = "foo"
+
+        global mock_vcf_record
+        mock_vcf_record = MockVcfRecord()
+        
+        reader = MockVcfReader(metaheaders=["##originalMeta1", "##originalMeta2"], column_header="#columnHeader")
+        reader.caller = MockCaller(metaheaders=["##mockCallerMetaheader1"])
+        writer = MockWriter()
+
+        vcf_readers_to_writers = {reader: writer}
+        execution_context = []
+        tag.tag_files(vcf_readers_to_writers, execution_context)
+        
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
         self.assertEquals(["##originalMeta1", 
@@ -209,9 +256,185 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                            "##mockCallerMetaheader1",
                            "#columnHeader",
                            "foo"], writer.lines())
+        
+        self.assertTrue(writer.opened)
+        self.assertTrue(writer.closed)
+
+    def test_tag_files_malformedRef(self):
+    
+        class MockVcfRecord(object):
+            def __init__(self):
+                self.ref = "/"
+                self.alt = "A"
+                self.filter = "filter"
+                self.content = "foo"
+
+        global mock_vcf_record
+        mock_vcf_record = MockVcfRecord()
+        
+        reader = MockVcfReader(metaheaders=["##originalMeta1", "##originalMeta2"], column_header="#columnHeader")
+        reader.caller = MockCaller(metaheaders=["##mockCallerMetaheader1"])
+        writer = MockWriter()
+
+        vcf_readers_to_writers = {reader: writer}
+        execution_context = []
+        tag.tag_files(vcf_readers_to_writers, execution_context)
+        
+        self.assertTrue(reader.opened)
+        self.assertTrue(reader.closed)
+        self.assertEquals(["##originalMeta1", 
+                           "##originalMeta2",
+                           "##jacquard.tag.caller=MockCaller",
+                           "##mockCallerMetaheader1",
+                           '##FILTER=<ID=JQ_EXCLUDE,Description="This variant record is problematic and will be excluded from downstream Jacquard processing.",Source="Jacquard", Version="">',
+                           '##FILTER=<ID=JQ_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.",Source="Jacquard", Version="">',
+                           "#columnHeader",
+                           "foo"], writer.lines())
+        
+        self.assertEquals("filter;JQ_EXCLUDE;JQ_MALFORMED_REF",mock_vcf_record.filter)
+        self.assertTrue(writer.opened)
+        self.assertTrue(writer.closed)
+
+    def test_tag_files_malformedRef_emptyFilter(self):
+    
+        class MockVcfRecord(object):
+            def __init__(self):
+                self.ref = "/"
+                self.alt = "A"
+                self.filter = "."
+                self.content = "foo"
+
+        global mock_vcf_record
+        mock_vcf_record = MockVcfRecord()
+        
+        reader = MockVcfReader(metaheaders=["##originalMeta1", "##originalMeta2"], column_header="#columnHeader")
+        reader.caller = MockCaller(metaheaders=["##mockCallerMetaheader1"])
+        writer = MockWriter()
+
+        vcf_readers_to_writers = {reader: writer}
+        execution_context = []
+        tag.tag_files(vcf_readers_to_writers, execution_context)
+        
+        self.assertTrue(reader.opened)
+        self.assertTrue(reader.closed)
+        self.assertEquals(["##originalMeta1", 
+                           "##originalMeta2",
+                           "##jacquard.tag.caller=MockCaller",
+                           "##mockCallerMetaheader1",
+                           '##FILTER=<ID=JQ_EXCLUDE,Description="This variant record is problematic and will be excluded from downstream Jacquard processing.",Source="Jacquard", Version="">',
+                           '##FILTER=<ID=JQ_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.",Source="Jacquard", Version="">',
+                           "#columnHeader",
+                           "foo"], writer.lines())
+        
+        self.assertEquals("JQ_EXCLUDE;JQ_MALFORMED_REF",mock_vcf_record.filter)
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
         
+    def test_tag_files_malformedAlt(self):
+    
+        class MockVcfRecord(object):
+            def __init__(self):
+                self.ref = "A"
+                self.alt = "/"
+                self.filter = "filter"
+                self.content = "foo"
+
+        global mock_vcf_record
+        mock_vcf_record = MockVcfRecord()
+        
+        reader = MockVcfReader(metaheaders=["##originalMeta1", "##originalMeta2"], column_header="#columnHeader")
+        reader.caller = MockCaller(metaheaders=["##mockCallerMetaheader1"])
+        writer = MockWriter()
+
+        vcf_readers_to_writers = {reader: writer}
+        execution_context = []
+        tag.tag_files(vcf_readers_to_writers, execution_context)
+        
+        self.assertTrue(reader.opened)
+        self.assertTrue(reader.closed)
+        self.assertEquals(["##originalMeta1", 
+                           "##originalMeta2",
+                           "##jacquard.tag.caller=MockCaller",
+                           "##mockCallerMetaheader1",
+                           '##FILTER=<ID=JQ_EXCLUDE,Description="This variant record is problematic and will be excluded from downstream Jacquard processing.",Source="Jacquard", Version="">',
+                           '##FILTER=<ID=JQ_MALFORMED_ALT,Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.",Source="Jacquard", Version="">',
+                           "#columnHeader",
+                           "foo"], writer.lines())
+        
+        self.assertEquals("filter;JQ_EXCLUDE;JQ_MALFORMED_ALT",mock_vcf_record.filter)
+        self.assertTrue(writer.opened)
+        self.assertTrue(writer.closed)
+
+    def test_tag_files_missingAltDot(self):
+    
+        class MockVcfRecord(object):
+            def __init__(self):
+                self.ref = "A"
+                self.alt = "."
+                self.filter = "filter"
+                self.content = "foo"
+
+        global mock_vcf_record
+        mock_vcf_record = MockVcfRecord()
+        
+        reader = MockVcfReader(metaheaders=["##originalMeta1", "##originalMeta2"], column_header="#columnHeader")
+        reader.caller = MockCaller(metaheaders=["##mockCallerMetaheader1"])
+        writer = MockWriter()
+
+        vcf_readers_to_writers = {reader: writer}
+        execution_context = []
+        tag.tag_files(vcf_readers_to_writers, execution_context)
+        
+        self.assertTrue(reader.opened)
+        self.assertTrue(reader.closed)
+        self.assertEquals(["##originalMeta1", 
+                           "##originalMeta2",
+                           "##jacquard.tag.caller=MockCaller",
+                           "##mockCallerMetaheader1",
+                           '##FILTER=<ID=JQ_EXCLUDE,Description="This variant record is problematic and will be excluded from downstream Jacquard processing.",Source="Jacquard", Version="">',
+                           '##FILTER=<ID=JQ_MISSING_ALT,Description="The alternate allele is missing for this variant record.",Source="Jacquard", Version="">',
+                           "#columnHeader",
+                           "foo"], writer.lines())
+        
+        self.assertEquals("filter;JQ_EXCLUDE;JQ_MISSING_ALT",mock_vcf_record.filter)
+        self.assertTrue(writer.opened)
+        self.assertTrue(writer.closed)
+ 
+    def test_tag_files_missingAltAsterisk(self):
+    
+        class MockVcfRecord(object):
+            def __init__(self):
+                self.ref = "A"
+                self.alt = "*"
+                self.filter = "filter"
+                self.content = "foo"
+
+        global mock_vcf_record
+        mock_vcf_record = MockVcfRecord()
+        
+        reader = MockVcfReader(metaheaders=["##originalMeta1", "##originalMeta2"], column_header="#columnHeader")
+        reader.caller = MockCaller(metaheaders=["##mockCallerMetaheader1"])
+        writer = MockWriter()
+
+        vcf_readers_to_writers = {reader: writer}
+        execution_context = []
+        tag.tag_files(vcf_readers_to_writers, execution_context)
+        
+        self.assertTrue(reader.opened)
+        self.assertTrue(reader.closed)
+        self.assertEquals(["##originalMeta1", 
+                           "##originalMeta2",
+                           "##jacquard.tag.caller=MockCaller",
+                           "##mockCallerMetaheader1",
+                           '##FILTER=<ID=JQ_EXCLUDE,Description="This variant record is problematic and will be excluded from downstream Jacquard processing.",Source="Jacquard", Version="">',
+                           '##FILTER=<ID=JQ_MISSING_ALT,Description="The alternate allele is missing for this variant record.",Source="Jacquard", Version="">',
+                           "#columnHeader",
+                           "foo"], writer.lines())
+        
+        self.assertEquals("filter;JQ_EXCLUDE;JQ_MISSING_ALT",mock_vcf_record.filter)
+        self.assertTrue(writer.opened)
+        self.assertTrue(writer.closed)
+                       
     def test_execute(self):
         vcf_content1 = '''##source=strelka
 #CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
@@ -278,10 +501,10 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             for line in expected_file.read_lines():
                 expected.append(line)
             expected_file.close()
-            
+
             self.assertEquals(len(expected), len(actual))
             
-            self.assertEquals(131, len(actual))
+            self.assertEquals(133, len(actual))
             
             for i in xrange(len(expected)):
                 if expected[i].startswith("##jacquard.cwd="):

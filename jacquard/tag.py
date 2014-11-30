@@ -17,7 +17,62 @@ def add_subparser(subparser):
     parser.add_argument("output", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+
+def _comma_separated(line):
+    split_line = line.split(",")
+    for char in split_line:
+        if char == "":
+            return False
+    return True
     
+def _check_records(reader, writer):
+    correct_ref = "ACGTNacgtn"
+    correct_alt = "*.ACGTNacgtn"
+    malformed_set = set()
+    malformed_records = []
+    for vcf_record in reader.vcf_records():
+        malformed_flags = []
+        if _comma_separated(vcf_record.ref) and not all(x in correct_ref for x in list(vcf_record.ref)):
+            malformed_flags.append("JQ_MALFORMED_REF")
+        if _comma_separated(vcf_record.alt) and not all(x in correct_alt for x in list(vcf_record.alt)):
+            malformed_flags.append("JQ_MALFORMED_ALT")
+        if vcf_record.alt == "*" or vcf_record.alt == ".":
+            malformed_flags.append("JQ_MISSING_ALT")
+        if len(malformed_flags) > 0:
+            malformed_flags = ["JQ_EXCLUDE"]+malformed_flags
+        for flag in malformed_flags:
+            malformed_set.add(flag)
+        malformed_records.append(malformed_flags)
+        
+    return malformed_set, malformed_records
+
+def _write_records(reader, writer, malformed_records):
+    for i,vcf_record in enumerate(reader.vcf_records()):
+        if vcf_record.filter == ".":
+            vcf_record.filter = ""
+        else:
+            vcf_record.filter+=";"
+        malformed = ";".join(malformed_records[i])
+        vcf_record.filter+=malformed
+        writer.write(reader.caller.add_tags(vcf_record))
+        
+def _modify_metaheaders(reader, writer, execution_context,malformed_set):
+    new_headers = reader.metaheaders
+    new_headers.extend(execution_context)
+    new_headers.append("##jacquard.tag.caller={0}".format(reader.caller.name))
+    new_headers.extend(reader.caller.get_new_metaheaders())
+    if len(malformed_set) > 0:
+        new_headers.append('##FILTER=<ID=JQ_EXCLUDE,Description="This variant record is problematic and will be excluded from downstream Jacquard processing.",Source="Jacquard", Version="">')
+        if "JQ_MALFORMED_REF" in malformed_set:
+            new_headers.append('##FILTER=<ID=JQ_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.",Source="Jacquard", Version="">')
+        if "JQ_MALFORMED_ALT" in malformed_set:
+            new_headers.append('##FILTER=<ID=JQ_MALFORMED_ALT,Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.",Source="Jacquard", Version="">')
+        if "JQ_MISSING_ALT" in malformed_set:
+            new_headers.append('##FILTER=<ID=JQ_MISSING_ALT,Description="The alternate allele is missing for this variant record.",Source="Jacquard", Version="">')
+    new_headers.append(reader.column_header)
+    print (new_headers)
+    writer.write("\n".join(new_headers) +"\n")
+            
 def tag_files(vcf_readers_to_writers, execution_context):
     total_number_of_files = len(vcf_readers_to_writers)
     for count, item in enumerate(vcf_readers_to_writers.items()):
@@ -27,24 +82,18 @@ def tag_files(vcf_readers_to_writers, execution_context):
                     count + 1, 
                     total_number_of_files)
         reader.open()
-        writer.open()
-
-        #TODO cgates: method?
-        new_headers = reader.metaheaders
-        new_headers.extend(execution_context)
-        new_headers.append("##jacquard.tag.caller={0}".format(reader.caller.name))
-        new_headers.extend(reader.caller.get_new_metaheaders())
-        new_headers.append(reader.column_header)
-        header_text = "\n".join(new_headers) +"\n"
-
-        writer.write(header_text)
-        for vcf_record in reader.vcf_records():
-            writer.write(reader.caller.add_tags(vcf_record))
+        
+        malformed_set,malformed_records = _check_records(reader, writer)
 
         reader.close()
+        
+        reader.open()
+        writer.open()
+        _modify_metaheaders(reader, writer, execution_context, malformed_set)
+        _write_records(reader, writer, malformed_records)
+        reader.close()
         writer.close()
-
-
+        
 def _log_caller_info(vcf_readers):
     caller_count = collections.defaultdict(int)
     for vcf in vcf_readers:
@@ -83,7 +132,6 @@ def _build_vcf_readers_to_writers(vcf_readers, output_dir):
         vcf_providers_to_writers[reader] = vcf.FileWriter(output_filepath)
     
     return vcf_providers_to_writers
-
 
 def execute(args, execution_context):
     input_dir = os.path.abspath(args.input)
