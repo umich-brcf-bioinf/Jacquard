@@ -28,46 +28,46 @@ def _comma_separated(line):
 def _check_records(reader, writer):
     correct_ref = "ACGTNacgtn"
     correct_alt = "*.ACGTNacgtn"
-    malformed_set = set()
-    malformed_records = []
+    anomalous_set = set()
+    anomalous_records = []
     for vcf_record in reader.vcf_records():
-        malformed_flags = []
+        anomalous_flags = []
         if _comma_separated(vcf_record.ref) and not all(x in correct_ref for x in list(vcf_record.ref)):
-            malformed_flags.append("JQ_MALFORMED_REF")
+            anomalous_flags.append("JQ_MALFORMED_REF")
         if _comma_separated(vcf_record.alt) and not all(x in correct_alt for x in list(vcf_record.alt)):
-            malformed_flags.append("JQ_MALFORMED_ALT")
+            anomalous_flags.append("JQ_MALFORMED_ALT")
         if vcf_record.alt == "*" or vcf_record.alt == ".":
-            malformed_flags.append("JQ_MISSING_ALT")
-        if len(malformed_flags) > 0:
-            malformed_flags = ["JQ_EXCLUDE"]+malformed_flags
-        for flag in malformed_flags:
-            malformed_set.add(flag)
-        malformed_records.append(malformed_flags)
+            anomalous_flags.append("JQ_MISSING_ALT")
+        if len(anomalous_flags) > 0:
+            anomalous_flags = ["JQ_EXCLUDE"]+anomalous_flags
+        for flag in anomalous_flags:
+            anomalous_set.add(flag)
+        anomalous_records.append(anomalous_flags)
         
-    return malformed_set, malformed_records
+    return anomalous_set, anomalous_records
 
-def _write_records(reader, writer, malformed_records):
+def _write_records(reader, writer, anomalous_records):
     for i,vcf_record in enumerate(reader.vcf_records()):
         if vcf_record.filter == ".":
             vcf_record.filter = ""
         else:
             vcf_record.filter+=";"
-        malformed = ";".join(malformed_records[i])
-        vcf_record.filter+=malformed
+        anomalous = ";".join(anomalous_records[i])
+        vcf_record.filter+=anomalous
         writer.write(reader.caller.add_tags(vcf_record))
         
-def _modify_metaheaders(reader, writer, execution_context,malformed_set):
+def _modify_metaheaders(reader, writer, execution_context,anomalous_set):
     new_headers = reader.metaheaders
     new_headers.extend(execution_context)
     new_headers.append("##jacquard.tag.caller={0}".format(reader.caller.name))
     new_headers.extend(reader.caller.get_new_metaheaders())
-    if len(malformed_set) > 0:
+    if len(anomalous_set) > 0:
         new_headers.append('##FILTER=<ID=JQ_EXCLUDE,Description="This variant record is problematic and will be excluded from downstream Jacquard processing.",Source="Jacquard", Version="">')
-        if "JQ_MALFORMED_REF" in malformed_set:
+        if "JQ_MALFORMED_REF" in anomalous_set:
             new_headers.append('##FILTER=<ID=JQ_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.",Source="Jacquard", Version="">')
-        if "JQ_MALFORMED_ALT" in malformed_set:
+        if "JQ_MALFORMED_ALT" in anomalous_set:
             new_headers.append('##FILTER=<ID=JQ_MALFORMED_ALT,Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.",Source="Jacquard", Version="">')
-        if "JQ_MISSING_ALT" in malformed_set:
+        if "JQ_MISSING_ALT" in anomalous_set:
             new_headers.append('##FILTER=<ID=JQ_MISSING_ALT,Description="The alternate allele is missing for this variant record.",Source="Jacquard", Version="">')
     new_headers.append(reader.column_header)
     print (new_headers)
@@ -83,14 +83,14 @@ def tag_files(vcf_readers_to_writers, execution_context):
                     total_number_of_files)
         reader.open()
         
-        malformed_set,malformed_records = _check_records(reader, writer)
+        anomalous_set,anomalous_records = _check_records(reader, writer)
 
         reader.close()
         
         reader.open()
         writer.open()
-        _modify_metaheaders(reader, writer, execution_context, malformed_set)
-        _write_records(reader, writer, malformed_records)
+        _modify_metaheaders(reader, writer, execution_context, anomalous_set)
+        _write_records(reader, writer, anomalous_records)
         reader.close()
         writer.close()
         
