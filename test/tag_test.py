@@ -16,6 +16,7 @@ import jacquard.variant_callers.strelka as strelka
 import jacquard.variant_callers.varscan as varscan
 
 mock_log_called = False
+mock_log_messages = []
 
 class MockVcfRecord(object):
     def __init__(self, ref = "foo", alt = "bar", filter = "baz"):
@@ -29,7 +30,9 @@ mock_vcf_record = MockVcfRecord()
 def mock_log(msg, *args):
     global mock_log_called
     mock_log_called = True
-
+    global mock_log_messages
+    mock_log_messages.append(msg.format(*[str(i) for i in args]))
+    
 class MockWriter():
     def __init__(self):
         self._content = []
@@ -63,6 +66,7 @@ class MockCaller(object):
 class MockVcfReader(object):
     def __init__(self, input_filepath="vcfName", metaheaders=["##metaheaders"], column_header="#header"):
         self.input_filepath = input_filepath
+        self.file_name = "foo"
         self.metaheaders = metaheaders
         self.caller = MockCaller()
         self.column_header = column_header
@@ -211,7 +215,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         writer = MockWriter()
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context)
+        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method(MockCaller()))
         
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -246,7 +250,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context)
+        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method(MockCaller()))
         
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -278,7 +282,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context)
+        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method(MockCaller()))
         
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -290,10 +294,12 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                            '##FILTER=<ID=JQ_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.",Source="Jacquard", Version="">',
                            "#columnHeader",
                            "foo"], writer.lines())
-        
+                
         self.assertEquals("filter;JQ_EXCLUDE;JQ_MALFORMED_REF",mock_vcf_record.filter)
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
+        
+        self.assertIn("foo|Added filter flag [JQ_MALFORMED_REF] to [1] variant records", mock_log_messages)
 
     def test_tag_files_malformedRef_emptyFilter(self):
     
@@ -313,7 +319,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context)
+        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method(MockCaller()))
         
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -348,7 +354,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context)
+        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method(MockCaller()))
         
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -383,7 +389,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context)
+        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method(MockCaller()))
         
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -418,7 +424,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context)
+        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method(MockCaller()))
         
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)

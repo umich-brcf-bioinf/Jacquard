@@ -30,19 +30,34 @@ def _check_records(reader, writer):
     correct_alt = "*.ACGTNacgtn"
     anomalous_set = set()
     anomalous_records = []
+        
+    malformed_ref = 0
+    malformed_alt = 0
+    missing_alt = 0
+    
     for vcf_record in reader.vcf_records():
         anomalous_flags = []
         if _comma_separated(vcf_record.ref) and not all(x in correct_ref for x in list(vcf_record.ref)):
             anomalous_flags.append("JQ_MALFORMED_REF")
+            malformed_ref+=1
         if _comma_separated(vcf_record.alt) and not all(x in correct_alt for x in list(vcf_record.alt)):
             anomalous_flags.append("JQ_MALFORMED_ALT")
+            malformed_alt+=1
         if vcf_record.alt == "*" or vcf_record.alt == ".":
             anomalous_flags.append("JQ_MISSING_ALT")
+            missing_alt+=1
         if len(anomalous_flags) > 0:
             anomalous_flags = ["JQ_EXCLUDE"]+anomalous_flags
         for flag in anomalous_flags:
             anomalous_set.add(flag)
         anomalous_records.append(anomalous_flags)
+    
+    if malformed_ref:    
+        logger.debug("{}|Added filter flag [JQ_MALFORMED_REF] to [{}] variant records", reader.file_name, malformed_ref)
+    if malformed_alt:    
+        logger.debug("{}|Added filter flag [JQ_MALFORMED_ALT] to [{}] variant records", reader.file_name, malformed_alt)
+    if missing_alt:    
+        logger.debug("{}|Added filter flag [JQ_MISSING_ALT] to [{}] variant records", reader.file_name, missing_alt)
         
     return anomalous_set, anomalous_records
 
@@ -70,11 +85,13 @@ def _modify_metaheaders(reader, writer, execution_context,anomalous_set):
         if "JQ_MISSING_ALT" in anomalous_set:
             new_headers.append('##FILTER=<ID=JQ_MISSING_ALT,Description="The alternate allele is missing for this variant record.",Source="Jacquard", Version="">')
     new_headers.append(reader.column_header)
-    print (new_headers)
+
     writer.write("\n".join(new_headers) +"\n")
             
-def tag_files(vcf_readers_to_writers, execution_context):
+def tag_files(vcf_readers_to_writers, execution_context, 
+              get_caller=variant_caller_factory.get_caller):
     total_number_of_files = len(vcf_readers_to_writers)
+    callers = collections.defaultdict(int)
     for count, item in enumerate(vcf_readers_to_writers.items()):
         reader,writer = item
         logger.info("Reading [{}] ({}/{})",
@@ -84,7 +101,9 @@ def tag_files(vcf_readers_to_writers, execution_context):
         reader.open()
         
         anomalous_set,anomalous_records = _check_records(reader, writer)
-
+        caller = get_caller(reader.metaheaders, reader.column_header, reader.file_name)
+        callers[caller.name] += len(anomalous_records)
+        
         reader.close()
         
         reader.open()
@@ -94,6 +113,10 @@ def tag_files(vcf_readers_to_writers, execution_context):
         reader.close()
         writer.close()
         
+    for caller in callers:
+        if callers[caller]:
+            logger.debug("Added a filter flag to [{}] problematic {} variants records.", callers[caller], caller)
+            
 def _log_caller_info(vcf_readers):
     caller_count = collections.defaultdict(int)
     for vcf in vcf_readers:
