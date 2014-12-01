@@ -35,12 +35,12 @@ class _DepthTag():
             for key in vcfRecord.sample_dict.keys():
                 sample_values[key] = vcfRecord.sample_dict[key]["DP"]
             vcfRecord.insert_format_field(JQ_MUTECT_TAG + "DP",sample_values)
-    
+
 class _SomaticTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID={0}HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)",Source="Jacquard",Version={1}>'.format(JQ_MUTECT_TAG, utils.__version__)
         self.good = True
-        
+
     def format(self, vcfRecord):
         mutect_tag = JQ_MUTECT_TAG + "HC_SOM"
         sample_values = {}
@@ -73,16 +73,16 @@ class Mutect():
                 mutect_dict[split_item[0]] = split_item[1]
             except:
                 pass
-            
+
         return mutect_dict
-        
+
     def decorate_files(self, filenames, decorator):
         output_file = None
         for i in xrange(len(filenames)):
             output_file = os.path.basename(re.sub(r"\.vcf$", "." + decorator + ".vcf",
                                                   filenames[i]))
         return output_file
-                
+
     def validate_vcfs_in_directory(self, in_files):
         for in_file in in_files:
             if not in_file.lower().endswith("vcf"):
@@ -110,24 +110,24 @@ class Mutect():
                         raise utils.JQException("Unable to determine normal and "
                                                 "tumor sample ordering based on "
                                                 "MuTect metaheader.")
-                    
+
                 file_writer.write(line)
-            
+
             file_reader.close()
         file_writer.close()
 
     def get_new_metaheaders(self):
         return [tag.metaheader for tag in self.tags]
-        
+
     def validate_input_file(self, meta_headers, column_header):
         valid = 0
         for line in meta_headers:
             if "##MuTect" in line:
                 valid = 1
                 break
-            
+
         return (valid)
-                
+
     def add_tags(self,vcfRecord):
         for tag in self.tags:
             tag.format(vcfRecord)

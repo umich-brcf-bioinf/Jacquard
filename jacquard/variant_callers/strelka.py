@@ -14,30 +14,37 @@ class _AlleleFreqTag(object):
         numerator = float(sample_format_dict[alt_allele + "U"].split(",")[1])
         tags = ["AU", "CU", "TU", "GU"]
         depth = 0
+
         for tag in tags:
             depth += float(sample_format_dict[tag].split(",")[1])
         af = numerator/depth if depth != 0 else 0.0
+
         return af
 
-    def _get_SNPallelefreq_per_sample(self,vcfRecord,key):
+    def _get_SNPallelefreq_per_sample(self, vcfRecord, key):
         afs = []
         split_alt = vcfRecord.alt.split(",")
+
         for alt_allele in split_alt:
             sample_format_dict = vcfRecord.sample_dict[key]
             af = self._get_tier2_base_depth(sample_format_dict, alt_allele)
+
             rounded_af = self._round_two_digits(str(af))
             capped_af = min(rounded_af, "1.00")
             afs.append(capped_af)
+
         return afs
 
-    def _get_indelallelefreq_per_sample(self,vcfRecord,key):
+    def _get_indelallelefreq_per_sample(self, vcfRecord, key):
         afs = []
         numerator = float(vcfRecord.sample_dict[key]["TAR"].split(",")[1])
         denominator = float(vcfRecord.sample_dict[key]["DP2"])
         af = numerator/denominator if denominator != 0 else 0.0
+
         rounded_af = self._round_two_digits(str(af))
         capped_af = min(rounded_af, "1.00")
         afs.append(capped_af)
+
         return afs 
 
     def format(self, vcfRecord):

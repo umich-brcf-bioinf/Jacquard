@@ -3,6 +3,7 @@
 from collections import OrderedDict
 import numpy
 import os
+import glob
 
 import utils as utils
 import logger as logger
@@ -209,26 +210,30 @@ def add_subparser(subparser):
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
 def execute(args, execution_context): 
-    input_file = os.path.abspath(args.input)
-    output_file = os.path.abspath(args.output)
+    input = os.path.abspath(args.input)
+    output = os.path.abspath(args.output)
 
-    extension = os.path.splitext(os.path.basename(input_file))[1]
-    if not os.path.isfile(input_file) or extension != ".vcf":
-        logger.error("Input file [{}] must be a VCF file.", input_file)
+    extension = os.path.splitext(os.path.basename(input))[1]
+    if not os.path.isfile(input) or extension != ".vcf":
+        logger.error("Input file [{}] must be a VCF file.", input)
         exit(1)
 
-    extension = os.path.splitext(os.path.basename(output_file))[1]
+    extension = os.path.splitext(os.path.basename(output))[1]
+
     if extension != ".vcf":
-        logger.error("Output file [{}] must be a VCF file.", output_file)
-        exit(1)
-
+        utils.validate_directories(os.path.dirname(input), output)
+        output_file = os.path.join(output,"consensus.vcf")
+        tmp_file = output_file+".tmp" ## TODO: This tmp_file may be causing consensus not to work for the tmp directory jira ticket.
+        tmp_file_writer = open(tmp_file, "w")
+    else:
+        output_file = output
+        tmp_file = output_file + ".tmp" 
+        tmp_file_writer = open(tmp_file, "w")
+    
     af_range = []
     dp_range = []
-
-    tmp_file = output_file + ".tmp"
-    input_file_reader = open(input_file, "r")
-    tmp_file_writer = open(tmp_file, "w")
-
+    input_file_reader = open(input, "r")
+    
     logger.info("Adding consensus values to temporary file [{}]", tmp_file)
     meta_headers, header, lines = iterate_file(input_file_reader,
                                                af_range, dp_range, "consensus")
