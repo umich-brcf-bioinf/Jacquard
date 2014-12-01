@@ -3,6 +3,8 @@ import os
 import re
 import utils
 
+import variant_callers.variant_caller_factory as variant_caller_factory
+import vcf as vcf
 import logger as logger
 
 def find_somatic_positions(in_files, output_dir):
@@ -11,20 +13,26 @@ def find_somatic_positions(in_files, output_dir):
     
     total_number_of_files = len(in_files)
     count = 1
+    
+    num_records = 0
+    total_filtered_records = 0
+    
     for file in in_files:
         logger.info("Reading [{}] ({}/{})", os.path.basename(file), count, total_number_of_files)
         somatic = 0
+        vcf_reader = vcf.VcfReader(vcf.FileReader(file))
+        caller = variant_caller_factory.get_caller(vcf_reader.metaheaders, vcf_reader.column_header, vcf_reader.file_name)
+        print caller.name
         in_file = open(file, "r")
-        
+        filtered_records = 0
         for line in in_file:
-            
+    
             if line.startswith("#"):
                 continue
             elif "JQ_EXCLUDE" in line:
-                print line
-                continue
+                filtered_records+=1
             else:
-                print line
+                num_records+=1
                 split_line = line.split("\t")
                 format_col = split_line[8]
                 sample_cols = split_line[9:]
@@ -38,6 +46,11 @@ def find_somatic_positions(in_files, output_dir):
                                 somatic_positions[somatic_key] = 1
                                 somatic = 1
 
+        if filtered_records:                                
+            logger.debug("Removed [{}] problematic {} variant records with filter=JQ_EXCLUDE", filtered_records, caller.name)
+
+        total_filtered_records+=filtered_records
+
         if somatic == 0:
             no_jq_tags.append(file)
             logger.warning("Input file [{}] has no high-confidence somatic variants.", os.path.basename(file))
@@ -45,11 +58,15 @@ def find_somatic_positions(in_files, output_dir):
         in_file.close()
         
         count += 1
-        
+
+    if total_filtered_records:
+        logger.warning("A total of [{}] problematic variant records failed Jacquard's filters. See output and log for details.", total_filtered_records)
     if no_jq_tags:
         logger.warning("[{}] VCF file(s) had no high-confidence somatic variants. See log for details.", len(no_jq_tags))
         
-    logger.info("Found [{}] high-confidence somatic positions", len(somatic_positions.keys()))
+#     logger.info("Searched [{}] variant calls.", num_records+total_filtered_records)
+    logger.info("Found [{}] distinct high-confidence somatic positions.", len(somatic_positions.keys()))
+#     logger.info("Filtered to [{}] calls in high-confidence loci.", num_records)
     somatic_positions_header = "##jacquard.filterHCSomatic.total_highConfidence_somatic_positions={0}\n".format(len(somatic_positions.keys()))
     
     return somatic_positions, somatic_positions_header
