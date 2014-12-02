@@ -8,7 +8,13 @@ JQ_STRELKA_TAG = "JQ_SK_"
 
 class _AlleleFreqTag(object):
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID={0}AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)",Source="Jacquard",Version={1}>'.format(JQ_STRELKA_TAG, utils.__version__)
+        self.metaheader = ('##FORMAT=<ID={0}AF,'
+                           'Number=A,'
+                           'Type=Float,'
+                           'Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)",'
+                           'Source="Jacquard",'
+                           'Version={1}>').format(JQ_STRELKA_TAG, 
+                                                  utils.__version__)
 
     def _get_tier2_base_depth(self, sample_format_dict, alt_allele):
         numerator = float(sample_format_dict[alt_allele + "U"].split(",")[1])
