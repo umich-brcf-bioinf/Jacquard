@@ -53,11 +53,11 @@ def _check_records(reader, writer):
         anomalous_records.append(anomalous_flags)
     
     if malformed_ref:    
-        logger.debug("{}|Added filter flag [JQ_MALFORMED_REF] to [{}] variant records", reader.file_name, malformed_ref)
+        logger.debug("{}|Added filter flag [JQ_MALFORMED_REF] to [{}] variant records.", reader.file_name, malformed_ref)
     if malformed_alt:    
-        logger.debug("{}|Added filter flag [JQ_MALFORMED_ALT] to [{}] variant records", reader.file_name, malformed_alt)
+        logger.debug("{}|Added filter flag [JQ_MALFORMED_ALT] to [{}] variant records.", reader.file_name, malformed_alt)
     if missing_alt:    
-        logger.debug("{}|Added filter flag [JQ_MISSING_ALT] to [{}] variant records", reader.file_name, missing_alt)
+        logger.debug("{}|Added filter flag [JQ_MISSING_ALT] to [{}] variant records.", reader.file_name, missing_alt)
         
     return anomalous_set, anomalous_records
 
@@ -115,7 +115,7 @@ def tag_files(vcf_readers_to_writers, execution_context,
         
     for caller in callers:
         if callers[caller]:
-            logger.debug("Added a filter flag to [{}] problematic {} variants records.", callers[caller], caller)
+            logger.debug("Added a filter flag to [{}] problematic {} variant records.", callers[caller], caller)
             
 def _log_caller_info(vcf_readers):
     caller_count = collections.defaultdict(int)

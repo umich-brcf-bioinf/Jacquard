@@ -55,6 +55,8 @@ class FilterSomaticTestCase(unittest.TestCase):
         logger.error = self.original_error
         logger.warning = self.original_warning
         logger.debug = self.original_debug
+        global mock_log_messages
+        mock_log_messages = []
         
     def test_findSomaticPositions(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:

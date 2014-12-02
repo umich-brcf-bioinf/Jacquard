@@ -83,9 +83,14 @@ class MockVcfReader(object):
     def close(self):
         self.closed = True
 
-def build_mock_get_caller_method(caller):
+def build_mock_get_caller_method(callers):
     def get_caller(metaheaders, column_header, name):
-        return caller
+        if len(callers)>1:
+            for caller in callers:
+                if caller.name == name:
+                    return caller
+        else:
+            return callers[0]
     return get_caller
 
 class TagTestCase(unittest.TestCase):
@@ -118,6 +123,8 @@ class TagTestCase(unittest.TestCase):
         logger.error = self.original_error
         logger.warning = self.original_warning
         logger.debug = self.original_debug
+        global mock_log_messages
+        mock_log_messages = []
         
     def test_build_vcf_readers(self):
         vcf_content ='''##source=strelka
@@ -215,7 +222,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         writer = MockWriter()
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method(MockCaller()))
+        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
         
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -250,7 +257,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method(MockCaller()))
+        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
         
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -282,7 +289,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method(MockCaller()))
+        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
         
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -299,8 +306,38 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
         
-        self.assertIn("foo|Added filter flag [JQ_MALFORMED_REF] to [1] variant records", mock_log_messages)
+        self.assertIn("foo|Added filter flag [JQ_MALFORMED_REF] to [1] variant records.", mock_log_messages)
 
+        self.assertIn("Added a filter flag to [1] problematic MockCaller variant records.", mock_log_messages)       
+
+    def test_tag_files_multipleCallers(self):
+        class MockVcfRecord(object):
+            def __init__(self):
+                self.ref = "/"
+                self.alt = "A"
+                self.filter = "filter"
+                self.content = "foo"
+
+        global mock_vcf_record
+        mock_vcf_record = MockVcfRecord()
+        
+        reader1 = MockVcfReader(metaheaders=["##originalMeta1", "##originalMeta2"], column_header="#columnHeader")
+        reader2 = MockVcfReader(metaheaders=["##originalMeta1", "##originalMeta2"], column_header="#columnHeader")
+        reader1.caller = MockCaller(name="foo", metaheaders=["##mockCallerMetaheader1"])
+        reader2.caller = MockCaller(name="bar", metaheaders=["##mockCallerMetaheader1"])
+        writer1 = MockWriter()
+        writer2 = MockWriter()
+
+        vcf_readers_to_writers = {reader1: writer1, reader2: writer2}
+        execution_context = []
+        tag.tag_files(vcf_readers_to_writers, execution_context, 
+                      build_mock_get_caller_method([MockCaller(name="foo"),
+                                                    MockCaller(name="bar")]))
+        
+        self.assertIn("foo|Added filter flag [JQ_MALFORMED_REF] to [1] variant records.", mock_log_messages)
+        
+        
+    
     def test_tag_files_malformedRef_emptyFilter(self):
     
         class MockVcfRecord(object):
@@ -319,7 +356,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method(MockCaller()))
+        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
         
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -335,6 +372,8 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         self.assertEquals("JQ_EXCLUDE;JQ_MALFORMED_REF",mock_vcf_record.filter)
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
+
+        self.assertIn("foo|Added filter flag [JQ_MALFORMED_REF] to [1] variant records.", mock_log_messages)
         
     def test_tag_files_malformedAlt(self):
     
@@ -354,7 +393,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method(MockCaller()))
+        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
         
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -370,6 +409,8 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         self.assertEquals("filter;JQ_EXCLUDE;JQ_MALFORMED_ALT",mock_vcf_record.filter)
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
+        
+        self.assertIn("foo|Added filter flag [JQ_MALFORMED_ALT] to [1] variant records.", mock_log_messages)
 
     def test_tag_files_missingAltDot(self):
     
@@ -389,7 +430,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method(MockCaller()))
+        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
         
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -405,7 +446,9 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         self.assertEquals("filter;JQ_EXCLUDE;JQ_MISSING_ALT",mock_vcf_record.filter)
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
- 
+        
+        self.assertIn("foo|Added filter flag [JQ_MISSING_ALT] to [1] variant records.", mock_log_messages)
+
     def test_tag_files_missingAltAsterisk(self):
     
         class MockVcfRecord(object):
@@ -424,7 +467,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method(MockCaller()))
+        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
         
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -440,7 +483,9 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         self.assertEquals("filter;JQ_EXCLUDE;JQ_MISSING_ALT",mock_vcf_record.filter)
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
-                       
+
+        self.assertIn("foo|Added filter flag [JQ_MISSING_ALT] to [1] variant records.", mock_log_messages)
+
     def test_execute(self):
         vcf_content1 = '''##source=strelka
 #CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
