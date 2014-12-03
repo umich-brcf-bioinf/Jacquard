@@ -900,7 +900,7 @@ class MergeTestCase(unittest.TestCase):
                 elif expected[i].startswith("##jacquard.command="):
                     self.assertTrue(actual[i].startswith("##jacquard.command="))
                 else:
-                    self.assertEquals(expected[i], actual[i]) 
+                    self.assertEquals(expected[i].rstrip(), actual[i].rstrip()) 
                                 
         
 class MockWriter():
