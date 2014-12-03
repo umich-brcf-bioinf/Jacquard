@@ -64,9 +64,9 @@ class MockCaller(object):
         return self.metaheaders
         
 class MockVcfReader(object):
-    def __init__(self, input_filepath="vcfName", metaheaders=["##metaheaders"], column_header="#header"):
+    def __init__(self, input_filepath="vcfName", metaheaders=["##metaheaders"], column_header="#header", file_name = "foo"):
         self.input_filepath = input_filepath
-        self.file_name = "foo"
+        self.file_name = file_name
         self.metaheaders = metaheaders
         self.caller = MockCaller()
         self.column_header = column_header
@@ -240,7 +240,6 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         self.assertTrue(writer.closed)
         
     def test_tag_files_proper(self):
-        
         class MockVcfRecord(object):
             def __init__(self):
                 self.ref = "A"
@@ -272,7 +271,6 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         self.assertTrue(writer.closed)
 
     def test_tag_files_malformedRef(self):
-    
         class MockVcfRecord(object):
             def __init__(self):
                 self.ref = "/"
@@ -290,7 +288,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
         tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
-        
+
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
         self.assertEquals(["##originalMeta1", 
@@ -301,14 +299,14 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                            '##FILTER=<ID=JQ_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.",Source="Jacquard", Version="">',
                            "#columnHeader",
                            "foo"], writer.lines())
-                
+
         self.assertEquals("filter;JQ_EXCLUDE;JQ_MALFORMED_REF",mock_vcf_record.filter)
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
-        
-        self.assertIn("foo|Added filter flag [JQ_MALFORMED_REF] to [1] variant records.", mock_log_messages)
 
-        self.assertIn("Added a filter flag to [1] problematic MockCaller variant records.", mock_log_messages)       
+        self.assertIn("foo|Added filter flag [JQ_MALFORMED_REF] to [1] variant records.", mock_log_messages)
+        self.assertIn("Added a filter flag to [1] problematic MockCaller variant records.", mock_log_messages)
+        self.assertIn("A total of [1] problematic variant records failed Jacquard's filters. See output and log for details.", mock_log_messages)
 
     def test_tag_files_multipleCallers(self):
         class MockVcfRecord(object):
@@ -321,10 +319,10 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         global mock_vcf_record
         mock_vcf_record = MockVcfRecord()
         
-        reader1 = MockVcfReader(metaheaders=["##originalMeta1", "##originalMeta2"], column_header="#columnHeader")
-        reader2 = MockVcfReader(metaheaders=["##originalMeta1", "##originalMeta2"], column_header="#columnHeader")
-        reader1.caller = MockCaller(name="foo", metaheaders=["##mockCallerMetaheader1"])
-        reader2.caller = MockCaller(name="bar", metaheaders=["##mockCallerMetaheader1"])
+        reader1 = MockVcfReader(metaheaders=["##originalMeta1", "##originalMeta2"], column_header="#columnHeader", file_name="foo")
+        reader2 = MockVcfReader(metaheaders=["##originalMeta1", "##originalMeta2"], column_header="#columnHeader", file_name="bar")
+        reader1.caller = MockCaller(metaheaders=["##mockCallerMetaheader1"])
+        reader2.caller = MockCaller(metaheaders=["##mockCallerMetaheader1"])
         writer1 = MockWriter()
         writer2 = MockWriter()
 
@@ -333,13 +331,13 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         tag.tag_files(vcf_readers_to_writers, execution_context, 
                       build_mock_get_caller_method([MockCaller(name="foo"),
                                                     MockCaller(name="bar")]))
-        
+
         self.assertIn("foo|Added filter flag [JQ_MALFORMED_REF] to [1] variant records.", mock_log_messages)
-        
-        
-    
+        self.assertIn("Added a filter flag to [1] problematic foo variant records.", mock_log_messages)
+        self.assertIn("Added a filter flag to [1] problematic bar variant records.", mock_log_messages)
+        self.assertIn("A total of [2] problematic variant records failed Jacquard's filters. See output and log for details.", mock_log_messages)
+
     def test_tag_files_malformedRef_emptyFilter(self):
-    
         class MockVcfRecord(object):
             def __init__(self):
                 self.ref = "/"
@@ -349,7 +347,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         global mock_vcf_record
         mock_vcf_record = MockVcfRecord()
-        
+
         reader = MockVcfReader(metaheaders=["##originalMeta1", "##originalMeta2"], column_header="#columnHeader")
         reader.caller = MockCaller(metaheaders=["##mockCallerMetaheader1"])
         writer = MockWriter()
@@ -357,10 +355,10 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
         tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
-        
+
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
-        self.assertEquals(["##originalMeta1", 
+        self.assertEquals(["##originalMeta1",
                            "##originalMeta2",
                            "##jacquard.tag.caller=MockCaller",
                            "##mockCallerMetaheader1",
@@ -368,15 +366,16 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                            '##FILTER=<ID=JQ_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.",Source="Jacquard", Version="">',
                            "#columnHeader",
                            "foo"], writer.lines())
-        
+
         self.assertEquals("JQ_EXCLUDE;JQ_MALFORMED_REF",mock_vcf_record.filter)
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
 
         self.assertIn("foo|Added filter flag [JQ_MALFORMED_REF] to [1] variant records.", mock_log_messages)
-        
+        self.assertIn("Added a filter flag to [1] problematic MockCaller variant records.", mock_log_messages)
+        self.assertIn("A total of [1] problematic variant records failed Jacquard's filters. See output and log for details.", mock_log_messages)
+
     def test_tag_files_malformedAlt(self):
-    
         class MockVcfRecord(object):
             def __init__(self):
                 self.ref = "A"
@@ -394,10 +393,10 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
         tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
-        
+
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
-        self.assertEquals(["##originalMeta1", 
+        self.assertEquals(["##originalMeta1",
                            "##originalMeta2",
                            "##jacquard.tag.caller=MockCaller",
                            "##mockCallerMetaheader1",
@@ -405,15 +404,16 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                            '##FILTER=<ID=JQ_MALFORMED_ALT,Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.",Source="Jacquard", Version="">',
                            "#columnHeader",
                            "foo"], writer.lines())
-        
+
         self.assertEquals("filter;JQ_EXCLUDE;JQ_MALFORMED_ALT",mock_vcf_record.filter)
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
-        
+
         self.assertIn("foo|Added filter flag [JQ_MALFORMED_ALT] to [1] variant records.", mock_log_messages)
+        self.assertIn("Added a filter flag to [1] problematic MockCaller variant records.", mock_log_messages)
+        self.assertIn("A total of [1] problematic variant records failed Jacquard's filters. See output and log for details.", mock_log_messages)
 
     def test_tag_files_missingAltDot(self):
-    
         class MockVcfRecord(object):
             def __init__(self):
                 self.ref = "A"
@@ -423,7 +423,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         global mock_vcf_record
         mock_vcf_record = MockVcfRecord()
-        
+
         reader = MockVcfReader(metaheaders=["##originalMeta1", "##originalMeta2"], column_header="#columnHeader")
         reader.caller = MockCaller(metaheaders=["##mockCallerMetaheader1"])
         writer = MockWriter()
@@ -431,10 +431,10 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
         tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
-        
+
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
-        self.assertEquals(["##originalMeta1", 
+        self.assertEquals(["##originalMeta1",
                            "##originalMeta2",
                            "##jacquard.tag.caller=MockCaller",
                            "##mockCallerMetaheader1",
@@ -442,15 +442,16 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                            '##FILTER=<ID=JQ_MISSING_ALT,Description="The alternate allele is missing for this variant record.",Source="Jacquard", Version="">',
                            "#columnHeader",
                            "foo"], writer.lines())
-        
+
         self.assertEquals("filter;JQ_EXCLUDE;JQ_MISSING_ALT",mock_vcf_record.filter)
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
-        
+
         self.assertIn("foo|Added filter flag [JQ_MISSING_ALT] to [1] variant records.", mock_log_messages)
+        self.assertIn("Added a filter flag to [1] problematic MockCaller variant records.", mock_log_messages)
+        self.assertIn("A total of [1] problematic variant records failed Jacquard's filters. See output and log for details.", mock_log_messages)
 
     def test_tag_files_missingAltAsterisk(self):
-    
         class MockVcfRecord(object):
             def __init__(self):
                 self.ref = "A"
@@ -460,7 +461,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         global mock_vcf_record
         mock_vcf_record = MockVcfRecord()
-        
+
         reader = MockVcfReader(metaheaders=["##originalMeta1", "##originalMeta2"], column_header="#columnHeader")
         reader.caller = MockCaller(metaheaders=["##mockCallerMetaheader1"])
         writer = MockWriter()
@@ -468,10 +469,10 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
         tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
-        
+
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
-        self.assertEquals(["##originalMeta1", 
+        self.assertEquals(["##originalMeta1",
                            "##originalMeta2",
                            "##jacquard.tag.caller=MockCaller",
                            "##mockCallerMetaheader1",
@@ -479,12 +480,14 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                            '##FILTER=<ID=JQ_MISSING_ALT,Description="The alternate allele is missing for this variant record.",Source="Jacquard", Version="">',
                            "#columnHeader",
                            "foo"], writer.lines())
-        
+
         self.assertEquals("filter;JQ_EXCLUDE;JQ_MISSING_ALT",mock_vcf_record.filter)
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
 
         self.assertIn("foo|Added filter flag [JQ_MISSING_ALT] to [1] variant records.", mock_log_messages)
+        self.assertIn("Added a filter flag to [1] problematic MockCaller variant records.", mock_log_messages)
+        self.assertIn("A total of [1] problematic variant records failed Jacquard's filters. See output and log for details.", mock_log_messages)
 
     def test_execute(self):
         vcf_content1 = '''##source=strelka

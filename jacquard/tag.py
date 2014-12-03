@@ -30,11 +30,11 @@ def _check_records(reader, writer):
     correct_alt = "*.ACGTNacgtn"
     anomalous_set = set()
     anomalous_records = []
-        
+
     malformed_ref = 0
     malformed_alt = 0
     missing_alt = 0
-    
+
     for vcf_record in reader.vcf_records():
         anomalous_flags = []
         if _comma_separated(vcf_record.ref) and not all(x in correct_ref for x in list(vcf_record.ref)):
@@ -47,7 +47,7 @@ def _check_records(reader, writer):
             anomalous_flags.append("JQ_MISSING_ALT")
             missing_alt+=1
         if len(anomalous_flags) > 0:
-            anomalous_flags = ["JQ_EXCLUDE"]+anomalous_flags
+            anomalous_flags = ["JQ_EXCLUDE"] + anomalous_flags
         for flag in anomalous_flags:
             anomalous_set.add(flag)
         anomalous_records.append(anomalous_flags)
@@ -87,42 +87,54 @@ def _modify_metaheaders(reader, writer, execution_context,anomalous_set):
     new_headers.append(reader.column_header)
 
     writer.write("\n".join(new_headers) +"\n")
-            
+
 def tag_files(vcf_readers_to_writers, execution_context, 
               get_caller=variant_caller_factory.get_caller):
+
     total_number_of_files = len(vcf_readers_to_writers)
     callers = collections.defaultdict(int)
     for count, item in enumerate(vcf_readers_to_writers.items()):
         reader,writer = item
         logger.info("Reading [{}] ({}/{})",
                     reader.input_filepath,
-                    count + 1, 
+                    count + 1,
                     total_number_of_files)
         reader.open()
-        
-        anomalous_set,anomalous_records = _check_records(reader, writer)
+
+        anomalous_set, anomalous_records = _check_records(reader, writer)
         caller = get_caller(reader.metaheaders, reader.column_header, reader.file_name)
+        print(caller)
+        print(caller.name)
         callers[caller.name] += len(anomalous_records)
-        
+
         reader.close()
-        
+
         reader.open()
         writer.open()
         _modify_metaheaders(reader, writer, execution_context, anomalous_set)
         _write_records(reader, writer, anomalous_records)
         reader.close()
         writer.close()
-        
+
+    total_filtered_records = 0
+
     for caller in callers:
+        total_filtered_records += callers[caller]
         if callers[caller]:
-            logger.debug("Added a filter flag to [{}] problematic {} variant records.", callers[caller], caller)
-            
+            logger.debug("Added a filter flag to [{}] problematic {} variant "
+                         "records.", callers[caller], caller)
+
+    if total_filtered_records:
+        logger.warning("A total of [{}] problematic variant records failed "
+                       "Jacquard's filters. See output and log for details.",
+                       total_filtered_records)
+
 def _log_caller_info(vcf_readers):
     caller_count = collections.defaultdict(int)
     for vcf in vcf_readers:
         caller_count[vcf.caller.name] += 1
     for caller_name in sorted(caller_count):
-        logger.info("Recognized [{}] {} file(s)", 
+        logger.info("Recognized [{}] {} file(s)",
                     caller_count[caller_name], caller_name)
 
 def _build_vcf_readers(input_dir,
