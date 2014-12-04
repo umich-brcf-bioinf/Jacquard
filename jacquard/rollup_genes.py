@@ -7,12 +7,14 @@ import pandas as pd
 from pandas import *
 import random
 import re
-import sys 
+import sys
+import traceback 
 import openpyxl
 from openpyxl import load_workbook
+import logger
 
 SNPEFF_IMPACT_COLUMN = "SNPEFF_TOP_EFFECT_IMPACT"
-DBNSFP_IMPACT_DAMAGING_COLUMN = "dbNSFP_Impact_Damaging"
+DBNSFP_IMPACT_DAMAGING_COLUMN = "dbNSFP_rollup_damaging"
 
 class RollupError(Exception):
     """Base class for exceptions in this module."""
@@ -69,7 +71,12 @@ def gene_rollup_highest_impact(initial_df, samples, cols):
 
     filtered_df = melted_df[melted_df["Sample_Data"] != "."]
 
-    pivoted_df = pd.pivot_table(filtered_df, index=["GENE_SYMBOL", "Sample"], columns=[SNPEFF_IMPACT_COLUMN], values=["Sample_Data"], aggfunc=np.count_nonzero, fill_value=0)
+    pivoted_df = pd.pivot_table(filtered_df,
+                                index=["GENE_SYMBOL", "Sample"],
+                                columns=[SNPEFF_IMPACT_COLUMN],
+                                values=["Sample_Data"],
+                                aggfunc=np.count_nonzero,
+                                fill_value=0)
 
     pivoted_df = pivoted_df["Sample_Data"]
 
@@ -98,7 +105,7 @@ def gene_rollup_damaging_impact(initial_df, samples, cols):
     col_array.extend(sample_col_array) 
     
     if DBNSFP_IMPACT_DAMAGING_COLUMN in initial_df.columns:
-        initial_df.rename(columns={DBNSFP_IMPACT_DAMAGING_COLUMN: "dbNSFP_rollup_damaging"}, inplace=True)
+        initial_df.rename(columns={DBNSFP_IMPACT_DAMAGING_COLUMN: "dbNSFP_Impact_Damaging"}, inplace=True)
 
     columns = cols + ["dbNSFP_Impact_Damaging"]
     
@@ -272,17 +279,61 @@ def add_subparser(subparser):
             help="Delimiter for input file. If no delimiter given, defaults to comma.")
 
 def execute(args, execution_context):
-    script_dir = os.path.dirname(os.path.abspath(__file__))
     pd.set_option('chained_assignment', None)
-    
-    input   = os.path.abspath(args.input_file)
+
+    input_file   = os.path.abspath(args.input_file)
     output  = os.path.abspath(args.output_file)
     samples = args.sample_identifier
-    delim   = args.input_delimiter if args.input_delimiter else ","
-# 
-    if not os.path.isfile(input):
-        print "Error. Specified input file {0} does not exist".format(input)
+    delim   = args.input_delimiter if args.input_delimiter else "\t"
+
+    if not os.path.isfile(input_file):
+        print "Error. Specified input_file file {0} does not exist".format(input_file)
         exit(1)
- 
-    process_files(input, output, samples, delim)
+
+    process_files(input_file, output, samples, delim)
+
+def dispatch(arguments):
+    parser = argparse.ArgumentParser(
+        usage="rollup_genes",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description='''...''',
+        epilog="...")
+
+    parser.add_argument("input_file", help="Path to input variant-level CSV file")
+    parser.add_argument("output_file", help="Path to output gene-level XLSX file")
+    parser.add_argument("-s",
+                        "--sample_identifier",
+                        required=True,
+                        help="Identifier for all samples. This should be a string that is present in all samples.")
+    parser.add_argument("-d", 
+                        "--input_delimiter",
+                        help="Delimiter for input file. If no delimiter given, defaults to comma.")
+
+
+    try:
+        cwd = os.path.dirname(os.getcwd())
+        execution_context = [\
+            "##jacquard.command={0}".format(" ".join(arguments)),
+            "##jacquard.cwd={0}".format(cwd)]
     
+        args = parser.parse_args(arguments)
+    
+        logger.initialize_logger("gene_rollup")
+        logger.info("gene rollup begins")
+        logger.info("Saving log to [{}]", logger.log_filename)
+        logger.debug("cwd|{}", os.getcwd())
+        logger.debug("command|{}", " ".join(arguments))
+    
+        execute(args, execution_context)
+        logger.info("Done")
+
+    # pylint: disable=W0703
+    except Exception as exception:
+        logger.error(str(exception))
+        logger.error("Jacquard encountered an unanticipated problem. Please review log file and contact your sysadmin or Jacquard support for assistance.")
+        logger.debug(traceback.format_exc())
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    dispatch(sys.argv[1:])
