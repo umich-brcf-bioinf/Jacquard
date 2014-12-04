@@ -50,7 +50,7 @@ class MockFileReader(object):
 class AlleleFreqTagTestCase(unittest.TestCase):
 
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)",Source="Jacquard",Version=0.21>'.format(strelka.JQ_STRELKA_TAG, __version__), strelka._AlleleFreqTag().metaheader)
+        self.assertEqual('##FORMAT=<ID={0}AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version={1}>'.format(strelka.JQ_STRELKA_TAG, __version__), strelka._AlleleFreqTag().metaheader)
      
     def test_format_missingAFTag(self):
         tag = strelka._AlleleFreqTag()
@@ -76,10 +76,10 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
         
-    def test_format_TIRTag(self):
+    def test_format_TARTag(self):
         tag = strelka._AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP2:TIR|10:3,4|20:11,7\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP2:TIR:{0}AF|10:3,4:0.4|20:11,7:0.35\n".format(strelka.JQ_STRELKA_TAG).replace('|',"\t")
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP2:TAR|10:3,4|20:11,7\n".replace('|',"\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP2:TAR:{0}AF|10:3,4:0.4|20:11,7:0.35\n".format(strelka.JQ_STRELKA_TAG).replace('|',"\t")
         processedVcfRecord = VcfRecord(line)
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())

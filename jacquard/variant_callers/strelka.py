@@ -8,13 +8,7 @@ JQ_STRELKA_TAG = "JQ_SK_"
 
 class _AlleleFreqTag(object):
     def __init__(self):
-        self.metaheader = ('##FORMAT=<ID={0}AF,'
-                           'Number=A,'
-                           'Type=Float,'
-                           'Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)",'
-                           'Source="Jacquard",'
-                           'Version={1}>').format(JQ_STRELKA_TAG, 
-                                                  utils.__version__)
+        self.metaheader = '##FORMAT=<ID={0}AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version={1}>'.format(JQ_STRELKA_TAG, utils.__version__)
 
     def _get_tier2_base_depth(self, sample_format_dict, alt_allele):
         numerator = float(sample_format_dict[alt_allele + "U"].split(",")[1])
@@ -43,7 +37,7 @@ class _AlleleFreqTag(object):
 
     def _get_indelallelefreq_per_sample(self, vcfRecord, key):
         afs = []
-        numerator = float(vcfRecord.sample_dict[key]["TIR"].split(",")[1])
+        numerator = float(vcfRecord.sample_dict[key]["TAR"].split(",")[1])
         denominator = float(vcfRecord.sample_dict[key]["DP2"])
         af = numerator/denominator if denominator != 0 else 0.0
 
@@ -63,7 +57,7 @@ class _AlleleFreqTag(object):
                 if "AU" in vcfRecord.format_set:#if it's an snp
                     afs = self._get_SNPallelefreq_per_sample(vcfRecord,key)
                     sample_values[key] = ",".join(afs)
-                elif "TIR" in vcfRecord.format_set: #if it's an indel
+                elif "TAR" in vcfRecord.format_set: #if it's an indel
                     afs = self._get_indelallelefreq_per_sample(vcfRecord,key)
                     sample_values[key] = ",".join(afs)
                 else:
