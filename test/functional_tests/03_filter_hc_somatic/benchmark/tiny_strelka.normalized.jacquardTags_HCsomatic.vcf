@@ -85,8 +85,8 @@
 ##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",Source="Jacquard",Version=0.21>
 ##jacquard.filterHCSomatic.excluded_variants=35
 ##jacquard.version=0.21
-##jacquard.command=filter_hc_somatic C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\03_filter_hc_somatic\input C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\03_filter_hc_somatic\benchmark
-##jacquard.cwd=C:\Users\kmeng
+##jacquard.command=filter_hc_somatic C:\Users\Kevin\Jacquard\test\functional_tests\03_filter_hc_somatic\input C:\Users\Kevin\Jacquard\test\functional_tests\03_filter_hc_somatic\benchmark
+##jacquard.cwd=C:\Users\Kevin
 ##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=10
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NORMAL	TUMOR
 chr1	1147545	.	A	G	.	PASS	NT=ref;QSS=32;QSS_NT=32;SGT=AA->AG;SOMATIC;TQSS=1;TQSS_NT=1	DP:FDP:SDP:SUBDP:AU:CU:GU:TU:JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	25:1:0:0:24,27:0,0:0,0:0,0:0.0:27:0	35:0:0:0:24,24:0,0:11,11:0,0:0.31:35:1

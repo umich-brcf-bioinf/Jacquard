@@ -72,9 +72,13 @@ class Varscan():
         self.meta_header = "##jacquard.normalize_varscan.sources={0},{1}\n"
 
     def validate_input_file(self, meta_headers, column_header):
-        if "##source=VarScan2" not in meta_headers:
+        valid = 0
+        for line in meta_headers:
+            if "##source=VarScan2" in line:
+                valid = 1
+        if not valid:
             return 0
-
+        
         if _VARSCAN_SOMATIC_HEADER == column_header:
             return 1
         else:

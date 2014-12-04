@@ -213,7 +213,12 @@ class Strelka(object):
         return [tag.metaheader for tag in self.tags]
 
     def validate_input_file(self, meta_headers, column_header):
-        return "##source=strelka" in meta_headers
+        valid = 0
+        for line in meta_headers:
+            if "##source=strelka" in line:
+                valid = 1
+
+        return valid
 
     def validate_record(self,vcfRecord):
             return True
