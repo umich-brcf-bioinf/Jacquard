@@ -54,9 +54,9 @@ class VcfReader(object):
             self._file_reader.open()
             for line in self._file_reader.read_lines():
                 if line.startswith("##"):
-                    metaheaders.append(line.rstrip("\n"))
+                    metaheaders.append(line.rstrip())
                 elif line.startswith("#"):
-                    column_header = line.rstrip("\n")
+                    column_header = line.rstrip()
                 else:
                     break
         finally:
@@ -82,7 +82,7 @@ class VcfReader(object):
 
 class VcfRecord(object):
     def __init__(self, vcf_line):
-        vcf_fields = vcf_line.rstrip("\n").split("\t")
+        vcf_fields = vcf_line.rstrip().split("\t")
         self.chrom, self.pos, self.id, self.ref, self.alt, self.qual, \
             self.filter, self.info, self.format = vcf_fields[0:9]
 

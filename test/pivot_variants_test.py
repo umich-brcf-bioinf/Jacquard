@@ -535,8 +535,9 @@ class PivotTestCase(unittest.TestCase):
         
         self.assertEquals([input_dir + "/foo1.txt", input_dir + "/foo2.txt"], sample_file_readers)
         self.assertEquals([3,2], headers)
-        self.assertEquals("CHROM	POS	REF	ALT	GENE_SYMBOL	FORMAT	Sample_2384	Sample_2385\n", header_names)
-        self.assertEquals(["1	2342	A	T	EGFR	GT:DP	1/1:241	0/1:70\n", "1	134	G	C	EGFR	GT:DP	1/1:242	0/1:546\n"], first_line)
+        self.assertEquals("CHROM	POS	REF	ALT	GENE_SYMBOL	FORMAT	Sample_2384	Sample_2385", header_names.rstrip())
+        self.assertEquals("1	2342	A	T	EGFR	GT:DP	1/1:241	0/1:70", first_line[0].rstrip())
+        self.assertEquals("1	134	G	C	EGFR	GT:DP	1/1:242	0/1:546", first_line[1].rstrip())
     
     def test_build_pivoter_invalidHeaderRaisesPivotError(self):
         input_string = \
