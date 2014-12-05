@@ -18,7 +18,7 @@ def _read_col_spec(col_spec):
     columns = []
 
     for line in spec_file:
-        columns.append(line.strip("\n"))
+        columns.append(line.rstrip())
 
     spec_file.close()
 

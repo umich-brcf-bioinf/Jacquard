@@ -254,8 +254,8 @@ class MergeTestCase(unittest.TestCase):
         
         self.assertEquals([os.path.join(input_dir, "foo1.txt")], sample_file_readers)
         self.assertEquals([3], headers)
-        self.assertEquals("CHROM\tPOS\tREF\tALT\tGENE_SYMBOL\tFORMAT\tSample_2384\tSample_2385\n", header_names)
-        self.assertEquals(["1\t2342\tA\tT\tEGFR\tGT:DP\t1/1:241\t0/1:70\n"], first_line)
+        self.assertEquals("CHROM\tPOS\tREF\tALT\tGENE_SYMBOL\tFORMAT\tSample_2384\tSample_2385", header_names.rstrip())
+        self.assertEquals("1\t2342\tA\tT\tEGFR\tGT:DP\t1/1:241\t0/1:70", first_line[0].rstrip())
         self.assertEquals(['##FORMAT=<ID=JQ_FOO'], meta_headers)
         
     def test_getHeadersAndReaders_invalid(self):

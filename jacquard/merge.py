@@ -463,7 +463,7 @@ def determine_caller_and_split_mult_alts(reader, writer, unknown_callers):
     caller = "unknown"
     for line in reader:
         if line.startswith("##jacquard.tag.caller="):
-            caller = line.split("=")[1].strip("\n")
+            caller = line.split("=")[1].rstrip()
             writer.write(line)
         elif line.startswith("#"):
             writer.write(line)
@@ -651,7 +651,7 @@ def get_headers_and_readers(in_files):
             count += 1
             if line.startswith("##"):
                 if re.search("##FORMAT=<ID=JQ_", line):
-                    meta_headers.append(line.strip("\n"))
+                    meta_headers.append(line.rstrip())
                 if re.search("##jacquard.tag.caller=", line):
                     invalid = 0
             elif line.startswith("#"):
