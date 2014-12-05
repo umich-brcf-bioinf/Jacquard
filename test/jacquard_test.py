@@ -150,4 +150,5 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
             actual_messages = self.output.getvalue().rstrip().split("\n")
             self.assertRegexpMatches(actual_messages[3], r"Done. \(See warnings above\)")
             logger.SHOW_WARNING = False
+            
         

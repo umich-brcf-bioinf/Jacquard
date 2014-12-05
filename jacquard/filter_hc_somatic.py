@@ -10,28 +10,47 @@ import vcf as vcf
 import logger as logger
 from collections import defaultdict
 
-def _iterate_file(in_file, filtered_records, num_records, somatic_positions, somatic):
-    for line in in_file:
-        if line.startswith("#"):
-            continue
-        elif "JQ_EXCLUDE" in line:
+def _iterate_file(in_file, vcf_reader, filtered_records, num_records, somatic_positions, somatic):
+    vcf_reader.open()
+    for record in vcf_reader.vcf_records():
+        if "JQ_EXCLUDE" in record.filter:
             filtered_records += 1
         else:
             num_records += 1
-            split_line = line.split("\t")
-            format_col = split_line[8]
-            sample_cols = split_line[9:]
-
-            for sample_col in sample_cols:
-                format_sample_dict = utils.combine_format_values(format_col,
-                                                                 sample_col)
-                for key in format_sample_dict.keys():
-                    if re.search(utils.jq_somatic_tag, key):
-                        if format_sample_dict[key] == "1":
-                            somatic_key = "^".join([split_line[0],
-                                                    split_line[1]])
+            for key in record.sample_dict:
+                for tag in record.sample_dict[key]:
+                    if re.search(utils.jq_somatic_tag, tag):
+                        if record.sample_dict[key][tag] == "1":
+                            somatic_key = "^".join([record.chrom,
+                                                    record.pos])
                             somatic_positions[somatic_key] = 1
                             somatic = 1
+    vcf_reader.close()
+                 
+                     
+                
+#     for line in in_file:
+#         if line.startswith("#"):
+#             continue
+#         elif "JQ_EXCLUDE" in line:
+#             filtered_records += 1
+#         else:
+#             num_records += 1
+#             split_line = line.split("\t")
+#             format_col = split_line[8]
+#             sample_cols = split_line[9:]
+#  
+#             for sample_col in sample_cols:
+#                 format_sample_dict = utils.combine_format_values(format_col,
+#                                                                  sample_col)
+#                 print format_sample_dict
+#                 for key in format_sample_dict.keys():
+#                     if re.search(utils.jq_somatic_tag, key):
+#                         if format_sample_dict[key] == "1":
+#                             somatic_key = "^".join([split_line[0],
+#                                                     split_line[1]])
+#                             somatic_positions[somatic_key] = 1
+#                             somatic = 1
 
     return filtered_records, num_records, somatic_positions, somatic
 
@@ -57,7 +76,7 @@ def _find_somatic_positions(in_files, output_dir):
         in_file = open(input_file, "r")
         filtered_records = 0
 
-        filtered_records, num_records, somatic_positions, somatic =_iterate_file(in_file, filtered_records, num_records, somatic_positions, somatic)
+        filtered_records, num_records, somatic_positions, somatic =_iterate_file(in_file, vcf_reader, filtered_records, num_records, somatic_positions, somatic)
         callers[caller.name] += filtered_records
 
         if somatic == 0:
