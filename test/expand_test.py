@@ -114,8 +114,6 @@ class ExpandTestCase(unittest.TestCase):
 
     def test_parse_meta_headers_missing(self):
         meta_headers = ['##ALT=<ID=DEL,Description="Deletion">',
-                        '##INFO=<ID=AC,Number=.,Description="foo">]',
-                        '##INFO=<ID=AA,Number=1,Description="Ancestral Allele"',
                         '##RUNTIME_ARG=allele freq. cutoff: 5']
 
         self.assertRaisesRegexp(utils.JQException,

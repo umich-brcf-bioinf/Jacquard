@@ -1,0 +1,11 @@
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	JQ_CONS_AF_AVERAGE|tiny_strelka|NORMAL	JQ_CONS_AF_AVERAGE|tiny_strelka|TUMOR	JQ_CONS_AF_RANGE|tiny_strelka|NORMAL	JQ_CONS_AF_RANGE|tiny_strelka|TUMOR	JQ_CONS_AF_ZSCORE|tiny_strelka|NORMAL	JQ_CONS_AF_ZSCORE|tiny_strelka|TUMOR	JQ_CONS_DP_AVERAGE|tiny_strelka|NORMAL	JQ_CONS_DP_AVERAGE|tiny_strelka|TUMOR	JQ_CONS_DP_RANGE|tiny_strelka|NORMAL	JQ_CONS_DP_RANGE|tiny_strelka|TUMOR	JQ_CONS_DP_ZSCORE|tiny_strelka|NORMAL	JQ_CONS_DP_ZSCORE|tiny_strelka|TUMOR	JQ_SK_AF|tiny_strelka|NORMAL	JQ_SK_AF|tiny_strelka|TUMOR	JQ_SK_DP|tiny_strelka|NORMAL	JQ_SK_DP|tiny_strelka|TUMOR	JQ_SK_HC_SOM|tiny_strelka|NORMAL	JQ_SK_HC_SOM|tiny_strelka|TUMOR
+chr1	1147545	.	A	G	.	.	0	0.31	.	.	.	.	27	35	.	.	.	.	0.0	0.31	27	35	0	1
+chr1	1169795	.	C	T	.	.	0	0.22	.	.	.	.	37	46	.	.	.	.	0.0	0.22	37	46	0	1
+chr1	1444553	.	C	T	.	.	0	0.35	.	.	.	.	29	31	.	.	.	.	0.0	0.35	29	31	0	1
+chr1	1459635	.	C	A	.	.	0	0.17	.	.	.	.	35	30	.	.	.	.	0.0	0.17	35	30	0	1
+chr1	1572893	.	G	A	.	.	0.02	0.09	.	.	.	.	65	81	.	.	.	.	0.02	0.09	65	81	0	1
+chr1	1696633	.	GA	G	.	.	0	0.27	.	.	.	.	48	45	.	.	.	.	0.0	0.27	48	45	0	1
+chr1	1910112	.	G	A	.	.	0	0.34	.	.	.	.	28	35	.	.	.	.	0.0	0.34	28	35	0	1
+chr1	1912090	.	G	A	.	.	0	0.31	.	.	.	.	27	32	.	.	.	.	0.0	0.31	27	32	0	1
+chr1	3412474	.	G	A	.	.	0	0.31	.	.	.	.	46	61	.	.	.	.	0.0	0.31	46	61	0	1
+chr1	3545096	.	G	T	.	.	0	0.25	.	.	.	.	37	63	.	.	.	.	0.0	0.25	37	63	0	1

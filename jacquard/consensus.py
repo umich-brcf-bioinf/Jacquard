@@ -90,7 +90,7 @@ def _add_zscore(cons_helper, vcf_reader, file_writer, pop_values):
 
 def add_subparser(subparser):
     # pylint: disable=C0301
-    parser = subparser.add_parser("consensus2", help="Accepts a Jacquard-merged VCf file and creates a new file, adding consensus fields.")
+    parser = subparser.add_parser("consensus", help="Accepts a Jacquard-merged VCf file and creates a new file, adding consensus fields.")
     parser.add_argument("input", help="Path to Jacquard-merged VCF (or any VCF with Jacquard tags (e.g. JQ_SOM_MT)")
     parser.add_argument("output", help="Path to output VCf")
     parser.add_argument("-v", "--verbose", action='store_true')

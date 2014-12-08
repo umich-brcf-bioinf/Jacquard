@@ -430,13 +430,13 @@ def create_new_line(alt_allele_number, fields):
     format_tags = fields[8]
     samples = fields[9:]
     new_samples = []
+
     for sample in samples:
         format_sample_dict = utils.combine_format_values(format_tags, sample)
         new_dict = OrderedDict()
         for key, val in format_sample_dict.items():
             #only care about splitting jacquard tags
             if re.search("JQ_.*AF", key):
-#             if re.search("JQ_AF", key):
                 split_val = val.split(",")
                 if len(split_val) > 1:
                     new_dict[key] = split_val[alt_allele_number]

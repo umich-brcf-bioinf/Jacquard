@@ -197,78 +197,71 @@ class JacquardTestCase_FunctionalTest(unittest.TestCase):
         logger.debug = self.original_debug
 
 #TODO: fix
-    def xtest_functional_consensus(self):
-        file_dirname = os.path.dirname(os.path.realpath(__file__))
-        module_testdir = os.path.join(file_dirname,
-                                      "functional_tests",
-                                      "complete_test")
+    def test_functional_jacquard(self):
+        with TempDirectory() as output_dir:
+            file_dirname = os.path.dirname(os.path.realpath(__file__))
+            module_testdir = os.path.join(file_dirname,
+                                          "functional_tests",
+                                          "jacquard_test")
 
-        tool_testdir = os.path.join(module_testdir, "01_normalized")
-        input_dir = os.path.join(tool_testdir, "input")
-        output = os.path.join(tool_testdir, "output")
-        args = ["normalize", input_dir, output, "--force"]
-        jacquard.dispatch(jacquard._SUBCOMMANDS, args)
+            initial_input = os.path.join(module_testdir,
+                                          "normalize",
+                                          "input")
+            normalize_output = output_dir.path
+            tag_output = os.path.join(output_dir.path, "tag")
+            filter_output = os.path.join(output_dir.path, "filter_hc_somatic")
+            merge_output = os.path.join(output_dir.path,
+                                        "merge",
+                                        "merged.vcf")
+            consensus_output = os.path.join(output_dir.path,
+                                            "consensus",
+                                            "consensus.vcf")
+            expanded_output = os.path.join(output_dir.path,
+                                           "expand",
+                                           "expanded.vcf")
 
-        input_dir = output
-        tool_testdir = os.path.join(module_testdir, "02_tagged")
-        output = os.path.join(tool_testdir, "output")
-        args = ["tag", input_dir, output, "--force"]
-        jacquard.dispatch(jacquard._SUBCOMMANDS, args)
+            commands = [["normalize", initial_input, normalize_output, "--force"],
+                        ["tag", normalize_output, tag_output, "--force"],
+                        ["filter_hc_somatic", tag_output, filter_output, "--force"],
+                        ["merge", filter_output, merge_output, "--force"],
+                        ["consensus", merge_output, consensus_output, "--force"],
+                        ["expand", consensus_output, expanded_output, "--force"]]
 
-        input_dir = output
-        tool_testdir = os.path.join(module_testdir, "03_filtered")
-        output = os.path.join(tool_testdir, "output")
-        args = ["filter_hc_somatic", input_dir, output, "--force"]
-        jacquard.dispatch(jacquard._SUBCOMMANDS, args)
+            for command in commands:
+                jacquard.dispatch(jacquard._SUBCOMMANDS, command)
 
-        input_dir = output
-        tool_testdir = os.path.join(module_testdir, "04_merged")
-        output = os.path.join(tool_testdir, "output", "merged.vcf")
-        args = ["merge", input_dir, output, "--force"]
-        jacquard.dispatch(jacquard._SUBCOMMANDS, args)
+                tool = command[0]
+                output = command[2]
 
-        input_file = output
-        tool_testdir = os.path.join(module_testdir, "05_consensus")
-        output = os.path.join(tool_testdir, "output")
-        args = ["consensus", input_file, output, "--force"]
-        jacquard.dispatch(jacquard._SUBCOMMANDS, args)
+                if os.path.isfile(output):
+                    output_file = output
+                elif os.path.isdir(output):
+                    single_file = os.listdir(output)[0]
+                    output_file = os.path.join(output, single_file)
 
-        input_file = output
-        tool_testdir = os.path.join(module_testdir, "06_expanded")
-        output = os.path.join(tool_testdir, "output")
-        args = ["expand", input_file, output, "--force"]
-        jacquard.dispatch(jacquard._SUBCOMMANDS, args)
+                actual_file = vcf.FileReader(output_file)
+                actual_file.open()
+                actual = []
+                for line in actual_file.read_lines():
+                    actual.append(line)
+                actual_file.close()
 
-        output_files = glob.glob(os.path.join(output, "*.vcf"))[0]
+                module_outdir = os.path.join(module_testdir, tool, "benchmark")
+                output_file = os.listdir(module_outdir)[0]
+                expected_file = vcf.FileReader(os.path.join(module_outdir, output_file))
+                expected_file.open()
+                expected = []
 
-        actual_file = vcf.FileReader(output_files)
-        actual_file.open()
-        actual = []
-        for line in actual_file.read_lines():
-            actual.append(line)
-        actual_file.close()
+                for line in expected_file.read_lines():
+                    expected.append(line)
+                expected_file.close()
 
-#         module_outdir = os.path.join(module_testdir,"benchmark")
-# 
-#         output_file = os.listdir(module_outdir)[0]
-#         expected_file = vcf.FileReader(os.path.join(module_outdir,output_file))
-#         expected_file.open()
-#         expected = []
-# 
-#         for line in expected_file.read_lines():
-#             expected.append(line)
-#         expected_file.close()
+                self.assertEquals(len(expected), len(actual))
 
-#             self.assertEquals(len(expected), len(actual))
-        self.assertEquals(0, len(actual))
-
-#             for i in xrange(len(expected)):
-#                 if expected[i].startswith("##jacquard.cwd="):
-#                     self.assertTrue(actual[i].startswith("##jacquard.cwd="))
-#                 elif expected[i].startswith("##jacquard.command="):
-#                     self.assertTrue(actual[i].startswith("##jacquard.command="))
-#                 else:
-#                     self.assertEquals(expected[i].rstrip(), actual[i].rstrip())
-                    
-#         finally:
-#             shutil.rmtree(output_dir)
+                for i in xrange(len(expected)):
+                    if expected[i].startswith("##jacquard.cwd="):
+                        self.assertTrue(actual[i].startswith("##jacquard.cwd="))
+                    elif expected[i].startswith("##jacquard.command="):
+                        self.assertTrue(actual[i].startswith("##jacquard.command="))
+                    else:
+                        self.assertEquals(expected[i].rstrip(), actual[i].rstrip())

@@ -74,7 +74,7 @@ def _parse_meta_headers(meta_headers):
     info_fields.sort()
     format_tags.sort()
 
-    if len(info_fields) == 0 or len(format_tags) == 0:
+    if len(info_fields) == 0 and len(format_tags) == 0:
         raise utils.JQException("Unable to parse meta_headers for INFO and/" +
                                 "or FORMAT fields. Review input and try again.")
 

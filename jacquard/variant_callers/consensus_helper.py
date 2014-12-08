@@ -143,14 +143,14 @@ class _AlleleFreqTag():
         af_range = '##FORMAT=<ID={0}AF_RANGE, Number=1,Type=Float,' \
                    'Description="Max(allele frequency) - min (allele '\
                    'frequency) across recognized callers.",Source="Jacquard",'\
-                   'Version="<{1}>">'\
+                   'Version="{1}>">'\
                    .format(JQ_CONSENSUS_TAG, utils.__version__)
         af_zscore = '##FORMAT=<ID={0}AF_ZSCORE,Number=1,Type=Float,'\
                     'Description="Jacquard measure of concordance of reported '\
                     'allele frequencies across callers. [(this AF range - '\
                     'mean AF range)/standard dev(all AF ranges)]. If '\
                     'consensus value from <2 values will be [.]",Source="'\
-                    'Jacquard",Version="<{1}>"'\
+                    'Jacquard",Version="{1}>"'\
                     .format(JQ_CONSENSUS_TAG, utils.__version__)
         return "\n".join([af_average, af_range, af_zscore])
 
@@ -200,14 +200,14 @@ class _DepthTag():
         dp_range = '##FORMAT=<ID={0}DP_RANGE, Number=1,Type=Float,' \
                    'Description="Max(depth) - min (depth) '\
                    'across recognized callers.",Source="Jacquard",'\
-                   'Version="<{1}>">'\
+                   'Version="{1}>">'\
                    .format(JQ_CONSENSUS_TAG, utils.__version__)
         dp_zscore = '##FORMAT=<ID={0}DP_ZSCORE,Number=1,Type=Float,'\
                     'Description="Jacquard measure of concordance of reported '\
                     'depths across callers. [(this DP range - '\
                     'mean DP range)/standard dev(all DP ranges)]. If '\
                     'consensus value from <2 values will be [.]",Source="'\
-                    'Jacquard",Version="<{1}>"'\
+                    'Jacquard",Version="{1}>"'\
                     .format(JQ_CONSENSUS_TAG, utils.__version__)
         return "\n".join([dp_average, dp_range, dp_zscore])
 
