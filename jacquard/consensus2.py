@@ -6,36 +6,44 @@ import vcf as vcf
 import utils as utils
 import logger as logger
 
-def _write_metaheaders(cons_helper, execution_context, vcf_reader, file_writer):
+def _write_metaheaders(cons_helper, vcf_reader, file_writer, execution_context = 0, new_meta_headers = 0):
     new_headers = vcf_reader.metaheaders
-    new_headers.extend(execution_context)
-    new_headers.extend(cons_helper.get_new_metaheaders())
+    if execution_context:
+        new_headers.extend(execution_context)
+        new_headers.extend(cons_helper.get_new_metaheaders())
+    if new_meta_headers:
+        new_headers.append(new_meta_headers)
+
     new_headers.append(vcf_reader.column_header)
     file_writer.write("\n".join(new_headers) +"\n")
 
-def _write_execution_metaheaders(file_writer, pop_values):
+def _get_execution_metaheaders(pop_values):
+    new_meta_headers = []
     for tag, value_list in pop_values.items():
         pop_mean_range, pop_std_range = value_list
-
         pop_mean_header = "##jacquard.consensus.{0}{1}_RANGE."\
                           "mean_{1}_range={2}"\
                           .format(consensus_helper.JQ_CONSENSUS_TAG, tag,
                                   str(pop_mean_range))
+        new_meta_headers.append(pop_mean_header)
+
         pop_std_header = "##jacquard.consensus.{0}{1}_ZSCORE."\
                          "std_{1}_range={2}"\
                          .format(consensus_helper.JQ_CONSENSUS_TAG, tag,
                                  str(pop_std_range))
+        new_meta_headers.append(pop_std_header)
+    return "\n".join(new_meta_headers)
+#         file_writer.write(new_meta_header)
 
-        new_meta_header = "\n".join([pop_mean_header, pop_std_header])
-        file_writer.write(new_meta_header)
-
-def write_to_tmp_file(cons_helper, execution_context, vcf_reader, tmp_writer):
+def write_to_tmp_file(cons_helper, vcf_reader, tmp_writer):
     vcf_reader.open()
     tmp_writer.open()
+
     try:
-        _write_metaheaders(cons_helper, execution_context, vcf_reader, tmp_writer)
+        _write_metaheaders(cons_helper, vcf_reader, tmp_writer)
         logger.info("Adding consensus tags for {}", vcf_reader.input_filepath)
         _add_consensus_tags(cons_helper, vcf_reader, tmp_writer)
+
     finally:
         vcf_reader.close()
         tmp_writer.close()
@@ -47,14 +55,21 @@ def write_to_output_file(cons_helper,
 
     tmp_reader.open()
     file_writer.open()
+
     try:
-        _write_metaheaders(cons_helper, execution_context, tmp_reader, file_writer)
         pop_values = cons_helper.get_population_values()
-    
-        _write_execution_metaheaders(file_writer, pop_values)
+
+        new_meta_headers = _get_execution_metaheaders(pop_values)
+        _write_metaheaders(cons_helper,
+                           tmp_reader,
+                           file_writer,
+                           execution_context,
+                           new_meta_headers)
+
         logger.info("Calculating zscore and writing to {}",
                     file_writer.output_filepath)
         _add_zscore(cons_helper, tmp_reader, file_writer, pop_values)
+
     finally:
         tmp_reader.close()
         file_writer.close()
@@ -103,9 +118,11 @@ def execute(args, execution_context):
     tmp_output_file = output_file + ".tmp"
     tmp_writer = vcf.FileWriter(tmp_output_file)
 
-    write_to_tmp_file(cons_helper, execution_context, vcf_reader, tmp_writer)
+    write_to_tmp_file(cons_helper, vcf_reader, tmp_writer)
 
     tmp_reader = vcf.VcfReader(vcf.FileReader(tmp_output_file))
     file_writer = vcf.FileWriter(output_file)
 
     write_to_output_file(cons_helper, execution_context, tmp_reader, file_writer)
+
+    os.remove(tmp_output_file)

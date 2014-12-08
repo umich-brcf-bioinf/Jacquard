@@ -1,5 +1,6 @@
-# pylint: disable=C0111
+# pylint: disable=C0111,C0301,R0904,C0111,W0212
 from argparse import Namespace
+import glob
 import os
 from StringIO import StringIO
 import sys
@@ -8,7 +9,7 @@ import unittest
 
 import jacquard.utils as utils
 from jacquard.consensus2 import _write_metaheaders,_add_consensus_tags,\
-_add_zscore, execute, _write_execution_metaheaders
+_add_zscore, execute, _get_execution_metaheaders
 import jacquard.consensus2 as consensus2
 from jacquard.variant_callers import consensus_helper
 import jacquard.logger as logger
@@ -35,7 +36,7 @@ class MockFileWriter(object):
         self.closed = True
 
 class MockVcfReader(object):
-    def __init__(self, input_filepath="vcfName", metaheaders=["##metaheaders"], 
+    def __init__(self, input_filepath="vcfName", metaheaders=["##metaheaders"],
                  column_header="#header"):
         self.input_filepath = input_filepath
         self.metaheaders = metaheaders
@@ -134,22 +135,23 @@ class Consensus2TestCase(unittest.TestCase):
         file_writer = MockFileWriter()
         vcf_reader = MockVcfReader()
         cons_helper = MockConsensusHelper(MockConsensusTag())
-        _write_metaheaders(cons_helper, ["execution_context"], vcf_reader,
-                           file_writer)
+        _write_metaheaders(cons_helper,
+                           vcf_reader,
+                           file_writer,
+                           ["execution_context"])
         expected = ["##metaheaders", "execution_context",
                     "##consensus_metaheader", "#header"]
         self.assertEquals(expected,file_writer._content)
 
     def test_write_execution_metaheaders(self):
-        file_writer = MockFileWriter()
         pop_values = {"AF": [0.3, 0.1], "DP": [5, 18]}
-        _write_execution_metaheaders(file_writer, pop_values)
+        actual = _get_execution_metaheaders(pop_values)
         expected = ["##jacquard.consensus.JQ_CONS_DP_RANGE.mean_DP_range=5",
                     "##jacquard.consensus.JQ_CONS_DP_ZSCORE.std_DP_range=18",
                     "##jacquard.consensus.JQ_CONS_AF_RANGE.mean_AF_range=0.3",
                     "##jacquard.consensus.JQ_CONS_AF_ZSCORE.std_AF_range=0.1"]
 
-        self.assertEquals(expected, file_writer._content)
+        self.assertEquals("\n".join(expected), actual)
 
     def test_add_consensus_tags(self):
         file_writer = MockFileWriter()
@@ -187,7 +189,7 @@ class Consensus2TestCase(unittest.TestCase):
                              output=output_file,
                              column_specification=None)
             execute(args,["##foo"])
-            output_dir.check("baz.vcf", "baz.vcf.tmp")
+            output_dir.check("baz.vcf")
 
     def test_execute_badInputFile(self):
         input_data = ("##blah\n#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"+
@@ -227,4 +229,54 @@ class Consensus2TestCase(unittest.TestCase):
                              output=output_dir.path,
                              column_specification=None)
             execute(args,["##foo"])
-            output_dir.check("consensus.vcf", "consensus.vcf.tmp")
+            output_dir.check("consensus.vcf")
+
+    def test_functional_consensus(self):
+        file_dirname = os.path.dirname(os.path.realpath(__file__))
+        module_testdir = os.path.join(file_dirname,
+                                      "functional_tests",
+                                      "05_consensus")
+        input_dir = os.path.join(module_testdir, "input")
+        output_dir = os.path.join(module_testdir, "output")
+
+        args = Namespace(input=os.path.join(input_dir, 
+                                            os.listdir(input_dir)[0]),
+                         output=os.path.join(output_dir,
+                                             "consensus.vcf"))
+
+        execution_context = ["##jacquard.version={0}"\
+                             .format(utils.__version__),
+                             "##jacquard.command=functional test",
+                             "##jacquard.cwd=foo"]
+
+        consensus2.execute(args,execution_context)
+
+        output_file = glob.glob(os.path.join(output_dir, "*.vcf"))[0]
+
+        actual_file = vcf.FileReader(output_file)
+        actual_file.open()
+        actual = []
+        for line in actual_file.read_lines():
+            actual.append(line)
+        actual_file.close()
+
+        module_outdir = os.path.join(module_testdir,"benchmark")
+
+        output_file = os.listdir(module_outdir)[0]
+        expected_file = vcf.FileReader(os.path.join(module_outdir,output_file))
+        expected_file.open()
+        expected = []
+        for line in expected_file.read_lines():
+            expected.append(line)
+        expected_file.close()
+
+#             self.assertEquals(len(expected), len(actual))
+        self.assertEquals(34, len(actual))
+
+        for i in xrange(len(expected)):
+            if expected[i].startswith("##jacquard.cwd="):
+                self.assertTrue(actual[i].startswith("##jacquard.cwd="))
+            elif expected[i].startswith("##jacquard.command="):
+                self.assertTrue(actual[i].startswith("##jacquard.command="))
+            else:
+                self.assertEquals(expected[i].rstrip(), actual[i].rstrip())

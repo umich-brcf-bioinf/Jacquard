@@ -76,17 +76,19 @@ def _calculate_range(tags, all_ranges):
 def _calculate_population_values(all_ranges):
     for ranges in all_ranges.values():
         if len(ranges) == 0:
-            pass
-        pop_mean_range = str(sum(ranges)/len(ranges))
-        pop_std_range = str(np.std(ranges))
+            return (0, 0)
 
-        rounded_pop_mean_range = _round_two_digits(pop_mean_range)
-        rounded_pop_std_range = _round_two_digits(pop_std_range)
+        else:
+            pop_mean_range = str(sum(ranges)/len(ranges))
+            pop_std_range = str(np.std(ranges))
 
-        pop_mean_range = float(rounded_pop_mean_range)
-        pop_std_range = float(rounded_pop_std_range)
+            rounded_pop_mean_range = _round_two_digits(pop_mean_range)
+            rounded_pop_std_range = _round_two_digits(pop_std_range)
 
-        return (pop_mean_range, pop_std_range)
+            pop_mean_range = float(rounded_pop_mean_range)
+            pop_std_range = float(rounded_pop_std_range)
+
+            return (pop_mean_range, pop_std_range)
 
 def _calculate_zscore(vcf_record, tag, pop_mean_range, pop_std_range):
     zscore_dict = {}
