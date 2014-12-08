@@ -1,20 +1,20 @@
+from argparse import Namespace
 from collections import OrderedDict
 import glob
+import os
 import pandas as pd
-import unittest
 import pandas.util.testing as tm
 from StringIO import StringIO
-import os
+import sys
 from testfixtures import TempDirectory
+import unittest
+
 from jacquard.merge import PivotError, VariantPivoter, merge_samples, _add_mult_alt_flags, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller_and_split_mult_alts, validate_samples_for_callers, validate_sample_caller_vcfs, create_new_line, create_merging_dict, remove_old_columns
 import jacquard.merge as merge
-from argparse import Namespace
-import sys
 import jacquard.utils as utils
 from jacquard.vcf import FileReader
 import jacquard.logger as logger
 from jacquard.utils import JQException
-from testfixtures.tempdirectory import TempDirectory
 import test.mock_module as mock_module
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))

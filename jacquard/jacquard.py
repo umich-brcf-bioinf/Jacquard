@@ -28,6 +28,7 @@ import tag as tag
 import normalize as normalize
 import filter_hc_somatic as filter_hc_somatic
 import merge as merge
+import merge2 as merge2
 import consensus as consensus
 import expand as expand
 import utils as utils
@@ -137,8 +138,8 @@ def _move_tmp_contents_to_original(tmp_dir, original_output):
 
     os.rmdir(tmp_dir)
 
-# pylint: disable=C0301
 def dispatch(modules, arguments):
+    # pylint: disable=C0301
     parser = argparse.ArgumentParser(
         usage="jacquard",
         formatter_class=argparse.RawDescriptionHelpFormatter,
