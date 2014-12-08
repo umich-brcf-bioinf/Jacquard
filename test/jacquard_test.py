@@ -204,9 +204,7 @@ class JacquardTestCase_FunctionalTest(unittest.TestCase):
                                           "functional_tests",
                                           "jacquard_test")
 
-            initial_input = os.path.join(module_testdir,
-                                          "normalize",
-                                          "input")
+            initial_input = os.path.join(module_testdir, "input")
             normalize_output = output_dir.path
             tag_output = os.path.join(output_dir.path, "tag")
             filter_output = os.path.join(output_dir.path, "filter_hc_somatic")
