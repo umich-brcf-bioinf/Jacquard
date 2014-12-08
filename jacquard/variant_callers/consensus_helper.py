@@ -75,8 +75,8 @@ def _calculate_range(tags, all_ranges):
 
 def _calculate_population_values(all_ranges):
     for ranges in all_ranges.values():
-        if len(ranges) == 0:
-            return (0, 0)
+        if len(ranges) == 0: #less than 2 callers
+            return (0.0, 0.0)
 
         else:
             pop_mean_range = str(sum(ranges)/len(ranges))

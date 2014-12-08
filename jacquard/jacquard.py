@@ -29,7 +29,6 @@ import normalize as normalize
 import filter_hc_somatic as filter_hc_somatic
 import merge as merge
 import consensus as consensus
-import consensus2 as consensus2
 import expand
 import utils as utils
 import logger as logger
@@ -39,7 +38,6 @@ _SUBCOMMANDS = [normalize,
                 filter_hc_somatic,
                 merge,
                 consensus,
-                consensus2,
                 expand]
 
 TMP_DIR_NAME = "jacquard_tmp"

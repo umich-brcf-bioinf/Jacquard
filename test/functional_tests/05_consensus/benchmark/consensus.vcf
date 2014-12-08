@@ -17,10 +17,10 @@
 ##FORMAT=<ID=JQ_CONS_DP_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].",Source="Jacquard",Version="0.21">
 ##FORMAT=<ID=JQ_CONS_DP_RANGE, Number=1,Type=Float,Description="Max(depth) - min (depth) across recognized callers.",Source="Jacquard",Version="<0.21>">
 ##FORMAT=<ID=JQ_CONS_DP_ZSCORE,Number=1,Type=Float,Description="Jacquard measure of concordance of reported depths across callers. [(this DP range - mean DP range)/standard dev(all DP ranges)]. If consensus value from <2 values will be [.]",Source="Jacquard",Version="<0.21>"
-##jacquard.consensus.JQ_CONS_DP_RANGE.mean_DP_range=0
-##jacquard.consensus.JQ_CONS_DP_ZSCORE.std_DP_range=0
-##jacquard.consensus.JQ_CONS_AF_RANGE.mean_AF_range=0
-##jacquard.consensus.JQ_CONS_AF_ZSCORE.std_AF_range=0
+##jacquard.consensus.JQ_CONS_DP_RANGE.mean_DP_range=0.0
+##jacquard.consensus.JQ_CONS_DP_ZSCORE.std_DP_range=0.0
+##jacquard.consensus.JQ_CONS_AF_RANGE.mean_AF_range=0.0
+##jacquard.consensus.JQ_CONS_AF_ZSCORE.std_AF_range=0.0
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	tiny_strelka|NORMAL	tiny_strelka|TUMOR
 chr1	1147545	.	A	G	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.0:27:0:0:.:27:.:.:.	0.31:35:1:0.31:.:35:.:.:.
 chr1	1169795	.	C	T	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.0:37:0:0:.:37:.:.:.	0.22:46:1:0.22:.:46:.:.:.
