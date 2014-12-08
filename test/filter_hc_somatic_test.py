@@ -143,38 +143,6 @@ class FilterSomaticTestCase(unittest.TestCase):
             self.assertEqual(["mutect_HCsomatic.vcf", "varscan_HCsomatic.vcf"], output_dir.actual())
             self.assertIn("Filtered to [1] calls in high-confidence loci.", mock_log_messages)
 
-    def Xtest_writeSomatic5(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/reference_files/filter_somatic_test/input/"
-        in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
-        output_dir = script_dir + "/reference_files/filter_somatic_test/output"
-        try:
-            os.mkdir(output_dir)
-        except:
-            pass
-        somatic_positions = {'1^2353': 1, '1^2352': 1}
-        execution_context = ["##foo.version=0.1", "##bar"]
-        excluded_variants = _write_somatic(in_files, output_dir, somatic_positions, execution_context)
-
-        self.assertEqual("##jacquard.filterHCSomatic.excluded_variants=5\n", excluded_variants)
-        shutil.rmtree(output_dir)
-
-    def Xtest_writeSomatic32(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/reference_files/filter_somatic_test/input/"
-        in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
-        output_dir = script_dir + "/reference_files/filter_somatic_test/output"
-        try:
-            os.mkdir(output_dir)
-        except:
-            pass
-        somatic_positions = {'1^15996': 1, '1^2352': 1}
-        execution_context = ["##foo.version=0.1", "##bar"]
-        excluded_variants = _write_somatic(in_files, output_dir, somatic_positions, execution_context)
-
-        self.assertEqual("##jacquard.filterHCSomatic.excluded_variants=32\n", excluded_variants)
-        shutil.rmtree(output_dir)
-
     def test_functional_filter_hc_somatic(self):
         with TempDirectory() as output_dir:
             file_path = os.path.dirname(os.path.realpath(__file__))

@@ -233,8 +233,9 @@ class MergeTestCase(unittest.TestCase):
         self.assertEqual(1, output)
         self.assertEqual("Invalid input parameter(s) ['foo']", message)
         
+    #TODO: move out of reference files
     def test_determineInputKeysVcf(self):
-        input_dir = TEST_DIRECTORY + "/reference_files/test_input/test_input_keys_vcf"
+        input_dir = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_vcf"
         actual_lst = determine_input_keys(input_dir)
         
         expected_lst = ["CHROM", "POS", "REF", "ALT"]
@@ -242,13 +243,13 @@ class MergeTestCase(unittest.TestCase):
         self.assertEquals(expected_lst, actual_lst)
         
     def test_determineInputKeysInvalid(self):
-        input_dir = TEST_DIRECTORY + "/reference_files/test_input/test_input_keys_invalid"
+        input_dir = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_invalid"
         
         self.assertRaises(PivotError, determine_input_keys, input_dir)
     
     ##get headers, readers
     def test_getHeadersAndReaders(self):
-        input_dir = TEST_DIRECTORY + "/reference_files/test_input/test_input_valid"
+        input_dir = TEST_DIRECTORY + "/functional_tests/test_input/test_input_valid"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*")))
         sample_file_readers, headers, header_names, first_line, meta_headers = get_headers_and_readers(in_files)
         
@@ -259,7 +260,7 @@ class MergeTestCase(unittest.TestCase):
         self.assertEquals(['##FORMAT=<ID=JQ_FOO'], meta_headers)
         
     def test_getHeadersAndReaders_invalid(self):
-        input_dir = TEST_DIRECTORY + "/reference_files/test_input/test_input_keys_txt"
+        input_dir = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_txt"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*")))
         
         self.assertRaisesRegexp(JQException,
@@ -432,18 +433,18 @@ class MergeTestCase(unittest.TestCase):
         self.assertEquals(["##foo", "##jacquard.tag.foo", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
         
     def test_createNewLine(self):
-        fields = ["1", "42", ".", "A", "G,CT", ".", ".", ".", "DP:JQ_AF_VS:AF", "23:0.24,0.32:0.2354,0.324", "23:0.25,0.36:0.254,0.3456"]
-        
+        fields = ["1", "42", ".", "A", "G,CT", ".", ".", ".", "DP:JQ_VS_AF:AF", "23:0.24,0.32:0.2354,0.324", "23:0.25,0.36:0.254,0.3456"]
+
         alt_allele_number = 0
         actual_line = create_new_line(alt_allele_number, fields)
-        expected_line = "\t".join(["1", "42", ".", "A", "G", ".", ".", ".", "DP:JQ_AF_VS:AF", "23:0.24:0.2354,0.324", "23:0.25:0.254,0.3456\n"])
+        expected_line = "\t".join(["1", "42", ".", "A", "G", ".", ".", ".", "DP:JQ_VS_AF:AF", "23:0.24:0.2354,0.324", "23:0.25:0.254,0.3456\n"])
         self.assertEquals(expected_line, actual_line)
-        
+
         alt_allele_number = 1
         actual_line = create_new_line(alt_allele_number, fields)
-        expected_line = "\t".join(["1", "42", ".", "A", "CT", ".", ".", ".", "DP:JQ_AF_VS:AF", "23:0.32:0.2354,0.324", "23:0.36:0.254,0.3456\n"])
+        expected_line = "\t".join(["1", "42", ".", "A", "CT", ".", ".", ".", "DP:JQ_VS_AF:AF", "23:0.32:0.2354,0.324", "23:0.36:0.254,0.3456\n"])
         self.assertEquals(expected_line, actual_line)
-        
+
     def test_validateSamplesForCallers_valid(self):
         context = ["jacquard.foo=file1|13523|tumor(file1.vcf)", "jacquard.foo=file2|13523|tumor(file2.vcf)", "jacquard.foo=file3|13523|tumor(file3.vcf)"]
         value = validate_samples_for_callers(context, False)

@@ -89,7 +89,7 @@ class MockConsensusHelper(object):
             tag.format_called = True
         self.add_zscore_called = True
 
-    def get_new_metaheaders(self):
+    def get_consensus_metaheaders(self):
         return [tag.metaheader for tag in self.tags]
 
 mock_log_called = False
@@ -98,7 +98,7 @@ def mock_log(msg, *args):
     global mock_log_called
     mock_log_called = True
 
-class Consensus2TestCase(unittest.TestCase):
+class ConsensusTestCase(unittest.TestCase):
     def setUp(self):
         self.output = StringIO()
         self.saved_stderr = sys.stderr
@@ -294,7 +294,7 @@ class Consensus2TestCase(unittest.TestCase):
             expected.append(line)
         expected_file.close()
 
-#             self.assertEquals(len(expected), len(actual))
+        self.assertEquals(len(expected), len(actual))
         self.assertEquals(34, len(actual))
 
         for i in xrange(len(expected)):

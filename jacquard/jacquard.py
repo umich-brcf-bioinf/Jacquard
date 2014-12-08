@@ -29,7 +29,7 @@ import normalize as normalize
 import filter_hc_somatic as filter_hc_somatic
 import merge as merge
 import consensus as consensus
-import expand
+import expand as expand
 import utils as utils
 import logger as logger
 
@@ -44,7 +44,6 @@ TMP_DIR_NAME = "jacquard_tmp"
 TMP_OUTPUT_PATH = None
 
 def main():
-    
     #pylint: disable=W0613
     def handler(signum, frame):
         print("WARNING: Jacquard was interrupted before completing.",
@@ -175,10 +174,10 @@ def dispatch(modules, arguments):
         logger.info("Saving log to [{}]", logger.log_filename)
         logger.debug("cwd|{}", os.getcwd())
         logger.debug("command|{}", " ".join(arguments))
-        
+
         original_output_dir = args.output
         global TMP_OUTPUT_PATH
-        
+
         TMP_OUTPUT_PATH = _create_temp_directory(original_output_dir, args.force)
         args.output = TMP_OUTPUT_PATH
         logger.debug("Writing output to tmp directory [{}]", TMP_OUTPUT_PATH)

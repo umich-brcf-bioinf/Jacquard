@@ -6,11 +6,17 @@ import vcf as vcf
 import utils as utils
 import logger as logger
 
-def _write_metaheaders(cons_helper, vcf_reader, file_writer, execution_context = 0, new_meta_headers = 0):
+def _write_metaheaders(cons_helper,
+                       vcf_reader,
+                       file_writer,
+                       execution_context = 0,
+                       new_meta_headers = 0):
+
     new_headers = vcf_reader.metaheaders
+
     if execution_context:
         new_headers.extend(execution_context)
-        new_headers.extend(cons_helper.get_new_metaheaders())
+        new_headers.extend(cons_helper.get_consensus_metaheaders())
     if new_meta_headers:
         new_headers.append(new_meta_headers)
 
@@ -32,8 +38,8 @@ def _get_execution_metaheaders(pop_values):
                          .format(consensus_helper.JQ_CONSENSUS_TAG, tag,
                                  str(pop_std_range))
         new_meta_headers.append(pop_std_header)
+
     return "\n".join(new_meta_headers)
-#         file_writer.write(new_meta_header)
 
 def write_to_tmp_file(cons_helper, vcf_reader, tmp_writer):
     vcf_reader.open()
@@ -123,6 +129,9 @@ def execute(args, execution_context):
     tmp_reader = vcf.VcfReader(vcf.FileReader(tmp_output_file))
     file_writer = vcf.FileWriter(output_file)
 
-    write_to_output_file(cons_helper, execution_context, tmp_reader, file_writer)
+    write_to_output_file(cons_helper,
+                         execution_context,
+                         tmp_reader,
+                         file_writer)
 
     os.remove(tmp_output_file)

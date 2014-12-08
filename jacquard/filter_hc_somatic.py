@@ -26,31 +26,6 @@ def _iterate_file(in_file, vcf_reader, filtered_records, num_records, somatic_po
                             somatic_positions[somatic_key] = 1
                             somatic = 1
     vcf_reader.close()
-                 
-                     
-                
-#     for line in in_file:
-#         if line.startswith("#"):
-#             continue
-#         elif "JQ_EXCLUDE" in line:
-#             filtered_records += 1
-#         else:
-#             num_records += 1
-#             split_line = line.split("\t")
-#             format_col = split_line[8]
-#             sample_cols = split_line[9:]
-#  
-#             for sample_col in sample_cols:
-#                 format_sample_dict = utils.combine_format_values(format_col,
-#                                                                  sample_col)
-#                 print format_sample_dict
-#                 for key in format_sample_dict.keys():
-#                     if re.search(utils.jq_somatic_tag, key):
-#                         if format_sample_dict[key] == "1":
-#                             somatic_key = "^".join([split_line[0],
-#                                                     split_line[1]])
-#                             somatic_positions[somatic_key] = 1
-#                             somatic = 1
 
     return filtered_records, num_records, somatic_positions, somatic
 

@@ -79,21 +79,17 @@ def _calculate_population_values(all_ranges):
             return (0.0, 0.0)
 
         else:
-            pop_mean_range = str(sum(ranges)/len(ranges))
-            pop_std_range = str(np.std(ranges))
+            pop_mean_range = _round_two_digits(str(sum(ranges)/len(ranges)))
+            pop_std_range = _round_two_digits(str(np.std(ranges)))
 
-            rounded_pop_mean_range = _round_two_digits(pop_mean_range)
-            rounded_pop_std_range = _round_two_digits(pop_std_range)
-
-            pop_mean_range = float(rounded_pop_mean_range)
-            pop_std_range = float(rounded_pop_std_range)
-
-            return (pop_mean_range, pop_std_range)
+            return (float(pop_mean_range), float(pop_std_range))
 
 def _calculate_zscore(vcf_record, tag, pop_mean_range, pop_std_range):
     zscore_dict = {}
+
     for sample in vcf_record.sample_dict.keys():
         samp_range = vcf_record.sample_dict[sample][tag]
+
         if samp_range != ".":
             samp_range = float(samp_range)
             if pop_std_range != 0.0:
@@ -101,6 +97,7 @@ def _calculate_zscore(vcf_record, tag, pop_mean_range, pop_std_range):
             else:
                 zscore = "."
             zscore_dict[sample] = zscore
+
         else:
             zscore_dict[sample] = "."
 
@@ -289,6 +286,7 @@ class ConsensusHelper():
         for tag in self.tags:
             (pop_mean_range,
              pop_std_range) = _calculate_population_values(self.ranges)
+
             pop_values[tag.name] = [pop_mean_range, pop_std_range]
 
         return pop_values
@@ -300,5 +298,5 @@ class ConsensusHelper():
 
         return vcf_record.asText()
 
-    def get_new_metaheaders(self):
+    def get_consensus_metaheaders(self):
         return [tag.metaheader for tag in self.tags]

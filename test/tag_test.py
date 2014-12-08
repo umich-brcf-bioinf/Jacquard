@@ -527,9 +527,9 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         with TempDirectory() as output_dir:
             module_testdir = os.path.dirname(os.path.realpath(__file__))+"/functional_tests/02_tag"
             input_dir = os.path.join(module_testdir,"input")
-            args = Namespace(input=input_dir, 
+            args = Namespace(input=input_dir,
                          output=output_dir.path)
-            
+
             execution_context = ["##jacquard.version={0}".format(utils.__version__),
                 "##jacquard.command={0}".format(" ".join(["tag",
                                         os.path.join(module_testdir,"input"),
@@ -537,16 +537,16 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                 "##jacquard.cwd="
                 ]
             tag.execute(args,execution_context)
-            
+
             output_file = glob.glob(os.path.join(output_dir.path, "*.vcf"))[0]
-            
+
             actual_file = FileReader(os.path.join(output_dir.path,output_file))
             actual_file.open()
             actual = []
             for line in actual_file.read_lines():
                 actual.append(line)
             actual_file.close()
-            
+
             module_outdir = os.path.join(module_testdir,"benchmark")
             output_file = os.listdir(module_outdir)[0]
             expected_file = FileReader(os.path.join(module_outdir,output_file))
@@ -557,13 +557,12 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             expected_file.close()
 
             self.assertEquals(len(expected), len(actual))
-            
             self.assertEquals(133, len(actual))
-            
+
             for i in xrange(len(expected)):
                 if expected[i].startswith("##jacquard.cwd="):
                     self.assertTrue(actual[i].rstrip() in expected[i])
                 elif expected[i].startswith("##jacquard.command="):
                     self.assertTrue(actual[i].startswith("##jacquard.command="))
                 else:
-                    self.assertEquals(expected[i].rstrip(), actual[i].rstrip()) 
+                    self.assertEquals(expected[i].rstrip(), actual[i].rstrip())

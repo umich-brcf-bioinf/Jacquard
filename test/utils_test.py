@@ -44,17 +44,17 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
         logger.error = mock_log
         logger.warning = mock_log
         logger.debug = mock_log
-        
+
     def _reset_mock_logger(self):
         logger.info = self.original_info
         logger.error = self.original_error
         logger.warning = self.original_warning
         logger.debug = self.original_debug
-        
+
     def test_validateDirectories_inputDirectoryDoesntExist(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/reference_files/tag_varscan_test/foo"
-        output_dir = script_dir + "/reference_files/tag_varscan_test/output"
+        input_dir = script_dir + "/functional_tests/utils_test/tag_varscan_test/foo"
+        output_dir = script_dir + "/functional_tests/utils_test/tag_varscan_test/output"
 
         with self.assertRaises(SystemExit) as cm:
             validate_directories(input_dir, output_dir)

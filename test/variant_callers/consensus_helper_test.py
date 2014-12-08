@@ -242,7 +242,7 @@ class ConsensusHelperTestCase(unittest.TestCase):
                                  utils.__version__)
 
         cons_help = consensus_helper.ConsensusHelper()
-        actual = cons_help.get_new_metaheaders()
+        actual = cons_help.get_consensus_metaheaders()
 
         split_actual = actual[0].split("\n")
         first_meta_header = split_actual[0]
