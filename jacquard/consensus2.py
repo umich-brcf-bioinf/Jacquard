@@ -32,13 +32,13 @@ def _write_execution_metaheaders(file_writer, pop_values):
 def write_to_tmp_file(cons_helper, execution_context, vcf_reader, tmp_writer):
     vcf_reader.open()
     tmp_writer.open()
-
-    _write_metaheaders(cons_helper, execution_context, vcf_reader, tmp_writer)
-    logger.info("Adding consensus tags for {}", vcf_reader.input_filepath)
-    _add_consensus_tags(cons_helper, vcf_reader, tmp_writer)
-
-    vcf_reader.close()
-    tmp_writer.close()
+    try:
+        _write_metaheaders(cons_helper, execution_context, vcf_reader, tmp_writer)
+        logger.info("Adding consensus tags for {}", vcf_reader.input_filepath)
+        _add_consensus_tags(cons_helper, vcf_reader, tmp_writer)
+    finally:
+        vcf_reader.close()
+        tmp_writer.close()
 
 def write_to_output_file(cons_helper,
                          execution_context,
@@ -47,17 +47,17 @@ def write_to_output_file(cons_helper,
 
     tmp_reader.open()
     file_writer.open()
-
-    _write_metaheaders(cons_helper, execution_context, tmp_reader, file_writer)
-    pop_values = cons_helper.get_population_values()
-
-    _write_execution_metaheaders(file_writer, pop_values)
-    logger.info("Calculating zscore and writing to {}",
-                file_writer.output_filepath)
-    _add_zscore(cons_helper, tmp_reader, file_writer, pop_values)
-
-    tmp_reader.close()
-    file_writer.close()
+    try:
+        _write_metaheaders(cons_helper, execution_context, tmp_reader, file_writer)
+        pop_values = cons_helper.get_population_values()
+    
+        _write_execution_metaheaders(file_writer, pop_values)
+        logger.info("Calculating zscore and writing to {}",
+                    file_writer.output_filepath)
+        _add_zscore(cons_helper, tmp_reader, file_writer, pop_values)
+    finally:
+        tmp_reader.close()
+        file_writer.close()
 
 def _add_consensus_tags(cons_helper, vcf_reader, file_writer):
     for vcf_record in vcf_reader.vcf_records():

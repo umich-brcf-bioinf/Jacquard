@@ -11,6 +11,7 @@ from testfixtures import TempDirectory
 import os
 from jacquard.consensus import iterate_file, add_consensus, process_line, calculate_consensus, create_consensus_dict, get_consensus_som, get_consensus, add_zscore, calculate_zscore
 import jacquard.consensus as consensus
+import jacquard.consensus2 as consensus2
 import jacquard.logger as logger
 from jacquard.vcf import FileReader
 
