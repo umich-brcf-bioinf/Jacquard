@@ -866,22 +866,22 @@ class MergeTestCase(unittest.TestCase):
                          output=os.path.join(output_dir.path,"merged.vcf"),
                          allow_inconsistent_sample_sets=False,
                          keys=None)
-            
+
             execution_context = ["##jacquard.version={0}".format(utils.__version__),
                 "##jacquard.command=",
                 "##jacquard.cwd="]
-            
+
             merge.execute(args,execution_context)
-            
+
             output_file = glob.glob(os.path.join(output_dir.path, "*.vcf"))[0]
-            
+
             actual_file = FileReader(output_file)
             actual_file.open()
             actual = []
             for line in actual_file.read_lines():
                 actual.append(line)
             actual_file.close()
-            
+
             module_outdir = os.path.join(module_testdir,"benchmark")
             output_file = glob.glob(os.path.join(module_outdir, "*.vcf"))[0]
             expected_file = FileReader(os.path.join(module_outdir,output_file))
@@ -890,11 +890,11 @@ class MergeTestCase(unittest.TestCase):
             for line in expected_file.read_lines():
                 expected.append(line)
             expected_file.close()
-            
+
             self.assertEquals(len(expected), len(actual))
-            
+
             self.assertEquals(21, len(actual))
-            
+
             for i in xrange(len(expected)):
                 if expected[i].startswith("##jacquard.cwd="):
                     self.assertTrue(actual[i].startswith("##jacquard.cwd="))
@@ -902,8 +902,7 @@ class MergeTestCase(unittest.TestCase):
                     self.assertTrue(actual[i].startswith("##jacquard.command="))
                 else:
                     self.assertEquals(expected[i].rstrip(), actual[i].rstrip()) 
-                                
-        
+
 class MockWriter():
     def __init__(self):
         self._content = []
