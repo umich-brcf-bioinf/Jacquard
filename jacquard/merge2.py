@@ -1,6 +1,7 @@
 # pylint: disable=C0111
 import glob
 import os
+import re
 
 import utils as utils
 import vcf as vcf
@@ -21,14 +22,57 @@ def _produce_merged_metaheaders(vcf_reader, all_meta_headers, count):
 
     return all_meta_headers
 
-def _write_to_outfile(file_writer, all_metaheaders, column_header, execution_context):
-    file_writer.open()
+def _get_all_coordinates(vcf_reader, all_coordinates):
+    vcf_reader.open()
+
+    for vcf_record in vcf_reader.vcf_records():
+        coordinate = "^".join([vcf_record.chrom,
+                               vcf_record.pos,
+                               vcf_record.ref,
+                               vcf_record.alt])
+        all_coordinates.append(coordinate)
+
+    vcf_reader.close()
+
+    return all_coordinates
+
+def _sort_all_coordinates(all_coordinates):
+    def _convert(element):
+        return int(element) if element.isdigit() else element
+
+    def _alphanum_key (coordinates):
+        return [_convert(c) for c in re.split('([0-9]+)', coordinates)]
+
+    return sorted(all_coordinates, key=_alphanum_key)
+
+def _write_metaheaders(file_writer,
+                      all_metaheaders,
+                      column_header,
+                      execution_context):
 
     all_metaheaders.extend(execution_context)
-    all_metaheaders.append("\t".join(column_header))
-    file_writer.write("\n".join(all_metaheaders))
+    file_writer.write("\n".join(all_metaheaders) + "\n")
+    file_writer.write("\t".join(column_header) + "\n")
 
-    file_writer.close()
+def _write_variants(vcf_reader, file_writer, coordinate):
+    vcf_reader.open()
+
+    for vcf_record in vcf_reader.vcf_records():
+        vcf_record.id = "."
+        vcf_record.qual = "."
+        vcf_record.filter = "."
+
+        key = "^".join([vcf_record.chrom,
+                        vcf_record.pos,
+                        vcf_record.ref,
+                        vcf_record.alt])
+
+        if key == coordinate:
+            file_writer.write(vcf_record.asText())
+        else:
+            continue
+
+    vcf_reader.close()
 
 def add_subparser(subparser):
     #pylint: disable=C0301
@@ -44,16 +88,34 @@ def execute(args, execution_context):
     output_path = os.path.abspath(args.output)
 
     all_metaheaders = []
+    all_coordinates = []
     input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
+
+    file_writer = vcf.FileWriter(output_path)
+    file_writer.open()
+
     count = 1
     for input_file in input_files:
         vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
         all_metaheaders = _produce_merged_metaheaders(vcf_reader,
                                                       all_metaheaders,
                                                       count)
+
         column_header = vcf_reader.column_header.split("\t")[0:9]
+        all_coordinates = _get_all_coordinates(vcf_reader, all_coordinates)
         count += 1
 
-    file_writer = vcf.FileWriter(output_path)
-    _write_to_outfile(file_writer, all_metaheaders, column_header, execution_context)
+    _write_metaheaders(file_writer,
+                      all_metaheaders,
+                      column_header,
+                      execution_context)
+
+    sorted_coordinates = _sort_all_coordinates(all_coordinates)
+    for coordinate in sorted_coordinates:
+        for input_file in input_files:
+            vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
+            _write_variants(vcf_reader, file_writer, coordinate)
+
+    file_writer.close()
+
 

@@ -1,4 +1,4 @@
-#pylint: disable=C0111,C0301
+#pylint: disable=C0111,C0301,W0212
 from argparse import Namespace
 from collections import OrderedDict
 import glob
@@ -37,10 +37,12 @@ class MockVcfReader(object):
 class MockVcfRecord(object):
     def __init__(self, content):
         self.chrom, self.pos, self.id, self.ref, self.alt, self.qual, \
-            self.filter, self.info, self.format = content[0:9]
-        self.samples = content[9:]
+            self.filter, self.info, self.format = content.split("\t")[0:9]
+        self.samples = content.split("\t")[9:]
 
         tags = self.format.split(":")
+        self.format_set = tags
+
         self.sample_dict = {}
         for i, sample in enumerate(self.samples):
             values = sample.split(":")
@@ -58,6 +60,16 @@ class MockVcfRecord(object):
 
         return info_dict
 
+    def asText(self):
+        stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
+                       self.qual, self.filter, self.info,
+                       ":".join(self.format_set)]
+
+        for key in self.sample_dict:
+            stringifier.append(":".join(self.sample_dict[key].values()))
+
+        return "\t".join(stringifier) + "\n"
+
 class MockFileWriter(object):
     def __init__(self):
         self.written = []
@@ -66,7 +78,7 @@ class MockFileWriter(object):
         self.written.append(text)
 
 class MergeTestCase(unittest.TestCase):
-    def test_get_metaheaders(self):
+    def test_produce_merged_metaheaders(self):
         meta_headers = ['##fileformat=VCFv4.2',
                         '##jacquard.version=0.21',
                         '##FORMAT=<ID=JQ_MT_AF,Number=A,Type=Float,Description="foo",Source="Jacquard",Version=0.21>',
@@ -81,6 +93,53 @@ class MergeTestCase(unittest.TestCase):
         meta_headers.append('##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,Description="dbSNP Membership",Source="Jacquard",Version="0.21">')
 
         self.assertEquals(meta_headers, actual_meta_headers)
+
+    def test_get_all_coordinates(self):
+        mock_readers = [MockVcfReader(content=["chr1\t1\t.\tA\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
+                                               "chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"]),
+                        MockVcfReader(content=["chr1\t1\t.\tA\tT\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
+                                               "chr42\t16\t.\tG\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"])]
+        all_coordinates = []
+        for mock_reader in mock_readers:
+            all_coordinates = merge2._get_all_coordinates(mock_reader, all_coordinates)
+
+        expected_coordinates = ["chr1^1^A^C",
+                                "chr2^12^A^G",
+                                "chr1^1^A^T",
+                                "chr42^16^G^C"]
+        self.assertEquals(expected_coordinates, all_coordinates)
+
+    def test_sort_all_coordinates(self):
+        all_coordinates = ["chr1^1^A^C",
+                           "chr12^24^A^G",
+                           "chr1^1^A^T",
+                           "chr4^16^G^C"]
+
+        sorted_coordinates = merge2._sort_all_coordinates(all_coordinates)
+        expected_coordinates = ["chr1^1^A^C",
+                                "chr1^1^A^T",
+                                "chr4^16^G^C",
+                                "chr12^24^A^G"]
+
+        self.assertEquals(expected_coordinates, sorted_coordinates)
+
+    def test_write_variants(self):
+        mock_reader = MockVcfReader(content=["chr1\t1\t.\tA\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
+                                             "chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"])
+        mock_writer = MockFileWriter()
+        merge2._write_variants(mock_reader, mock_writer, "chr2^12^A^G")
+
+        expected = ["chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR\n"]
+        self.assertEquals(expected, mock_writer.written)
+
+    def test_write_variants_missingCoordinate(self):
+        mock_reader = MockVcfReader(content=["chr1\t1\t.\tA\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
+                                             "chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"])
+        mock_writer = MockFileWriter()
+        merge2._write_variants(mock_reader, mock_writer, "chr10^12^A^G")
+
+        expected = []
+        self.assertEquals(expected, mock_writer.written)
 
     def test_functional_merge2(self):
         with TempDirectory() as output_dir:
@@ -117,9 +176,9 @@ class MergeTestCase(unittest.TestCase):
             for line in expected_file.read_lines():
                 expected.append(line)
             expected_file.close()
-            print actual
+
             self.assertEquals(len(expected), len(actual))
-            self.assertEquals(94, len(actual))
+            self.assertEquals(104, len(actual))
 
             for i in xrange(len(expected)):
                 if expected[i].startswith("##jacquard.cwd="):

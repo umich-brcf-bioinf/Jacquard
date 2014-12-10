@@ -846,10 +846,10 @@ class MergeTestCase(unittest.TestCase):
         sample_file = "file1.vcf"
         count = 1
         all_merge_context, all_merge_column_context = determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, sample_file, count)
-        
+
         self.assertEqual(["##jacquard.merge.file1=file1.vcf(['samp1', 'samp2'])"], all_merge_context)
         self.assertEqual(['##jacquard.merge.sample_column1=file1|samp1(file1.vcf)', '##jacquard.merge.sample_column2=file1|samp2(file1.vcf)'], all_merge_column_context)
-        
+
     def test_printNewExecutionContext(self):
         out_file = MockWriter()
         execution_context = ["##jacquard", "##foo_bar", "##baz"]
@@ -857,7 +857,7 @@ class MergeTestCase(unittest.TestCase):
         lines = out_file.lines()
         self.assertEqual(['##jacquard', '##foo_bar', '##baz'], lines)
         self.assertEqual(True, out_file.wasClosed)
-    
+
     def test_functional_merge(self):
         with TempDirectory() as output_dir:
             module_testdir = os.path.dirname(os.path.realpath(__file__))+"/functional_tests/04_merge"
