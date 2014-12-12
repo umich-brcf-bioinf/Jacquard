@@ -110,13 +110,14 @@ class VcfRecord(object):
 
         return info_dict
 
-    def asText(self):
-        stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
+    def asText(self, stringifier = []):
+        if not stringifier:
+            stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
                        self.qual, self.filter, self.info,
                        ":".join(self.format_set)]
 
-        for key in self.sample_dict:
-            stringifier.append(":".join(self.sample_dict[key].values()))
+            for key in self.sample_dict:
+                stringifier.append(":".join(self.sample_dict[key].values()))
 
         return "\t".join(stringifier) + "\n"
 

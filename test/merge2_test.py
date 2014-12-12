@@ -1,6 +1,6 @@
 #pylint: disable=C0111,C0301,W0212
 from argparse import Namespace
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 import glob
 import os
 from testfixtures import TempDirectory
@@ -60,13 +60,14 @@ class MockVcfRecord(object):
 
         return info_dict
 
-    def asText(self):
-        stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
+    def asText(self, stringifier=[]):
+        if not stringifier:
+            stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
                        self.qual, self.filter, self.info,
                        ":".join(self.format_set)]
 
-        for key in self.sample_dict:
-            stringifier.append(":".join(self.sample_dict[key].values()))
+            for key in self.sample_dict:
+                stringifier.append(":".join(self.sample_dict[key].values()))
 
         return "\t".join(stringifier) + "\n"
 
@@ -94,32 +95,54 @@ class MergeTestCase(unittest.TestCase):
 
         self.assertEquals(meta_headers, actual_meta_headers)
 
-    def test_get_all_coordinates(self):
+    def test_get_coordinate_dict(self):
+        mock_readers = [MockVcfReader(content=["chr1\t1\t.\tA\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
+                                               "chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"]),
+                        MockVcfReader(content=["chr42\t16\t.\tG\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"])]
+        coordinate_dict = defaultdict(list)
+        for mock_reader in mock_readers:
+            coordinate_dict = merge2._get_coordinate_dict(mock_reader, coordinate_dict)
+
+        expected_coordinates = {"chr1^1": ["chr1^1^A^C"],
+                                "chr2^12": ["chr2^12^A^G"],
+                                "chr42^16": ["chr42^16^G^C"]}
+        self.assertEquals(expected_coordinates, coordinate_dict)
+
+    def test_get_coordinate_dict_multAlts(self):
         mock_readers = [MockVcfReader(content=["chr1\t1\t.\tA\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
                                                "chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"]),
                         MockVcfReader(content=["chr1\t1\t.\tA\tT\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
                                                "chr42\t16\t.\tG\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"])]
-        all_coordinates = []
+        coordinate_dict = defaultdict(list)
         for mock_reader in mock_readers:
-            all_coordinates = merge2._get_all_coordinates(mock_reader, all_coordinates)
+            coordinate_dict = merge2._get_coordinate_dict(mock_reader, coordinate_dict)
 
-        expected_coordinates = ["chr1^1^A^C",
-                                "chr2^12^A^G",
-                                "chr1^1^A^T",
-                                "chr42^16^G^C"]
-        self.assertEquals(expected_coordinates, all_coordinates)
+        expected_coordinates = {"chr1^1": ["chr1^1^A^C", "chr1^1^A^T"],
+                                "chr2^12": ["chr2^12^A^G"],
+                                "chr42^16": ["chr42^16^G^C"]}
+        self.assertEquals(expected_coordinates, coordinate_dict)
 
-    def test_sort_all_coordinates(self):
-        all_coordinates = ["chr1^1^A^C",
-                           "chr12^24^A^G",
-                           "chr1^1^A^T",
-                           "chr4^16^G^C"]
+    def test_sort_coordinate_dict(self):
+        coordinate_dict = {"chr1^1": ["chr1^1^A^C", "chr1^1^A^T"],
+                           "chr12^24": ["chr12^24^A^G"],
+                           "chr4^16": ["chr4^16^G^C"]}
 
-        sorted_coordinates = merge2._sort_all_coordinates(all_coordinates)
-        expected_coordinates = ["chr1^1^A^C",
-                                "chr1^1^A^T",
-                                "chr4^16^G^C",
-                                "chr12^24^A^G"]
+        sorted_coordinates = merge2._sort_coordinate_dict(coordinate_dict)
+        expected_coordinates = OrderedDict([("chr1^1", ["chr1^1^A^C", "chr1^1^A^T"]),
+                                            ("chr4^16", ["chr4^16^G^C"]),
+                                            ("chr12^24", ["chr12^24^A^G"])])
+
+        self.assertEquals(expected_coordinates, sorted_coordinates)
+
+    def test_sort_coordinate_dict_multAlts(self):
+        coordinate_dict = {"chr1^1": ["chr1^1^A^C"],
+                           "chr12^24": ["chr12^24^A^G"],
+                           "chr4^16": ["chr4^16^G^C"]}
+
+        sorted_coordinates = merge2._sort_coordinate_dict(coordinate_dict)
+        expected_coordinates = OrderedDict([("chr1^1", ["chr1^1^A^C"]),
+                                            ("chr4^16", ["chr4^16^G^C"]),
+                                            ("chr12^24", ["chr12^24^A^G"])])
 
         self.assertEquals(expected_coordinates, sorted_coordinates)
 
@@ -127,16 +150,28 @@ class MergeTestCase(unittest.TestCase):
         mock_reader = MockVcfReader(content=["chr1\t1\t.\tA\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
                                              "chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"])
         mock_writer = MockFileWriter()
-        merge2._write_variants(mock_reader, mock_writer, "chr2^12^A^G")
+        merge2._write_variants(mock_reader, mock_writer, ["chr2^12^A^G"])
 
-        expected = ["chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR\n"]
+        expected = ["chr2\t12\t.\tA\tG\t.\t.\tINFO\n"]
+        self.assertEquals(expected, mock_writer.written)
+
+    def test_write_variants_multAlts(self):
+        mock_reader = MockVcfReader(content=["chr1\t1\t.\tA\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
+                                             "chr1\t1\t.\tA\tT\t.\t.\t.\tFORMAT\tNORMAL\tTUMOR",
+                                             "chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"])
+        mock_writer = MockFileWriter()
+        merge2._write_variants(mock_reader, mock_writer, ["chr1^1^A^C", "chr1^1^A^T"])
+
+        expected = ["chr1\t1\t.\tA\tC\t.\t.\tINFO;JQ_MULT_ALT_LOCUS\n",
+                    "chr1\t1\t.\tA\tT\t.\t.\tJQ_MULT_ALT_LOCUS\n"]
+
         self.assertEquals(expected, mock_writer.written)
 
     def test_write_variants_missingCoordinate(self):
         mock_reader = MockVcfReader(content=["chr1\t1\t.\tA\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
                                              "chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"])
         mock_writer = MockFileWriter()
-        merge2._write_variants(mock_reader, mock_writer, "chr10^12^A^G")
+        merge2._write_variants(mock_reader, mock_writer, ["chr10^12^A^G"])
 
         expected = []
         self.assertEquals(expected, mock_writer.written)
@@ -178,7 +213,7 @@ class MergeTestCase(unittest.TestCase):
             expected_file.close()
 
             self.assertEquals(len(expected), len(actual))
-            self.assertEquals(104, len(actual))
+            self.assertEquals(105, len(actual))
 
             for i in xrange(len(expected)):
                 if expected[i].startswith("##jacquard.cwd="):

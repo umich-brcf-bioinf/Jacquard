@@ -1,4 +1,5 @@
 # pylint: disable=C0111
+from collections import defaultdict, OrderedDict
 import glob
 import os
 import re
@@ -22,28 +23,30 @@ def _produce_merged_metaheaders(vcf_reader, all_meta_headers, count):
 
     return all_meta_headers
 
-def _get_all_coordinates(vcf_reader, all_coordinates):
+def _get_coordinate_dict(vcf_reader, coordinate_dict):
     vcf_reader.open()
 
     for vcf_record in vcf_reader.vcf_records():
+        key = "^".join([vcf_record.chrom,
+                        vcf_record.pos])
         coordinate = "^".join([vcf_record.chrom,
                                vcf_record.pos,
                                vcf_record.ref,
                                vcf_record.alt])
-        all_coordinates.append(coordinate)
+        coordinate_dict[key].append(coordinate)
 
     vcf_reader.close()
 
-    return all_coordinates
+    return coordinate_dict
 
-def _sort_all_coordinates(all_coordinates):
+def _sort_coordinate_dict(coordinate_dict):
     def _convert(element):
         return int(element) if element.isdigit() else element
 
     def _alphanum_key (coordinates):
-        return [_convert(c) for c in re.split('([0-9]+)', coordinates)]
+        return [_convert(c) for c in re.split('([0-9]+)', coordinates[0])]
 
-    return sorted(all_coordinates, key=_alphanum_key)
+    return OrderedDict(sorted(coordinate_dict.items(), key=_alphanum_key))
 
 def _write_metaheaders(file_writer,
                       all_metaheaders,
@@ -54,21 +57,41 @@ def _write_metaheaders(file_writer,
     file_writer.write("\n".join(all_metaheaders) + "\n")
     file_writer.write("\t".join(column_header) + "\n")
 
-def _write_variants(vcf_reader, file_writer, coordinate):
+def _alter_record_fields(vcf_record, coordinates):
+    vcf_record.id = "."
+    vcf_record.qual = "."
+    vcf_record.filter = "."
+
+    if len(coordinates) > 1:
+        info = vcf_record.info.split(";") if vcf_record.info != "." else []
+        info.append("JQ_MULT_ALT_LOCUS")
+        vcf_record.info = ";".join(info)
+
+    return vcf_record
+
+def _write_variants(vcf_reader, file_writer, coordinates):
     vcf_reader.open()
 
     for vcf_record in vcf_reader.vcf_records():
-        vcf_record.id = "."
-        vcf_record.qual = "."
-        vcf_record.filter = "."
+        vcf_record = _alter_record_fields(vcf_record, coordinates)
 
-        key = "^".join([vcf_record.chrom,
+        record_key = "^".join([vcf_record.chrom,
                         vcf_record.pos,
                         vcf_record.ref,
                         vcf_record.alt])
 
-        if key == coordinate:
-            file_writer.write(vcf_record.asText())
+        for coordinate in coordinates:
+            if record_key == coordinate:
+                ##when we add FORMAT and SAMPLE fields, we don't have to call
+                ##vcf_record.asText() with any arguments.
+                file_writer.write(vcf_record.asText(stringifier=[vcf_record.chrom,
+                                                                 vcf_record.pos,
+                                                                 vcf_record.id,
+                                                                 vcf_record.ref,
+                                                                 vcf_record.alt,
+                                                                 vcf_record.qual,
+                                                                 vcf_record.filter,
+                                                                 vcf_record.info]))
         else:
             continue
 
@@ -88,7 +111,7 @@ def execute(args, execution_context):
     output_path = os.path.abspath(args.output)
 
     all_metaheaders = []
-    all_coordinates = []
+    coordinate_dict = defaultdict(list)
     input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
 
     file_writer = vcf.FileWriter(output_path)
@@ -102,7 +125,7 @@ def execute(args, execution_context):
                                                       count)
 
         column_header = vcf_reader.column_header.split("\t")[0:9]
-        all_coordinates = _get_all_coordinates(vcf_reader, all_coordinates)
+        coordinate_dict = _get_coordinate_dict(vcf_reader, coordinate_dict)
         count += 1
 
     _write_metaheaders(file_writer,
@@ -110,11 +133,11 @@ def execute(args, execution_context):
                       column_header,
                       execution_context)
 
-    sorted_coordinates = _sort_all_coordinates(all_coordinates)
-    for coordinate in sorted_coordinates:
+    sorted_coordinates = _sort_coordinate_dict(coordinate_dict)
+    for coordinates in sorted_coordinates.values():
         for input_file in input_files:
             vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
-            _write_variants(vcf_reader, file_writer, coordinate)
+            _write_variants(vcf_reader, file_writer, coordinates)
 
     file_writer.close()
 
