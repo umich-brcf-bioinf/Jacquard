@@ -60,14 +60,13 @@ class MockVcfRecord(object):
 
         return info_dict
 
-    def asText(self, stringifier=[]):
-        if not stringifier:
-            stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
-                       self.qual, self.filter, self.info,
-                       ":".join(self.format_set)]
+    def asText(self):
+        stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
+                   self.qual, self.filter, self.info,
+                   ":".join(self.format_set)]
 
-            for key in self.sample_dict:
-                stringifier.append(":".join(self.sample_dict[key].values()))
+        for key in self.sample_dict:
+            stringifier.append(":".join(self.sample_dict[key].values()))
 
         return "\t".join(stringifier) + "\n"
 
@@ -95,27 +94,27 @@ class MergeTestCase(unittest.TestCase):
 
         self.assertEquals(meta_headers, actual_meta_headers)
 
-    def test_get_coordinate_dict(self):
+    def test_add_to_coordinate_dict(self):
         mock_readers = [MockVcfReader(content=["chr1\t1\t.\tA\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
                                                "chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"]),
                         MockVcfReader(content=["chr42\t16\t.\tG\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"])]
         coordinate_dict = defaultdict(list)
         for mock_reader in mock_readers:
-            coordinate_dict = merge2._get_coordinate_dict(mock_reader, coordinate_dict)
+            coordinate_dict = merge2._add_to_coordinate_dict(mock_reader, coordinate_dict)
 
         expected_coordinates = {"chr1^1": ["chr1^1^A^C"],
                                 "chr2^12": ["chr2^12^A^G"],
                                 "chr42^16": ["chr42^16^G^C"]}
         self.assertEquals(expected_coordinates, coordinate_dict)
 
-    def test_get_coordinate_dict_multAlts(self):
+    def test_add_to_coordinate_dict_multAlts(self):
         mock_readers = [MockVcfReader(content=["chr1\t1\t.\tA\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
                                                "chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"]),
                         MockVcfReader(content=["chr1\t1\t.\tA\tT\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
                                                "chr42\t16\t.\tG\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"])]
         coordinate_dict = defaultdict(list)
         for mock_reader in mock_readers:
-            coordinate_dict = merge2._get_coordinate_dict(mock_reader, coordinate_dict)
+            coordinate_dict = merge2._add_to_coordinate_dict(mock_reader, coordinate_dict)
 
         expected_coordinates = {"chr1^1": ["chr1^1^A^C", "chr1^1^A^T"],
                                 "chr2^12": ["chr2^12^A^G"],
@@ -146,13 +145,27 @@ class MergeTestCase(unittest.TestCase):
 
         self.assertEquals(expected_coordinates, sorted_coordinates)
 
+    def test_get_record_sample_data(self):
+        mock_vcf_reader = MockVcfReader(content=["chr1\t1\t.\tA\tC\t.\t.\tINFO\tDP:AF\t42:0.23\t25:0.77",
+                                                 "chr2\t12\t.\tA\tG\t.\t.\tINFO\tDP:AF\t41:0.67\t56:0.21"])
+        format_tags = ["DP", "AF", "foo"]
+
+        records = []
+        for mock_vcf_record in mock_vcf_reader.vcf_records():
+            records.append(mock_vcf_record)
+        samples = merge2._get_record_sample_data(records[0], format_tags)
+
+        expected_samples = {0: OrderedDict([("DP", "42"), ("AF", "0.23")]),
+                            1: OrderedDict([("DP", "25"), ("AF", "0.77")])}
+        self.assertEquals(expected_samples, samples)
+
     def test_write_variants(self):
         mock_reader = MockVcfReader(content=["chr1\t1\t.\tA\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
                                              "chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"])
         mock_writer = MockFileWriter()
-        merge2._write_variants(mock_reader, mock_writer, ["chr2^12^A^G"])
+        merge2._write_variants(mock_reader, mock_writer, ["FORMAT"],["chr2^12^A^G"])
 
-        expected = ["chr2\t12\t.\tA\tG\t.\t.\tINFO\n"]
+        expected = ["chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR\n"]
         self.assertEquals(expected, mock_writer.written)
 
     def test_write_variants_multAlts(self):
@@ -160,10 +173,10 @@ class MergeTestCase(unittest.TestCase):
                                              "chr1\t1\t.\tA\tT\t.\t.\t.\tFORMAT\tNORMAL\tTUMOR",
                                              "chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"])
         mock_writer = MockFileWriter()
-        merge2._write_variants(mock_reader, mock_writer, ["chr1^1^A^C", "chr1^1^A^T"])
+        merge2._write_variants(mock_reader, mock_writer, ["FORMAT"], ["chr1^1^A^C", "chr1^1^A^T"])
 
-        expected = ["chr1\t1\t.\tA\tC\t.\t.\tINFO;JQ_MULT_ALT_LOCUS\n",
-                    "chr1\t1\t.\tA\tT\t.\t.\tJQ_MULT_ALT_LOCUS\n"]
+        expected = ["chr1\t1\t.\tA\tC\t.\t.\tINFO;JQ_MULT_ALT_LOCUS\tFORMAT\tNORMAL\tTUMOR\n",
+                    "chr1\t1\t.\tA\tT\t.\t.\tJQ_MULT_ALT_LOCUS\tFORMAT\tNORMAL\tTUMOR\n"]
 
         self.assertEquals(expected, mock_writer.written)
 
@@ -171,7 +184,7 @@ class MergeTestCase(unittest.TestCase):
         mock_reader = MockVcfReader(content=["chr1\t1\t.\tA\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
                                              "chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"])
         mock_writer = MockFileWriter()
-        merge2._write_variants(mock_reader, mock_writer, ["chr10^12^A^G"])
+        merge2._write_variants(mock_reader, mock_writer, ["FORMAT"],["chr10^12^A^G"])
 
         expected = []
         self.assertEquals(expected, mock_writer.written)

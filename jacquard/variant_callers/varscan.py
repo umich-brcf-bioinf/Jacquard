@@ -20,7 +20,7 @@ class AlleleFreqTag():
                 sample_values[key] = self.roundTwoDigits(freq)
             vcfRecord.insert_format_field(JQ_VARSCAN_TAG + "AF",sample_values)
 
-    def roundTwoDigits(self, value): 
+    def roundTwoDigits(self, value):
         new_values = []
         for val in value:
             new_val = str(float(val.strip("%"))/100)
@@ -28,7 +28,7 @@ class AlleleFreqTag():
                 new_values.append(new_val)
             else:
                 new_values.append(str(round(100 * float(new_val))/100))
-        return ",".join(new_values) 
+        return ",".join(new_values)
 
 class DepthTag():
     def __init__(self):

@@ -24,7 +24,7 @@ class _AlleleFreqTag():
             else:
                 new_values.append(str(round(100 * float(val))/100))
         return ",".join(new_values)
-        
+
 class _DepthTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID={0}DP,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP)",Source="Jacquard",Version={1}>'.format(JQ_MUTECT_TAG, utils.__version__)
@@ -50,7 +50,7 @@ class _SomaticTag():
         else:
             for key in vcfRecord.sample_dict.keys():
                 sample_values[key] = "0"
-        vcfRecord.insert_format_field(mutect_tag,sample_values)  
+        vcfRecord.insert_format_field(mutect_tag,sample_values)
 
     def _somatic_status(self, ss_value):
         if ss_value == "2":

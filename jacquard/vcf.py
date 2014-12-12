@@ -1,3 +1,4 @@
+# pylint: disable=C0111
 from __future__ import print_function
 from collections import OrderedDict
 import os
@@ -37,7 +38,7 @@ class RecognizedVcfReader(object):
 
 #TODO cgates: add context management to open/close
 class VcfReader(object):
-    def __init__(self, file_reader):        
+    def __init__(self, file_reader):
         self.input_filepath = file_reader.input_filepath
         self.file_name = file_reader.file_name
         self._file_reader = file_reader
@@ -47,7 +48,8 @@ class VcfReader(object):
     def metaheaders(self):
         return list(self._metaheaders)
 
-    def _read_headers(self): #TODO: VcfReader shouldn't do open and close unless user tells it to
+    #TODO: VcfReader shouldn't do open and close unless user tells it to
+    def _read_headers(self):
         metaheaders = []
         column_header = None
         try:
@@ -63,7 +65,9 @@ class VcfReader(object):
             self._file_reader.close()
 
         if not (column_header and metaheaders):
-            raise utils.JQException("ERROR: [{}] is not a valid vcf. Missing column header or metaheaders.".format(self.file_name))
+            raise utils.JQException("ERROR: [{}] is not a valid vcf. Missing "
+                                    "column header or metaheaders."\
+                                    .format(self.file_name))
 
         return column_header, metaheaders
 
@@ -100,7 +104,7 @@ class VcfRecord(object):
     def get_info_dict(self):
         info_list = self.info.split(";")
         info_dict = {}
-        
+
         for key_value in info_list:
             if "=" in key_value:
                 key,value = key_value.split("=")
@@ -110,14 +114,13 @@ class VcfRecord(object):
 
         return info_dict
 
-    def asText(self, stringifier = []):
-        if not stringifier:
-            stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
-                       self.qual, self.filter, self.info,
-                       ":".join(self.format_set)]
+    def asText(self):
+        stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
+                   self.qual, self.filter, self.info,
+                   ":".join(self.format_set)]
 
-            for key in self.sample_dict:
-                stringifier.append(":".join(self.sample_dict[key].values()))
+        for key in self.sample_dict:
+            stringifier.append(":".join(self.sample_dict[key].values()))
 
         return "\t".join(stringifier) + "\n"
 
@@ -156,8 +159,7 @@ class FileWriter(object):
 
     def __hash__(self):
         return hash(self.output_filepath)
-        
-        
+
 class FileReader(object):
     def __init__(self, input_filepath):
         self.input_filepath = input_filepath

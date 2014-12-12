@@ -99,7 +99,7 @@ def execute(args, execution_context):
     caller = _determine_caller_per_directory(in_files)
     logger.info("Recognized caller as {}", caller.name)
 
-    caller.validate_vcfs_in_directory(in_files)    
+    caller.validate_vcfs_in_directory(in_files)
 
     writer_to_readers = _partition_input_files(in_files, output_dir, caller)
 

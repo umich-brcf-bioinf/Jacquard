@@ -1,4 +1,4 @@
-# pylint: disable=C0103,C0301,R0903,R0904
+# pylint: disable=C0103,C0301,R0903,R0904,C0111
 from collections import OrderedDict
 import os
 from StringIO import StringIO
@@ -7,7 +7,6 @@ import sys
 from testfixtures import TempDirectory
 import unittest
 
-from jacquard.utils import validate_directories, write_output, sort_headers, sort_data, change_pos_to_int, combine_format_values
 import jacquard.utils as utils
 import jacquard.logger as logger
 
@@ -19,7 +18,7 @@ def mock_log(msg, *args):
     global mock_log_called
     mock_log_called = True
 #     print msg.format(*[str(i) for i in args])
-    
+
 class ValidateDirectoriesTestCase(unittest.TestCase):
     def setUp(self):
         self.original_info = logger.info
@@ -35,7 +34,7 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
         self.output.close()
         sys.stderr = self.saved_stderr
         self._reset_mock_logger()
-        
+
     def _change_mock_logger(self):
         global mock_log_called
         mock_log_called = False
@@ -57,9 +56,9 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
         output_dir = script_dir + "/functional_tests/utils_test/tag_varscan_test/output"
 
         with self.assertRaises(SystemExit) as cm:
-            validate_directories(input_dir, output_dir)
+            utils.validate_directories(input_dir, output_dir)
         self.assertEqual(cm.exception.code, 1)
-        
+
         global mock_log_called
         self.assertTrue(mock_log_called)
 #         self.assertRegexpMatches(self.output.getvalue(),
@@ -75,7 +74,7 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
             try:
                 make_unwritable_dir(unwriteable_dir)
                 with self.assertRaises(SystemExit) as cm:
-                    validate_directories(input_dir.path, desired_dir)
+                    utils.validate_directories(input_dir.path, desired_dir)
 
             finally:
                 cleanup_unwriteable_dir(unwriteable_dir)
@@ -92,7 +91,7 @@ class WriteOutputTestCase(unittest.TestCase):
         headers = ["#foo", "#bar"]
         actual_sorted_variants = ["123", "456"]
 
-        write_output(mock_writer, headers, actual_sorted_variants)
+        utils.write_output(mock_writer, headers, actual_sorted_variants)
         actualLines = mock_writer.lines()
 
         self.assertEqual("#foo", actualLines[0])
@@ -104,7 +103,7 @@ class CombineFormatValuesTestCase(unittest.TestCase):
     def test_combineFormatValues(self):
         format_tags = "DP:AF:FOO"
         sample = "23:0.32:1"
-        actual_dict = combine_format_values(format_tags, sample)
+        actual_dict = utils.combine_format_values(format_tags, sample)
         expected_dict = OrderedDict([("DP", "23"), ("AF", "0.32"), ("FOO", "1")])
         self.assertEquals(expected_dict, actual_dict)
 
@@ -112,13 +111,13 @@ class CombineFormatValuesTestCase(unittest.TestCase):
 class SortTestCase(unittest.TestCase):
     def test_sort_sortHeaders(self):
         headers = ["##foo", "##bar", "#CHROM", "##baz"]
-        sorted_headers = sort_headers(headers)
+        sorted_headers = utils.sort_headers(headers)
         expected_sorted_headers = ["##foo", "##bar", "##baz", "#CHROM"]
         self.assertEqual(expected_sorted_headers, sorted_headers)
 
     def test_sort_changePosToInt(self):
         split_line = ["1", "2352", "A", "G", "foo", "DP", "234"]
-        line = change_pos_to_int(split_line)
+        line = utils.change_pos_to_int(split_line)
         self.assertEqual([1, 2352, "A", "G", "foo", "DP", 234], line)
 
     def test_sort_sortData(self):
@@ -128,7 +127,7 @@ class SortTestCase(unittest.TestCase):
                                   "chr1\t2700\tA\tG\tfoo\tDP\t345",
                                   "chr10\t2352\tA\tG\tfoo\tDP\t234",
                                   "chr1\t2\tA\tG\tfoo\tDP\t234"]
-        sorted_variants = sort_data(actual_sorted_variants)
+        sorted_variants = utils.sort_data(actual_sorted_variants)
         expected_sorted_variants = ["chr1\t2\tA\tG\tfoo\tDP\t234",
                                     "chr1\t2352\tA\tG\tfoo\tDP\t234",
                                     "chr1\t2700\tA\tG\tfoo\tDP\t345",
@@ -145,7 +144,7 @@ class SortTestCase(unittest.TestCase):
                           "1\t2700\tA\tG\tfoo\tDP\t345",
                           "10\t2352\tA\tG\tfoo\tDP\t234",
                           "1\t2\tA\tG\tfoo\tDP\t234"]
-        actual_sorted_variants = sort_data(input_variants)
+        actual_sorted_variants = utils.sort_data(input_variants)
         expected_variants = ["chr1\t2\tA\tG\tfoo\tDP\t234",
                              "chr1\t2352\tA\tG\tfoo\tDP\t234",
                              "chr1\t2700\tA\tG\tfoo\tDP\t345",
@@ -156,7 +155,7 @@ class SortTestCase(unittest.TestCase):
 
     def test_sort_sortDataSamePos(self):
         all_variants = ["chr1\t2352\tA\tG\tfoo\tDP\t234", "1\t2352\tA\tGT\tfoo\tDP\t234"]
-        actual_sorted_variants = sort_data(all_variants)
+        actual_sorted_variants = utils.sort_data(all_variants)
 
         expected_variants = ['chr1\t2352\tA\tG\tfoo\tDP\t234', 'chr1\t2352\tA\tGT\tfoo\tDP\t234']
         self.assertEqual(expected_variants, actual_sorted_variants)

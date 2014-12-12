@@ -23,7 +23,7 @@ def _produce_merged_metaheaders(vcf_reader, all_meta_headers, count):
 
     return all_meta_headers
 
-def _get_coordinate_dict(vcf_reader, coordinate_dict):
+def _add_to_coordinate_dict(vcf_reader, coordinate_dict):
     vcf_reader.open()
 
     for vcf_record in vcf_reader.vcf_records():
@@ -57,43 +57,49 @@ def _write_metaheaders(file_writer,
     file_writer.write("\n".join(all_metaheaders) + "\n")
     file_writer.write("\t".join(column_header) + "\n")
 
-def _alter_record_fields(vcf_record, coordinates):
+def _get_record_sample_data(vcf_record, format_tags):
+    samples = {}
+    for i in vcf_record.sample_dict:
+        samples[i] = OrderedDict()
+
+    for tag in format_tags:
+        for i, sample_dict in vcf_record.sample_dict.items():
+            if tag in sample_dict:
+                samples[i][tag] = sample_dict[tag]
+
+    return samples
+
+def _alter_record_fields(vcf_record, format_tags, coordinates):
     vcf_record.id = "."
     vcf_record.qual = "."
     vcf_record.filter = "."
+    vcf_record.format_set = format_tags
 
     if len(coordinates) > 1:
         info = vcf_record.info.split(";") if vcf_record.info != "." else []
         info.append("JQ_MULT_ALT_LOCUS")
         vcf_record.info = ";".join(info)
 
+    vcf_record.sample_dict = _get_record_sample_data(vcf_record, format_tags)
+
     return vcf_record
 
-def _write_variants(vcf_reader, file_writer, coordinates):
+def _write_variants(vcf_reader, file_writer, format_tags, coordinates):
     vcf_reader.open()
 
     for vcf_record in vcf_reader.vcf_records():
-        vcf_record = _alter_record_fields(vcf_record, coordinates)
+        vcf_record = _alter_record_fields(vcf_record, format_tags, coordinates)
 
         record_key = "^".join([vcf_record.chrom,
-                        vcf_record.pos,
-                        vcf_record.ref,
-                        vcf_record.alt])
+                               vcf_record.pos,
+                               vcf_record.ref,
+                               vcf_record.alt])
 
         for coordinate in coordinates:
             if record_key == coordinate:
-                ##when we add FORMAT and SAMPLE fields, we don't have to call
-                ##vcf_record.asText() with any arguments.
-                file_writer.write(vcf_record.asText(stringifier=[vcf_record.chrom,
-                                                                 vcf_record.pos,
-                                                                 vcf_record.id,
-                                                                 vcf_record.ref,
-                                                                 vcf_record.alt,
-                                                                 vcf_record.qual,
-                                                                 vcf_record.filter,
-                                                                 vcf_record.info]))
-        else:
-            continue
+                file_writer.write(vcf_record.asText())
+            else:
+                continue
 
     vcf_reader.close()
 
@@ -120,12 +126,13 @@ def execute(args, execution_context):
     count = 1
     for input_file in input_files:
         vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
+
         all_metaheaders = _produce_merged_metaheaders(vcf_reader,
                                                       all_metaheaders,
                                                       count)
 
         column_header = vcf_reader.column_header.split("\t")[0:9]
-        coordinate_dict = _get_coordinate_dict(vcf_reader, coordinate_dict)
+        coordinate_dict = _add_to_coordinate_dict(vcf_reader, coordinate_dict)
         count += 1
 
     _write_metaheaders(file_writer,
@@ -133,12 +140,14 @@ def execute(args, execution_context):
                       column_header,
                       execution_context)
 
+#TODO: get format tags from metaheaders
+#     format_tags = _get_format_tags_from_metaheaders(all_metaheaders)
+    format_tags = ["JQ_SK_AF", "JQ_SK_DP", "JQ_SK_HC_SOM"] #temporary so that tests pass
     sorted_coordinates = _sort_coordinate_dict(coordinate_dict)
+
     for coordinates in sorted_coordinates.values():
         for input_file in input_files:
             vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
-            _write_variants(vcf_reader, file_writer, coordinates)
+            _write_variants(vcf_reader, file_writer, format_tags, coordinates)
 
     file_writer.close()
-
-
