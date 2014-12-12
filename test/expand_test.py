@@ -1,17 +1,15 @@
-# pylint: disable=C0103,C0301,R0903,R0904,W0603,W0613
+# pylint: disable=C0103,C0301,R0903,R0904,W0603,W0613,C0111
 from argparse import Namespace
 from collections import OrderedDict
 import os
 from testfixtures import TempDirectory
 import unittest
-from jacquard.vcf import FileReader
-import glob
 import jacquard.utils as utils
 import jacquard.logger as logger
 from jacquard.expand import _parse_meta_headers, \
     _append_format_tags_to_samples, _get_headers, _write_vcf_records, \
-    _disambiguate_column_names, _filter_and_sort, _glossary, execute
-import jacquard.expand as expand
+    _disambiguate_column_names, _filter_and_sort, execute
+import test_case as test_case
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 mock_log_called = False
@@ -434,53 +432,15 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                                     execute, args,
                                     ["extra_header1", "extra_header2"])
 
-    def test_functional_expand(self):
+class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):
+    def test_expand(self):
         with TempDirectory() as output_dir:
-            module_testdir = os.path.dirname(os.path.realpath(__file__))+"/functional_tests/06_expand"
-            input_dir = os.path.join(module_testdir,"input")
-            args = Namespace(input=input_dir, 
-                         output=output_dir.path,
-                         column_specification=None)
-            
-            execution_context = ["##jacquard.version={0}".format(utils.__version__),
-                "##jacquard.command=",
-                "##jacquard.cwd="]
-            expand.execute(args,execution_context)
-            
-            output_file = glob.glob(os.path.join(output_dir.path, "consensus.txt"))[0]
-            
-            actual_file = FileReader(output_file)
-            actual_file.open()
-            actual = []
-            for line in actual_file.read_lines():
-                actual.append(line)
-            actual_file.close()
-            
-            module_outdir = os.path.join(module_testdir,"benchmark")
-            output_file = os.listdir(module_outdir)[0]
-            expected_file = FileReader(os.path.join(module_outdir,output_file))
-            expected_file.open()
-            expected = []
-            for line in expected_file.read_lines():
-                expected.append(line)
-            expected_file.close()
-            
-            self.assertEquals(len(expected), len(actual))
-            
-            self.assertEquals(11, len(actual))
-            
-            for i in xrange(len(expected)):
-                if expected[i].startswith("##jacquard.cwd="):
-                    self.assertTrue(actual[i].startswith("##jacquard.cwd="))
-                elif expected[i].startswith("##jacquard.command="):
-                    self.assertTrue(actual[i].startswith("##jacquard.command="))
-                else:
-                    self.assertEquals(expected[i].rstrip(), actual[i].rstrip()) 
-                                
-    def test_glossary(self):
-        writer = MockFileWriter()
-        
-#         _glossary(header,writer)
-        
-        
-        
+            test_dir = os.path.dirname(os.path.realpath(__file__))
+            module_testdir = os.path.join(test_dir, "functional_tests", "06_expand")
+            input_dir = os.path.join(module_testdir, "input", "consensus.vcf")
+            output_file = os.path.join(output_dir.path, "expanded.tsv")
+
+            command = ["expand", input_dir, output_file, "--force"]
+            expected_dir = os.path.join(module_testdir, "benchmark")
+
+            self.assertCommand(command, expected_dir)

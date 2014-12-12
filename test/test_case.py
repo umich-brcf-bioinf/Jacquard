@@ -33,10 +33,9 @@ class JacquardBaseTestCase(unittest.TestCase):
                 shutil.move(os.path.join(source_dir, output_file),
                             dest_dir)
 
-    def assertCommand(self, command, module_testdir, benchmark_dir):
+    def assertCommand(self, command, expected_dir):
         jacquard.dispatch(jacquard._SUBCOMMANDS, command)
 
-        tool = command[0]
         output = command[2]
 
         if os.path.isfile(output):
@@ -51,10 +50,7 @@ class JacquardBaseTestCase(unittest.TestCase):
                     actual.append(line)
                 actual_file.close()
 
-                expected_outdir = os.path.join(module_testdir,
-                                               tool,
-                                               benchmark_dir)
-                expected_file = vcf.FileReader(os.path.join(expected_outdir,
+                expected_file = vcf.FileReader(os.path.join(expected_dir,
                                                             output_file))
                 expected_file.open()
                 expected = []

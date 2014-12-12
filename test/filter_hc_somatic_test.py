@@ -3,15 +3,16 @@ from argparse import Namespace
 import glob
 import os
 import unittest
-import shutil
 from StringIO import StringIO
 import sys
+
 import jacquard.utils as utils
 from testfixtures import TempDirectory
 from jacquard.filter_hc_somatic import _write_somatic, _find_somatic_positions
 from jacquard.vcf import FileReader
 import jacquard.filter_hc_somatic as filter_hc_somatic
 import jacquard.logger as logger
+import test_case as test_case
 
 VCF_HEADER="#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsampleA\tsampleB\n"
 
@@ -143,46 +144,14 @@ class FilterSomaticTestCase(unittest.TestCase):
             self.assertEqual(["mutect_HCsomatic.vcf", "varscan_HCsomatic.vcf"], output_dir.actual())
             self.assertIn("Filtered to [1] calls in high-confidence loci.", mock_log_messages)
 
-    def test_functional_filter_hc_somatic(self):
+class FilterHCSomaticFunctionalTestCase(test_case.JacquardBaseTestCase):
+    def test_filter_hc_somatic(self):
         with TempDirectory() as output_dir:
-            file_path = os.path.dirname(os.path.realpath(__file__))
-            module_testdir = os.path.join(file_path,
-                                          "functional_tests",
-                                          "03_filter_hc_somatic")
-            input_dir = os.path.join(module_testdir,"input")
-            args = Namespace(input=input_dir,
-                         output=output_dir.path)
+            test_dir = os.path.dirname(os.path.realpath(__file__))
+            module_testdir = os.path.join(test_dir, "functional_tests", "03_filter_hc_somatic")
+            input_dir = os.path.join(module_testdir, "input")
 
-            execution_context = ["##jacquard.version={0}".format(utils.__version__),
-                "##jacquard.command=",
-                "##jacquard.cwd="]
-            filter_hc_somatic.execute(args,execution_context)
+            command = ["filter_hc_somatic", input_dir, output_dir.path, "--force"]
+            expected_dir = os.path.join(module_testdir, "benchmark")
 
-            output_file = glob.glob(os.path.join(output_dir.path, "*.vcf"))[0]
-
-            actual_file = FileReader(os.path.join(output_dir.path, output_file))
-            actual_file.open()
-            actual = []
-            for line in actual_file.read_lines():
-                actual.append(line)
-            actual_file.close()
-
-            module_outdir = os.path.join(module_testdir, "benchmark")
-            output_file = os.listdir(module_outdir)[0]
-            expected_file = FileReader(os.path.join(module_outdir, output_file))
-            expected_file.open()
-            expected = []
-            for line in expected_file.read_lines():
-                expected.append(line)
-            expected_file.close()
-
-            self.assertEquals(len(expected), len(actual))
-            self.assertEquals(101, len(actual))
-
-            for i in xrange(len(expected)):
-                if expected[i].startswith("##jacquard.cwd="):
-                    self.assertTrue(actual[i].startswith("##jacquard.cwd="))
-                elif expected[i].startswith("##jacquard.command="):
-                    self.assertTrue(actual[i].startswith("##jacquard.command="))
-                else:
-                    self.assertEquals(expected[i].rstrip(), actual[i].rstrip())
+            self.assertCommand(command, expected_dir)

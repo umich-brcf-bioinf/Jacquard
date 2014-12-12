@@ -105,7 +105,7 @@ def _write_variants(vcf_reader, file_writer, format_tags, coordinates):
 
 def add_subparser(subparser):
     #pylint: disable=C0301
-    parser = subparser.add_parser("merge", help="Accepts a directory of VCFs and returns a single merged VCF file.")
+    parser = subparser.add_parser("merge2", help="Accepts a directory of VCFs and returns a single merged VCF file.")
     parser.add_argument("input", help="Path to directory containing VCFs. Other file types ignored")
     parser.add_argument("output", help="Path to output variant-level VCF file")
     parser.add_argument("-a", "--allow_inconsistent_sample_sets", action="store_true", default=False, help="Allow inconsistent sample sets across callers. Not recommended.")

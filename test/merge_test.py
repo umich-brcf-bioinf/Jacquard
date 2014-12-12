@@ -16,6 +16,7 @@ from jacquard.vcf import FileReader
 import jacquard.logger as logger
 from jacquard.utils import JQException
 import test.mock_module as mock_module
+import test_case as test_case
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
@@ -37,6 +38,32 @@ def dataframe(input_data, sep="\t", index_col=None):
     df.columns = pd.core.index.Index(new_cols)
 
     return df
+
+class MockWriter():
+    def __init__(self):
+        self._content = []
+        self.wasClosed = False
+
+    def write(self, content):
+        self._content.extend(content.splitlines())
+        
+    def lines(self):
+        return self._content
+
+    def close(self):
+        self.wasClosed = True
+        
+class MockReader():
+    def __init__(self, content):
+        lines = [line + "\n" for line in content.split("\n") if line != ""]
+        self._iter = lines.__iter__()
+        self.wasClosed = False
+
+    def __iter__(self):
+        return self._iter
+
+    def close(self):
+        self.wasClosed=True
 
 class MergeTestCase(unittest.TestCase):
     def setUp(self):
@@ -858,75 +885,15 @@ class MergeTestCase(unittest.TestCase):
         self.assertEqual(['##jacquard', '##foo_bar', '##baz'], lines)
         self.assertEqual(True, out_file.wasClosed)
 
-    def test_functional_merge(self):
+class MergeFunctionalTestCase(test_case.JacquardBaseTestCase):
+    def test_merge(self):
         with TempDirectory() as output_dir:
-            module_testdir = os.path.dirname(os.path.realpath(__file__))+"/functional_tests/04_merge"
-            input_dir = os.path.join(module_testdir,"input")
-            args = Namespace(input=input_dir, 
-                         output=os.path.join(output_dir.path,"merged.vcf"),
-                         allow_inconsistent_sample_sets=False,
-                         keys=None)
+            test_dir = os.path.dirname(os.path.realpath(__file__))
+            module_testdir = os.path.join(test_dir, "functional_tests", "04_merge")
+            input_dir = os.path.join(module_testdir, "input")
+            output_file = os.path.join(output_dir.path, "merged.vcf")
 
-            execution_context = ["##jacquard.version={0}".format(utils.__version__),
-                "##jacquard.command=",
-                "##jacquard.cwd="]
+            command = ["merge", input_dir, output_file, "--force"]
+            expected_dir = os.path.join(module_testdir, "benchmark")
 
-            merge.execute(args,execution_context)
-
-            output_file = glob.glob(os.path.join(output_dir.path, "*.vcf"))[0]
-
-            actual_file = FileReader(output_file)
-            actual_file.open()
-            actual = []
-            for line in actual_file.read_lines():
-                actual.append(line)
-            actual_file.close()
-
-            module_outdir = os.path.join(module_testdir,"benchmark")
-            output_file = glob.glob(os.path.join(module_outdir, "*.vcf"))[0]
-            expected_file = FileReader(os.path.join(module_outdir,output_file))
-            expected_file.open()
-            expected = []
-            for line in expected_file.read_lines():
-                expected.append(line)
-            expected_file.close()
-
-            self.assertEquals(len(expected), len(actual))
-
-            self.assertEquals(21, len(actual))
-
-            for i in xrange(len(expected)):
-                if expected[i].startswith("##jacquard.cwd="):
-                    self.assertTrue(actual[i].startswith("##jacquard.cwd="))
-                elif expected[i].startswith("##jacquard.command="):
-                    self.assertTrue(actual[i].startswith("##jacquard.command="))
-                else:
-                    self.assertEquals(expected[i].rstrip(), actual[i].rstrip()) 
-
-class MockWriter():
-    def __init__(self):
-        self._content = []
-        self.wasClosed = False
-
-    def write(self, content):
-        self._content.extend(content.splitlines())
-        
-    def lines(self):
-        return self._content
-
-    def close(self):
-        self.wasClosed = True
-        
-class MockReader():
-    def __init__(self, content):
-        lines = [line + "\n" for line in content.split("\n") if line != ""]
-        self._iter = lines.__iter__()
-        self.wasClosed = False
-
-    def __iter__(self):
-        return self._iter
-
-    def close(self):
-        self.wasClosed=True
-
-        
+            self.assertCommand(command, expected_dir)

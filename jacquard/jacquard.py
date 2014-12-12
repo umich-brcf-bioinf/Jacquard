@@ -38,6 +38,7 @@ _SUBCOMMANDS = [normalize,
                 tag,
                 filter_hc_somatic,
                 merge,
+                merge2,
                 consensus,
                 expand]
 

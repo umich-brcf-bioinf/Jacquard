@@ -9,9 +9,9 @@ import unittest
 
 import jacquard.utils as utils
 import jacquard.consensus as consensus
-from jacquard.variant_callers import consensus_helper
 import jacquard.logger as logger
 import jacquard.vcf as vcf
+import test_case as test_case
 
 class MockFileWriter(object):
     def __init__(self):
@@ -255,52 +255,15 @@ class ConsensusTestCase(unittest.TestCase):
             consensus.execute(args,["##foo"])
             output_dir.check("consensus.vcf")
 
-    def test_functional_consensus(self):
-        file_dirname = os.path.dirname(os.path.realpath(__file__))
-        module_testdir = os.path.join(file_dirname,
-                                      "functional_tests",
-                                      "05_consensus")
-        input_dir = os.path.join(module_testdir, "input")
-        output_dir = os.path.join(module_testdir, "output")
+class ConsensusFunctionalTestCase(test_case.JacquardBaseTestCase):
+    def test_consensus(self):
+        with TempDirectory() as output_dir:
+            test_dir = os.path.dirname(os.path.realpath(__file__))
+            module_testdir = os.path.join(test_dir, "functional_tests", "05_consensus")
+            input_dir = os.path.join(module_testdir, "input", "tiny_strelka.merged.vcf")
+            output_file = os.path.join(output_dir.path, "consensus.vcf")
 
-        args = Namespace(input=os.path.join(input_dir, 
-                                            os.listdir(input_dir)[0]),
-                         output=os.path.join(output_dir,
-                                             "consensus.vcf"))
+            command = ["consensus", input_dir, output_file, "--force"]
+            expected_dir = os.path.join(module_testdir, "benchmark")
 
-        execution_context = ["##jacquard.version={0}"\
-                             .format(utils.__version__),
-                             "##jacquard.command=functional test",
-                             "##jacquard.cwd=foo"]
-
-        consensus.execute(args,execution_context)
-
-        output_file = glob.glob(os.path.join(output_dir, "*.vcf"))[0]
-
-        actual_file = vcf.FileReader(output_file)
-        actual_file.open()
-        actual = []
-        for line in actual_file.read_lines():
-            actual.append(line)
-        actual_file.close()
-
-        module_outdir = os.path.join(module_testdir,"benchmark")
-
-        output_file = os.listdir(module_outdir)[0]
-        expected_file = vcf.FileReader(os.path.join(module_outdir,output_file))
-        expected_file.open()
-        expected = []
-        for line in expected_file.read_lines():
-            expected.append(line)
-        expected_file.close()
-
-        self.assertEquals(len(expected), len(actual))
-        self.assertEquals(34, len(actual))
-
-        for i in xrange(len(expected)):
-            if expected[i].startswith("##jacquard.cwd="):
-                self.assertTrue(actual[i].startswith("##jacquard.cwd="))
-            elif expected[i].startswith("##jacquard.command="):
-                self.assertTrue(actual[i].startswith("##jacquard.command="))
-            else:
-                self.assertEquals(expected[i].rstrip(), actual[i].rstrip())
+            self.assertCommand(command, expected_dir)

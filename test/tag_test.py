@@ -6,14 +6,13 @@ from StringIO import StringIO
 import sys
 from testfixtures import TempDirectory
 import unittest
-import glob
 
 import jacquard.utils as utils
 import jacquard.tag as tag
-from jacquard.vcf import FileReader
 import jacquard.logger as logger
 import jacquard.variant_callers.strelka as strelka
 import jacquard.variant_callers.varscan as varscan
+import test_case as test_case
 
 mock_log_called = False
 mock_log_messages = []
@@ -552,46 +551,14 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             self.assertEquals(2,
                               len(findall(r'^chr.*{0}HC_SOM'.format(varscan.JQ_VARSCAN_TAG), file_content2, MULTILINE)))
 
-    def test_functional_tag(self):
+class TagFunctionalTestCase(test_case.JacquardBaseTestCase):
+    def test_tag(self):
         with TempDirectory() as output_dir:
-            module_testdir = os.path.dirname(os.path.realpath(__file__))+"/functional_tests/02_tag"
-            input_dir = os.path.join(module_testdir,"input")
-            args = Namespace(input=input_dir,
-                         output=output_dir.path)
+            test_dir = os.path.dirname(os.path.realpath(__file__))
+            module_testdir = os.path.join(test_dir, "functional_tests", "02_tag")
+            input_dir = os.path.join(module_testdir, "input")
 
-            execution_context = ["##jacquard.version={0}".format(utils.__version__),
-                "##jacquard.command={0}".format(" ".join(["tag",
-                                        os.path.join(module_testdir,"input"),
-                                        os.path.join(module_testdir,"benchmark")])),
-                "##jacquard.cwd="
-                ]
-            tag.execute(args,execution_context)
+            command = ["tag", input_dir, output_dir.path, "--force"]
+            expected_dir = os.path.join(module_testdir, "benchmark")
 
-            output_file = glob.glob(os.path.join(output_dir.path, "*.vcf"))[0]
-
-            actual_file = FileReader(os.path.join(output_dir.path, output_file))
-            actual_file.open()
-            actual = []
-            for line in actual_file.read_lines():
-                actual.append(line)
-            actual_file.close()
-
-            module_outdir = os.path.join(module_testdir, "benchmark")
-            output_file = os.listdir(module_outdir)[0]
-            expected_file = FileReader(os.path.join(module_outdir, output_file))
-            expected_file.open()
-            expected = []
-            for line in expected_file.read_lines():
-                expected.append(line)
-            expected_file.close()
-
-            self.assertEquals(len(expected), len(actual))
-            self.assertEquals(133, len(actual))
-
-            for i in xrange(len(expected)):
-                if expected[i].startswith("##jacquard.cwd="):
-                    self.assertTrue(actual[i].rstrip() in expected[i])
-                elif expected[i].startswith("##jacquard.command="):
-                    self.assertTrue(actual[i].startswith("##jacquard.command="))
-                else:
-                    self.assertEquals(expected[i].rstrip(), actual[i].rstrip())
+            self.assertCommand(command, expected_dir)

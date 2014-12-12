@@ -1,6 +1,5 @@
 # pylint: disable=C0103,C0301,R0903,R0904,W0603,W0613,C0111,W0212
 import os
-import shutil
 from StringIO import StringIO
 import sys
 from testfixtures import TempDirectory
@@ -8,7 +7,6 @@ import unittest
 
 import jacquard.jacquard as jacquard
 import jacquard.logger as logger
-import jacquard.vcf as vcf
 import test_case as test_case
 
 
@@ -157,7 +155,7 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
             self.assertRegexpMatches(actual_messages[3], r"Done. \(See warnings above\)")
             logger.SHOW_WARNING = False
 
-class JacquardTestCase_FunctionalTest(test_case.JacquardBaseTestCase):
+class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_functional_jacquard(self):
         with TempDirectory() as output_dir:
             file_dirname = os.path.dirname(os.path.realpath(__file__))
@@ -174,28 +172,23 @@ class JacquardTestCase_FunctionalTest(test_case.JacquardBaseTestCase):
             normalize_output = os.path.join(output_dir.path, "normalize")
             tag_output = os.path.join(output_dir.path, "tag")
             filter_output = os.path.join(output_dir.path, "filter_hc_somatic")
-            merge_output = os.path.join(output_dir.path,
-                                        "merge",
-                                        "merged.vcf")
-            consensus_output = os.path.join(output_dir.path,
-                                            "consensus",
-                                            "consensus.vcf")
-            expanded_output = os.path.join(output_dir.path,
-                                           "expand",
-                                           "expanded.vcf")
+            merge_output = os.path.join(output_dir.path, "merge", "merged.vcf")
+            consensus_output = os.path.join(output_dir.path, "consensus", "consensus.vcf")
+            expanded_output = os.path.join(output_dir.path, "expand", "expanded.vcf")
+
             commands = [["normalize", os.path.join(initial_input, "varscan"), vs_normalize_output, "--force"],
                         ["normalize", os.path.join(initial_input, "strelka"), sk_normalize_output, "--force"],
                         ["normalize", os.path.join(initial_input, "mutect"), mt_normalize_output, "--force"]]
 
             for command in commands:
                 benchmark_dir = os.path.join("benchmark", os.path.basename(command[1]))
-                self.assertCommand(command, module_testdir, benchmark_dir)
+                expected_dir = os.path.join(module_testdir, command[0], benchmark_dir)
+                self.assertCommand(command, expected_dir)
 
             self.move_files([vs_normalize_output,
                              sk_normalize_output,
                              mt_normalize_output],
                             normalize_output)
-
 
             commands = [["tag", normalize_output, tag_output, "--force"],
                         ["filter_hc_somatic", tag_output, filter_output, "--force"],
@@ -204,5 +197,6 @@ class JacquardTestCase_FunctionalTest(test_case.JacquardBaseTestCase):
                         ["expand", consensus_output, expanded_output, "--force"]]
 
             for command in commands:
-                self.assertCommand(command, module_testdir, "benchmark")
+                expected_dir = os.path.join(module_testdir, command[0], "benchmark")
+                self.assertCommand(command, expected_dir)
 
