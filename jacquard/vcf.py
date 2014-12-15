@@ -15,7 +15,7 @@ class RecognizedVcfReader(object):
         return self._vcf_reader.column_header
 
     def close(self):
-        return self._vcf_reader.close()
+        return self._vcf_reader.close() 
 
     @property
     def file_name(self):
@@ -134,6 +134,11 @@ class VcfRecord(object):
         for key in self.sample_dict.keys():
             self.sample_dict[key][fieldname] = str(field_dict[key])
 
+    def __eq__(self, other):
+        return ("^".join([self.chrom,
+                          self.pos,
+                          self.ref,
+                          self.alt]) == other)
 
 #TODO cgates: add context management to open/close
 class FileWriter(object):

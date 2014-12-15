@@ -891,7 +891,7 @@ class MergeFunctionalTestCase(test_case.JacquardBaseTestCase):
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir, "functional_tests", "04_merge")
             input_dir = os.path.join(module_testdir, "input")
-            output_file = os.path.join(output_dir.path, "merged.vcf")
+            output_file = os.path.join(output_dir.path, "tiny_strelka.merged.vcf")
 
             command = ["merge", input_dir, output_file, "--force"]
             expected_dir = os.path.join(module_testdir, "benchmark")

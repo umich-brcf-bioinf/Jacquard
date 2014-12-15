@@ -109,14 +109,14 @@
 ##contig=<ID=chrUn_gl000249,length=38502,assembly=hg19>
 ##reference=file:///ccmb/BioinfCore/Common/SOFTWARES/hg19bundle/ucsc.hg19.fasta
 ##jacquard.version=0.21
-##jacquard.command=tag c:\\\\users\\\\jebene\\\\appdata\\\\local\\\\temp\\\\tmptivahf\\\\normalize c:\\\\users\\\\jebene\\\\appdata\\\\local\\\\temp\\\\tmptivahf\\\\tag --force
-##jacquard.cwd=C:\\\\Users\\\\jebene\\\\git
+##jacquard.command=tag c:\users\jebene\appdata\local\temp\tmptivahf\normalize c:\users\jebene\appdata\local\temp\tmptivahf\tag --force
+##jacquard.cwd=C:\Users\jebene\git
 ##jacquard.tag.caller=MuTect
 ##FORMAT=<ID=JQ_MT_AF,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_MT_DP,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP)",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_MT_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)",Source="Jacquard",Version=0.21>
 ##jacquard.filterHCSomatic.excluded_variants=37
-##jacquard.command=filter_hc_somatic c:\\\\users\\\\jebene\\\\appdata\\\\local\\\\temp\\\\tmptivahf\\\\tag c:\\\\users\\\\jebene\\\\appdata\\\\local\\\\temp\\\\tmptivahf\\\\filter_hc_somatic --force
+##jacquard.command=filter_hc_somatic c:\users\jebene\appdata\local\temp\tmptivahf\tag c:\users\jebene\appdata\local\temp\tmptivahf\filter_hc_somatic --force
 ##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=12
 ##jacquard.merge.file1=tiny.mutect.normalized.jacquardTags_HCsomatic.vcf(['NORMAL', 'TUMOR'])
 ##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,Description="dbSNP Membership",Source="Jacquard",Version="0.21">
@@ -196,7 +196,7 @@
 ##source=strelka
 ##source_version=2.0.15
 ##startTime=Wed Jul  9 13:37:22 2014
-##jacquard.command=tag c:\\\\users\\\\jebene\\\\appdata\\\\local\\\\temp\\\\tmpfyxdri\\\\normalize c:\\\\users\\\\jebene\\\\appdata\\\\local\\\\temp\\\\tmpfyxdri\\\\tag --force
+##jacquard.command=tag c:\users\jebene\appdata\local\temp\tmpfyxdri\normalize c:\users\jebene\appdata\local\temp\tmpfyxdri\tag --force
 ##jacquard.tag.caller=Strelka
 ##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version=0.21>
@@ -204,7 +204,7 @@
 ##FILTER=<ID=JQ_EXCLUDE,Description="This variant record is problematic and will be excluded from downstream Jacquard processing.",Source="Jacquard",Version="">
 ##FILTER=<ID=JQ_MISSING_ALT,Description="The alternate allele is missing for this variant record.",Source="Jacquard",Version="">
 ##jacquard.filterHCSomatic.excluded_variants=33
-##jacquard.command=filter_hc_somatic c:\\\\users\\\\jebene\\\\appdata\\\\local\\\\temp\\\\tmpfyxdri\\\\tag c:\\\\users\\\\jebene\\\\appdata\\\\local\\\\temp\\\\tmpfyxdri\\\\filter_hc_somatic --force
+##jacquard.command=filter_hc_somatic c:\users\jebene\appdata\local\temp\tmpfyxdri\tag c:\users\jebene\appdata\local\temp\tmpfyxdri\filter_hc_somatic --force
 ##jacquard.merge.file2=tiny.strelka.normalized.jacquardTags_HCsomatic.vcf(['NORMAL', 'TUMOR'])
 ##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,Description="dbSNP Membership",Source="Jacquard",Version="0.21">
 ##FILTER=<ID=indelError,Description="Likely artifact due to indel reads at this position">
@@ -222,31 +222,28 @@
 ##INFO=<ID=SS,Number=1,Type=String,Description="Somatic status of variant (0=Reference,1=Germline,2=Somatic,3=LOH, or 5=Unknown)">
 ##INFO=<ID=SSC,Number=1,Type=String,Description="Somatic score in Phred scale (0-255) derived from somatic p-value">
 ##source=VarScan2
-##jacquard.command=tag c:\\\\users\\\\jebene\\\\appdata\\\\local\\\\temp\\\\tmpfuwrpl\\\\normalize c:\\\\users\\\\jebene\\\\appdata\\\\local\\\\temp\\\\tmpfuwrpl\\\\tag --force
+##jacquard.command=tag c:\users\jebene\appdata\local\temp\tmpfuwrpl\normalize c:\users\jebene\appdata\local\temp\tmpfuwrpl\tag --force
 ##jacquard.tag.caller=VarScan
 ##FORMAT=<ID=JQ_VS_AF,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_VS_DP,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_VS_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)",Source="Jacquard",Version=0.21>
 ##jacquard.filterHCSomatic.excluded_variants=43
-##jacquard.command=filter_hc_somatic c:\\\\users\\\\jebene\\\\appdata\\\\local\\\\temp\\\\tmpfuwrpl\\\\tag c:\\\\users\\\\jebene\\\\appdata\\\\local\\\\temp\\\\tmpfuwrpl\\\\filter_hc_somatic --force
+##jacquard.command=filter_hc_somatic c:\users\jebene\appdata\local\temp\tmpfuwrpl\tag c:\users\jebene\appdata\local\temp\tmpfuwrpl\filter_hc_somatic --force
 ##jacquard.merge.file3=tiny.varscan.normalized.jacquardTags_HCsomatic.vcf(['NORMAL', 'TUMOR'])
 ##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,Description="dbSNP Membership",Source="Jacquard",Version="0.21">
 ##jacquard.version=0.21
-##jacquard.command=merge_test
-##jacquard.cwd=foo
-#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT
-chr1	14948	.	G	A	.	.	DB;JQ_MULT_ALT_LOCUS	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM		
-chr1	14948	.	G	A	.	.	DB;JQ_MULT_ALT_LOCUS	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM		
-chr1	14948	.	G	A	.	.	DP=474;SOMATIC;SS=2;SSC=20;GPV=1E0;SPV=8.0886E-3;JQ_VS_HC;JQ_MULT_ALT_LOCUS	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM		
-chr1	14948	.	G	A	.	.	DP=474;SOMATIC;SS=2;SSC=20;GPV=1E0;SPV=8.0886E-3;JQ_VS_HC;JQ_MULT_ALT_LOCUS	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM		
-chr1	137622	.	G	A	.	.	DB	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM		
-chr1	1147545	.	A	G	.	.	NT=ref;QSS=32;QSS_NT=32;SGT=AA->AG;SOMATIC;TQSS=1;TQSS_NT=1	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.0:27:0	0.31:35:1
-chr1	1169795	.	C	T	.	.	NT=ref;QSS=29;QSS_NT=29;SGT=CC->CT;SOMATIC;TQSS=1;TQSS_NT=1	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.0:37:0	0.22:46:1
-chr1	1444553	.	C	T	.	.	NT=ref;QSS=39;QSS_NT=39;SGT=CC->CT;SOMATIC;TQSS=1;TQSS_NT=1	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.0:29:0	0.35:31:1
-chr1	1459635	.	C	A	.	.	NT=ref;QSS=22;QSS_NT=22;SGT=CC->AC;SOMATIC;TQSS=1;TQSS_NT=1	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.0:35:0	0.17:30:1
-chr1	1572893	.	G	A	.	.	NT=ref;QSS=31;QSS_NT=31;SGT=GG->AG;SOMATIC;TQSS=1;TQSS_NT=1	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.02:65:0	0.09:81:1
-chr1	1696633	.	GA	G	.	.	IC=7;IHP=9;NT=ref;QSI=33;QSI_NT=33;RC=8;RU=A;SGT=ref->het;SOMATIC;TQSI=2;TQSI_NT=2	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.0:48:0	0.27:45:1
-chr1	1910112	.	G	A	.	.	NT=ref;QSS=36;QSS_NT=36;SGT=GG->AG;SOMATIC;TQSS=1;TQSS_NT=1	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.0:28:0	0.34:35:1
-chr1	1912090	.	G	A	.	.	NT=ref;QSS=32;QSS_NT=32;SGT=GG->AG;SOMATIC;TQSS=1;TQSS_NT=1	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.0:27:0	0.31:32:1
-chr1	3412474	.	G	A	.	.	NT=ref;QSS=58;QSS_NT=58;SGT=GG->AG;SOMATIC;TQSS=2;TQSS_NT=2	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.0:46:0	0.31:61:1
-chr1	3545096	.	G	T	.	.	NT=ref;QSS=40;QSS_NT=40;SGT=GG->GT;SOMATIC;TQSS=1;TQSS_NT=1	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.0:37:0	0.25:63:1
+##jacquard.command=merge2 C:\Users\jebene\git\Jacquard\test\functional_tests\04_merge2\input c:\users\jebene\appdata\local\temp\tmpon96yp\merged.vcf --force
+##jacquard.cwd=C:\Users\jebene\git
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	tiny.mutect.normalized.jacquardTags_HCsomatic.vcf|NORMAL	tiny.mutect.normalized.jacquardTags_HCsomatic.vcf|TUMOR	tiny.strelka.normalized.jacquardTags_HCsomatic.vcf|NORMAL	tiny.strelka.normalized.jacquardTags_HCsomatic.vcf|TUMOR	tiny.varscan.normalized.jacquardTags_HCsomatic.vcf|NORMAL	tiny.varscan.normalized.jacquardTags_HCsomatic.vcf|TUMOR
+chr1	14948	.	G	A	.	.	DP=474;SOMATIC;SS=2;SSC=20;GPV=1E0;SPV=8.0886E-3;JQ_VS_HC	JQ_MT_DP:TOR:DP50:TIR:FDP:BQ:JQ_VS_AF:JQ_VS_HC_SOM:DP:TAR:TU:JQ_SK_DP:RD:SUBDP50:GU:GT:AD:GQ:AU:SUBDP:FREQ:JQ_MT_AF:CU:DP4:SDP:DP2:JQ_SK_AF:FA:SS:PL:JQ_VS_DP:FDP50:JQ_MT_HC_SOM:JQ_SK_HC_SOM	.:.:.:.:.:.:0.06:0:171:.:.:.:160:.:.:0/0:11:.:.:.:6.43%:.:.:93,67,8,3:.:.:.:.:.:.:171:.:.:.	.:.:.:.:.:.:0.14:1:303:.:.:.:259:.:.:0/1:42:.:.:.:13.95%:.:.:137,122,28,14:.:.:.:.:.:.:303:.:.:.
+chr1	1147545	.	A	G	.	PASS	NT=ref;QSS=32;QSS_NT=32;SGT=AA->AG;SOMATIC;TQSS=1;TQSS_NT=1	DP:FDP:SDP:SUBDP:AU:CU:GU:TU:JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	25:1:0:0:24,27:0,0:0,0:0,0:0.0:27:0	35:0:0:0:24,24:0,0:11,11:0,0:0.31:35:1
+chr1	1147545	.	A	G	.	.	NT=ref;QSS=32;QSS_NT=32;SGT=AA->AG;SOMATIC;TQSS=1;TQSS_NT=1	JQ_MT_DP:TOR:DP50:TIR:FDP:BQ:JQ_VS_AF:JQ_VS_HC_SOM:DP:TAR:TU:JQ_SK_DP:RD:SUBDP50:GU:GT:AD:GQ:AU:SUBDP:FREQ:JQ_MT_AF:CU:DP4:SDP:DP2:JQ_SK_AF:FA:SS:PL:JQ_VS_DP:FDP50:JQ_MT_HC_SOM:JQ_SK_HC_SOM	.:.:.:.:1:.:.:.:25:.:0,0:27:.:.:0,0:.:.:.:24,27:0:.:.:0,0:.:0:.:0.0:.:.:.:.:.:.:0	.:.:.:.:0:.:.:.:35:.:0,0:35:.:.:11,11:.:.:.:24,24:0:.:.:0,0:.:0:.:0.31:.:.:.:.:.:.:1
+chr1	1169795	.	C	T	.	.	NT=ref;QSS=29;QSS_NT=29;SGT=CC->CT;SOMATIC;TQSS=1;TQSS_NT=1	JQ_MT_DP:TOR:DP50:TIR:FDP:BQ:JQ_VS_AF:JQ_VS_HC_SOM:DP:TAR:TU:JQ_SK_DP:RD:SUBDP50:GU:GT:AD:GQ:AU:SUBDP:FREQ:JQ_MT_AF:CU:DP4:SDP:DP2:JQ_SK_AF:FA:SS:PL:JQ_VS_DP:FDP50:JQ_MT_HC_SOM:JQ_SK_HC_SOM	.:.:.:.:0:.:.:.:36:.:0,0:37:.:.:0,0:.:.:.:0,0:0:.:.:36,37:.:0:.:0.0:.:.:.:.:.:.:0	.:.:.:.:0:.:.:.:45:.:10,10:46:.:.:0,0:.:.:.:0,0:0:.:.:35,36:.:1:.:0.22:.:.:.:.:.:.:1
+chr1	1444553	.	C	T	.	.	NT=ref;QSS=39;QSS_NT=39;SGT=CC->CT;SOMATIC;TQSS=1;TQSS_NT=1	JQ_MT_DP:TOR:DP50:TIR:FDP:BQ:JQ_VS_AF:JQ_VS_HC_SOM:DP:TAR:TU:JQ_SK_DP:RD:SUBDP50:GU:GT:AD:GQ:AU:SUBDP:FREQ:JQ_MT_AF:CU:DP4:SDP:DP2:JQ_SK_AF:FA:SS:PL:JQ_VS_DP:FDP50:JQ_MT_HC_SOM:JQ_SK_HC_SOM	.:.:.:.:0:.:.:.:29:.:0,0:29:.:.:0,0:.:.:.:0,0:0:.:.:29,29:.:0:.:0.0:.:.:.:.:.:.:0	.:.:.:.:0:.:.:.:31:.:11,11:31:.:.:0,0:.:.:.:0,0:0:.:.:20,20:.:0:.:0.35:.:.:.:.:.:.:1
+chr1	1459635	.	C	A	.	.	NT=ref;QSS=22;QSS_NT=22;SGT=CC->AC;SOMATIC;TQSS=1;TQSS_NT=1	JQ_MT_DP:TOR:DP50:TIR:FDP:BQ:JQ_VS_AF:JQ_VS_HC_SOM:DP:TAR:TU:JQ_SK_DP:RD:SUBDP50:GU:GT:AD:GQ:AU:SUBDP:FREQ:JQ_MT_AF:CU:DP4:SDP:DP2:JQ_SK_AF:FA:SS:PL:JQ_VS_DP:FDP50:JQ_MT_HC_SOM:JQ_SK_HC_SOM	.:.:.:.:0:.:.:.:33:.:0,0:35:.:.:0,0:.:.:.:0,0:0:.:.:33,35:.:0:.:0.0:.:.:.:.:.:.:0	.:.:.:.:0:.:.:.:30:.:0,0:30:.:.:0,0:.:.:.:5,5:0:.:.:25,25:.:0:.:0.17:.:.:.:.:.:.:1
+chr1	1572893	.	G	A	.	.	NT=ref;QSS=31;QSS_NT=31;SGT=GG->AG;SOMATIC;TQSS=1;TQSS_NT=1	JQ_MT_DP:TOR:DP50:TIR:FDP:BQ:JQ_VS_AF:JQ_VS_HC_SOM:DP:TAR:TU:JQ_SK_DP:RD:SUBDP50:GU:GT:AD:GQ:AU:SUBDP:FREQ:JQ_MT_AF:CU:DP4:SDP:DP2:JQ_SK_AF:FA:SS:PL:JQ_VS_DP:FDP50:JQ_MT_HC_SOM:JQ_SK_HC_SOM	.:.:.:.:0:.:.:.:63:.:0,0:65:.:.:63,64:.:.:.:0,1:0:.:.:0,0:.:0:.:0.02:.:.:.:.:.:.:0	.:.:.:.:1:.:.:.:77:.:0,0:81:.:.:69,74:.:.:.:7,7:0:.:.:0,0:.:0:.:0.09:.:.:.:.:.:.:1
+chr1	1696633	.	GA	G	.	.	IC=7;IHP=9;NT=ref;QSI=33;QSI_NT=33;RC=8;RU=A;SGT=ref->het;SOMATIC;TQSI=2;TQSI_NT=2	JQ_MT_DP:TOR:DP50:TIR:FDP:BQ:JQ_VS_AF:JQ_VS_HC_SOM:DP:TAR:TU:JQ_SK_DP:RD:SUBDP50:GU:GT:AD:GQ:AU:SUBDP:FREQ:JQ_MT_AF:CU:DP4:SDP:DP2:JQ_SK_AF:FA:SS:PL:JQ_VS_DP:FDP50:JQ_MT_HC_SOM:JQ_SK_HC_SOM	.:2,2:44.73:0,0:.:.:.:.:48:46,46:.:48:.:0.00:.:.:.:.:.:.:.:.:.:.:.:48:0.0:.:.:.:.:0.00:.:0	.:6,6:47.86:12,12:.:.:.:.:45:28,28:.:45:.:0.00:.:.:.:.:.:.:.:.:.:.:.:45:0.27:.:.:.:.:0.00:.:1
+chr1	1910112	.	G	A	.	.	NT=ref;QSS=36;QSS_NT=36;SGT=GG->AG;SOMATIC;TQSS=1;TQSS_NT=1	JQ_MT_DP:TOR:DP50:TIR:FDP:BQ:JQ_VS_AF:JQ_VS_HC_SOM:DP:TAR:TU:JQ_SK_DP:RD:SUBDP50:GU:GT:AD:GQ:AU:SUBDP:FREQ:JQ_MT_AF:CU:DP4:SDP:DP2:JQ_SK_AF:FA:SS:PL:JQ_VS_DP:FDP50:JQ_MT_HC_SOM:JQ_SK_HC_SOM	.:.:.:.:0:.:.:.:27:.:0,1:28:.:.:27,27:.:.:.:0,0:0:.:.:0,0:.:0:.:0.0:.:.:.:.:.:.:0	.:.:.:.:0:.:.:.:35:.:0,0:35:.:.:23,23:.:.:.:12,12:0:.:.:0,0:.:0:.:0.34:.:.:.:.:.:.:1
+chr1	1912090	.	G	A	.	.	NT=ref;QSS=32;QSS_NT=32;SGT=GG->AG;SOMATIC;TQSS=1;TQSS_NT=1	JQ_MT_DP:TOR:DP50:TIR:FDP:BQ:JQ_VS_AF:JQ_VS_HC_SOM:DP:TAR:TU:JQ_SK_DP:RD:SUBDP50:GU:GT:AD:GQ:AU:SUBDP:FREQ:JQ_MT_AF:CU:DP4:SDP:DP2:JQ_SK_AF:FA:SS:PL:JQ_VS_DP:FDP50:JQ_MT_HC_SOM:JQ_SK_HC_SOM	.:.:.:.:0:.:.:.:27:.:0,0:27:.:.:27,27:.:.:.:0,0:0:.:.:0,0:.:0:.:0.0:.:.:.:.:.:.:0	.:.:.:.:0:.:.:.:32:.:0,0:32:.:.:22,22:.:.:.:10,10:0:.:.:0,0:.:0:.:0.31:.:.:.:.:.:.:1
+chr1	3412474	.	G	A	.	.	NT=ref;QSS=58;QSS_NT=58;SGT=GG->AG;SOMATIC;TQSS=2;TQSS_NT=2	JQ_MT_DP:TOR:DP50:TIR:FDP:BQ:JQ_VS_AF:JQ_VS_HC_SOM:DP:TAR:TU:JQ_SK_DP:RD:SUBDP50:GU:GT:AD:GQ:AU:SUBDP:FREQ:JQ_MT_AF:CU:DP4:SDP:DP2:JQ_SK_AF:FA:SS:PL:JQ_VS_DP:FDP50:JQ_MT_HC_SOM:JQ_SK_HC_SOM	.:.:.:.:0:.:.:.:46:.:0,0:46:.:.:46,46:.:.:.:0,0:0:.:.:0,0:.:0:.:0.0:.:.:.:.:.:.:0	.:.:.:.:0:.:.:.:60:.:0,0:61:.:.:41,42:.:.:.:19,19:0:.:.:0,0:.:0:.:0.31:.:.:.:.:.:.:1
+chr1	3545096	.	G	T	.	.	NT=ref;QSS=40;QSS_NT=40;SGT=GG->GT;SOMATIC;TQSS=1;TQSS_NT=1	JQ_MT_DP:TOR:DP50:TIR:FDP:BQ:JQ_VS_AF:JQ_VS_HC_SOM:DP:TAR:TU:JQ_SK_DP:RD:SUBDP50:GU:GT:AD:GQ:AU:SUBDP:FREQ:JQ_MT_AF:CU:DP4:SDP:DP2:JQ_SK_AF:FA:SS:PL:JQ_VS_DP:FDP50:JQ_MT_HC_SOM:JQ_SK_HC_SOM	.:.:.:.:0:.:.:.:36:.:0,0:37:.:.:36,37:.:.:.:0,0:0:.:.:0,0:.:0:.:0.0:.:.:.:.:.:.:0	.:.:.:.:0:.:.:.:62:.:16,16:63:.:.:46,47:.:.:.:0,0:0:.:.:0,0:.:0:.:0.25:.:.:.:.:.:.:1
