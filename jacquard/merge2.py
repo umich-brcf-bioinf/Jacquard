@@ -9,17 +9,23 @@ import utils as utils
 import vcf as vcf
 
 class BufferedReader(object):
-    def __init__(self, base_iterator):
-        self.base_iterator = base_iterator
+    def __init__(self, reader):
+        self.reader = reader
+        self.base_iterator = iter(reader.vcf_records())
         self.current_record = self.base_iterator.next()
+        self.sample_dict = {}
 
     def check_current_value(self, val):
         if val == self.current_record:
-            self.current_record = self.get_next()
-            return True
-        return False
+            sample_names = self.reader.column_header.split("\t")[9:]
+            for i, sample_name in enumerate(sample_names):
+                key = self.reader.file_name + "|" + sample_name
+                self.sample_dict[key] = self.current_record.sample_dict[i]
+            self.current_record = self._get_next()
 
-    def get_next(self):
+        return self.sample_dict
+
+    def _get_next(self):
         try:
             return self.base_iterator.next()
         except StopIteration:
@@ -97,7 +103,7 @@ def _create_reader_lists(input_files):
         vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
         vcf_readers.append(vcf_reader)
         vcf_reader.open()
-        buffered_readers.append(BufferedReader(vcf_reader.vcf_records()))
+        buffered_readers.append(BufferedReader(vcf_reader))
 
     return buffered_readers, vcf_readers
 
@@ -183,10 +189,10 @@ def execute(args, execution_context):
             for reader in buffered_readers:
                 if reader.current_record:
                     current_record = reader.current_record
-                    if reader.check_current_value(coordinate):
-                        current_record = _alter_record_fields(current_record,
-                                                              format_tags,
-                                                              coordinates)
+                    reader.check_current_value(coordinate)
+                    current_record = _alter_record_fields(current_record,
+                                                          format_tags,
+                                                          coordinates)
                     line = current_record.asText()
 
         file_writer.write(line)
