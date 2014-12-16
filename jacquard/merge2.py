@@ -60,7 +60,6 @@ def _extract_format_ids(all_meta_headers):
 
 def _add_to_coordinate_dict(vcf_reader, coordinate_dict):
     vcf_reader.open()
-
     for vcf_record in vcf_reader.vcf_records():
         key = "^".join([vcf_record.chrom,
                         vcf_record.pos,
@@ -70,8 +69,7 @@ def _add_to_coordinate_dict(vcf_reader, coordinate_dict):
                                vcf_record.ref,
                                vcf_record.alt])
 
-        if coordinate not in coordinate_dict[key]:
-            coordinate_dict[key].append(coordinate)
+        coordinate_dict[key].add(coordinate)
 
     vcf_reader.close()
 
@@ -150,7 +148,7 @@ def execute(args, execution_context):
     output_path = os.path.abspath(args.output)
 
     all_metaheaders = []
-    coordinate_dict = defaultdict(list)
+    coordinate_dict = defaultdict(set)
     input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
 
     file_writer = vcf.FileWriter(output_path)

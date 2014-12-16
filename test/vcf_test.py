@@ -80,7 +80,38 @@ class VcfRecordTestCase(unittest.TestCase):
         input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|k1=v1;k2=v2|F|S\n".replace('|',"\t")
         vcf_record = VcfRecord(input_line)
         self.assertEquals({"k1":"v1","k2":"v2"},vcf_record.get_info_dict())
-
+        
+    def testEQ(self):
+        base = VcfRecord("A|B|ID|C|D|QUAL|FILTER|INFO|F|S\n".replace('|',"\t"))
+        base_equivalent = VcfRecord("A|B|ID|C|D|QUAL|FILTER||foo|S\n".replace('|',"\t"))
+        self.assertEquals(base, base_equivalent)
+        different_chrom = VcfRecord("Z|B|ID|C|D|QUAL|FILTER||foo|S\n".replace('|',"\t"))
+        self.assertNotEquals(base, different_chrom)
+        different_pos = VcfRecord("A|Z|ID|C|D|QUAL|FILTER||foo|S\n".replace('|',"\t"))
+        self.assertNotEquals(base, different_pos)
+        different_ref = VcfRecord("A|B|ID|Z|D|QUAL|FILTER||foo|S\n".replace('|',"\t"))
+        self.assertNotEquals(base, different_ref)        
+        different_alt = VcfRecord("A|B|ID|C|Z|QUAL|FILTER||foo|S\n".replace('|',"\t"))
+        self.assertNotEquals(base, different_alt)
+        
+    def testHash(self):
+        base = VcfRecord("A|B|ID|C|D|QUAL|FILTER|INFO|F|S\n".replace('|',"\t"))
+        base_equivalent = VcfRecord("A|B|ID|C|D|QUAL|FILTER||foo|S\n".replace('|',"\t"))
+        self.assertEquals(base.__hash__(), base_equivalent.__hash__())
+        
+    def testCompareLess(self):
+        expected_records = [VcfRecord("1|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|',"\t")),
+                   VcfRecord("1|1|ID|A|A|QUAL|FILTER||foo|S\n".replace('|',"\t")),
+                   VcfRecord("1|1|ID|A|C|QUAL|FILTER|INFO|F|S\n".replace('|',"\t")),
+                   VcfRecord("1|1|ID|C|A|QUAL|FILTER|INFO|F|S\n".replace('|',"\t")),
+                   VcfRecord("1|2|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|',"\t")),
+                   VcfRecord("2|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|',"\t"))]
+        
+        input_records = expected_records[::-1]
+        
+        self.assertEquals(expected_records, sorted(input_records))
+        
+            
 class VcfReaderTestCase(unittest.TestCase):
     def setUp(self):
         self.output = StringIO()

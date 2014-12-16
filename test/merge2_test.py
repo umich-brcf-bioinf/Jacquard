@@ -132,13 +132,13 @@ class MergeTestCase(unittest.TestCase):
         mock_readers = [MockVcfReader(content=["chr1\t1\t.\tA\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
                                                "chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"]),
                         MockVcfReader(content=["chr42\t16\t.\tG\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"])]
-        coordinate_dict = defaultdict(list)
+        coordinate_dict = defaultdict(set)
         for mock_reader in mock_readers:
             coordinate_dict = merge2._add_to_coordinate_dict(mock_reader, coordinate_dict)
 
-        expected_coordinates = {"chr1^1^A": ["chr1^1^A^C"],
-                                "chr2^12^A": ["chr2^12^A^G"],
-                                "chr42^16^G": ["chr42^16^G^C"]}
+        expected_coordinates = {"chr1^1^A": set(["chr1^1^A^C"]),
+                                "chr2^12^A": set(["chr2^12^A^G"]),
+                                "chr42^16^G": set(["chr42^16^G^C"])}
         self.assertEquals(expected_coordinates, coordinate_dict)
 
     def test_add_to_coordinate_dict_multAlts(self):
@@ -146,13 +146,13 @@ class MergeTestCase(unittest.TestCase):
                                                "chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"]),
                         MockVcfReader(content=["chr1\t1\t.\tA\tT\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
                                                "chr42\t16\t.\tG\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"])]
-        coordinate_dict = defaultdict(list)
+        coordinate_dict = defaultdict(set)
         for mock_reader in mock_readers:
             coordinate_dict = merge2._add_to_coordinate_dict(mock_reader, coordinate_dict)
 
-        expected_coordinates = {"chr1^1^A": ["chr1^1^A^C", "chr1^1^A^T"],
-                                "chr2^12^A": ["chr2^12^A^G"],
-                                "chr42^16^G": ["chr42^16^G^C"]}
+        expected_coordinates = {"chr1^1^A": set(["chr1^1^A^C", "chr1^1^A^T"]),
+                                "chr2^12^A": set(["chr2^12^A^G"]),
+                                "chr42^16^G": set(["chr42^16^G^C"])}
         self.assertEquals(expected_coordinates, coordinate_dict)
 
     def test_sort_coordinate_dict(self):

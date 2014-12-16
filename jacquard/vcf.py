@@ -139,6 +139,16 @@ class VcfRecord(object):
                           self.pos,
                           self.ref,
                           self.alt]) == other)
+        
+    def __hash__(self):
+        return hash("^".join([self.chrom,
+                          self.pos,
+                          self.ref,
+                          self.alt]))
+    
+    def __cmp__(self, other):
+        return cmp((self.chrom, self.pos, self.ref, self.alt),
+                (other.chrom, other.pos, other.ref, other.alt))
 
 #TODO cgates: add context management to open/close
 class FileWriter(object):
