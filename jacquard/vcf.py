@@ -76,7 +76,7 @@ class VcfReader(object):
         for line in self._file_reader.read_lines():
             if line.startswith("#"):
                 continue
-            yield VcfRecord(line)
+            yield VcfRecord.parse_record(line)
 
     def open(self):
         self._file_reader.open()
@@ -86,13 +86,22 @@ class VcfReader(object):
 
 
 class VcfRecord(object):
-    def __init__(self, vcf_line):
+
+    @classmethod
+    def parse_record(cls, vcf_line):
         vcf_fields = vcf_line.rstrip().split("\t")
-        self.chrom, self.pos, self.id, self.ref, self.alt, self.qual, \
-            self.filter, self.info, self.format = vcf_fields[0:9]
+        chrom, pos, id, ref, alt, qual, filter, info, format = vcf_fields[0:9]
+        samples = vcf_fields[9:]
+        return VcfRecord(chrom, pos, ref, alt, id, qual, filter, info, format, 
+                         samples)
+    
+    def __init__(self, chrom, pos, ref, alt, 
+                 id=".", qual=".", filter=".", info=".", format=".", 
+                 samples=[]):
+        self.chrom, self.pos, self.id, self.ref, self.alt, self.qual, self.filter, self.info, self.format = chrom, pos, id, ref, alt, qual, filter, info, format
+        self.samples = samples
         self._key = (self._str_as_int(self.chrom), self.chrom, 
                      self._str_as_int(self.pos), self.ref, self.alt)
-        self.samples = vcf_fields[9:]
         self.key = self.chrom+"_"+self.pos+"_"+self.ref+"_"+self.alt
 
         tags = self.format.split(":")
@@ -102,6 +111,7 @@ class VcfRecord(object):
         for i, sample in enumerate(self.samples):
             values = sample.split(":")
             self.sample_dict[i] = OrderedDict(zip(tags, values))
+
 
     def get_info_dict(self):
         info_list = self.info.split(";")
@@ -115,6 +125,12 @@ class VcfRecord(object):
                 info_dict[key_value] = key_value
 
         return info_dict
+
+    def get_empty_record(self):
+        return VcfRecord(chrom=self.chrom,
+                         pos=self.pos,
+                         ref=self.ref, 
+                         alt=self.alt)
 
     def asText(self):
         stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,

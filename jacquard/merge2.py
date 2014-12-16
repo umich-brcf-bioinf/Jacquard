@@ -58,32 +58,20 @@ def _extract_format_ids(all_meta_headers):
 
     return format_tags
 
-def _add_to_coordinate_dict(vcf_reader, coordinate_dict):
+def _add_to_coordinate_set(vcf_reader, coordinate_set):
     vcf_reader.open()
     for vcf_record in vcf_reader.vcf_records():
-        key = "^".join([vcf_record.chrom,
-                        vcf_record.pos,
-                        vcf_record.ref])
-        coordinate = "^".join([vcf_record.chrom,
-                               vcf_record.pos,
-                               vcf_record.ref,
-                               vcf_record.alt])
-
-        coordinate_dict[key].add(coordinate)
+        coordinate_set.add(vcf_record.get_empty_record())
 
     vcf_reader.close()
 
-    return coordinate_dict
+    return coordinate_set
 
-def _sort_coordinate_dict(coordinate_dict):
-    def _convert(element):
-        return int(element) if element.isdigit() else element
-
-    def _alphanum_key (coordinates):
-        return [_convert(c) for c in re.split('([0-9]+)', coordinates[0])]
-
-    return OrderedDict(sorted(coordinate_dict.items(), key=_alphanum_key))
-
+def _sort_coordinate_set(coordinate_set):
+    coordinate_list = list(coordinate_set)
+    coordinate_list.sort()
+    return coordinate_list
+     
 def _write_metaheaders(file_writer,
                       all_metaheaders,
                       column_header,
@@ -148,7 +136,7 @@ def execute(args, execution_context):
     output_path = os.path.abspath(args.output)
 
     all_metaheaders = []
-    coordinate_dict = defaultdict(set)
+    coordinate_set = set()
     input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
 
     file_writer = vcf.FileWriter(output_path)
@@ -167,7 +155,7 @@ def execute(args, execution_context):
         samples.extend([vcf_reader.file_name + "|" +  i for i in sample_cols])
         column_header = split_column_header[0:9]
 
-        coordinate_dict = _add_to_coordinate_dict(vcf_reader, coordinate_dict)
+        coordinate_set = _add_to_coordinate_set(vcf_reader, coordinate_set)
         count += 1
 
     column_header.extend(samples)
@@ -178,20 +166,19 @@ def execute(args, execution_context):
                       execution_context)
 
     format_tags = _extract_format_ids(all_metaheaders)
-    sorted_coordinates = _sort_coordinate_dict(coordinate_dict)
+    sorted_coordinates = _sort_coordinate_set(coordinate_set)
 
     buffered_readers, vcf_readers = _create_reader_lists(input_files)
 
-    for coordinates in sorted_coordinates.values():
-        for coordinate in coordinates:
-            for reader in buffered_readers:
-                if reader.current_record:
-                    current_record = reader.current_record
-                    reader.check_current_value(coordinate)
-                    current_record = _alter_record_fields(current_record,
-                                                          format_tags,
-                                                          coordinates)
-                    line = current_record.asText()
+    for coordinate in sorted_coordinates:
+        for reader in buffered_readers:
+            if reader.current_record:
+                current_record = reader.current_record
+                reader.check_current_value(coordinate)
+                current_record = _alter_record_fields(current_record,
+                                                      format_tags,
+                                                      coordinate)
+                line = current_record.asText()
 
         file_writer.write(line)
 
