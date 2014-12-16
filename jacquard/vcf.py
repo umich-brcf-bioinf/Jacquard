@@ -84,23 +84,41 @@ class VcfReader(object):
     def close(self):
         self._file_reader.close()
 
-
+## pylint: disable=too-many-instance-attributes
+# Alas, something must encapsulate the myriad VCF fields.
 class VcfRecord(object):
 
     @classmethod
     def parse_record(cls, vcf_line):
         vcf_fields = vcf_line.rstrip().split("\t")
-        chrom, pos, id, ref, alt, qual, filter, info, format = vcf_fields[0:9]
+        chrom, pos, rid, ref, alt, qual, rfilter, info, rformat \
+                = vcf_fields[0:9]
         samples = vcf_fields[9:]
-        return VcfRecord(chrom, pos, ref, alt, id, qual, filter, info, format, 
+        return VcfRecord(chrom, pos, ref, alt,
+                         rid, qual, rfilter, info, rformat,
                          samples)
-    
-    def __init__(self, chrom, pos, ref, alt, 
-                 id=".", qual=".", filter=".", info=".", format=".", 
-                 samples=[]):
-        self.chrom, self.pos, self.id, self.ref, self.alt, self.qual, self.filter, self.info, self.format = chrom, pos, id, ref, alt, qual, filter, info, format
-        self.samples = samples
-        self._key = (self._str_as_int(self.chrom), self.chrom, 
+
+## pylint: disable=too-many-arguments
+# Alas, something must encapsulate the myriad VCF fields.
+    def __init__(self, chrom, pos, ref, alt,
+                 vcf_id=".", qual=".", vcf_filter=".", info=".", vcf_format=".",
+                 samples=None):
+        self.chrom = chrom
+        self.pos = pos
+        self.id = vcf_id
+        self.ref = ref
+        self.alt = alt
+        self.qual = qual
+        self.filter = vcf_filter
+        self.info = info
+        self.format = vcf_format
+        if samples is None:
+            self.samples = []
+        else:
+            self.samples = samples
+
+        #TODO (cgates): key vs _key is too confusing; let's clean it up
+        self._key = (self._str_as_int(self.chrom), self.chrom,
                      self._str_as_int(self.pos), self.ref, self.alt)
         self.key = self.chrom+"_"+self.pos+"_"+self.ref+"_"+self.alt
 
