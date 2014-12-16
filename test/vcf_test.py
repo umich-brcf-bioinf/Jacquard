@@ -82,16 +82,16 @@ class VcfRecordTestCase(unittest.TestCase):
         self.assertEquals({"k1":"v1","k2":"v2"},vcf_record.get_info_dict())
         
     def testEQ(self):
-        base = VcfRecord("A|B|ID|C|D|QUAL|FILTER|INFO|F|S\n".replace('|',"\t"))
-        base_equivalent = VcfRecord("A|B|ID|C|D|QUAL|FILTER||foo|S\n".replace('|',"\t"))
+        base = VcfRecord("A|1|ID|C|D|QUAL|FILTER|INFO|F|S\n".replace('|',"\t"))
+        base_equivalent = VcfRecord("A|1|ID|C|D|QUAL|FILTER||foo|S\n".replace('|',"\t"))
         self.assertEquals(base, base_equivalent)
-        different_chrom = VcfRecord("Z|B|ID|C|D|QUAL|FILTER||foo|S\n".replace('|',"\t"))
+        different_chrom = VcfRecord("Z|1|ID|C|D|QUAL|FILTER||foo|S\n".replace('|',"\t"))
         self.assertNotEquals(base, different_chrom)
-        different_pos = VcfRecord("A|Z|ID|C|D|QUAL|FILTER||foo|S\n".replace('|',"\t"))
+        different_pos = VcfRecord("A|2|ID|C|D|QUAL|FILTER||foo|S\n".replace('|',"\t"))
         self.assertNotEquals(base, different_pos)
-        different_ref = VcfRecord("A|B|ID|Z|D|QUAL|FILTER||foo|S\n".replace('|',"\t"))
+        different_ref = VcfRecord("A|1|ID|Z|D|QUAL|FILTER||foo|S\n".replace('|',"\t"))
         self.assertNotEquals(base, different_ref)        
-        different_alt = VcfRecord("A|B|ID|C|Z|QUAL|FILTER||foo|S\n".replace('|',"\t"))
+        different_alt = VcfRecord("A|1|ID|C|Z|QUAL|FILTER||foo|S\n".replace('|',"\t"))
         self.assertNotEquals(base, different_alt)
         
     def testHash(self):
@@ -99,7 +99,7 @@ class VcfRecordTestCase(unittest.TestCase):
         base_equivalent = VcfRecord("A|B|ID|C|D|QUAL|FILTER||foo|S\n".replace('|',"\t"))
         self.assertEquals(base.__hash__(), base_equivalent.__hash__())
         
-    def testCompareLess(self):
+    def testCompare(self):
         expected_records = [VcfRecord("1|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|',"\t")),
                    VcfRecord("1|1|ID|A|A|QUAL|FILTER||foo|S\n".replace('|',"\t")),
                    VcfRecord("1|1|ID|A|C|QUAL|FILTER|INFO|F|S\n".replace('|',"\t")),
@@ -111,6 +111,27 @@ class VcfRecordTestCase(unittest.TestCase):
         
         self.assertEquals(expected_records, sorted(input_records))
         
+    def testCompare_orderingByNumericChromAndPos(self):
+        expected_records = [VcfRecord("1|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|',"\t")),
+                   VcfRecord("2|1|ID|A|A|QUAL|FILTER||foo|S\n".replace('|',"\t")),
+                   VcfRecord("10|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|',"\t")),
+                   VcfRecord("11|1|ID|C|A|QUAL|FILTER|INFO|F|S\n".replace('|',"\t")),
+                   VcfRecord("20|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|',"\t")),
+                   VcfRecord("M|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|',"\t")),
+                   VcfRecord("X|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|',"\t"))]
+        
+        input_records = expected_records[::-1]
+        
+        self.assertEquals(expected_records, sorted(input_records))
+        
+    def testCompare_nonNumericChrom(self):
+        expected_records = [VcfRecord("chr2|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|',"\t")),
+                   VcfRecord("chr5|1|ID|A|A|QUAL|FILTER||foo|S\n".replace('|',"\t")),
+                   VcfRecord("10|1|ID|A|C|QUAL|FILTER|INFO|F|S\n".replace('|',"\t"))]
+        
+        input_records = expected_records[::-1]
+        
+        self.assertEquals(expected_records, sorted(input_records))
             
 class VcfReaderTestCase(unittest.TestCase):
     def setUp(self):

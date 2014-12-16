@@ -68,36 +68,6 @@ def sort_headers(headers):
 
     return meta_headers
 
-def sort_data(all_variants):
-    new_variants = []
-    for variant in all_variants:
-        split_variant = variant.split("\t")
-        new_line = change_pos_to_int(split_variant)
-        new_variants.append(new_line)
-
-    #sort by CHROM, POS, REF, ALT
-    sorted_variants = sorted(new_variants, key=itemgetter(0,1,3,4))
-
-    actual_sorted_variants = []
-    for variant in sorted_variants:
-        new_field = [str(field) for field in variant]
-        if "chr" not in new_field[0]:
-            new_field[0] = "chr" + new_field[0]
-        actual_sorted_variants.append("\t".join(new_field))
-
-    return actual_sorted_variants
-
-def change_pos_to_int(split_line):
-    new_line = []
-    split_line[0] = split_line[0].strip("chr")
-    for field in split_line:
-        try:
-            new_field = int(field)
-            new_line.append(new_field)
-        except:
-            new_line.append(field)
-    return new_line
-
 def combine_format_values(format, sample):
     return OrderedDict(zip(format.split(":"), sample.strip().split(":")))
 

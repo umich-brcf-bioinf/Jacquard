@@ -2,6 +2,7 @@
 from __future__ import print_function
 from collections import OrderedDict
 import os
+import sys
 
 import utils
 
@@ -89,7 +90,8 @@ class VcfRecord(object):
         vcf_fields = vcf_line.rstrip().split("\t")
         self.chrom, self.pos, self.id, self.ref, self.alt, self.qual, \
             self.filter, self.info, self.format = vcf_fields[0:9]
-
+        self._key = (self._str_as_int(self.chrom), self.chrom, 
+                     self._str_as_int(self.pos), self.ref, self.alt)
         self.samples = vcf_fields[9:]
         self.key = self.chrom+"_"+self.pos+"_"+self.ref+"_"+self.alt
 
@@ -146,9 +148,17 @@ class VcfRecord(object):
                           self.ref,
                           self.alt]))
     
+    def _str_as_int(self, string):
+        if "chr" in string:
+            string = string.replace("chr","")
+        try:
+            return int(string)
+            
+        except:
+            return sys.maxint
+    
     def __cmp__(self, other):
-        return cmp((self.chrom, self.pos, self.ref, self.alt),
-                (other.chrom, other.pos, other.ref, other.alt))
+        return cmp(self._key, other._key)
 
 #TODO cgates: add context management to open/close
 class FileWriter(object):

@@ -173,10 +173,10 @@ class Strelka(object):
             vcf_reader.open()
 
             for record in vcf_reader.vcf_records():
-                all_records.append(record.asText())
+                all_records.append(record)
             vcf_reader.close()
 
-        parsed_records = utils.sort_data(all_records)
+        parsed_records = [rec.asText() for rec in sorted(all_records)]
 
         return metaheader_list, column_header, parsed_records
 
