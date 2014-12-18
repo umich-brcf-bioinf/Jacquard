@@ -2,7 +2,7 @@ from collections import defaultdict
 import os
 import re
 import jacquard.utils as utils
-from jacquard.vcf import VcfReader
+from jacquard.vcf import VcfReader, VcfRecord
 
 
 _VARSCAN_SOMATIC_HEADER = "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR".replace("|","\t")
@@ -172,10 +172,10 @@ class Varscan():
                 split_line = line.split()
 
                 if split_line[0] != "chrom" and split_line[0].startswith("chr"):
-                    hc_key = "^".join([split_line[0], 
+                    hc_key = VcfRecord(split_line[0], 
                                        split_line[1], 
                                        split_line[2], 
-                                       split_line[3]])
+                                       split_line[3])
                     hc_keys.append(hc_key)
             hc_file_reader.close()
 

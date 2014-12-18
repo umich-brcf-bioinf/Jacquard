@@ -120,7 +120,6 @@ class VcfRecord(object):
         #TODO (cgates): key vs _key is too confusing; let's clean it up
         self._key = (self._str_as_int(self.chrom), self.chrom,
                      self._str_as_int(self.pos), self.ref, self.alt)
-        self.key = self.chrom+"_"+self.pos+"_"+self.ref+"_"+self.alt
 
         tags = self.format.split(":")
         self.format_set = tags
@@ -171,16 +170,10 @@ class VcfRecord(object):
             self.sample_dict[key][fieldname] = str(field_dict[key])
 
     def __eq__(self, other):
-        return ("^".join([self.chrom,
-                          self.pos,
-                          self.ref,
-                          self.alt]) == other)
+        return isinstance(other, VcfRecord) and self._key == other._key
         
     def __hash__(self):
-        return hash("^".join([self.chrom,
-                          self.pos,
-                          self.ref,
-                          self.alt]))
+        return hash(self._key)
     
     def _str_as_int(self, string):
         if "chr" in string:

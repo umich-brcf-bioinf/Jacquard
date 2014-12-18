@@ -218,7 +218,7 @@ class VarscanTestCase(unittest.TestCase):
         self.assertRaisesRegexp(JQException, r"The column headers for VCF files \[indel.vcf,snp.vcf\] do not match.",
                                  self.caller.normalize, writer, readers)
 
-    def test__process_hc_files(self):
+    def test_process_hc_files(self):
         hc_readers = []
         with TempDirectory() as input_dir:
             input_dir.write("A",
@@ -234,15 +234,19 @@ class VarscanTestCase(unittest.TestCase):
                             "chr3|99463179|G|A|22|0|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n"+
                             "").replace("|","\t"))
             hc_readers.append(FileReader(os.path.join(input_dir.path,"A")))
-            expected = ('##INFO=<ID={0}HC'
-                        ',Number=1,Type=Flag,Description="Jacquard '
-                        'high-confidence somatic flag for VarScan. Based on '
-                        'intersection with filtered VarScan '
-                        'variants.">'.format(varscan.JQ_VARSCAN_TAG),
-                        ["chr1^161332554^A^G",
-                         "chr2^161332557^G^A",
-                         "chr3^99463179^G^A"])
-            self.assertEquals(expected,self.caller._process_hc_files(hc_readers))
+            
+            actual = self.caller._process_hc_files(hc_readers)
+            
+            metaheader = ('##INFO=<ID={0}HC'
+                          ',Number=1,Type=Flag,Description="Jacquard '
+                          'high-confidence somatic flag for VarScan. Based on '
+                          'intersection with filtered VarScan '
+                          'variants.">').format(varscan.JQ_VARSCAN_TAG)
+            hc_records = [VcfRecord("chr1", "161332554", "A", "G"),
+                          VcfRecord("chr2", "161332557", "G", "A"),
+                          VcfRecord("chr3", "99463179", "G", "A")]
+            expected = (metaheader, hc_records)
+            self.assertEquals(expected, actual)
 
     def test_normalize_raisesExceptionMissingIndelSnvs(self):
         self.assert_two_vcf_files_throw_exception("foo.vcf", "bar.vcf")
