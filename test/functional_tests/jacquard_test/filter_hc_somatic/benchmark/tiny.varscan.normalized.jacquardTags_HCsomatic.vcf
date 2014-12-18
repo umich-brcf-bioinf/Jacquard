@@ -9,7 +9,7 @@
 ##FORMAT=<ID=RD,Number=1,Type=Integer,Description="Depth of reference-supporting bases (reads1)">
 ##INFO=<ID=DP,Number=1,Type=Integer,Description="Total depth of quality bases">
 ##INFO=<ID=GPV,Number=1,Type=Float,Description="Fisher's Exact Test P-value of tumor+normal versus no variant for Germline calls">
-##INFO=<ID=JQ_VS_HC,Number=1,Type=Flag,Description="Jaquard high-confidence somatic flag for VarScan. Based on intersection with filtered VarScan variants.">
+##INFO=<ID=JQ_VS_HC,Number=1,Type=Flag,Description="Jacquard high-confidence somatic flag for VarScan. Based on intersection with filtered VarScan variants.">
 ##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description="Indicates if record is a somatic mutation">
 ##INFO=<ID=SPV,Number=1,Type=Float,Description="Fisher's Exact Test P-value of tumor versus normal for Somatic/LOH calls">
 ##INFO=<ID=SS,Number=1,Type=String,Description="Somatic status of variant (0=Reference,1=Germline,2=Somatic,3=LOH, or 5=Unknown)">

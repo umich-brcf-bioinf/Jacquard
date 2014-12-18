@@ -151,7 +151,8 @@ class Varscan():
             vcf_reader.open()
 
             for record in vcf_reader.vcf_records():
-                if record.key in hc_keys:
+                
+                if record in hc_keys:
                     record.info = record.info + ";" + JQ_VARSCAN_TAG + "HC"
                 all_records.append(record)
 
@@ -171,13 +172,16 @@ class Varscan():
                 split_line = line.split()
 
                 if split_line[0] != "chrom" and split_line[0].startswith("chr"):
-                    hc_key = split_line[0] + "_" + split_line[1] + "_" + split_line[2] + "_" + split_line[3]
+                    hc_key = "^".join([split_line[0], 
+                                       split_line[1], 
+                                       split_line[2], 
+                                       split_line[3]])
                     hc_keys.append(hc_key)
             hc_file_reader.close()
 
         if len(hc_keys)>0:
             metaheader = '##INFO=<ID=' + JQ_VARSCAN_TAG + "HC"\
-                        ',Number=1,Type=Flag,Description="Jaquard '\
+                        ',Number=1,Type=Flag,Description="Jacquard '\
                         'high-confidence somatic flag for VarScan. Based on '\
                         'intersection with filtered VarScan variants.">'
         return metaheader, hc_keys

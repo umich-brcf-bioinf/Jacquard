@@ -194,7 +194,7 @@ class VarscanTestCase(unittest.TestCase):
 
         self.assertEquals(["##FOO", 
                         '##INFO=<ID={0}HC'
-                        ',Number=1,Type=Flag,Description="Jaquard high-confidence '
+                        ',Number=1,Type=Flag,Description="Jacquard high-confidence '
                         'somatic flag for VarScan. Based on intersection with '
                         'filtered VarScan variants.">'.format(varscan.JQ_VARSCAN_TAG),
                         "#bar",
@@ -235,11 +235,13 @@ class VarscanTestCase(unittest.TestCase):
                             "").replace("|","\t"))
             hc_readers.append(FileReader(os.path.join(input_dir.path,"A")))
             expected = ('##INFO=<ID={0}HC'
-                        ',Number=1,Type=Flag,Description="Jaquard '
+                        ',Number=1,Type=Flag,Description="Jacquard '
                         'high-confidence somatic flag for VarScan. Based on '
                         'intersection with filtered VarScan '
                         'variants.">'.format(varscan.JQ_VARSCAN_TAG),
-                        ["chr1_161332554_A_G","chr2_161332557_G_A","chr3_99463179_G_A"])
+                        ["chr1^161332554^A^G",
+                         "chr2^161332557^G^A",
+                         "chr3^99463179^G^A"])
             self.assertEquals(expected,self.caller._process_hc_files(hc_readers))
 
     def test_normalize_raisesExceptionMissingIndelSnvs(self):
