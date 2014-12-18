@@ -108,15 +108,7 @@ def _get_record_sample_data(vcf_record, format_tags):
     return all_samples
 
 def _alter_record_fields(vcf_record, format_tags, coordinates):
-    vcf_record.id = "."
-    vcf_record.qual = "."
-    vcf_record.filter = "."
     vcf_record.format_set = format_tags
-
-    if len(coordinates) > 1:
-        info = vcf_record.info.split(";") if vcf_record.info != "." else []
-        info.append("JQ_MULT_ALT_LOCUS")
-        vcf_record.info = ";".join(info)
 
     vcf_record.sample_dict = _get_record_sample_data(vcf_record, format_tags)
 
@@ -131,6 +123,43 @@ def add_subparser(subparser):
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
+def gather_info(vcf_readers):
+    coordinate_set = OrderedDict() #TODO: If ordered set comes out, replace ordereddict.
+    mult_alts = defaultdict(set)
+    
+    for vcf_reader in vcf_readers:
+        try:
+            vcf_reader.open()
+            for vcf_record in vcf_reader.vcf_records():
+                coordinate_set[(vcf_record.get_empty_record())] = 0
+                mult_alts[(vcf_record.chrom, vcf_record.pos, vcf_record.ref)]\
+                    .add(vcf_record.alt)
+        finally:
+            vcf_reader.close()
+            
+    for vcf_record in coordinate_set:
+        if len(mult_alts[(vcf_record.chrom, vcf_record.pos, vcf_record.ref)])>1:
+            info = vcf_record.info.split(";") if vcf_record.info != "." else []
+            info.append("JQ_MULT_ALT_LOCUS")
+            vcf_record.info = ";".join(info)
+            
+    coordinate_list = coordinate_set.keys()
+    coordinate_list.sort()
+    return coordinate_list
+
+def loop_through_readers(buffered_readers, format_tags, coordinates, writer):
+    for coordinate in coordinates:
+        for reader in buffered_readers:
+            if reader.current_record:
+                current_record = reader.current_record
+                reader.check_current_value(coordinate)
+                current_record = _alter_record_fields(current_record,
+                                                      format_tags,
+                                                      coordinate)
+                line = current_record.asText()
+ 
+        writer.write(line)
+        
 def execute(args, execution_context):
     input_path = os.path.abspath(args.input)
     output_path = os.path.abspath(args.output)
