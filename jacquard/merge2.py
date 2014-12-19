@@ -13,17 +13,21 @@ class BufferedReader(object):
         self.reader = reader
         self.base_iterator = iter(reader.vcf_records())
         self.current_record = self.base_iterator.next()
-        self.sample_dict = {}
 
     def check_current_value(self, val):
+        sample_dict = {}
         if val == self.current_record:
-            sample_names = self.reader.column_header.split("\t")[9:]
-            for i, sample_name in enumerate(sample_names):
+        
+            for i, sample_name in enumerate(self.reader.samples):
                 key = self.reader.file_name + "|" + sample_name
-                self.sample_dict[key] = self.current_record.sample_dict[i]
-            self.current_record = self._get_next()
+                if self.current_record:
+                    sample_dict[key] = self.current_record.sample_dict[i]
+                else:
+                    sample_dict[key] = {}
+                
+            self.current_record = self._get_next() 
 
-        return self.sample_dict
+        return sample_dict
 
     def _get_next(self):
         try:
@@ -148,18 +152,33 @@ def gather_info(vcf_readers):
     return coordinate_list
 
 def loop_through_readers(buffered_readers, format_tags, coordinates, writer):
-    for coordinate in coordinates:
+#     for coordinate in coordinates:
+#         total_sample_dict = {}
+#         for reader in buffered_readers:
+#             current_record = reader.current_record
+#             total_sample_dict.update(reader.check_current_value(coordinate))
+#             
+#         
+#             current_record = _alter_record_fields(current_record,
+#                                                   format_tags,
+#                                                   coordinate)
+#             line = current_record.asText()
+#  
+#         writer.write(line)
+    for dest_record in coordinates:
+        total_sample_dict = {}
         for reader in buffered_readers:
-            if reader.current_record:
-                current_record = reader.current_record
-                reader.check_current_value(coordinate)
-                current_record = _alter_record_fields(current_record,
-                                                      format_tags,
-                                                      coordinate)
-                line = current_record.asText()
- 
-        writer.write(line)
+#            current_record = reader.current_record
+            total_sample_dict.update(reader.check_current_value(dest_record))
         
+        dest_record.set_sample_dict(total_sample_dict) 
+        writer.write(dest_record.asText())
+
+
+
+
+
+
 def execute(args, execution_context):
     input_path = os.path.abspath(args.input)
     output_path = os.path.abspath(args.output)
