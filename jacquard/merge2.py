@@ -1,4 +1,4 @@
-# pylint: disable=C0111
+# pylint: disable=missing-docstring
 from collections import defaultdict, OrderedDict
 import glob
 import os
@@ -14,20 +14,21 @@ class BufferedReader(object):
         self.base_iterator = iter(reader.vcf_records())
         self.current_record = self.base_iterator.next()
 
-    def check_current_value(self, val):
+    def extract(self, element):
         sample_dict = {}
-        if val == self.current_record:
-        
+        if element:
             for i, sample_name in enumerate(self.reader.samples):
                 key = self.reader.file_name + "|" + sample_name
-                if self.current_record:
-                    sample_dict[key] = self.current_record.sample_dict[i]
-                else:
-                    sample_dict[key] = {}
-                
-            self.current_record = self._get_next() 
-
+                sample_dict[key] = element.sample_dict[i]
         return sample_dict
+
+    #TODO (cgates): Move this inside VcfRecord
+    def get_sample_info(self, requested_element):
+        result = self.extract(None)
+        if requested_element == self.current_record:
+            result = self.extract(self.current_record)
+            self.current_record = self._get_next()
+        return result
 
     def _get_next(self):
         try:
@@ -75,11 +76,11 @@ def _sort_coordinate_set(coordinate_set):
     coordinate_list = list(coordinate_set)
     coordinate_list.sort()
     return coordinate_list
-     
+
 def _write_metaheaders(file_writer,
-                      all_metaheaders,
-                      column_header,
-                      execution_context):
+                       all_metaheaders,
+                       column_header,
+                       execution_context):
 
     all_metaheaders.extend(execution_context)
     file_writer.write("\n".join(all_metaheaders) + "\n")
@@ -111,13 +112,6 @@ def _get_record_sample_data(vcf_record, format_tags):
 
     return all_samples
 
-def _alter_record_fields(vcf_record, format_tags, coordinates):
-    vcf_record.format_set = format_tags
-
-    vcf_record.sample_dict = _get_record_sample_data(vcf_record, format_tags)
-
-    return vcf_record
-
 def add_subparser(subparser):
     #pylint: disable=C0301
     parser = subparser.add_parser("merge2", help="Accepts a directory of VCFs and returns a single merged VCF file.")
@@ -127,10 +121,10 @@ def add_subparser(subparser):
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
-def gather_info(vcf_readers):
-    coordinate_set = OrderedDict() #TODO: If ordered set comes out, replace ordereddict.
+def build_coordinates(vcf_readers):
+    coordinate_set = OrderedDict()
     mult_alts = defaultdict(set)
-    
+
     for vcf_reader in vcf_readers:
         try:
             vcf_reader.open()
@@ -140,13 +134,16 @@ def gather_info(vcf_readers):
                     .add(vcf_record.alt)
         finally:
             vcf_reader.close()
-            
+
     for vcf_record in coordinate_set:
-        if len(mult_alts[(vcf_record.chrom, vcf_record.pos, vcf_record.ref)])>1:
+        alts_for_this_locus = mult_alts[vcf_record.chrom,
+                                        vcf_record.pos,
+                                        vcf_record.ref]
+        if len(alts_for_this_locus) > 1:
             info = vcf_record.info.split(";") if vcf_record.info != "." else []
             info.append("JQ_MULT_ALT_LOCUS")
             vcf_record.info = ";".join(info)
-            
+
     coordinate_list = coordinate_set.keys()
     coordinate_list.sort()
     return coordinate_list
@@ -156,22 +153,22 @@ def loop_through_readers(buffered_readers, format_tags, coordinates, writer):
 #         total_sample_dict = {}
 #         for reader in buffered_readers:
 #             current_record = reader.current_record
-#             total_sample_dict.update(reader.check_current_value(coordinate))
-#             
-#         
+#             total_sample_dict.update(reader.get_sample_info(coordinate))
+#
+#
 #             current_record = _alter_record_fields(current_record,
 #                                                   format_tags,
 #                                                   coordinate)
 #             line = current_record.asText()
-#  
+#
 #         writer.write(line)
     for dest_record in coordinates:
         total_sample_dict = {}
         for reader in buffered_readers:
 #            current_record = reader.current_record
-            total_sample_dict.update(reader.check_current_value(dest_record))
-        
-        dest_record.set_sample_dict(total_sample_dict) 
+            total_sample_dict.update(reader.get_sample_info(dest_record))
+
+        dest_record.set_sample_dict(total_sample_dict)
         writer.write(dest_record.asText())
 
 
@@ -209,9 +206,9 @@ def execute(args, execution_context):
     column_header.extend(samples)
 
     _write_metaheaders(file_writer,
-                      all_metaheaders,
-                      column_header,
-                      execution_context)
+                       all_metaheaders,
+                       column_header,
+                       execution_context)
 
     format_tags = _extract_format_ids(all_metaheaders)
     sorted_coordinates = _sort_coordinate_set(coordinate_set)
@@ -222,10 +219,7 @@ def execute(args, execution_context):
         for reader in buffered_readers:
             if reader.current_record:
                 current_record = reader.current_record
-                reader.check_current_value(coordinate)
-                current_record = _alter_record_fields(current_record,
-                                                      format_tags,
-                                                      coordinate)
+                reader.get_sample_info(coordinate)
                 line = current_record.asText()
 
         file_writer.write(line)

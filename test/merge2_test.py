@@ -1,16 +1,16 @@
-#pylint: disable=C0111,C0301,W0212
-from argparse import Namespace
-from collections import OrderedDict, defaultdict
-import glob
+#pylint: disable=missing-docstring,line-too-long,too-many-public-methods
+#pylint: disable=too-few-public-methods,too-many-instance-attributes
+#pylint: disable=too-many-arguments,invalid-name
+from collections import OrderedDict
 import os
 from sets import Set
 from testfixtures import TempDirectory
 import unittest
 
 import jacquard.merge2 as merge2
-import jacquard.utils as utils
 import jacquard.vcf as vcf
 import test_case as test_case
+from jacquard.vcf import VcfRecord
 
 class MockVcfReader(object):
     def __init__(self,
@@ -18,12 +18,17 @@ class MockVcfReader(object):
                  metaheaders=["##metaheaders"],
                  column_header="#header",
                  content=["foo"],
-                 records = None):
+                 records=None,
+                 samples=None):
         self.content = content
         if records is None:
             self.records = [MockVcfRecord.parse_record(line) for line in self.content]
         else:
             self.records = records
+        if samples is None:
+            self.samples = []
+        else:
+            self.samples = samples
         self.file_name = input_filepath
         self.input_filepath = input_filepath
         self.metaheaders = metaheaders
@@ -42,31 +47,15 @@ class MockVcfReader(object):
         self.closed = True
 
 class MockVcfRecord(object):
-    
     @classmethod
     def parse_record(cls, vcf_line):
         vcf_fields = vcf_line.rstrip().split("\t")
         chrom, pos, rid, ref, alt, qual, rfilter, info, rformat \
                 = vcf_fields[0:9]
         samples = vcf_fields[9:]
-        return MockVcfRecord(chrom, pos, ref, alt,
-                         rid, qual, rfilter, info, rformat,
-                         samples)
-        
-#     def __init__(self, content):
-#         self.chrom, self.pos, self.id, self.ref, self.alt, self.qual, \
-#             self.filter, self.info, self.format = content.split("\t")[0:9]
-#         self.samples = content.split("\t")[9:]
-# 
-#         tags = self.format.split(":")
-#         self.format_set = tags
-# 
-#         self.sample_dict = {}
-#         for i, sample in enumerate(self.samples):
-#             values = sample.split(":")
-#             self.sample_dict[i] = OrderedDict(zip(tags, values))
+        return MockVcfRecord(chrom, pos, ref, alt, rid, qual, rfilter, info,
+                             rformat, samples)
 
-        
     def __init__(self, chrom, pos, ref, alt,
                  vcf_id=".", qual=".", vcf_filter=".", info=".", vcf_format=".",
                  samples=None):
@@ -83,10 +72,10 @@ class MockVcfRecord(object):
             self.samples = []
         else:
             self.samples = samples
-            
+
         tags = self.format.split(":")
         self.format_set = tags
- 
+
         self.sample_dict = {}
         for i, sample in enumerate(self.samples):
             values = sample.split(":")
@@ -94,7 +83,7 @@ class MockVcfRecord(object):
 
     def get_empty_record(self):
         return MockVcfRecord(self.chrom, self.pos, self.ref, self.alt)
-        
+
     def get_info_dict(self):
         info_dict = {}
 
@@ -109,8 +98,8 @@ class MockVcfRecord(object):
 
     def asText(self):
         stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
-                   self.qual, self.filter, self.info,
-                   ":".join(self.format_set)]
+                       self.qual, self.filter, self.info,
+                       ":".join(self.format_set)]
 
         for key in self.sample_dict:
             stringifier.append(":".join(self.sample_dict[key].values()))
@@ -136,10 +125,10 @@ class MergeTestCase(unittest.TestCase):
                         '##jacquard.version=0.21',
                         '##FORMAT=<ID=JQ_MT_AF,Number=A,Type=Float,Description="foo",Source="Jacquard",Version=0.21>',
                         '##contig=<ID=chr1,length=249350621,assembly=hg19']
-        mock_vcf_reader = MockVcfReader(input_filepath = "P1.vcf",
-                                        metaheaders = meta_headers,
-                                        column_header = 'CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR',
-                                        records = [])
+        mock_vcf_reader = MockVcfReader(input_filepath="P1.vcf",
+                                        metaheaders=meta_headers,
+                                        column_header='CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR',
+                                        records=[])
 
         actual_meta_headers = merge2._produce_merged_metaheaders(mock_vcf_reader, [], 1)
 
@@ -175,51 +164,51 @@ class MergeTestCase(unittest.TestCase):
 
 
     def test_gather_info_coordinateSet(self):
-        fileArec1 = vcf.VcfRecord("chr1","1","A","C")
-        fileArec2 = vcf.VcfRecord("chr2","12","A","G","id=1")
-        fileBrec1 = vcf.VcfRecord("chr2","12","A","G", "id=2")
-        fileBrec2 = vcf.VcfRecord("chr42","16","G","C")
-          
-        mock_readers = [MockVcfReader(records = [fileArec1, fileArec2]),
-                        MockVcfReader(records = [fileBrec1, fileBrec2])]
- 
-        actual = merge2.gather_info(mock_readers)
-        
+        fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
+        fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")
+        fileBrec1 = vcf.VcfRecord("chr2", "12", "A", "G", "id=2")
+        fileBrec2 = vcf.VcfRecord("chr42", "16", "G", "C")
+
+        mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
+                        MockVcfReader(records=[fileBrec1, fileBrec2])]
+
+        actual = merge2.build_coordinates(mock_readers)
+
         expected = [fileArec1, fileArec2, fileBrec2]
         self.assertEquals(expected, actual)
-        
+
     def test_gather_info_multAltsEmpty(self):
-        fileArec1 = vcf.VcfRecord("chr1","1","A","C")
-        fileArec2 = vcf.VcfRecord("chr2","12","A","G","id=1")
-        fileBrec1 = vcf.VcfRecord("chr2","12","A","G", "id=2")
-        fileBrec2 = vcf.VcfRecord("chr42","16","G","C")
-          
-        mock_readers = [MockVcfReader(records = [fileArec1, fileArec2]),
-                        MockVcfReader(records = [fileBrec1, fileBrec2])]
- 
-        actual = merge2.gather_info(mock_readers)
-        
-        actual_multalts = [record for record in actual if record.info=="JQ_MULT_ALT_LOCUS"]
-        
+        fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
+        fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")
+        fileBrec1 = vcf.VcfRecord("chr2", "12", "A", "G", "id=2")
+        fileBrec2 = vcf.VcfRecord("chr42", "16", "G", "C")
+
+        mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
+                        MockVcfReader(records=[fileBrec1, fileBrec2])]
+
+        actual = merge2.build_coordinates(mock_readers)
+
+        actual_multalts = [record for record in actual if record.info == "JQ_MULT_ALT_LOCUS"]
+
         expected = []
         self.assertEquals(expected, actual_multalts)
-        
+
     def test_gather_info_multAlts(self):
-        fileArec1 = vcf.VcfRecord("chr1","1","A","C")
-        fileArec2 = vcf.VcfRecord("chr2","12","A","G","id=1")
-        fileBrec1 = vcf.VcfRecord("chr2","12","A","T", "id=2")
-        fileBrec2 = vcf.VcfRecord("chr42","16","G","C")
-          
-        mock_readers = [MockVcfReader(records = [fileArec1, fileArec2]),
-                        MockVcfReader(records = [fileBrec1, fileBrec2])]
- 
-        actual = merge2.gather_info(mock_readers)
-        
-        actual_multalts = [record for record in actual if record.info=="JQ_MULT_ALT_LOCUS"]
-        
+        fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
+        fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")
+        fileBrec1 = vcf.VcfRecord("chr2", "12", "A", "T", "id=2")
+        fileBrec2 = vcf.VcfRecord("chr42", "16", "G", "C")
+
+        mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
+                        MockVcfReader(records=[fileBrec1, fileBrec2])]
+
+        actual = merge2.build_coordinates(mock_readers)
+
+        actual_multalts = [record for record in actual if record.info == "JQ_MULT_ALT_LOCUS"]
+
         expected = [fileArec2, fileBrec1]
         self.assertEquals(expected, actual_multalts)
-               
+
     def Xtest_add_to_coordinate_set(self):
         mock_readers = [MockVcfReader(content=["chr1\t1\t.\tA\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
                                                "chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"]),
@@ -300,34 +289,43 @@ class Merge2FunctionalTestCase(test_case.JacquardBaseTestCase):
 
 
 class BufferedReaderTestCase(test_case.JacquardBaseTestCase):
-    def test_init_mockRecords(self):
+    def test_get_sample_info_emptyIfNotRequestedCoordinateDoesNotMatch(self):
+        rec1 = VcfRecord.parse_record("chr2\t2\t.\tA\tG\t.\tPASS\tINFO\tDP\t42\t16")
+
         mock_reader = MockVcfReader(input_filepath="fileA.vcf",
-                                    column_header = "chrom\tpos\tid\tref\talt\tqual\tfilter\tinfo\tformat\tNORMAL\tTUMOR",
-                                    content=["chr1\t2\t.\tA\tG\t.\tPASS\tINFO\tDP\t42\t16",
-                                            "chr1\t2\t.\tA\tT\t.\tPASS\tINFO\tDP\t43\t17",
-                                            "chr1\t3\t.\tG\tC\t.\tPASS\tINFO\tDP\t44\t18"])
+                                    records=[rec1],
+                                    samples=["NORMAL", "TUMOR"])
         buffered_reader = merge2.BufferedReader(mock_reader)
 
-        self.assertEquals({}, buffered_reader.check_current_value("chr1^13^G^C"))
-        self.assertEquals({}, buffered_reader.check_current_value("chr1^2^A^T"))
-        self.assertEquals({"fileA.vcf|NORMAL": OrderedDict({"DP": "42"}), "fileA.vcf|TUMOR": OrderedDict({"DP": "16"})}, buffered_reader.check_current_value("chr1^2^A^G"))
-        self.assertEquals({"fileA.vcf|NORMAL": OrderedDict({"DP": "42"}), "fileA.vcf|TUMOR": OrderedDict({"DP": "16"})}, buffered_reader.check_current_value("chr1^2^A^G"))
-        self.assertEquals({"fileA.vcf|NORMAL": {"DP": "43"}, "fileA.vcf|TUMOR": {"DP": "17"}}, buffered_reader.check_current_value("chr1^2^A^T"))
-        self.assertEquals({"fileA.vcf|NORMAL": {"DP": "44"}, "fileA.vcf|TUMOR": {"DP": "18"}}, buffered_reader.check_current_value("chr1^3^G^C"))
-        self.assertEquals({"fileA.vcf|NORMAL": {"DP": "44"}, "fileA.vcf|TUMOR": {"DP": "18"}}, buffered_reader.check_current_value("chr1^3^G^C"))
-        self.assertEquals({"fileA.vcf|NORMAL": {"DP": "44"}, "fileA.vcf|TUMOR": {"DP": "18"}}, buffered_reader.check_current_value("chr1^2^A^T"))
+        input_coordinate = VcfRecord("chr1", "1", "X", "X")
+        self.assertEquals({}, buffered_reader.get_sample_info(input_coordinate))
 
-    def xtest_init(self):
-        reader = [1,5,10,15]
+    def test_get_sample_info(self):
+        rec1 = VcfRecord.parse_record("chr2\t2\t.\tA\tG\t.\tPASS\tINFO\tDP\t42\t16")
+
+        mock_reader = MockVcfReader(input_filepath="fileA.vcf",
+                                    records=[rec1],
+                                    samples=["NORMAL", "TUMOR"])
+        buffered_reader = merge2.BufferedReader(mock_reader)
+
+        input_coordinate = VcfRecord("chr2", "2", "A", "G")
+        actual_sample_info = buffered_reader.get_sample_info(input_coordinate)
+
+        self.assertEquals(["fileA.vcf|NORMAL", "fileA.vcf|TUMOR"], sorted(actual_sample_info.keys()))
+        self.assertEquals(OrderedDict({"DP": "42"}), actual_sample_info["fileA.vcf|NORMAL"])
+        self.assertEquals(OrderedDict({"DP": "16"}), actual_sample_info["fileA.vcf|TUMOR"])
+
+    def Xtest_get_sample_info_advancesPointerForEachFoundCoordinate(self):
+        reader = [1, 5, 10, 15]
         buffered_reader = merge2.BufferedReader(iter(reader))
 
-        self.assertEquals(False, buffered_reader.check_current_value(0))
-        self.assertEquals(False, buffered_reader.check_current_value(5))
-        self.assertEquals(True, buffered_reader.check_current_value(1))
-        self.assertEquals(False, buffered_reader.check_current_value(1))
-        self.assertEquals(True, buffered_reader.check_current_value(5))
-        self.assertEquals(True, buffered_reader.check_current_value(10))
-        self.assertEquals(True, buffered_reader.check_current_value(15))
-        self.assertEquals(False, buffered_reader.check_current_value(15))
-        self.assertEquals(False, buffered_reader.check_current_value(42))
+        self.assertEquals(False, buffered_reader.get_sample_info(0))
+        self.assertEquals(False, buffered_reader.get_sample_info(5))
+        self.assertEquals(True, buffered_reader.get_sample_info(1))
+        self.assertEquals(False, buffered_reader.get_sample_info(1))
+        self.assertEquals(True, buffered_reader.get_sample_info(5))
+        self.assertEquals(True, buffered_reader.get_sample_info(10))
+        self.assertEquals(True, buffered_reader.get_sample_info(15))
+        self.assertEquals(False, buffered_reader.get_sample_info(15))
+        self.assertEquals(False, buffered_reader.get_sample_info(42))
         

@@ -890,8 +890,8 @@ chr1	4	A	T'''
         if "index" in sorted_annot_df:
             del sorted_annot_df["index"]
 
-        sorted_annot_df.to_csv(script_dir + "/functional_tests/test_output/sorted_annot.txt", sep="\t")
-        sorted_expected_df.to_csv(script_dir + "/functional_tests/test_output/sorted_expected.txt", sep="\t")
+#       sorted_annot_df.to_csv(script_dir + "/functional_tests/test_output/sorted_annot.txt", sep="\t")
+#       sorted_expected_df.to_csv(script_dir + "/functional_tests/test_output/sorted_expected.txt", sep="\t")
 
         tm.assert_frame_equal(sorted_expected_df, sorted_annot_df, check_names=False)
         
