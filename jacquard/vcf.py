@@ -1,4 +1,4 @@
-# Xpylint: disable=C0111
+# pylint: disable=missing-docstring
 from __future__ import print_function
 from collections import OrderedDict
 import os
@@ -40,6 +40,7 @@ class RecognizedVcfReader(object):
 
 #TODO cgates: add context management to open/close
 class VcfReader(object):
+    '''Wraps a file reader, providing VCF metaheaders and records'''
     def __init__(self, file_reader):
         self.input_filepath = file_reader.input_filepath
         self.file_name = file_reader.file_name
@@ -100,11 +101,11 @@ class VcfRecord(object):
 
 ## pylint: disable=too-many-arguments,invalid-name
 # Alas, something must encapsulate the myriad VCF fields.
-#  Note that some VCF field names collide with reserved python words
+#  Note that some VCF field names collide with reserved python names
 # (e.g. id, filter, format).
     def __init__(self, chrom, pos, ref, alt,
                  vcf_id=".", qual=".", vcf_filter=".", info=".", vcf_format=".",
-                 samples=None):
+                 samples=None, named_samples = None):
         self.chrom = chrom
         self.pos = pos
         self.id = vcf_id
