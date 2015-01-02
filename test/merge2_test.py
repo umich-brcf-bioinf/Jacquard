@@ -290,7 +290,7 @@ class Merge2FunctionalTestCase(test_case.JacquardBaseTestCase):
 
 class BufferedReaderTestCase(test_case.JacquardBaseTestCase):
     def test_get_sample_info_emptyIfNotRequestedCoordinateDoesNotMatch(self):
-        rec1 = VcfRecord.parse_record("chr2\t2\t.\tA\tG\t.\tPASS\tINFO\tDP\t42\t16")
+        rec1 = VcfRecord.parse_record("chr2\t2\t.\tA\tG\t.\tPASS\tINFO\tDP\t42\t16", ["SA", "SB"])
 
         mock_reader = MockVcfReader(input_filepath="fileA.vcf",
                                     records=[rec1],
@@ -301,7 +301,7 @@ class BufferedReaderTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals({}, buffered_reader.get_sample_info(input_coordinate))
 
     def test_get_sample_info(self):
-        rec1 = VcfRecord.parse_record("chr2\t2\t.\tA\tG\t.\tPASS\tINFO\tDP\t42\t16")
+        rec1 = VcfRecord.parse_record("chr2\t2\t.\tA\tG\t.\tPASS\tINFO\tDP\t42\t16", ["SA", "SB"])
 
         mock_reader = MockVcfReader(input_filepath="fileA.vcf",
                                     records=[rec1],

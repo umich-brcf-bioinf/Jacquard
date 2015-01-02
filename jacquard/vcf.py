@@ -46,6 +46,14 @@ class VcfReader(object):
         self.file_name = file_reader.file_name
         self._file_reader = file_reader
         (self.column_header, self._metaheaders) = self._read_headers()
+        self.sample_names = self._init_sample_names()
+
+    def _init_sample_names(self):
+        sample_names = []
+        column_fields = self.column_header.split("\t")
+        if column_fields > 8:
+            sample_names = column_fields[9:]
+        return sample_names
 
     @property
     def metaheaders(self):
@@ -77,7 +85,7 @@ class VcfReader(object):
         for line in self._file_reader.read_lines():
             if line.startswith("#"):
                 continue
-            yield VcfRecord.parse_record(line)
+            yield VcfRecord.parse_record(line, self.sample_names)
 
     def open(self):
         self._file_reader.open()
@@ -90,14 +98,33 @@ class VcfReader(object):
 class VcfRecord(object):
 
     @classmethod
-    def parse_record(cls, vcf_line):
-        vcf_fields = vcf_line.rstrip().split("\t")
-        chrom, pos, rid, ref, alt, qual, rfilter, info, rformat \
-                = vcf_fields[0:9]
-        samples = vcf_fields[9:]
+    def parse_record(cls, vcf_line, sample_names):
+        vcf_fields = vcf_line.rstrip("\n").split("\t")
+        chrom, pos, rid, ref, alt, qual, rfilter, info \
+                = vcf_fields[0:8]
+        rformat = "."
+        sample_fields=[]
+        sample_tag_values = {}
+        if len(vcf_fields) > 9:
+            rformat = vcf_fields[8]
+            sample_fields = vcf_fields[9:]
+            sample_tag_values = VcfRecord._sample_tag_values(sample_names,
+                                                             rformat,
+                                                             sample_fields)
         return VcfRecord(chrom, pos, ref, alt,
                          rid, qual, rfilter, info, rformat,
-                         samples)
+                         sample_fields, sample_tag_values)
+
+    @classmethod
+    def _sample_tag_values(cls, sample_names, rformat, sample_fields):
+        sample_tag_values = {}
+        tags = rformat.split(":") if rformat else []
+        for i, sample_field in enumerate(sample_fields):
+            values = sample_field.split(":") if sample_field else []
+            sample_tag_values[sample_names[i]] = OrderedDict(zip(tags, values))
+
+        return sample_tag_values
+
 
 ## pylint: disable=too-many-arguments,invalid-name
 # Alas, something must encapsulate the myriad VCF fields.
@@ -105,7 +132,7 @@ class VcfRecord(object):
 # (e.g. id, filter, format).
     def __init__(self, chrom, pos, ref, alt,
                  vcf_id=".", qual=".", vcf_filter=".", info=".", vcf_format=".",
-                 samples=None, named_samples = None):
+                 samples=None, sample_tag_values = None):
         self.chrom = chrom
         self.pos = pos
         self.id = vcf_id
@@ -119,6 +146,10 @@ class VcfRecord(object):
             self.samples = []
         else:
             self.samples = samples
+        if sample_tag_values is None:
+            self.sample_tag_values = {}
+        else:
+            self.sample_tag_values = sample_tag_values
 
         self._key = (self._str_as_int(self.chrom), self.chrom,
                      self._str_as_int(self.pos), self.ref, self.alt)

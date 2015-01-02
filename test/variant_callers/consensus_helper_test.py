@@ -77,7 +77,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         tag = consensus_helper._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|X:0:0.1:0.2|Y:0.2:0.3:0.4\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE|X:0:0.1:0.2:0.1:0.2|Y:0.2:0.3:0.4:0.3:0.2\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.insert_consensus(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -85,7 +85,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         tag = consensus_helper._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF|0,0:0.2,0.4|0,0:0.1,0.3\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:{0}AF_AVERAGE:{0}AF_RANGE|0,0:0.2,0.4:0.1,0.2:0.2,0.4|0,0:0.1,0.3:0.05,0.15:0.1,0.3\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.insert_consensus(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -93,7 +93,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         tag = consensus_helper._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP|X|Y\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{0}AF_AVERAGE:{0}AF_RANGE|X:.:.|Y:.:.\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.insert_consensus(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -101,7 +101,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         tag = consensus_helper._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|X:0:0.1:.|Y:0.2:0.3:.\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE|X:0:0.1:.:0.05:0.1|Y:0.2:0.3:.:0.25:0.1\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.insert_consensus(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -145,7 +145,7 @@ class DepthTagTestCase(unittest.TestCase):
         tag = consensus_helper._DepthTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF:JQ_foo_DP:JQ_bar_DP:JQ_baz_DP|X:1:2:3|Y:4:5:6\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF:JQ_foo_DP:JQ_bar_DP:JQ_baz_DP:{0}DP_AVERAGE:{0}DP_RANGE|X:1:2:3:2:2|Y:4:5:6:5:2\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.insert_consensus(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -153,7 +153,7 @@ class DepthTagTestCase(unittest.TestCase):
         tag = consensus_helper._DepthTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_DP:JQ_bar_DP|0,0:1,2|0,0:3,4\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_DP:JQ_bar_DP:{0}DP_AVERAGE:{0}DP_RANGE|0,0:1,2:0.5,1:1,2|0,0:3,4:1.5,2:3,4\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.insert_consensus(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -161,7 +161,7 @@ class DepthTagTestCase(unittest.TestCase):
         tag = consensus_helper._DepthTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF|X|Y\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF:{0}DP_AVERAGE:{0}DP_RANGE|X:.:.|Y:.:.\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.insert_consensus(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -203,7 +203,7 @@ class SomaticTagTestCase(unittest.TestCase):
         tag = consensus_helper._SomaticTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:JQ_bar_HC_SOM:JQ_baz_HC_SOM|X:2:0:1|Y:4:1:1\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:JQ_bar_HC_SOM:JQ_baz_HC_SOM:{0}SOM_COUNT|X:2:0:1:1|Y:4:1:1:2\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.insert_consensus(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -211,7 +211,7 @@ class SomaticTagTestCase(unittest.TestCase):
         tag = consensus_helper._SomaticTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:JQ_bar_HC_SOM:JQ_baz_HC_SOM|X:2:0:0|Y:4:0:0\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:JQ_bar_HC_SOM:JQ_baz_HC_SOM:{0}SOM_COUNT|X:2:0:0:0|Y:4:0:0:0\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.insert_consensus(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -219,7 +219,7 @@ class SomaticTagTestCase(unittest.TestCase):
         tag = consensus_helper._SomaticTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP|X:2|Y:4\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:{0}SOM_COUNT|X:2:.|Y:4:.\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.insert_consensus(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -227,7 +227,7 @@ class ConsensusHelperTestCase(unittest.TestCase):
     def test_add_tags(self):
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|0:0.1:0.2|0.2:0.3:0.4\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE:{0}DP_AVERAGE:{0}DP_RANGE|0:0.1:0.2:0.1:0.2:.:.|0.2:0.3:0.4:0.3:0.2:.:.\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
-        vcf_record = VcfRecord.parse_record(line)
+        vcf_record = VcfRecord.parse_record(line, ["SA","SB"])
         cons_help = consensus_helper.ConsensusHelper()
         actual = cons_help.add_tags(vcf_record)
 

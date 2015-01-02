@@ -54,8 +54,8 @@ class AlleleFreqTagTestCase(unittest.TestCase):
     def test_format_missingAFTag(self):
         tag = varscan.AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
-        originalVcfRecord = VcfRecord.parse_record(line)
-        processedVcfRecord = VcfRecord.parse_record(line)
+        originalVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
 
@@ -63,7 +63,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         tag = varscan.AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FREQ:F2:F3|56.7%:SA.2:SA.3|83.4%:SB.2:SB.3\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FREQ:F2:F3:{0}AF|56.7%:SA.2:SA.3:0.57|83.4%:SB.2:SB.3:0.83\n".format(varscan.JQ_VARSCAN_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -71,7 +71,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         tag = varscan.AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FREQ:F2:F3|56.7%,41%:SA.2:SA.3|83.4%,23%:SB.2:SB.3\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FREQ:F2:F3:{0}AF|56.7%,41%:SA.2:SA.3:0.57,0.41|83.4%,23%:SB.2:SB.3:0.83,0.23\n".format(varscan.JQ_VARSCAN_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -82,8 +82,8 @@ class DepthTagTestCase(unittest.TestCase):
     def test_format_missingDPTag(self):
         tag = varscan.DepthTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
-        originalVcfRecord = VcfRecord.parse_record(line)
-        processedVcfRecord = VcfRecord.parse_record(line)
+        originalVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
 
@@ -91,7 +91,7 @@ class DepthTagTestCase(unittest.TestCase):
         tag = varscan.DepthTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP:F2:F3|2:SA.2:SA.3|4:SB.2:SB.3\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP:F2:F3:{0}DP|2:SA.2:SA.3:2|4:SB.2:SB.3:4\n".format(varscan.JQ_VARSCAN_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -103,7 +103,7 @@ class SomaticTagTestCase(unittest.TestCase):
         tag = varscan.SomaticTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
         expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:{0}HC_SOM|SA.1:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n").format(varscan.JQ_VARSCAN_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -111,7 +111,7 @@ class SomaticTagTestCase(unittest.TestCase):
         tag = varscan.SomaticTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|{0}HC;SS=2|F1:F2:F3|2:SA.2:SA.3|SB.1:SB.2:SB.3\n".format(varscan.JQ_VARSCAN_TAG).replace('|',"\t")
         expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|{0}HC;SS=2|F1:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:1\n").format(varscan.JQ_VARSCAN_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -119,7 +119,7 @@ class SomaticTagTestCase(unittest.TestCase):
         tag = varscan.SomaticTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|SS=2|F1:F2:F3|2:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
         expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|SS=2|F1:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n").format(varscan.JQ_VARSCAN_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -127,7 +127,7 @@ class SomaticTagTestCase(unittest.TestCase):
         tag = varscan.SomaticTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|SS=5|F1:F2:F3|2:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
         expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|SS=5|F1:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n").format(varscan.JQ_VARSCAN_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -183,28 +183,31 @@ class VarscanTestCase(unittest.TestCase):
 
     def test_normalize_modifyBasedOnHCVariants(self):
         writer = MockWriter()
-        content1 = ["##FOO", "#bar", "chr1|161332554|.|A|G|.|.|.|.|.\n".replace("|","\t")]
-        content2 = ["##FOO", "#bar", "chr1|161332554|.|G|G|.|.|.|.|.\n".replace("|","\t")]
+        column_header = "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleA".replace("|", "\t")
+        content1 = ["##FOO\n", column_header, "chr1|161332554|.|A|G|.|.|.|.|.\n".replace("|", "\t")]
+        content2 = ["##FOO\n", column_header, "chr1|161332554|.|G|G|.|.|.|.|.\n".replace("|", "\t")]
         readers = []
         readers.append(MockFileReader("indel.vcf", content1))
         readers.append(MockFileReader("snp.vcf", content2))
-        self.append_hc_files(readers,content1=["chr1|161332554|A|G|25|1|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n".replace("|","\t")])
+        self.append_hc_files(readers, content1=["chr1|161332554|A|G|25|1|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n".replace("|", "\t")])
         self.caller.normalize(writer, readers)
         self.maxDiff = None
 
-        self.assertEquals(["##FOO", 
-                        '##INFO=<ID={0}HC'
-                        ',Number=1,Type=Flag,Description="Jacquard high-confidence '
-                        'somatic flag for VarScan. Based on intersection with '
-                        'filtered VarScan variants.">'.format(varscan.JQ_VARSCAN_TAG),
-                        "#bar",
-                        "chr1|161332554|.|A|G|.|.|.;{0}HC|.|.".format(varscan.JQ_VARSCAN_TAG).replace("|","\t"),
-                        "chr1|161332554|.|G|G|.|.|.|.|.".replace("|","\t")], writer.lines())
+        self.assertEquals(["##FOO",
+                           '##INFO=<ID={0}HC'
+                           ',Number=1,Type=Flag,Description="Jacquard high-confidence '
+                           'somatic flag for VarScan. Based on intersection with '
+                           'filtered VarScan variants.">'.format(varscan.JQ_VARSCAN_TAG),
+                           column_header,
+                           "chr1|161332554|.|A|G|.|.|.;{0}HC|.|.".format(varscan.JQ_VARSCAN_TAG).replace("|", "\t"),
+                           "chr1|161332554|.|G|G|.|.|.|.|.".replace("|", "\t")], writer.lines())
 
     def test_normalize_wrongNumberOfFiles(self):
         self.assertRaisesRegexp(JQException,
-            r"VarScan directories should have exactly two input VCF files per patient, but found \[1\].",
-            self.caller.normalize, MockWriter(), [MockFileReader(input_filepath="foo.vcf", content=["##foo", "#bar"])])
+                                r"VarScan directories should have exactly two input VCF files per patient, but found \[1\].",
+                                self.caller.normalize,
+                                MockWriter(),
+                                [MockFileReader(input_filepath="foo.vcf", content=["##foo", "#bar"])])
 
     def test_normalize_mismatchedColumnHeaders(self):
         writer = MockWriter()
