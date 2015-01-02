@@ -315,17 +315,18 @@ class BufferedReaderTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(OrderedDict({"DP": "42"}), actual_sample_info["fileA.vcf|NORMAL"])
         self.assertEquals(OrderedDict({"DP": "16"}), actual_sample_info["fileA.vcf|TUMOR"])
 
-    def Xtest_get_sample_info_advancesPointerForEachFoundCoordinate(self):
+class GenericBufferedReaderTestCase(test_case.JacquardBaseTestCase):
+    def test_get_sample_info_advancesCurrentElementWhenMatched(self):
         reader = [1, 5, 10, 15]
-        buffered_reader = merge2.BufferedReader(iter(reader))
+        buffered_reader = merge2.GenericBufferedReader(iter(reader))
 
-        self.assertEquals(False, buffered_reader.get_sample_info(0))
-        self.assertEquals(False, buffered_reader.get_sample_info(5))
-        self.assertEquals(True, buffered_reader.get_sample_info(1))
-        self.assertEquals(False, buffered_reader.get_sample_info(1))
-        self.assertEquals(True, buffered_reader.get_sample_info(5))
-        self.assertEquals(True, buffered_reader.get_sample_info(10))
-        self.assertEquals(True, buffered_reader.get_sample_info(15))
-        self.assertEquals(False, buffered_reader.get_sample_info(15))
-        self.assertEquals(False, buffered_reader.get_sample_info(42))
+        self.assertEquals(None, buffered_reader.get_if_equals(0))
+        self.assertEquals(None, buffered_reader.get_if_equals(5))
+        self.assertEquals(1, buffered_reader.get_if_equals(1))
+        self.assertEquals(None, buffered_reader.get_if_equals(1))
+        self.assertEquals(5, buffered_reader.get_if_equals(5))
+        self.assertEquals(10, buffered_reader.get_if_equals(10))
+        self.assertEquals(15, buffered_reader.get_if_equals(15))
+        self.assertEquals(None, buffered_reader.get_if_equals(15))
+        self.assertEquals(None, buffered_reader.get_if_equals(42))
         

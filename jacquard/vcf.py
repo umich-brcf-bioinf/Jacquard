@@ -1,4 +1,4 @@
-# pylint: disable=C0111
+# Xpylint: disable=C0111
 from __future__ import print_function
 from collections import OrderedDict
 import os
@@ -7,7 +7,8 @@ import sys
 import utils
 
 class RecognizedVcfReader(object):
-    def __init__(self,vcf_reader,caller):
+    '''VcfReader with recognized caller'''
+    def __init__(self, vcf_reader, caller):
         self._vcf_reader = vcf_reader
         self.caller = caller
 
@@ -16,7 +17,7 @@ class RecognizedVcfReader(object):
         return self._vcf_reader.column_header
 
     def close(self):
-        return self._vcf_reader.close() 
+        return self._vcf_reader.close()
 
     @property
     def file_name(self):
@@ -49,7 +50,6 @@ class VcfReader(object):
     def metaheaders(self):
         return list(self._metaheaders)
 
-    #TODO: VcfReader shouldn't do open and close unless user tells it to
     def _read_headers(self):
         metaheaders = []
         column_header = None
@@ -98,8 +98,10 @@ class VcfRecord(object):
                          rid, qual, rfilter, info, rformat,
                          samples)
 
-## pylint: disable=too-many-arguments
+## pylint: disable=too-many-arguments,invalid-name
 # Alas, something must encapsulate the myriad VCF fields.
+#  Note that some VCF field names collide with reserved python words
+# (e.g. id, filter, format).
     def __init__(self, chrom, pos, ref, alt,
                  vcf_id=".", qual=".", vcf_filter=".", info=".", vcf_format=".",
                  samples=None):
@@ -117,7 +119,6 @@ class VcfRecord(object):
         else:
             self.samples = samples
 
-        #TODO (cgates): key vs _key is too confusing; let's clean it up
         self._key = (self._str_as_int(self.chrom), self.chrom,
                      self._str_as_int(self.pos), self.ref, self.alt)
 
@@ -136,7 +137,7 @@ class VcfRecord(object):
 
         for key_value in info_list:
             if "=" in key_value:
-                key,value = key_value.split("=")
+                key, value = key_value.split("=")
                 info_dict[key] = value
             else:
                 info_dict[key_value] = key_value
@@ -146,13 +147,13 @@ class VcfRecord(object):
     def get_empty_record(self):
         return VcfRecord(chrom=self.chrom,
                          pos=self.pos,
-                         ref=self.ref, 
+                         ref=self.ref,
                          alt=self.alt)
 
     def asText(self):
         stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
-                   self.qual, self.filter, self.info,
-                   ":".join(self.format_set)]
+                       self.qual, self.filter, self.info,
+                       ":".join(self.format_set)]
 
         for key in self.sample_dict:
             stringifier.append(":".join(self.sample_dict[key].values()))
@@ -171,19 +172,20 @@ class VcfRecord(object):
 
     def __eq__(self, other):
         return isinstance(other, VcfRecord) and self._key == other._key
-        
+
     def __hash__(self):
         return hash(self._key)
-    
+
+## pylint: disable=no-self-use
+# No self use, but a reasonable encapsulation
     def _str_as_int(self, string):
         if "chr" in string:
-            string = string.replace("chr","")
+            string = string.replace("chr", "")
         try:
             return int(string)
-            
-        except:
+        except ValueError:
             return sys.maxint
-    
+
     def __cmp__(self, other):
         return cmp(self._key, other._key)
 
@@ -204,7 +206,7 @@ class FileWriter(object):
 
     def __eq__(self, other):
         return (isinstance(other, self.__class__)
-            and self.__dict__ == other.__dict__)
+                and self.__dict__ == other.__dict__)
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -219,7 +221,7 @@ class FileReader(object):
         self._file_reader = None
 
     def open(self):
-        self._file_reader = open(self.input_filepath,"r")
+        self._file_reader = open(self.input_filepath, "r")
 
     def read_lines(self):
         for line in self._file_reader:
@@ -230,7 +232,7 @@ class FileReader(object):
 
     def __eq__(self, other):
         return (isinstance(other, self.__class__)
-            and self.__dict__ == other.__dict__)
+                and self.__dict__ == other.__dict__)
 
     def __ne__(self, other):
         return not self.__eq__(other)

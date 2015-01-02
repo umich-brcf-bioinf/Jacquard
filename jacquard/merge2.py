@@ -9,9 +9,12 @@ import utils as utils
 import vcf as vcf
 
 class BufferedReader(object):
+    '''Accepts an iterator of ordered values, returns element if requested
+    element matches and None otherwise. Never returns StopIteration so cannot
+    be used as iteration control-flow.'''
     def __init__(self, reader):
         self.reader = reader
-        self.base_iterator = iter(reader.vcf_records())
+        self.base_iterator = reader.vcf_records()
         self.current_record = self.base_iterator.next()
 
     def extract(self, element):
@@ -30,11 +33,44 @@ class BufferedReader(object):
             self.current_record = self._get_next()
         return result
 
+    def get_if_equals(self, requested_element):
+        if requested_element == self.current_record:
+            result = self.extract(self.current_record)
+            self.current_record = self._get_next()
+        return result
+
     def _get_next(self):
         try:
             return self.base_iterator.next()
         except StopIteration:
             return None
+
+# pylint: disable=too-few-public-methods
+# This class must capture the state of the incoming iterator and provide
+# modified behavior based on data in that iterator. A small class works ok, but
+# suspect there may be a more pythonic way to curry iterator in a partial
+# function. (cgates)
+class GenericBufferedReader(object):
+    '''Accepts an iterator and returns element (advancing current element) if
+    requested element equals next element in collection and None otherwise.
+    Never returns StopIteration so cannot be used as iteration control-flow.'''
+    def __init__(self, iterator):
+        self._iterator = iterator
+        self._current_element = self._iterator.next()
+
+    def get_if_equals(self, requested_element):
+        result = None
+        if requested_element == self._current_element:
+            result = self._current_element
+            self._current_element = self._get_next()
+        return result
+
+    def _get_next(self):
+        try:
+            return self._iterator.next()
+        except StopIteration:
+            return None
+
 
 def _produce_merged_metaheaders(vcf_reader, all_meta_headers, count):
     vcf_reader.open()
