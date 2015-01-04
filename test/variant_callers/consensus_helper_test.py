@@ -7,6 +7,7 @@ import jacquard.utils as utils
 from jacquard.variant_callers import consensus_helper
 from jacquard.vcf import VcfRecord
 
+# pylint: disable=too-few-public-methods,too-many-instance-attributes
 class MockVcfRecord(object):
     def __init__(self, content):
         content = content.split("\t")
@@ -32,13 +33,13 @@ class MockVcfRecord(object):
         for key in self.sample_dict.keys():
             self.sample_dict[key][fieldname] = str(field_dict[key])
 
-class MockWriter():
+class MockWriter(object):
     def __init__(self):
         self._content = []
         self.opened = False
         self.closed = False
 
-    def open (self):
+    def open(self):
         self.opened = True
 
     def write(self, content):
@@ -75,59 +76,59 @@ class AlleleFreqTagTestCase(unittest.TestCase):
 
     def test_insert_consensus(self):
         tag = consensus_helper._AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|X:0:0.1:0.2|Y:0.2:0.3:0.4\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE|X:0:0.1:0.2:0.1:0.2|Y:0.2:0.3:0.4:0.3:0.2\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|X:0:0.1:0.2|Y:0.2:0.3:0.4\n".replace('|', "\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE|X:0:0.1:0.2:0.1:0.2|Y:0.2:0.3:0.4:0.3:0.2\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|', "\t")
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.insert_consensus(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_insert_consensus_multAlts(self):
         tag = consensus_helper._AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF|0,0:0.2,0.4|0,0:0.1,0.3\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:{0}AF_AVERAGE:{0}AF_RANGE|0,0:0.2,0.4:0.1,0.2:0.2,0.4|0,0:0.1,0.3:0.05,0.15:0.1,0.3\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF|0,0:0.2,0.4|0,0:0.1,0.3\n".replace('|', "\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:{0}AF_AVERAGE:{0}AF_RANGE|0,0:0.2,0.4:0.1,0.2:0.2,0.4|0,0:0.1,0.3:0.05,0.15:0.1,0.3\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|', "\t")
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.insert_consensus(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_insert_consensus_noJQ_AFTags(self):
         tag = consensus_helper._AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP|X|Y\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{0}AF_AVERAGE:{0}AF_RANGE|X:.:.|Y:.:.\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP|X|Y\n".replace('|', "\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{0}AF_AVERAGE:{0}AF_RANGE|X:.:.|Y:.:.\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|', "\t")
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.insert_consensus(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_insert_consensus_noNullValuesInAvgCalculation(self):
         tag = consensus_helper._AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|X:0:0.1:.|Y:0.2:0.3:.\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE|X:0:0.1:.:0.05:0.1|Y:0.2:0.3:.:0.25:0.1\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|X:0:0.1:.|Y:0.2:0.3:.\n".replace('|', "\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE|X:0:0.1:.:0.05:0.1|Y:0.2:0.3:.:0.25:0.1\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|', "\t")
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.insert_consensus(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_insert_zscore(self):
         tag = consensus_helper._AlleleFreqTag()
-        content = "1\t42\t.\tA\tG\t.\tPASS\tINFO\tJQ_CONS_AF_RANGE\t0.4\t0.2"
-        mock_vcf_record = MockVcfRecord(content)
+        vcf_line = "1\t42\t.\tA\tG\t.\tPASS\tINFO\tJQ_CONS_AF_RANGE\t0.4\t0.2"
+        vcf_record = VcfRecord.parse_record(vcf_line, ["SA", "SB"])
         pop_mean_range = 0.5
         pop_std_range = 0.02
-        tag.insert_zscore(mock_vcf_record, pop_mean_range, pop_std_range)
+        tag.insert_zscore(vcf_record, pop_mean_range, pop_std_range)
 
-        self.assertTrue("JQ_CONS_AF_ZSCORE" in mock_vcf_record.format_set)
-        self.assertEquals("-5.0", mock_vcf_record.sample_dict[0]["JQ_CONS_AF_ZSCORE"])
-        self.assertEquals("-15.0", mock_vcf_record.sample_dict[1]["JQ_CONS_AF_ZSCORE"])
+        self.assertTrue("JQ_CONS_AF_ZSCORE" in vcf_record.format_tags)
+        self.assertEquals("-5.0", vcf_record.sample_tag_values["SA"]["JQ_CONS_AF_ZSCORE"])
+        self.assertEquals("-15.0", vcf_record.sample_tag_values["SB"]["JQ_CONS_AF_ZSCORE"])
 
     def test_insert_zscore_nullValue(self):
         tag = consensus_helper._AlleleFreqTag()
-        content = "1\t42\t.\tA\tG\t.\tPASS\tINFO\tJQ_CONS_AF_RANGE\t.\t."
-        mock_vcf_record = MockVcfRecord(content)
+        vcf_line = "1\t42\t.\tA\tG\t.\tPASS\tINFO\tJQ_CONS_AF_RANGE\t.\t."
+        vcf_record = VcfRecord.parse_record(vcf_line, ["SA","SB"])
         pop_mean_range = 0.5
         pop_std_range = 0.02
-        tag.insert_zscore(mock_vcf_record, pop_mean_range, pop_std_range)
+        tag.insert_zscore(vcf_record, pop_mean_range, pop_std_range)
 
-        self.assertTrue("JQ_CONS_AF_ZSCORE" in mock_vcf_record.format_set)
-        self.assertEquals(".", mock_vcf_record.sample_dict[0]["JQ_CONS_AF_ZSCORE"])
-        self.assertEquals(".", mock_vcf_record.sample_dict[1]["JQ_CONS_AF_ZSCORE"])
+        self.assertTrue("JQ_CONS_AF_ZSCORE" in vcf_record.format_tags)
+        self.assertEquals(".", vcf_record.sample_tag_values["SA"]["JQ_CONS_AF_ZSCORE"])
+        self.assertEquals(".", vcf_record.sample_tag_values["SB"]["JQ_CONS_AF_ZSCORE"])
 
 class DepthTagTestCase(unittest.TestCase):
     def test_metaheader(self):
@@ -167,27 +168,27 @@ class DepthTagTestCase(unittest.TestCase):
 
     def test_insert_zscore(self):
         tag = consensus_helper._DepthTag()
-        content = "1\t42\t.\tA\tG\t.\tPASS\tINFO\tJQ_CONS_DP_RANGE\t4\t2"
-        mock_vcf_record = MockVcfRecord(content)
+        vcf_line = "1\t42\t.\tA\tG\t.\tPASS\tINFO\tJQ_CONS_DP_RANGE\t4\t2"
+        vcf_record = VcfRecord.parse_record(vcf_line, ["SA", "SB"])
         pop_mean_range = 5
         pop_std_range = 2
-        tag.insert_zscore(mock_vcf_record, pop_mean_range, pop_std_range)
+        tag.insert_zscore(vcf_record, pop_mean_range, pop_std_range)
 
-        self.assertTrue("JQ_CONS_DP_ZSCORE" in mock_vcf_record.format_set)
-        self.assertEquals("-0.5", mock_vcf_record.sample_dict[0]["JQ_CONS_DP_ZSCORE"])
-        self.assertEquals("-1.5", mock_vcf_record.sample_dict[1]["JQ_CONS_DP_ZSCORE"])
+        self.assertTrue("JQ_CONS_DP_ZSCORE" in vcf_record.format_tags)
+        self.assertEquals("-0.5", vcf_record.sample_tag_values["SA"]["JQ_CONS_DP_ZSCORE"])
+        self.assertEquals("-1.5", vcf_record.sample_tag_values["SB"]["JQ_CONS_DP_ZSCORE"])
 
     def test_insert_zscore_nullValue(self):
         tag = consensus_helper._DepthTag()
-        content = "1\t42\t.\tA\tG\t.\tPASS\tINFO\tJQ_CONS_DP_RANGE\t.\t."
-        mock_vcf_record = MockVcfRecord(content)
+        vcf_line = "1\t42\t.\tA\tG\t.\tPASS\tINFO\tJQ_CONS_DP_RANGE\t.\t."
+        vcf_record = VcfRecord.parse_record(vcf_line, ["SA", "SB"])
         pop_mean_range = 5
         pop_std_range = 2
-        tag.insert_zscore(mock_vcf_record, pop_mean_range, pop_std_range)
+        tag.insert_zscore(vcf_record, pop_mean_range, pop_std_range)
 
-        self.assertTrue("JQ_CONS_DP_ZSCORE" in mock_vcf_record.format_set)
-        self.assertEquals(".", mock_vcf_record.sample_dict[0]["JQ_CONS_DP_ZSCORE"])
-        self.assertEquals(".", mock_vcf_record.sample_dict[1]["JQ_CONS_DP_ZSCORE"])
+        self.assertTrue("JQ_CONS_DP_ZSCORE" in vcf_record.format_tags)
+        self.assertEquals(".", vcf_record.sample_tag_values["SA"]["JQ_CONS_DP_ZSCORE"])
+        self.assertEquals(".", vcf_record.sample_tag_values["SB"]["JQ_CONS_DP_ZSCORE"])
 
 class SomaticTagTestCase(unittest.TestCase):
     def test_metaheader(self):
@@ -252,13 +253,13 @@ class ConsensusHelperTestCase(unittest.TestCase):
         self.assertEqual(3, len(split_actual))
 
     def test_calculate_average_float(self):
-        desired_tags = [[0.2],[0.3],[0.5]]
-        actual_tags = consensus_helper._calculate_average(desired_tags)
+        new_tags = [[0.2], [0.3], [0.5]]
+        actual_tags = consensus_helper._calculate_average(new_tags)
         self.assertEquals("0.33", actual_tags)
 
     def test_calculate_average_int(self):
-        desired_tags = [[2],[3],[5]]
-        actual_tags = consensus_helper._calculate_average(desired_tags)
+        new_tags = [[2], [3], [5]]
+        actual_tags = consensus_helper._calculate_average(new_tags)
         self.assertEquals("3.33", actual_tags)
 
     def test_calculate_range(self):

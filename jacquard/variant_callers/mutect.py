@@ -4,19 +4,20 @@ import os
 
 JQ_MUTECT_TAG = "JQ_MT_"
 
-class _AlleleFreqTag():
+#pylint: disable=too-few-public-methods
+class _AlleleFreqTag(object):
     def __init__(self):
         self.metaheader = '##FORMAT=<ID={0}AF,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)",Source="Jacquard",Version={1}>'.format(JQ_MUTECT_TAG, utils.__version__)
 
-    def format(self, vcfRecord):
-        if "FA" in vcfRecord.format_set:
+    def format(self, vcf_record):
+        if "FA" in vcf_record.format_tags:
             sample_values = {}
-            for key in vcfRecord.sample_dict.keys():
-                freq = vcfRecord.sample_dict[key]["FA"].split(",")
-                sample_values[key] = self._roundTwoDigits(freq)
-            vcfRecord.insert_format_field(JQ_MUTECT_TAG + "AF",sample_values)
+            for sample in vcf_record.sample_tag_values:
+                freq = vcf_record.sample_tag_values[sample]["FA"].split(",")
+                sample_values[sample] = self._roundTwoDigits(freq)
+            vcf_record.add_sample_tag_value(JQ_MUTECT_TAG + "AF", sample_values)
 
-    def _roundTwoDigits(self, value): 
+    def _roundTwoDigits(self, value):
         new_values = []
         for val in value:
             if len(val.split(".")[1]) <= 2:
@@ -25,32 +26,33 @@ class _AlleleFreqTag():
                 new_values.append(str(round(100 * float(val))/100))
         return ",".join(new_values)
 
-class _DepthTag():
+class _DepthTag(object):
     def __init__(self):
         self.metaheader = '##FORMAT=<ID={0}DP,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP)",Source="Jacquard",Version={1}>'.format(JQ_MUTECT_TAG, utils.__version__)
 
-    def format(self, vcfRecord):
-        if "DP" in vcfRecord.format_set:
+    def format(self, vcf_record):
+        if "DP" in vcf_record.format_tags:
             sample_values = {}
-            for key in vcfRecord.sample_dict.keys():
-                sample_values[key] = vcfRecord.sample_dict[key]["DP"]
-            vcfRecord.insert_format_field(JQ_MUTECT_TAG + "DP",sample_values)
+            for sample in vcf_record.sample_tag_values:
+                sample_values[sample] = vcf_record.sample_tag_values[sample]["DP"]
+            vcf_record.add_sample_tag_value(JQ_MUTECT_TAG + "DP", sample_values)
 
 class _SomaticTag():
     def __init__(self):
         self.metaheader = '##FORMAT=<ID={0}HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)",Source="Jacquard",Version={1}>'.format(JQ_MUTECT_TAG, utils.__version__)
         self.good = True
 
-    def format(self, vcfRecord):
+    def format(self, vcf_record):
         mutect_tag = JQ_MUTECT_TAG + "HC_SOM"
         sample_values = {}
-        if "SS" in vcfRecord.format_set:
-            for key in vcfRecord.sample_dict.keys():
-                sample_values[key] = self._somatic_status(vcfRecord.sample_dict[key]["SS"])
+        if "SS" in vcf_record.format_tags:
+            for sample in vcf_record.sample_tag_values:
+                somatic_status = vcf_record.sample_tag_values[sample]["SS"]
+                sample_values[sample] = self._somatic_status(somatic_status)
         else:
-            for key in vcfRecord.sample_dict.keys():
-                sample_values[key] = "0"
-        vcfRecord.insert_format_field(mutect_tag,sample_values)
+            for sample in vcf_record.sample_tag_values:
+                sample_values[sample] = "0"
+        vcf_record.add_sample_tag_value(mutect_tag, sample_values)
 
     def _somatic_status(self, ss_value):
         if ss_value == "2":

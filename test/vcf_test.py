@@ -46,19 +46,44 @@ class VcfRecordTestCase(unittest.TestCase):
         self.assertEquals("FOO:BAR", record.format)
         self.assertEquals(["SA_foo:SA_bar", "SB_foo:SB_bar"], record.samples)
 
-    def test_parse_record_format_set(self):
+    def test_format_tags(self):
         sample_names = ["SampleA", "SampleB"]
         input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
         record = VcfRecord.parse_record(input_line, sample_names)
-        self.assertEquals(["F1", "F2", "F3"], record.format_set)
+        self.assertEquals(set(["F1", "F2", "F3"]), record.format_tags)
+
+    def test_format_tags_emptyWhenNoSamples(self):
+        sample_names = []
+        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO\n".replace('|', "\t")
+        record = VcfRecord.parse_record(input_line, sample_names)
+        self.assertEquals(set(), record.format_tags)
+
+    def test_format_field(self):
+        sample_names = ["SA", "SB"]
+        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F3:F1:F2|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
+        record = VcfRecord.parse_record(input_line, sample_names)
+        self.assertEquals("F3:F1:F2", record._format_field())
+
+    def test_format_field_emptyWhenNoSamples(self):
+        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO\n".replace('|', "\t")
+        record = VcfRecord.parse_record(input_line, [])
+        self.assertEquals(".", record._format_field())
+
+    def test_format_field_preservesOrderWhenAddingNewTags(self):
+        sample_names = ["SA", "SB"]
+        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F3:F1:F2|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
+        record = VcfRecord.parse_record(input_line, sample_names)
+        record.add_sample_tag_value("Z4", {"SA" : "SA.4", "SB" : "SB.4"})
+        record.add_sample_tag_value("A5", {"SA"  :"SA.A5", "SB" : "SB.A5"})
+        self.assertEquals("F3:F1:F2:Z4:A5", record._format_field())
 
     def test_parse_record_sample_dict(self):
         sample_names = ["SampleA", "SampleB"]
         input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
         record = VcfRecord.parse_record(input_line, sample_names)
-        self.assertEquals([0, 1], record.sample_dict.keys())
-        self.assertEquals({"F1":"SA.1", "F2":"SA.2", "F3":"SA.3"}, record.sample_dict[0])
-        self.assertEquals({"F1":"SB.1", "F2":"SB.2", "F3":"SB.3"}, record.sample_dict[1])
+        self.assertEquals(["SampleA", "SampleB"], record.sample_tag_values.keys())
+        self.assertEquals({"F1":"SA.1", "F2":"SA.2", "F3":"SA.3"}, record.sample_tag_values["SampleA"])
+        self.assertEquals({"F1":"SB.1", "F2":"SB.2", "F3":"SB.3"}, record.sample_tag_values["SampleB"])
 
     def test_sample_tag_values(self):
         sample_tag_values = VcfRecord._sample_tag_values(["sampleA", "sampleB"],
@@ -87,27 +112,32 @@ class VcfRecordTestCase(unittest.TestCase):
         self.assertEquals({"F1":"SA.1", "F2":"SA.2", "F3":"SA.3"}, record.sample_tag_values["SampleA"])
         self.assertEquals({"F1":"SB.1", "F2":"SB.2", "F3":"SB.3"}, record.sample_tag_values["SampleB"])
 
-    def test_insert_format_field(self):
+    def test_sample_tag_values_preservesSampleOrder(self):
+        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|||\n".replace('|', "\t")
+        record = VcfRecord.parse_record(input_line, sample_names=["sampleB", "sampleA"])
+        self.assertEquals(["sampleB", "sampleA"], record.sample_tag_values.keys())
+
+    def test_add_sample_format_value(self):
         sample_names = ["SampleA", "SampleB"]
         input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
         record = VcfRecord.parse_record(input_line, sample_names)
-        record.insert_format_field("inserted", {0:0.6, 1:0.5})
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:inserted|SA.1:SA.2:SA.3:0.6|SB.1:SB.2:SB.3:0.5\n".replace('|', "\t")
+        record.add_sample_tag_value("inserted", {"SampleB":"insertedValueB", "SampleA":"insertedValueA"})
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:inserted|SA.1:SA.2:SA.3:insertedValueA|SB.1:SB.2:SB.3:insertedValueB\n".replace('|', "\t")
         self.assertEquals(expected, record.asText())
 
     def test_insert_format_field_failsOnInvalidSampleDict(self):
         sample_names = ["SampleA", "SampleB"]
         input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
         record = VcfRecord.parse_record(input_line, sample_names)
-        self.assertRaises(KeyError, record.insert_format_field, "inserted", {0:0.6})
-        self.assertRaises(KeyError, record.insert_format_field, "inserted", {0:0.6, 3:0.6})
-        self.assertRaises(KeyError, record.insert_format_field, "inserted", {0:0.6, 1:0.6, 42:0.6})
+        self.assertRaises(KeyError, record.add_sample_tag_value, "inserted", {"SampleA":0.6})
+        self.assertRaises(KeyError, record.add_sample_tag_value, "inserted", {"SampleA":0.6, "SampleZ":0.6})
+        self.assertRaises(KeyError, record.add_sample_tag_value, "inserted", {"SampleA":0.6, "SampleB":0.6, "SampleZ":0.6})
 
     def test_insert_format_field_failsOnExistingField(self):
         sample_names = ["SampleA", "SampleB"]
         input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
         record = VcfRecord.parse_record(input_line, sample_names)
-        self.assertRaises(KeyError, record.insert_format_field, "F1", {0:0.6, 1:0.6})
+        self.assertRaises(KeyError, record.add_sample_tag_value, "F1", {"SampleA":0.6, "SampleB":0.6})
 
     def test_get_info_dict(self):
         sample_names = ["SampleA"]

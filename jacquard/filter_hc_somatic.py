@@ -10,17 +10,18 @@ import vcf as vcf
 import logger as logger
 from collections import defaultdict
 
-def _iterate_file(in_file, vcf_reader, filtered_records, num_records, somatic_positions, somatic):
+def _iterate_file(vcf_reader, filtered_records, num_records, somatic_positions, somatic):
     vcf_reader.open()
     for record in vcf_reader.vcf_records():
         if "JQ_EXCLUDE" in record.filter:
             filtered_records += 1
         else:
+            sample_tag_values = record.sample_tag_values
             num_records += 1
-            for key in record.sample_dict:
-                for tag in record.sample_dict[key]:
+            for sample in sample_tag_values:
+                for tag in sample_tag_values[sample]:
                     if re.search(utils.jq_somatic_tag, tag):
-                        if record.sample_dict[key][tag] == "1":
+                        if sample_tag_values[sample][tag] == "1":
                             somatic_key = "^".join([record.chrom,
                                                     record.pos])
                             somatic_positions[somatic_key] = 1
@@ -29,7 +30,7 @@ def _iterate_file(in_file, vcf_reader, filtered_records, num_records, somatic_po
 
     return filtered_records, num_records, somatic_positions, somatic
 
-def _find_somatic_positions(in_files, output_dir):
+def _find_somatic_positions(in_files):
     somatic_positions = {}
     no_jq_tags = []
 
@@ -48,10 +49,9 @@ def _find_somatic_positions(in_files, output_dir):
                                                    vcf_reader.column_header,
                                                    vcf_reader.file_name)
 
-        in_file = open(input_file, "r")
         filtered_records = 0
 
-        filtered_records, num_records, somatic_positions, somatic =_iterate_file(in_file, vcf_reader, filtered_records, num_records, somatic_positions, somatic)
+        filtered_records, num_records, somatic_positions, somatic =_iterate_file(vcf_reader, filtered_records, num_records, somatic_positions, somatic)
         callers[caller.name] += filtered_records
 
         if somatic == 0:
@@ -59,7 +59,7 @@ def _find_somatic_positions(in_files, output_dir):
             logger.warning("Input file [{}] has no high-confidence somatic "
                            "variants.", os.path.basename(input_file))
 
-        in_file.close()
+#        in_file.close()
 
         count += 1
 
@@ -151,9 +151,7 @@ def filter_somatic_positions(input_dir, output_dir, execution_context=[]):
                 len(in_files),
                 input_dir)
 
-# pylint: disable=C0301
-    somatic_positions, somatic_positions_header = _find_somatic_positions(in_files,
-                                                                          output_dir)
+    somatic_positions, somatic_positions_header = _find_somatic_positions(in_files)
     execution_context.append(somatic_positions_header)
 
     _write_somatic(in_files, output_dir, somatic_positions, execution_context)
