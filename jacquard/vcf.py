@@ -114,26 +114,43 @@ class VcfRecord(object):
                                                              sample_fields)
         return VcfRecord(chrom, pos, ref, alt,
                          rid, qual, rfilter, info,
-                         sample_fields, sample_tag_values)
+                         sample_tag_values)
 
     @classmethod
     def _sample_tag_values(cls, sample_names, rformat, sample_fields):
         sample_tag_values = OrderedDict()
-        tags = rformat.split(":") if rformat else []
+        tag_names = VcfRecord._format_list(rformat)
         for i, sample_field in enumerate(sample_fields):
-            values = sample_field.split(":") if sample_field else []
-            sample_tag_values[sample_names[i]] = OrderedDict(zip(tags, values))
+            tag_values = sample_field.split(":") if sample_field else "."
+            sample_tag_values[sample_names[i]] = OrderedDict(zip(tag_names,
+                                                                 tag_values))
         return sample_tag_values
 
-##TODO (cgates): remove samples list
-#TODO (cgates): adjust vcf names to not collide with reserved python words 
+    @classmethod
+    def _format_list(cls, rformat):
+        if rformat and rformat != ".":
+            return rformat.split(":")
+        else:
+            return []
+
+    @classmethod
+    def _str_as_int(cls, string):
+        if "chr" in string:
+            string = string.replace("chr", "")
+        try:
+            return int(string)
+        except ValueError:
+            return sys.maxint
+
+##TODO (cgates): adjust info field to be stored as dict instead of string
+#TODO (cgates): adjust vcf names to not collide with reserved python words
 ## pylint: disable=too-many-arguments, invalid-name
 # Alas, something must encapsulate the myriad VCF fields.
 #  Note that some VCF field names collide with reserved python names
 # (e.g. id, filter, format).
     def __init__(self, chrom, pos, ref, alt,
                  vcf_id=".", qual=".", vcf_filter=".", info=".",
-                 samples=None, sample_tag_values=None):
+                 sample_tag_values=None):
         self.chrom = chrom
         self.pos = pos
         self.id = vcf_id
@@ -142,17 +159,12 @@ class VcfRecord(object):
         self.qual = qual
         self.filter = vcf_filter
         self.info = info
-#        self.format = vcf_format
-#         if samples is None:
-#             self.samples = []
-#         else:
-#             self.samples = samples
         if sample_tag_values is None:
             self.sample_tag_values = {}
         else:
             self.sample_tag_values = sample_tag_values
-        self._key = (self._str_as_int(self.chrom), self.chrom,
-                     self._str_as_int(self.pos), self.ref, self.alt)
+        self._key = (VcfRecord._str_as_int(self.chrom), self.chrom,
+                     VcfRecord._str_as_int(self.pos), self.ref, self.alt)
 
     @property
     def format_tags(self):
@@ -166,14 +178,12 @@ class VcfRecord(object):
     def get_info_dict(self):
         info_list = self.info.split(";")
         info_dict = {}
-
         for key_value in info_list:
             if "=" in key_value:
                 key, value = key_value.split("=")
                 info_dict[key] = value
             else:
                 info_dict[key_value] = key_value
-
         return info_dict
 
     def get_empty_record(self):
@@ -183,9 +193,18 @@ class VcfRecord(object):
                          alt=self.alt)
 
     def _format_field(self):
+        format_field = "."
         if self.sample_tag_values:
             first_sample = self.sample_tag_values.keys()[0]
-            return ":".join(self.sample_tag_values[first_sample].keys())
+            tag_names = self.sample_tag_values[first_sample].keys()
+            if tag_names:
+                format_field = ":".join(tag_names)
+        return format_field
+
+    def _sample_field(self, sample):
+        tag_values = self.sample_tag_values[sample].values()
+        if tag_values:
+            return ":".join(tag_values)
         else:
             return "."
 
@@ -195,11 +214,11 @@ class VcfRecord(object):
                        self._format_field()]
 
         for sample in self.sample_tag_values:
-            sample_field = ":".join(self.sample_tag_values[sample].values())
-            stringifier.append(sample_field)
+            stringifier.append(self._sample_field(sample))
 
         return "\t".join(stringifier) + "\n"
 
+#pylint: disable=line-too-long
     def _samples_match(self, new_sample_values):
         return set(new_sample_values.keys()) == set(self.sample_tag_values.keys())
 
@@ -220,16 +239,6 @@ class VcfRecord(object):
 
     def __hash__(self):
         return hash(self._key)
-
-## pylint: disable=no-self-use
-# No self use, but a reasonable encapsulation
-    def _str_as_int(self, string):
-        if "chr" in string:
-            string = string.replace("chr", "")
-        try:
-            return int(string)
-        except ValueError:
-            return sys.maxint
 
     def __cmp__(self, other):
         return cmp(self._key, other._key)

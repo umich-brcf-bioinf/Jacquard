@@ -1,4 +1,4 @@
-#pylint: disable=C0111,W0212,C0103
+#pylint: disable=too-many-public-methods, invalid-name, no-self-use
 
 import os
 import shutil
@@ -73,3 +73,6 @@ class JacquardBaseTestCase(unittest.TestCase):
             for output_file in os.listdir(output):
                 new_output = os.path.join(output, output_file)
                 self._compare_files(new_output, output_file, expected_dir)
+
+    def entab(self, string, old="|"):
+        return string.replace(old, "\t")

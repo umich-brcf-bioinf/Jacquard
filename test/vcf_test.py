@@ -1,11 +1,13 @@
 # pylint: disable=line-too-long,too-many-public-methods,invalid-name
-import os
-import unittest
-import sys
 from StringIO import StringIO
-from testfixtures import TempDirectory
+from collections import OrderedDict
 from jacquard.vcf import VcfRecord, VcfReader, FileWriter, FileReader
+from testfixtures import TempDirectory
 import jacquard.utils as utils
+import os
+import sys
+import test.test_case as test_case
+import unittest
 
 
 class MockFileReader(object):
@@ -30,10 +32,11 @@ class MockFileReader(object):
     def close(self):
         self.close_was_called = True
 
-class VcfRecordTestCase(unittest.TestCase):
+#TODO (cgates): Fix tests to that so that they do not rely on parse_record and asText.
+class VcfRecordTestCase(test_case.JacquardBaseTestCase):
     def test_parse_record(self):
         sample_names = ["SampleA", "SampleB"]
-        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FOO:BAR|SA_foo:SA_bar|SB_foo:SB_bar\n".replace('|', "\t")
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FOO:BAR|SA_foo:SA_bar|SB_foo:SB_bar\n")
         record = VcfRecord.parse_record(input_line, sample_names)
         self.assertEquals("CHROM", record.chrom)
         self.assertEquals("POS", record.pos)
@@ -46,30 +49,30 @@ class VcfRecordTestCase(unittest.TestCase):
 
     def test_format_tags(self):
         sample_names = ["SampleA", "SampleB"]
-        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
         record = VcfRecord.parse_record(input_line, sample_names)
         self.assertEquals(set(["F1", "F2", "F3"]), record.format_tags)
 
     def test_format_tags_emptyWhenNoSamples(self):
         sample_names = []
-        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO\n".replace('|', "\t")
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO\n")
         record = VcfRecord.parse_record(input_line, sample_names)
         self.assertEquals(set(), record.format_tags)
 
     def test_format_field(self):
         sample_names = ["SA", "SB"]
-        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F3:F1:F2|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F3:F1:F2|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
         record = VcfRecord.parse_record(input_line, sample_names)
         self.assertEquals("F3:F1:F2", record._format_field())
 
     def test_format_field_emptyWhenNoSamples(self):
-        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO\n".replace('|', "\t")
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO\n")
         record = VcfRecord.parse_record(input_line, [])
         self.assertEquals(".", record._format_field())
 
     def test_format_field_preservesOrderWhenAddingNewTags(self):
         sample_names = ["SA", "SB"]
-        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F3:F1:F2|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F3:F1:F2|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
         record = VcfRecord.parse_record(input_line, sample_names)
         record.add_sample_tag_value("Z4", {"SA" : "SA.4", "SB" : "SB.4"})
         record.add_sample_tag_value("A5", {"SA"  :"SA.A5", "SB" : "SB.A5"})
@@ -77,7 +80,7 @@ class VcfRecordTestCase(unittest.TestCase):
 
     def test_parse_record_sample_dict(self):
         sample_names = ["SampleA", "SampleB"]
-        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
         record = VcfRecord.parse_record(input_line, sample_names)
         self.assertEquals(["SampleA", "SampleB"], record.sample_tag_values.keys())
         self.assertEquals({"F1":"SA.1", "F2":"SA.2", "F3":"SA.3"}, record.sample_tag_values["SampleA"])
@@ -90,50 +93,56 @@ class VcfRecordTestCase(unittest.TestCase):
         self.assertEquals({"foo":"SA_foo", "bar":"SA_bar"}, sample_tag_values["sampleA"])
         self.assertEquals({"foo":"SB_foo", "bar":"SB_bar"}, sample_tag_values["sampleB"])
 
-    def Xtest_sample_tag_values_emptyDictWhenExplicitNullSampleData(self):
-        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|.|.|.\n".replace('|', "\t")
+    def test_sample_tag_values_emptyDictWhenExplicitNullSampleData(self):
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|.|.|.\n")
         record = VcfRecord.parse_record(input_line, sample_names=["sampleA", "sampleB"])
         self.assertEquals(["sampleA", "sampleB"], record.sample_tag_values.keys())
         self.assertEquals({}, record.sample_tag_values["sampleA"])
         self.assertEquals({}, record.sample_tag_values["sampleB"])
 
+    def test_sample_tag_values_whenSparseSampleData(self):
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FOO|.|.\n")
+        record = VcfRecord.parse_record(input_line, sample_names=["sampleA", "sampleB"])
+        self.assertEquals(["sampleA", "sampleB"], record.sample_tag_values.keys())
+        self.assertEquals(OrderedDict({"FOO":"."}), record.sample_tag_values["sampleA"])
+        self.assertEquals(OrderedDict({"FOO":"."}), record.sample_tag_values["sampleB"])
 
     def test_sample_tag_values_emptyDictWhenNoSampleData(self):
-        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|||\n".replace('|', "\t")
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|||\n")
         record = VcfRecord.parse_record(input_line, sample_names=["sampleA", "sampleB"])
         self.assertEquals(["sampleA", "sampleB"], record.sample_tag_values.keys())
         self.assertEquals({}, record.sample_tag_values["sampleA"])
         self.assertEquals({}, record.sample_tag_values["sampleB"])
 
     def test_sample_tag_values_emptyDictWhenNoSamples(self):
-        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO\n".replace('|', "\t")
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO\n")
         record = VcfRecord.parse_record(input_line, sample_names=["sampleA", "sampleB"])
         self.assertEquals({}, record.sample_tag_values)
 
     def test_parse_record_initsSampleTagValues(self):
         sample_names = ["SampleA", "SampleB"]
-        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
         record = VcfRecord.parse_record(input_line, sample_names)
         self.assertEquals(["SampleA", "SampleB"], record.sample_tag_values.keys())
         self.assertEquals({"F1":"SA.1", "F2":"SA.2", "F3":"SA.3"}, record.sample_tag_values["SampleA"])
         self.assertEquals({"F1":"SB.1", "F2":"SB.2", "F3":"SB.3"}, record.sample_tag_values["SampleB"])
 
     def test_sample_tag_values_preservesSampleOrder(self):
-        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|||\n".replace('|', "\t")
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|||\n")
         record = VcfRecord.parse_record(input_line, sample_names=["sampleB", "sampleA"])
         self.assertEquals(["sampleB", "sampleA"], record.sample_tag_values.keys())
 
     def test_add_sample_format_value(self):
         sample_names = ["SampleA", "SampleB"]
-        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
         record = VcfRecord.parse_record(input_line, sample_names)
         record.add_sample_tag_value("inserted", {"SampleB":"insertedValueB", "SampleA":"insertedValueA"})
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:inserted|SA.1:SA.2:SA.3:insertedValueA|SB.1:SB.2:SB.3:insertedValueB\n".replace('|', "\t")
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:inserted|SA.1:SA.2:SA.3:insertedValueA|SB.1:SB.2:SB.3:insertedValueB\n")
         self.assertEquals(expected, record.asText())
 
     def test_insert_format_field_failsOnInvalidSampleDict(self):
         sample_names = ["SampleA", "SampleB"]
-        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
         record = VcfRecord.parse_record(input_line, sample_names)
         self.assertRaises(KeyError, record.add_sample_tag_value, "inserted", {"SampleA":0.6})
         self.assertRaises(KeyError, record.add_sample_tag_value, "inserted", {"SampleA":0.6, "SampleZ":0.6})
@@ -141,34 +150,50 @@ class VcfRecordTestCase(unittest.TestCase):
 
     def test_insert_format_field_failsOnExistingField(self):
         sample_names = ["SampleA", "SampleB"]
-        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
         record = VcfRecord.parse_record(input_line, sample_names)
         self.assertRaises(KeyError, record.add_sample_tag_value, "F1", {"SampleA":0.6, "SampleB":0.6})
 
     def test_get_info_dict(self):
         sample_names = ["SampleA"]
-        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|k1=v1;k2=v2|F|S\n".replace('|', "\t")
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|k1=v1;k2=v2|F|S\n")
         vcf_record = VcfRecord.parse_record(input_line, sample_names)
         self.assertEquals({"k1":"v1", "k2":"v2"}, vcf_record.get_info_dict())
 
+    def test_asText(self):
+        sampleA = OrderedDict({"F1":"SA.1", "F2":"SA.2", "F3":"SA.3"})
+        sampleB = OrderedDict({"F1":"SB.1", "F2":"SB.2", "F3":"SB.3"})
+        sample_tag_values = OrderedDict({"SampleA":sampleA, "SampleB":sampleB})
+        record = VcfRecord("CHROM", "POS", "REF", "ALT", "ID", "QUAL", "FILTER", "INFO", sample_tag_values)
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
+        self.assertEquals(expected, record.asText())
+
+    def test_asTextWhenEmptyFormatField(self):
+        sampleA = OrderedDict({})
+        sampleB = OrderedDict({})
+        sample_tag_values = OrderedDict({"SampleA":sampleA, "SampleB":sampleB})
+        record = VcfRecord("CHROM", "POS", "REF", "ALT", "ID", "QUAL", "FILTER", "INFO", sample_tag_values)
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|.|.|.\n")
+        self.assertEquals(expected, record.asText())
+
     def test_equals(self):
         sample_names = ["sampleA"]
-        base = VcfRecord.parse_record("A|1|ID|C|D|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names)
-        base_equivalent = VcfRecord.parse_record("A|1|ID|C|D|QUAL|FILTER||foo|S\n".replace('|', "\t"), sample_names)
+        base = VcfRecord.parse_record(self.entab("A|1|ID|C|D|QUAL|FILTER|INFO|F|S\n"), sample_names)
+        base_equivalent = VcfRecord.parse_record(self.entab("A|1|ID|C|D|QUAL|FILTER||foo|S\n"), sample_names)
         self.assertEquals(base, base_equivalent)
-        different_chrom = VcfRecord.parse_record("Z|1|ID|C|D|QUAL|FILTER||foo|S\n".replace('|', "\t"), sample_names)
+        different_chrom = VcfRecord.parse_record(self.entab("Z|1|ID|C|D|QUAL|FILTER||foo|S\n"), sample_names)
         self.assertNotEquals(base, different_chrom)
-        different_pos = VcfRecord.parse_record("A|2|ID|C|D|QUAL|FILTER||foo|S\n".replace('|', "\t"), sample_names)
+        different_pos = VcfRecord.parse_record(self.entab("A|2|ID|C|D|QUAL|FILTER||foo|S\n"), sample_names)
         self.assertNotEquals(base, different_pos)
-        different_ref = VcfRecord.parse_record("A|1|ID|Z|D|QUAL|FILTER||foo|S\n".replace('|', "\t"), sample_names)
+        different_ref = VcfRecord.parse_record(self.entab("A|1|ID|Z|D|QUAL|FILTER||foo|S\n"), sample_names)
         self.assertNotEquals(base, different_ref)
-        different_alt = VcfRecord.parse_record("A|1|ID|C|Z|QUAL|FILTER||foo|S\n".replace('|', "\t"), sample_names)
+        different_alt = VcfRecord.parse_record(self.entab("A|1|ID|C|Z|QUAL|FILTER||foo|S\n"), sample_names)
         self.assertNotEquals(base, different_alt)
 
     def testHash(self):
         sample_names = ["sampleA"]
-        base = VcfRecord.parse_record("A|B|ID|C|D|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names)
-        base_equivalent = VcfRecord.parse_record("A|B|ID|C|D|QUAL|FILTER||foo|S\n".replace('|', "\t"), sample_names)
+        base = VcfRecord.parse_record(self.entab("A|B|ID|C|D|QUAL|FILTER|INFO|F|S\n"), sample_names)
+        base_equivalent = VcfRecord.parse_record(self.entab("A|B|ID|C|D|QUAL|FILTER||foo|S\n"), sample_names)
         self.assertEquals(base.__hash__(), base_equivalent.__hash__())
         record_set = set()
         record_set.add(base)
@@ -177,12 +202,12 @@ class VcfRecordTestCase(unittest.TestCase):
 
     def testCompare(self):
         sample_names = ["SampleA"]
-        expected_records = [VcfRecord.parse_record("1|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names),
-                            VcfRecord.parse_record("1|1|ID|A|A|QUAL|FILTER||foo|S\n".replace('|', "\t"), sample_names),
-                            VcfRecord.parse_record("1|1|ID|A|C|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names),
-                            VcfRecord.parse_record("1|1|ID|C|A|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names),
-                            VcfRecord.parse_record("1|2|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names),
-                            VcfRecord.parse_record("2|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names)]
+        expected_records = [VcfRecord.parse_record(self.entab("1|1|ID|A|A|QUAL|FILTER|INFO|F|S\n"), sample_names),
+                            VcfRecord.parse_record(self.entab("1|1|ID|A|A|QUAL|FILTER||foo|S\n"), sample_names),
+                            VcfRecord.parse_record(self.entab("1|1|ID|A|C|QUAL|FILTER|INFO|F|S\n"), sample_names),
+                            VcfRecord.parse_record(self.entab("1|1|ID|C|A|QUAL|FILTER|INFO|F|S\n"), sample_names),
+                            VcfRecord.parse_record(self.entab("1|2|ID|A|A|QUAL|FILTER|INFO|F|S\n"), sample_names),
+                            VcfRecord.parse_record(self.entab("2|1|ID|A|A|QUAL|FILTER|INFO|F|S\n"), sample_names)]
 
         input_records = expected_records[::-1]
 
@@ -190,13 +215,13 @@ class VcfRecordTestCase(unittest.TestCase):
 
     def testCompare_orderingByNumericChromAndPos(self):
         sample_names = ["SampleA"]
-        expected_records = [VcfRecord.parse_record("1|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names),
-                            VcfRecord.parse_record("2|1|ID|A|A|QUAL|FILTER||foo|S\n".replace('|', "\t"), sample_names),
-                            VcfRecord.parse_record("10|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names),
-                            VcfRecord.parse_record("11|1|ID|C|A|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names),
-                            VcfRecord.parse_record("20|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names),
-                            VcfRecord.parse_record("M|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names),
-                            VcfRecord.parse_record("X|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names)]
+        expected_records = [VcfRecord.parse_record(self.entab("1|1|ID|A|A|QUAL|FILTER|INFO|F|S\n"), sample_names),
+                            VcfRecord.parse_record(self.entab("2|1|ID|A|A|QUAL|FILTER||foo|S\n"), sample_names),
+                            VcfRecord.parse_record(self.entab("10|1|ID|A|A|QUAL|FILTER|INFO|F|S\n"), sample_names),
+                            VcfRecord.parse_record(self.entab("11|1|ID|C|A|QUAL|FILTER|INFO|F|S\n"), sample_names),
+                            VcfRecord.parse_record(self.entab("20|1|ID|A|A|QUAL|FILTER|INFO|F|S\n"), sample_names),
+                            VcfRecord.parse_record(self.entab("M|1|ID|A|A|QUAL|FILTER|INFO|F|S\n"), sample_names),
+                            VcfRecord.parse_record(self.entab("X|1|ID|A|A|QUAL|FILTER|INFO|F|S\n"), sample_names)]
 
         input_records = expected_records[::-1]
 
@@ -204,9 +229,9 @@ class VcfRecordTestCase(unittest.TestCase):
 
     def testCompare_nonNumericChrom(self):
         sample_names = ["SampleA"]
-        expected_records = [VcfRecord.parse_record("chr2|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names),
-                            VcfRecord.parse_record("chr5|1|ID|A|A|QUAL|FILTER||foo|S\n".replace('|', "\t"), sample_names),
-                            VcfRecord.parse_record("10|1|ID|A|C|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names)]
+        expected_records = [VcfRecord.parse_record(self.entab("chr2|1|ID|A|A|QUAL|FILTER|INFO|F|S\n"), sample_names),
+                            VcfRecord.parse_record(self.entab("chr5|1|ID|A|A|QUAL|FILTER||foo|S\n"), sample_names),
+                            VcfRecord.parse_record(self.entab("10|1|ID|A|C|QUAL|FILTER|INFO|F|S\n"), sample_names)]
 
         input_records = expected_records[::-1]
 
@@ -214,14 +239,14 @@ class VcfRecordTestCase(unittest.TestCase):
 
     def test_empty_record(self):
         sample_names = ["SampleA"]
-        base = VcfRecord.parse_record("chr2|1|ID|A|C|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names)
+        base = VcfRecord.parse_record(self.entab("chr2|1|ID|A|C|QUAL|FILTER|INFO|F|S\n"), sample_names)
 
         empty_record = base.get_empty_record()
 
         expected_record = VcfRecord(chrom="chr2", pos="1", ref="A", alt="C")
         self.assertEquals(expected_record.asText(), empty_record.asText())
 
-class VcfReaderTestCase(unittest.TestCase):
+class VcfReaderTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         self.output = StringIO()
         self.saved_stderr = sys.stderr
@@ -251,7 +276,7 @@ class VcfReaderTestCase(unittest.TestCase):
     def test_init_sampleNamesInitialized(self):
         file_contents = ["##metaheader1\n",
                          "##metaheader2\n",
-                         "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleA|SampleB\n".replace("|", "\t"),
+                         self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleA|SampleB\n"),
                          "record1\n",
                          "record2"]
         mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
@@ -277,9 +302,9 @@ class VcfReaderTestCase(unittest.TestCase):
     def test_vcf_records(self):
         file_contents = ["##metaheader1\n",
                          "##metaheader2\n",
-                         "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n".replace("|", "\t"),
-                         "chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR\n".replace("|", "\t"),
-                         "chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR".replace("|", "\t")]
+                         self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
+                         self.entab("chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR\n"),
+                         self.entab("chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR")]
         mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
         reader = VcfReader(mock_reader)
 

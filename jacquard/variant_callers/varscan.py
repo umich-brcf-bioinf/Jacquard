@@ -91,7 +91,6 @@ class _SomaticTag(object):
 class Varscan(object):
     def __init__(self):
         self.name = "VarScan"
-        self.good = True
         self.tags = [_AlleleFreqTag(), _DepthTag(), _SomaticTag()]
         self.meta_header = "##jacquard.normalize_varscan.sources={0},{1}\n"
 
@@ -196,9 +195,9 @@ class Varscan(object):
                 split_line = line.split()
 
                 if split_line[0] != "chrom" and split_line[0].startswith("chr"):
-                    hc_key = VcfRecord(split_line[0], 
-                                       split_line[1], 
-                                       split_line[2], 
+                    hc_key = VcfRecord(split_line[0],
+                                       split_line[1],
+                                       split_line[2],
                                        split_line[3])
                     hc_keys.append(hc_key)
             hc_file_reader.close()

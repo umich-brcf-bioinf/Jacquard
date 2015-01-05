@@ -144,7 +144,6 @@ class _SomaticTag(object):
 class Strelka(object):
     def __init__(self):
         self.name = "Strelka"
-        self.good = True
         self.tags = [_AlleleFreqTag(), _DepthTag(), _SomaticTag()]
         self.meta_header = "##jacquard.normalize_strelka.sources={0},{1}\n"
 
