@@ -10,7 +10,9 @@ import vcf as vcf
 import logger as logger
 from collections import defaultdict
 
-def _iterate_file(vcf_reader, filtered_records, num_records, somatic_positions, somatic):
+#TODO (cgates): refactor this as a stats object that collects info in the main processing loop
+def _iterate_file(vcf_reader, num_records, somatic_positions, somatic):
+    filtered_records = 0
     vcf_reader.open()
     for record in vcf_reader.vcf_records():
         if "JQ_EXCLUDE" in record.filter:
@@ -49,9 +51,7 @@ def _find_somatic_positions(in_files):
                                                    vcf_reader.column_header,
                                                    vcf_reader.file_name)
 
-        filtered_records = 0
-
-        filtered_records, num_records, somatic_positions, somatic =_iterate_file(vcf_reader, filtered_records, num_records, somatic_positions, somatic)
+        filtered_records, num_records, somatic_positions, somatic =_iterate_file(vcf_reader, num_records, somatic_positions, somatic)
         callers[caller.name] += filtered_records
 
         if somatic == 0:

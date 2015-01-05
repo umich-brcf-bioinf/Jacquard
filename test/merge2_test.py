@@ -300,7 +300,7 @@ class BufferedReaderTestCase(test_case.JacquardBaseTestCase):
         input_coordinate = VcfRecord("chr1", "1", "X", "X")
         self.assertEquals({}, buffered_reader.get_sample_info(input_coordinate))
 
-    def test_get_sample_info(self):
+    def Xtest_get_sample_info(self):
         rec1 = VcfRecord.parse_record("chr2\t2\t.\tA\tG\t.\tPASS\tINFO\tDP\t42\t16", ["SA", "SB"])
 
         mock_reader = MockVcfReader(input_filepath="fileA.vcf",

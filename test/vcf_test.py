@@ -1,4 +1,4 @@
-# pylint: disable=C0103,C0301,R0903,R0904
+# pylint: disable=line-too-long,too-many-public-methods,invalid-name
 import os
 import unittest
 import sys
@@ -43,8 +43,6 @@ class VcfRecordTestCase(unittest.TestCase):
         self.assertEquals("QUAL", record.qual)
         self.assertEquals("FILTER", record.filter)
         self.assertEquals("INFO", record.info)
-        self.assertEquals("FOO:BAR", record.format)
-        self.assertEquals(["SA_foo:SA_bar", "SB_foo:SB_bar"], record.samples)
 
     def test_format_tags(self):
         sample_names = ["SampleA", "SampleB"]
@@ -91,6 +89,14 @@ class VcfRecordTestCase(unittest.TestCase):
                                                          ["SA_foo:SA_bar", "SB_foo:SB_bar"])
         self.assertEquals({"foo":"SA_foo", "bar":"SA_bar"}, sample_tag_values["sampleA"])
         self.assertEquals({"foo":"SB_foo", "bar":"SB_bar"}, sample_tag_values["sampleB"])
+
+    def Xtest_sample_tag_values_emptyDictWhenExplicitNullSampleData(self):
+        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|.|.|.\n".replace('|', "\t")
+        record = VcfRecord.parse_record(input_line, sample_names=["sampleA", "sampleB"])
+        self.assertEquals(["sampleA", "sampleB"], record.sample_tag_values.keys())
+        self.assertEquals({}, record.sample_tag_values["sampleA"])
+        self.assertEquals({}, record.sample_tag_values["sampleB"])
+
 
     def test_sample_tag_values_emptyDictWhenNoSampleData(self):
         input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|||\n".replace('|', "\t")
@@ -170,7 +176,7 @@ class VcfRecordTestCase(unittest.TestCase):
         self.assertEquals(1, len(record_set))
 
     def testCompare(self):
-        sample_names=["SampleA"]
+        sample_names = ["SampleA"]
         expected_records = [VcfRecord.parse_record("1|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names),
                             VcfRecord.parse_record("1|1|ID|A|A|QUAL|FILTER||foo|S\n".replace('|', "\t"), sample_names),
                             VcfRecord.parse_record("1|1|ID|A|C|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names),
@@ -183,7 +189,7 @@ class VcfRecordTestCase(unittest.TestCase):
         self.assertEquals(expected_records, sorted(input_records))
 
     def testCompare_orderingByNumericChromAndPos(self):
-        sample_names=["SampleA"]
+        sample_names = ["SampleA"]
         expected_records = [VcfRecord.parse_record("1|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names),
                             VcfRecord.parse_record("2|1|ID|A|A|QUAL|FILTER||foo|S\n".replace('|', "\t"), sample_names),
                             VcfRecord.parse_record("10|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names),
@@ -197,7 +203,7 @@ class VcfRecordTestCase(unittest.TestCase):
         self.assertEquals(expected_records, sorted(input_records))
 
     def testCompare_nonNumericChrom(self):
-        sample_names=["SampleA"]
+        sample_names = ["SampleA"]
         expected_records = [VcfRecord.parse_record("chr2|1|ID|A|A|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names),
                             VcfRecord.parse_record("chr5|1|ID|A|A|QUAL|FILTER||foo|S\n".replace('|', "\t"), sample_names),
                             VcfRecord.parse_record("10|1|ID|A|C|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names)]
@@ -207,7 +213,7 @@ class VcfRecordTestCase(unittest.TestCase):
         self.assertEquals(expected_records, sorted(input_records))
 
     def test_empty_record(self):
-        sample_names=["SampleA"]
+        sample_names = ["SampleA"]
         base = VcfRecord.parse_record("chr2|1|ID|A|C|QUAL|FILTER|INFO|F|S\n".replace('|', "\t"), sample_names)
 
         empty_record = base.get_empty_record()
@@ -245,7 +251,7 @@ class VcfReaderTestCase(unittest.TestCase):
     def test_init_sampleNamesInitialized(self):
         file_contents = ["##metaheader1\n",
                          "##metaheader2\n",
-                         "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleA|SampleB\n".replace("|","\t"),
+                         "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleA|SampleB\n".replace("|", "\t"),
                          "record1\n",
                          "record2"]
         mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
@@ -271,7 +277,7 @@ class VcfReaderTestCase(unittest.TestCase):
     def test_vcf_records(self):
         file_contents = ["##metaheader1\n",
                          "##metaheader2\n",
-                         "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n".replace("|","\t"),
+                         "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n".replace("|", "\t"),
                          "chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR\n".replace("|", "\t"),
                          "chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR".replace("|", "\t")]
         mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)

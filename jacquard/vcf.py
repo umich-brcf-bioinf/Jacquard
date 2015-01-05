@@ -104,7 +104,6 @@ class VcfRecord(object):
         vcf_fields = vcf_line.rstrip("\n").split("\t")
         chrom, pos, rid, ref, alt, qual, rfilter, info \
                 = vcf_fields[0:8]
-        rformat = "."
         sample_fields = []
         sample_tag_values = {}
         if len(vcf_fields) > 9:
@@ -114,7 +113,7 @@ class VcfRecord(object):
                                                              rformat,
                                                              sample_fields)
         return VcfRecord(chrom, pos, ref, alt,
-                         rid, qual, rfilter, info, rformat,
+                         rid, qual, rfilter, info,
                          sample_fields, sample_tag_values)
 
     @classmethod
@@ -133,7 +132,7 @@ class VcfRecord(object):
 #  Note that some VCF field names collide with reserved python names
 # (e.g. id, filter, format).
     def __init__(self, chrom, pos, ref, alt,
-                 vcf_id=".", qual=".", vcf_filter=".", info=".", vcf_format=".",
+                 vcf_id=".", qual=".", vcf_filter=".", info=".",
                  samples=None, sample_tag_values=None):
         self.chrom = chrom
         self.pos = pos
@@ -143,27 +142,17 @@ class VcfRecord(object):
         self.qual = qual
         self.filter = vcf_filter
         self.info = info
-        self.format = vcf_format
-        if samples is None:
-            self.samples = []
-        else:
-            self.samples = samples
+#        self.format = vcf_format
+#         if samples is None:
+#             self.samples = []
+#         else:
+#             self.samples = samples
         if sample_tag_values is None:
             self.sample_tag_values = {}
         else:
             self.sample_tag_values = sample_tag_values
-
         self._key = (self._str_as_int(self.chrom), self.chrom,
                      self._str_as_int(self.pos), self.ref, self.alt)
-
-        ##TODO (cgates): sample_dict, format_set
-        tags = self.format.split(":")
-#        self.format_set = tags
-
-        self.sample_dict = {}
-        for i, sample in enumerate(self.samples):
-            values = sample.split(":")
-            self.sample_dict[i] = OrderedDict(zip(tags, values))
 
     @property
     def format_tags(self):

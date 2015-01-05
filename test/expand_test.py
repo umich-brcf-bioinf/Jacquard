@@ -1,4 +1,5 @@
-# pylint: disable=C0103,C0301,R0903,R0904,W0603,W0613,C0111
+# pylint: disable=line-too-long,invalid-name,global-statement,unused-argument
+# pylint: disable=too-many-instance-attributes,too-few-public-methods,too-many-public-methods
 from argparse import Namespace
 from collections import OrderedDict
 import os
@@ -6,6 +7,7 @@ from testfixtures import TempDirectory
 import unittest
 import jacquard.utils as utils
 import jacquard.logger as logger
+import jacquard.vcf as vcf
 from jacquard.expand import _parse_meta_headers, \
     _append_format_tags_to_samples, _get_headers, _write_vcf_records, \
     _disambiguate_column_names, _filter_and_sort, execute
@@ -26,33 +28,48 @@ def _change_mock_logger():
     logger.warning = mock_log
     logger.debug = mock_log
 
-
-# pylint: disable=W0102
 class MockVcfReader(object):
     def __init__(self,
                  input_filepath="vcfName",
-                 metaheaders=["##metaheaders"],
+                 metaheaders=None,
                  column_header="#header",
-                 content=["foo"]):
+                 records=None):
         self.input_filepath = input_filepath
-        self.metaheaders = metaheaders
+        if metaheaders is None:
+            self.metaheaders = ["##metaheaders"]
+        else:
+            self.metaheaders = metaheaders
         self.column_header = column_header
         self.opened = False
         self.closed = False
-        self.content = content
+        if records is None:
+            self.records = [MockVcfRecord()]
+        else:
+            self.records = records
 
     def open(self):
         self.opened = True
 
     def vcf_records(self):
-        for content in self.content:
-            yield MockVcfRecord(content)
+        for record in self.records:
+            yield record
 
     def close(self):
         self.closed = True
 
 class MockVcfRecord(object):
-    def __init__(self, content):
+    def __init__(self, content=None):
+        if content is None:
+            content = ["CHROM",
+                       "POS",
+                       "ID",
+                       "REF",
+                       "ALT",
+                       "QUAL",
+                       "FILTER",
+                       "tag1=val1;tag3=val3;tag4",
+                       "FOO:BAR",
+                       "42:1"]
         self.chrom, self.pos, self.id, self.ref, self.alt, self.qual, \
             self.filter, self.info, self.format = content[0:9]
         self.samples = content[9:]
@@ -166,17 +183,10 @@ class ExpandTestCase(unittest.TestCase):
 
     def test_write_vcf_records(self):
         column_header = "CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsampleA"
+        vcf_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|tag1=val1;tag3=val3;tag4|FOO:BAR|42:1".replace("|", "\t")
+        record = vcf.VcfRecord.parse_record(vcf_line, ["sampleA"])
 
-        mock_vcf_reader = MockVcfReader(content=[["CHROM",
-                                                  "POS",
-                                                  "ID",
-                                                  "REF",
-                                                  "ALT",
-                                                  "QUAL",
-                                                  "FILTER",
-                                                  "tag1=val1;tag3=val3;tag4",
-                                                  "FOO:BAR",
-                                                  "42:1"]],
+        mock_vcf_reader = MockVcfReader(records=[record],
                                         column_header=column_header)
 
         mock_file_writer = MockFileWriter()
