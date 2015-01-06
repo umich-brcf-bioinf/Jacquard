@@ -251,10 +251,10 @@ class Varscan(object):
 
         file_writer.close()
 
-    def add_tags(self,vcfRecord):
+    def add_tags(self,vcf_record):
         for tag in self.tags:
-            tag.format(vcfRecord)
-        return vcfRecord.asText()
+            tag.format(vcf_record)
+        return vcf_record.asText()
 
     def get_new_metaheaders(self):
         return [tag.metaheader for tag in self.tags]

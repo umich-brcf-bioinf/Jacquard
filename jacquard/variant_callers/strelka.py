@@ -43,7 +43,8 @@ class _AlleleFreqTag(object):
 
     def _get_indelallelefreq_per_sample(self, vcf_record, sample):
         afs = []
-        numerator = float(vcf_record.sample_tag_values[sample]["TIR"].split(",")[1])
+        indel_depths = vcf_record.sample_tag_values[sample]["TIR"]
+        numerator = float(indel_depths.split(",")[1])
         denominator = float(vcf_record.sample_tag_values[sample]["DP2"])
         freq = numerator/denominator if denominator != 0 else 0.0
 
@@ -84,6 +85,17 @@ class _AlleleFreqTag(object):
 class _DepthTag(object):
     REQUIRED_TAGS = set(["DP2", "AU"])
     NUCLEOTIDE_DEPTH_TAGS = ["AU", "CU", "TU", "GU"]
+
+    @classmethod
+    def _get_tier2_base_depth(cls, sample_tags):
+        if "DP2" in sample_tags:
+            return sample_tags["DP2"]
+        depth = 0
+        for tag in _DepthTag.NUCLEOTIDE_DEPTH_TAGS:
+            tier2_depth = sample_tags[tag].split(",")[1]
+            depth += int(tier2_depth)
+        return str(depth)
+
     def __init__(self):
         self.metaheader = ('##FORMAT=<ID={0}DP,'
                            'Number=1,'
@@ -93,32 +105,16 @@ class _DepthTag(object):
                            'Version={1}>').format(JQ_STRELKA_TAG,
                                                   utils.__version__)
 
-    def _get_tier2_base_depth(self, sample_format_dict):
-        depth = 0
-        for tag in _DepthTag.NUCLEOTIDE_DEPTH_TAGS:
-            tier2_depth = sample_format_dict[tag].split(",")[1]
-            depth += int(tier2_depth)
-        return depth
-
     def format(self, vcf_record):
         if vcf_record.format_tags.isdisjoint(_DepthTag.REQUIRED_TAGS):
             return
-
         sample_values = {}
-        if "DP2" in vcf_record.format_tags:
-            for sample in vcf_record.sample_tag_values:
-                depth = vcf_record.sample_tag_values[sample]["DP2"]
-                sample_values[sample] = depth
-        elif "AU" in vcf_record.format_tags:
-            for sample in vcf_record.sample_tag_values:
-                sample_format_dict = vcf_record.sample_tag_values[sample]
-                depth = self._get_tier2_base_depth(sample_format_dict)
-                sample_values[sample] = depth
-
+        for sample in vcf_record.sample_tag_values:
+            sample_tags = vcf_record.sample_tag_values[sample]
+            sample_values[sample] = _DepthTag._get_tier2_base_depth(sample_tags)
         vcf_record.add_sample_tag_value(JQ_STRELKA_TAG + "DP", sample_values)
 
 class _SomaticTag(object):
-    #TODO: cgates :Pull tag metaheaders to resource bundle?
     def __init__(self):
         self.metaheader = ('##FORMAT=<ID={0}HC_SOM,'
                            'Number=1,Type=Integer,'
@@ -147,7 +143,6 @@ class Strelka(object):
         self.tags = [_AlleleFreqTag(), _DepthTag(), _SomaticTag()]
         self.meta_header = "##jacquard.normalize_strelka.sources={0},{1}\n"
 
-#TODO: Add to normalize.py.
     def _validate_raw_input_files(self, file_readers):
         if len(file_readers) != 2:
             raise utils.JQException("Strelka directories should have exactly "
@@ -198,7 +193,7 @@ class Strelka(object):
         file_name_search = "snvs|indels"
         for filename in filenames:
             if re.search("("+file_name_search+")", filename):
-                prefix,suffix = re.split(file_name_search, filename)
+                prefix, suffix = re.split(file_name_search, filename)
                 output_file = os.path.basename(prefix+decorator+suffix)
                 return output_file
 
@@ -211,7 +206,6 @@ class Strelka(object):
                 raise utils.JQException("ERROR: Non-VCF file in directory. "
                                         "Check parameters and try again")
 
-#TODO: Add to normalize.py.        
     def normalize(self, file_writer, file_readers):
         vcf_readers = self._validate_raw_input_files(file_readers)
         metaheader_list, column_header, parsed_records = self._parse_vcf_readers(vcf_readers)
@@ -235,7 +229,7 @@ class Strelka(object):
         return "##source=strelka" in meta_headers
 
     def validate_record(self,vcfRecord):
-            return True
+        return True
 
     def final_steps(self, hc_candidates, merge_candidates, output_dir):
         print "Wrote [{0}] VCF files to [{1}]". \
@@ -248,7 +242,7 @@ class Strelka(object):
     def validate_file_set(self, all_keys):
         pass
 
-    def add_tags(self,vcfRecord):
+    def add_tags(self, vcf_record):
         for tag in self.tags:
-            tag.format(vcfRecord)
-        return vcfRecord.asText()
+            tag.format(vcf_record)
+        return vcf_record.asText()

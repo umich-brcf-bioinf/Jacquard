@@ -1,5 +1,4 @@
 # pylint: disable=line-too-long,too-many-public-methods,invalid-name
-
 import unittest
 import jacquard.variant_callers.strelka as strelka
 from jacquard.utils import __version__, JQException
