@@ -232,7 +232,7 @@ def create_dict(df, row, columns):
             sample_column += ":" + column
 
 #             format_sample = "{0}={1}".format(format_column, sample_column)
-            format_sample_dict = utils.combine_format_values(format_column,
+            format_sample_dict = _combine_format_values(format_column,
                                                              sample_column)
             tags = format_column.split(":")
 
@@ -321,7 +321,7 @@ def create_merging_dict(df, row, columns):
             sample_columns.append(sample_column)
             sample_names.append(column)
 
-            format_sample_dict = utils.combine_format_values(format_column,
+            format_sample_dict = _combine_format_values(format_column,
                                                              sample_column)
 
             file_key = "{0}|{1}".format(fname, sample)
@@ -432,7 +432,7 @@ def create_new_line(alt_allele_number, fields):
     new_samples = []
 
     for sample in samples:
-        format_sample_dict = utils.combine_format_values(format_tags, sample)
+        format_sample_dict = _combine_format_values(format_tags, sample)
         new_dict = OrderedDict()
         for key, val in format_sample_dict.items():
             #only care about splitting jacquard tags
@@ -703,4 +703,7 @@ def execute(args, execution_context):
     process_files(sample_file_readers, input_dir, output_path, input_keys,
                   headers, header_names, first_line,
                   all_inconsistent_sample_sets, execution_context)
+
+def _combine_format_values(format, sample):
+    return OrderedDict(zip(format.split(":"), sample.strip().split(":")))
 

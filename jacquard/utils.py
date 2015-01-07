@@ -68,9 +68,3 @@ def sort_headers(headers):
 
     return meta_headers
 
-def combine_format_values(format, sample):
-    return OrderedDict(zip(format.split(":"), sample.strip().split(":")))
-
-def combine_format_dict(format, sample):
-    return OrderedDict(zip(format, sample))
-

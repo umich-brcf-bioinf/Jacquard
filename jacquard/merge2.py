@@ -71,7 +71,6 @@ class GenericBufferedReader(object):
         except StopIteration:
             return None
 
-
 def _produce_merged_metaheaders(vcf_reader, all_meta_headers, count):
     vcf_reader.open()
     for meta_header in vcf_reader.metaheaders:
@@ -99,6 +98,7 @@ def _extract_format_ids(all_meta_headers):
 
     return format_tags
 
+#TODO (cgates): Remove this and associated tests
 def _add_to_coordinate_set(vcf_reader, coordinate_set):
     vcf_reader.open()
     for vcf_record in vcf_reader.vcf_records():
@@ -108,6 +108,7 @@ def _add_to_coordinate_set(vcf_reader, coordinate_set):
 
     return coordinate_set
 
+#TODO (cgates): Remove this and associated tests
 def _sort_coordinate_set(coordinate_set):
     coordinate_list = list(coordinate_set)
     coordinate_list.sort()
@@ -148,8 +149,8 @@ def _get_record_sample_data(vcf_record, format_tags):
 
     return all_samples
 
+#pylint: disable=line-too-long
 def add_subparser(subparser):
-    #pylint: disable=C0301
     parser = subparser.add_parser("merge2", help="Accepts a directory of VCFs and returns a single merged VCF file.")
     parser.add_argument("input", help="Path to directory containing VCFs. Other file types ignored")
     parser.add_argument("output", help="Path to output variant-level VCF file")
@@ -157,7 +158,7 @@ def add_subparser(subparser):
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
-def build_coordinates(vcf_readers):
+def _build_coordinates(vcf_readers):
     coordinate_set = OrderedDict()
     mult_alts = defaultdict(set)
 
@@ -176,6 +177,7 @@ def build_coordinates(vcf_readers):
                                         vcf_record.pos,
                                         vcf_record.ref]
         if len(alts_for_this_locus) > 1:
+            #TODO (cgates): move this logic inside VcfRecord
             info = vcf_record.info.split(";") if vcf_record.info != "." else []
             info.append("JQ_MULT_ALT_LOCUS")
             vcf_record.info = ";".join(info)
@@ -184,34 +186,24 @@ def build_coordinates(vcf_readers):
     coordinate_list.sort()
     return coordinate_list
 
-def loop_through_readers(buffered_readers, format_tags, coordinates, writer):
-#     for coordinate in coordinates:
-#         total_sample_dict = {}
+def _get_sample_tag_values(buffered_readers, merged_record):
+    #for reader in buffered_readers:
+    #...
+    return {}
+
+def _merge_records(coordinates, buffered_readers, writer):
+    for coordinate in coordinates:
+        sample_tag_values = _get_sample_tag_values(buffered_readers, coordinate)
+        coordinate.add_sample_tag_value(sample_tag_values)
+        writer.write(coordinate.asText())
+        ##delete from coordinates
+
 #         for reader in buffered_readers:
-#             current_record = reader.current_record
-#             total_sample_dict.update(reader.get_sample_info(coordinate))
-#
-#
-#             current_record = _alter_record_fields(current_record,
-#                                                   format_tags,
-#                                                   coordinate)
-#             line = current_record.asText()
-#
-#         writer.write(line)
-    for dest_record in coordinates:
-        total_sample_dict = {}
-        for reader in buffered_readers:
-#            current_record = reader.current_record
-            total_sample_dict.update(reader.get_sample_info(dest_record))
+#             total_sample_dict.update(reader.get_sample_info(dest_record))
+#         dest_record.set_sample_dict(total_sample_dict)
+#         writer.write(dest_record.asText())
 
-        dest_record.set_sample_dict(total_sample_dict)
-        writer.write(dest_record.asText())
-
-
-
-
-
-
+#TODO (cgates): Rewrite this to use build_coordinates
 def execute(args, execution_context):
     input_path = os.path.abspath(args.input)
     output_path = os.path.abspath(args.output)

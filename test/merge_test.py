@@ -9,7 +9,7 @@ import sys
 from testfixtures import TempDirectory
 import unittest
 
-from jacquard.merge import PivotError, VariantPivoter, merge_samples, _add_mult_alt_flags, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller_and_split_mult_alts, validate_samples_for_callers, validate_sample_caller_vcfs, create_new_line, create_merging_dict, remove_old_columns
+from jacquard.merge import PivotError, VariantPivoter, merge_samples, _add_mult_alt_flags, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, _combine_format_values, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller_and_split_mult_alts, validate_samples_for_callers, validate_sample_caller_vcfs, create_new_line, create_merging_dict, remove_old_columns
 import jacquard.merge as merge
 import jacquard.utils as utils
 from jacquard.vcf import FileReader
@@ -95,6 +95,14 @@ class MergeTestCase(unittest.TestCase):
         logger.error = self.original_error
         logger.warning = self.original_warning
         logger.debug = self.original_debug
+
+    def test_combineFormatValues(self):
+        format_tags = "DP:AF:FOO"
+        sample = "23:0.32:1"
+        actual_dict = _combine_format_values(format_tags, sample)
+        expected_dict = OrderedDict([("DP", "23"), ("AF", "0.32"), ("FOO", "1")])
+        self.assertEquals(expected_dict, actual_dict)
+
 
     def testExecute_multAltsSplitCorrectly(self):
         vcfRecordFormat = "##jacquard.tag.caller={}\n" + \

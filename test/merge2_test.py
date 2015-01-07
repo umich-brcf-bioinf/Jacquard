@@ -163,7 +163,7 @@ class MergeTestCase(unittest.TestCase):
         self.assertEquals(expected_format_tags, actual_format_tags)
 
 
-    def test_gather_info_coordinateSet(self):
+    def test_build_coordinates(self):
         fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
         fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")
         fileBrec1 = vcf.VcfRecord("chr2", "12", "A", "G", "id=2")
@@ -172,12 +172,12 @@ class MergeTestCase(unittest.TestCase):
         mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
                         MockVcfReader(records=[fileBrec1, fileBrec2])]
 
-        actual = merge2.build_coordinates(mock_readers)
+        actual = merge2._build_coordinates(mock_readers)
 
         expected = [fileArec1, fileArec2, fileBrec2]
         self.assertEquals(expected, actual)
 
-    def test_gather_info_multAltsEmpty(self):
+    def test_build_coordinates_multAltsEmpty(self):
         fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
         fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")
         fileBrec1 = vcf.VcfRecord("chr2", "12", "A", "G", "id=2")
@@ -186,14 +186,14 @@ class MergeTestCase(unittest.TestCase):
         mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
                         MockVcfReader(records=[fileBrec1, fileBrec2])]
 
-        actual = merge2.build_coordinates(mock_readers)
+        actual = merge2._build_coordinates(mock_readers)
 
         actual_multalts = [record for record in actual if record.info == "JQ_MULT_ALT_LOCUS"]
 
         expected = []
         self.assertEquals(expected, actual_multalts)
 
-    def test_gather_info_multAlts(self):
+    def test_build_coordinates_multAlts(self):
         fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
         fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")
         fileBrec1 = vcf.VcfRecord("chr2", "12", "A", "T", "id=2")
@@ -202,51 +202,31 @@ class MergeTestCase(unittest.TestCase):
         mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
                         MockVcfReader(records=[fileBrec1, fileBrec2])]
 
-        actual = merge2.build_coordinates(mock_readers)
+        actual = merge2._build_coordinates(mock_readers)
 
         actual_multalts = [record for record in actual if record.info == "JQ_MULT_ALT_LOCUS"]
 
         expected = [fileArec2, fileBrec1]
         self.assertEquals(expected, actual_multalts)
 
-    def Xtest_add_to_coordinate_set(self):
-        mock_readers = [MockVcfReader(content=["chr1\t1\t.\tA\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
-                                               "chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"]),
-                        MockVcfReader(content=["chr42\t16\t.\tG\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"])]
-        coordinate_set = set()
-        for mock_reader in mock_readers:
-            coordinate_set = merge2._add_to_coordinate_set(mock_reader, coordinate_set)
+    def Xtest_get_sample_tag_values(self):
+        OD = OrderedDict
+        samples1 = OD({"SA": OD({"foo":"A1", "bar":"A2"}),
+                       "SB": OD({"foo":"B1", "bar":"B2"})})
+        samples2 = OD({"SC": OD({"foo":"C1", "bar":"C2"}),
+                       "SD": OD({"foo":"D1", "bar":"D2"})})
+        record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
+        record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
+        record3 = None
+        reader1 = MockBufferedReader([record1])
+        reader2 = MockBufferedReader([record2])
+        reader3 = MockBufferedReader([record3])
+        buffered_readers = [reader1, reader2, reader3]
+        merged_record = VcfRecord("chr1", "1", "A", "C")
 
-        expected_coordinates = {"chr1^1^A": set(["chr1^1^A^C"]),
-                                "chr2^12^A": set(["chr2^12^A^G"]),
-                                "chr42^16^G": set(["chr42^16^G^C"])}
-        self.assertEquals(expected_coordinates, coordinate_set)
+        actual_sample_tag_values = merge2._get_sample_tag_values(buffered_readers, merged_record)
 
-    def Xtest_add_to_coordinate_set_multAlts(self):
-        mock_readers = [MockVcfReader(content=["chr1\t1\t.\tA\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
-                                               "chr2\t12\t.\tA\tG\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"]),
-                        MockVcfReader(content=["chr1\t1\t.\tA\tT\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR",
-                                               "chr42\t16\t.\tG\tC\t.\t.\tINFO\tFORMAT\tNORMAL\tTUMOR"])]
-        coordinate_set = set()
-        for mock_reader in mock_readers:
-            coordinate_set = merge2._add_to_coordinate_set(mock_reader, coordinate_set)
-
-        expected_coordinates = {"chr1^1^A": set(["chr1^1^A^C", "chr1^1^A^T"]),
-                                "chr2^12^A": set(["chr2^12^A^G"]),
-                                "chr42^16^G": set(["chr42^16^G^C"])}
-        self.assertEquals(expected_coordinates, coordinate_set)
-
-    def Xtest_sort_coordinate_set(self):
-        coordinate_dict = {"chr1^1^A": ["chr1^1^A^C", "chr1^1^A^T"],
-                           "chr12^24^A": ["chr12^24^A^G"],
-                           "chr4^16^G": ["chr4^16^G^C"]}
-
-        sorted_coordinates = merge2._sort_coordinate_set(coordinate_dict)
-        expected_coordinates = OrderedDict([("chr1^1^A", ["chr1^1^A^C", "chr1^1^A^T"]),
-                                            ("chr4^16^G", ["chr4^16^G^C"]),
-                                            ("chr12^24^A", ["chr12^24^A^G"])])
-
-        self.assertEquals(expected_coordinates, sorted_coordinates)
+        self.assertEqual(set(["SA", "SB", "SC", "SD"]), set(actual_sample_tag_values.keys()))
 
     def Xtest_sort_coordinate_set_multAlts(self):
         coordinate_dict = {"chr1^1^A": ["chr1^1^A^C"],
@@ -273,6 +253,14 @@ class MergeTestCase(unittest.TestCase):
         expected_samples = {0: OrderedDict([("DP", "42"), ("AF", "0.23"), ("foo", ".")]),
                             1: OrderedDict([("DP", "25"), ("AF", "0.77"), ("foo", ".")])}
         self.assertEquals(expected_samples, samples)
+
+#pylint: disable=unused-argument
+class MockBufferedReader(object):
+    def __init__(self, vcf_records):
+        self.vcf_records_iter = iter(vcf_records)
+
+    def get_if_equals(self, requested_record):
+        return self.vcf_records_iter.next()
 
 class Merge2FunctionalTestCase(test_case.JacquardBaseTestCase):
     def xtest_merge2(self):
