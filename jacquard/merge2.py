@@ -186,15 +186,24 @@ def _build_coordinates(vcf_readers):
     coordinate_list.sort()
     return coordinate_list
 
-def _get_sample_tag_values(buffered_readers, merged_record):
-    #for reader in buffered_readers:
-    #...
-    return {}
+def _get_tag_sample_values(buffered_readers, merged_record):
+    tag_dict = defaultdict(dict)
+    for reader in buffered_readers:
+        record = reader.get_if_equals(merged_record)
+        if record:
+            sample_tag = record.sample_tag_values
+            for sample in sample_tag:
+                for tag in sample_tag[sample]:
+                    value = sample_tag[sample][tag]
+                    tag_dict[tag].update({sample:value})
+            
+    return tag_dict
 
 def _merge_records(coordinates, buffered_readers, writer):
     for coordinate in coordinates:
-        sample_tag_values = _get_sample_tag_values(buffered_readers, coordinate)
-        coordinate.add_sample_tag_value(sample_tag_values)
+        tag_sample_values = _get_tag_sample_values(buffered_readers, coordinate)
+        for tag in tag_sample_values:
+            coordinate.add_sample_tag_value(tag, tag_sample_values)
         writer.write(coordinate.asText())
         ##delete from coordinates
 

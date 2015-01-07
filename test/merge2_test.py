@@ -46,6 +46,14 @@ class MockVcfReader(object):
     def close(self):
         self.closed = True
 
+#pylint: disable=unused-argument
+class MockBufferedReader(object):
+    def __init__(self, vcf_records):
+        self.vcf_records_iter = iter(vcf_records)
+
+    def get_if_equals(self, requested_record):
+        return self.vcf_records_iter.next()
+    
 class MockVcfRecord(object):
     @classmethod
     def parse_record(cls, vcf_line):
@@ -209,12 +217,16 @@ class MergeTestCase(unittest.TestCase):
         expected = [fileArec2, fileBrec1]
         self.assertEquals(expected, actual_multalts)
 
-    def Xtest_get_sample_tag_values(self):
+    def test_get_sample_tag_values(self):
         OD = OrderedDict
-        samples1 = OD({"SA": OD({"foo":"A1", "bar":"A2"}),
-                       "SB": OD({"foo":"B1", "bar":"B2"})})
-        samples2 = OD({"SC": OD({"foo":"C1", "bar":"C2"}),
-                       "SD": OD({"foo":"D1", "bar":"D2"})})
+        sampleA_tag_values = OD({"foo":"A1", "bar":"A2"})
+        sampleB_tag_values = OD({"foo":"B1", "bar":"B2"})
+        samples1 = OD({"SA": sampleA_tag_values,
+                       "SB": sampleB_tag_values})
+        sampleC_tag_values = OD({"foo":"C1", "bar":"C2"})
+        sampleD_tag_values = OD({"foo":"D1", "bar":"D2"})
+        samples2 = OD({"SC": sampleC_tag_values,
+                       "SD": sampleD_tag_values})
         record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
         record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
         record3 = None
@@ -224,10 +236,22 @@ class MergeTestCase(unittest.TestCase):
         buffered_readers = [reader1, reader2, reader3]
         merged_record = VcfRecord("chr1", "1", "A", "C")
 
-        actual_sample_tag_values = merge2._get_sample_tag_values(buffered_readers, merged_record)
+        actual_sample_tag_values = merge2._get_tag_sample_values(buffered_readers, merged_record)
 
-        self.assertEqual(set(["SA", "SB", "SC", "SD"]), set(actual_sample_tag_values.keys()))
+        self.assertEqual(set(["foo", "bar"]), set(actual_sample_tag_values.keys()))
+        self.assertEqual(OD({"SA":"A1","SB":"B1","SC":"C1","SD":"D1"}), actual_sample_tag_values["foo"])
+        self.assertEqual(OD({"SA":"A2","SB":"B2","SC":"C2","SD":"D2"}), actual_sample_tag_values["bar"])
 
+    def Xtest_merge_records(self):
+        coordinates = [VcfRecord("chrom","pos","ref","alt")]
+        OD = OrderedDict 
+        record1 = VcfRecord("chrom","pos","ref","alt", sample_tag_values=OD({"SA": OD({"foo":"A"}), "SB":OD({"foo":"B"})}))
+        record2 = VcfRecord("chrom","pos","ref","alt", sample_tag_values=OD({"SC": OD({"foo":"C"}), "SD":OD({"foo":"D"})}))
+        buffered_readers = [MockBufferedReader([record1]),MockBufferedReader([record2])]
+        writer = MockFileWriter()
+        merge2._merge_records(coordinates, buffered_readers, writer)
+        self.assertEqual("chrom\tpos\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD",writer.written[0])
+        
     def Xtest_sort_coordinate_set_multAlts(self):
         coordinate_dict = {"chr1^1^A": ["chr1^1^A^C"],
                            "chr12^24^A": ["chr12^24^A^G"],
@@ -253,14 +277,6 @@ class MergeTestCase(unittest.TestCase):
         expected_samples = {0: OrderedDict([("DP", "42"), ("AF", "0.23"), ("foo", ".")]),
                             1: OrderedDict([("DP", "25"), ("AF", "0.77"), ("foo", ".")])}
         self.assertEquals(expected_samples, samples)
-
-#pylint: disable=unused-argument
-class MockBufferedReader(object):
-    def __init__(self, vcf_records):
-        self.vcf_records_iter = iter(vcf_records)
-
-    def get_if_equals(self, requested_record):
-        return self.vcf_records_iter.next()
 
 class Merge2FunctionalTestCase(test_case.JacquardBaseTestCase):
     def xtest_merge2(self):
