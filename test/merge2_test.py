@@ -217,30 +217,136 @@ class MergeTestCase(unittest.TestCase):
         expected = [fileArec2, fileBrec1]
         self.assertEquals(expected, actual_multalts)
 
-    def test_get_sample_tag_values(self):
+    def test_build_merged_record_addFromAllSampleNames(self):
         OD = OrderedDict
+        coordinate = VcfRecord("chr1", "1", "A", "C", info="baseInfo")
+        samples1 = OD({"SA": {"foo1":"bar1"},
+                       "SB": {"foo2":"bar2"}})
+        samples2 = OD({"SC": {"foo3":"bar3"},
+                       "SE": {"foo4":"bar4"}})
+        record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
+        record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
+
+        actual_record = merge2._build_merged_record(coordinate, [record1, record2], set(["SD","SF"]))
+
+        self.assertEquals("chr1", actual_record.chrom)
+        self.assertEquals("1", actual_record.pos)
+        self.assertEquals("A", actual_record.ref)
+        self.assertEquals("C", actual_record.alt)
+        self.assertEquals("baseInfo", actual_record.info)
+        self.assertTrue("SD" in actual_record.sample_tag_values)
+        self.assertTrue("SF" in actual_record.sample_tag_values)
+        
+    def test_build_merged_record_baseInfoCopiedFromCoordinate(self):
+        OD = OrderedDict
+        coordinate = VcfRecord("chr1", "1", "A", "C", info="baseInfo")
+        samples1 = OD({"SA": {},
+                       "SB": {}})
+        samples2 = OD({"SC": {},
+                       "SD": {}})
+        record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
+        record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
+
+        actual_record = merge2._build_merged_record(coordinate, [record1, record2], set())
+
+        self.assertEquals("chr1", actual_record.chrom)
+        self.assertEquals("1", actual_record.pos)
+        self.assertEquals("A", actual_record.ref)
+        self.assertEquals("C", actual_record.alt)
+        self.assertEquals("baseInfo", actual_record.info)
+
+    def test_build_merged_record_samplesOrdered(self):
+        OD = OrderedDict
+        coordinate = VcfRecord("chr1", "1", "A", "C", info="baseInfo")
+        samples1 = OD({"SA": {},
+                       "SB": {}})
+        samples2 = OD({"SC": {},
+                       "SD": {}})
+        record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
+        record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
+
+        actual_record = merge2._build_merged_record(coordinate, [record1, record2], set())
+
+        self.assertEquals("chr1", actual_record.chrom)
+        self.assertEquals("1", actual_record.pos)
+        self.assertEquals("A", actual_record.ref)
+        self.assertEquals("C", actual_record.alt)
+        self.assertEquals("baseInfo", actual_record.info)
+        self.assertEquals(["SA", "SB", "SC", "SD"], actual_record.sample_tag_values.keys())
+    
+    def test_build_merged_record_tagsOrdered(self):
+        OD = OrderedDict
+        coordinate = VcfRecord("chr1", "1", "A", "C", info="baseInfo")
         sampleA_tag_values = OD({"foo":"A1", "bar":"A2"})
         sampleB_tag_values = OD({"foo":"B1", "bar":"B2"})
-        samples1 = OD({"SA": sampleA_tag_values,
-                       "SB": sampleB_tag_values})
         sampleC_tag_values = OD({"foo":"C1", "bar":"C2"})
         sampleD_tag_values = OD({"foo":"D1", "bar":"D2"})
+        samples1 = OD({"SA": sampleA_tag_values,
+                       "SB": sampleB_tag_values})
         samples2 = OD({"SC": sampleC_tag_values,
                        "SD": sampleD_tag_values})
         record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
         record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
-        record3 = None
-        reader1 = MockBufferedReader([record1])
-        reader2 = MockBufferedReader([record2])
-        reader3 = MockBufferedReader([record3])
-        buffered_readers = [reader1, reader2, reader3]
-        merged_record = VcfRecord("chr1", "1", "A", "C")
 
-        actual_sample_tag_values = merge2._get_tag_sample_values(buffered_readers, merged_record)
+        actual_record = merge2._build_merged_record(coordinate, [record1, record2], set())
 
-        self.assertEqual(set(["foo", "bar"]), set(actual_sample_tag_values.keys()))
-        self.assertEqual(OD({"SA":"A1","SB":"B1","SC":"C1","SD":"D1"}), actual_sample_tag_values["foo"])
-        self.assertEqual(OD({"SA":"A2","SB":"B2","SC":"C2","SD":"D2"}), actual_sample_tag_values["bar"])
+        self.assertEquals(OD([("bar", "A2"), ("foo", "A1")]), actual_record.sample_tag_values["SA"])
+        self.assertEquals(OD([("bar", "B2"), ("foo", "B1")]), actual_record.sample_tag_values["SB"])
+        self.assertEquals(OD([("bar", "C2"), ("foo", "C1")]), actual_record.sample_tag_values["SC"])
+        self.assertEquals(OD([("bar", "D2"), ("foo", "D1")]), actual_record.sample_tag_values["SD"])
+
+    def test_build_merged_record_heterogeneousTags(self):
+        OD = OrderedDict
+        coordinate = VcfRecord("chr1", "1", "A", "C", info="baseInfo")
+        sampleA_tag_values = OD({"foo":"A1", "bar":"A2"})
+        sampleB_tag_values = OD({"foo":"B1", "bar":"B2"})
+        sampleC_tag_values = OD({"baz":"C1"})
+        sampleD_tag_values = OD({"baz":"D1"})
+        samples1 = OD({"SA": sampleA_tag_values,
+                       "SB": sampleB_tag_values})
+        samples2 = OD({"SC": sampleC_tag_values,
+                       "SD": sampleD_tag_values})
+        record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
+        record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
+
+        actual_record = merge2._build_merged_record(coordinate, [record1, record2], set())
+
+        self.assertEquals("chr1", actual_record.chrom)
+        self.assertEquals("1", actual_record.pos)
+        self.assertEquals("A", actual_record.ref)
+        self.assertEquals("C", actual_record.alt)
+        self.assertEquals("baseInfo", actual_record.info)
+        self.assertEquals(set(["SA", "SB", "SC", "SD"]), set(actual_record.sample_tag_values.keys()))
+        self.assertEquals(OD([("bar", "A2"), ("baz", "."), ("foo", "A1")]), actual_record.sample_tag_values["SA"])
+        self.assertEquals(OD([("bar", "B2"), ("baz", "."), ("foo", "B1")]), actual_record.sample_tag_values["SB"])
+        self.assertEquals(OD([("bar", "."), ("baz", "C1"), ("foo", ".")]), actual_record.sample_tag_values["SC"])
+        self.assertEquals(OD([("bar", "."), ("baz", "D1"), ("foo", ".")]), actual_record.sample_tag_values["SD"])
+
+
+#     def test_get_sample_tag_values(self):
+#         OD = OrderedDict
+#         sampleA_tag_values = OD({"foo":"A1", "bar":"A2"})
+#         sampleB_tag_values = OD({"foo":"B1", "bar":"B2"})
+#         samples1 = OD({"SA": sampleA_tag_values,
+#                        "SB": sampleB_tag_values})
+#         sampleC_tag_values = OD({"foo":"C1", "bar":"C2"})
+#         sampleD_tag_values = OD({"foo":"D1", "bar":"D2"})
+#         samples2 = OD({"SC": sampleC_tag_values,
+#                        "SD": sampleD_tag_values})
+#         record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
+#         record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
+#         record3 = None
+#         reader1 = MockBufferedReader([record1])
+#         reader2 = MockBufferedReader([record2])
+#         reader3 = MockBufferedReader([record3])
+#         buffered_readers = [reader1, reader2, reader3]
+#         merged_record = VcfRecord("chr1", "1", "A", "C")
+# 
+#         actual_sample_tag_values = merge2._get_tag_sample_values(buffered_readers, merged_record)
+# 
+#         self.assertEqual(set(["foo", "bar"]), set(actual_sample_tag_values.keys()))
+#         self.assertEqual(OD({"SA":"A1","SB":"B1","SC":"C1","SD":"D1"}), actual_sample_tag_values["foo"])
+#         self.assertEqual(OD({"SA":"A2","SB":"B2","SC":"C2","SD":"D2"}), actual_sample_tag_values["bar"])
 
     def Xtest_merge_records(self):
         coordinates = [VcfRecord("chrom","pos","ref","alt")]
@@ -251,7 +357,17 @@ class MergeTestCase(unittest.TestCase):
         writer = MockFileWriter()
         merge2._merge_records(coordinates, buffered_readers, writer)
         self.assertEqual("chrom\tpos\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD",writer.written[0])
-        
+
+    def Xtest_pull_matching_records(self):
+        coordinate = VcfRecord("chrom","pos","ref","alt")
+        OD = OrderedDict 
+        record1 = VcfRecord("chrom","pos","ref","alt", sample_tag_values=OD({"SA": OD({"foo":"A"}), "SB":OD({"foo":"B"})}))
+        record2 = VcfRecord("chrom","pos","ref","alt", sample_tag_values=OD({"SC": OD({"foo":"C"}), "SD":OD({"foo":"D"})}))
+        record3 = VcfRecord("chrom","foo","ref","alt", sample_tag_values=OD({"SC": OD({"foo":"C"}), "SD":OD({"foo":"D"})}))
+        buffered_readers = [MockBufferedReader([record1]),MockBufferedReader([record2]),MockBufferedReader([record3])]
+        vcf_records = merge2._pull_matching_records(coordinate, buffered_readers)
+        self.assertEqual([record1, record2], vcf_records)
+                
     def Xtest_sort_coordinate_set_multAlts(self):
         coordinate_dict = {"chr1^1^A": ["chr1^1^A^C"],
                            "chr12^24^A": ["chr12^24^A^G"],

@@ -58,6 +58,9 @@ class GenericBufferedReader(object):
         self._iterator = iterator
         self._current_element = self._iterator.next()
 
+    def check_current_element(self):
+        return self._current_element
+    
     def get_if_equals(self, requested_element):
         result = None
         if requested_element == self._current_element:
@@ -186,25 +189,85 @@ def _build_coordinates(vcf_readers):
     coordinate_list.sort()
     return coordinate_list
 
-def _get_tag_sample_values(buffered_readers, merged_record):
-    tag_dict = defaultdict(dict)
-    for reader in buffered_readers:
-        record = reader.get_if_equals(merged_record)
-        if record:
-            sample_tag = record.sample_tag_values
-            for sample in sample_tag:
-                for tag in sample_tag[sample]:
-                    value = sample_tag[sample][tag]
-                    tag_dict[tag].update({sample:value})
+def _build_tag_set(vcf_records):
+    sample_tag_unordered = {}
+    
+    tag_set = set()
+    for record in vcf_records:
+        sample_tag_unordered.update(record.sample_tag_values)
+        first_sample = record.sample_tag_values.keys()[0]
+        for tag in record.sample_tag_values[first_sample]: 
+            tag_set.add(tag)
+    
+    return sample_tag_unordered, sorted(list(tag_set))
+    
+def _sort_sample_tag_values(sample_tag_unordered, tag_tracker_list, all_sample_names):
+    sample_tag_ordered = OrderedDict()
+    
+    for sample in sample_tag_unordered.keys():
+        all_sample_names.add(sample)
+        
+    for sample in sorted(list(all_sample_names)):
+        if sample in sample_tag_unordered:
+            sorted_tags = OrderedDict()
+            for tag in tag_tracker_list:
+                sorted_tags[tag] = "."
+                if tag in sample_tag_unordered[sample]:
+                    tag_value = sample_tag_unordered[sample][tag]
+                    sorted_tags[tag] = tag_value
+                    
+            sample_tag_ordered[sample] = sorted_tags
             
-    return tag_dict
+        else:
+            sample_tag_ordered[sample] = OrderedDict()
+            
+    return sample_tag_ordered
+        
+def _build_merged_record(coordinate, vcf_records, all_sample_names):
+    sample_tag_unordered, tag_tracker_list = _build_tag_set(vcf_records)
+    sample_tag_ordered = _sort_sample_tag_values(sample_tag_unordered, tag_tracker_list, all_sample_names)
+        
+    merged_record = vcf.VcfRecord(coordinate.chrom, coordinate.pos, 
+                                  coordinate.ref, coordinate.alt,
+                                  coordinate.id, coordinate.qual, 
+                                  coordinate.filter, coordinate.info,
+                                  sample_tag_values = sample_tag_ordered)
+    
+    return merged_record 
+
+# def _get_tag_sample_values(buffered_readers, merged_record):
+#     tag_dict = defaultdict(dict)
+#     for reader in buffered_readers:
+#         record = reader.get_if_equals(merged_record)
+#         if record:
+#             sample_tag = record.sample_tag_values
+#             for sample in sample_tag:
+#                 for tag in sample_tag[sample]:
+#                     value = sample_tag[sample][tag]
+#                     tag_dict[tag].update({sample:value})
+#             
+#     return tag_dict
+
+def _pull_matching_records(coordinate, buffered_readers):
+    vcf_records = []
+    for reader in buffered_readers:
+        record = reader.get_if_equals(coordinate)
+        if record:
+            vcf_records.append(record)
+            
+    return vcf_records
 
 def _merge_records(coordinates, buffered_readers, writer):
+    all_sample_names = set()
+    for reader in buffered_readers:
+        record = reader.check_current_element()
+        for sample in record.sample_tag_values:
+            all_sample_names.add(sample)
+        
     for coordinate in coordinates:
-        tag_sample_values = _get_tag_sample_values(buffered_readers, coordinate)
-        for tag in tag_sample_values:
-            coordinate.add_sample_tag_value(tag, tag_sample_values)
-        writer.write(coordinate.asText())
+        vcf_records = _pull_matching_records(coordinate, buffered_readers)
+        merged_record = _build_merged_record(coordinate, vcf_records, all_sample_names)
+        writer.write(merged_record.asText())
         ##delete from coordinates
 
 #         for reader in buffered_readers:
