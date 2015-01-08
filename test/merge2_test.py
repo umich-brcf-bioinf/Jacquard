@@ -180,10 +180,21 @@ class MergeTestCase(unittest.TestCase):
         mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
                         MockVcfReader(records=[fileBrec1, fileBrec2])]
 
-        actual = merge2._build_coordinates(mock_readers)
+        actual_coordinates = merge2._build_coordinates(mock_readers)[0]
 
         expected = [fileArec1, fileArec2, fileBrec2]
-        self.assertEquals(expected, actual)
+        self.assertEquals(expected, actual_coordinates)
+
+    def test_build_coordinates_sortsSampleNames(self):
+        fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
+        fileBrec1 = vcf.VcfRecord("chr2", "12", "A", "G")
+
+        mock_readers = [MockVcfReader(records=[fileArec1], samples=["SB", "SD"]),
+                        MockVcfReader(records=[fileBrec1], samples=["SA", "SC"])]
+
+        actual_samples = merge2._build_coordinates(mock_readers)[1]
+
+        self.assertEquals(["SA", "SB", "SC", "SD"], actual_samples)
 
     def test_build_coordinates_multAltsEmpty(self):
         fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
@@ -194,9 +205,9 @@ class MergeTestCase(unittest.TestCase):
         mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
                         MockVcfReader(records=[fileBrec1, fileBrec2])]
 
-        actual = merge2._build_coordinates(mock_readers)
+        actual_coordinates = merge2._build_coordinates(mock_readers)[0]
 
-        actual_multalts = [record for record in actual if record.info == "JQ_MULT_ALT_LOCUS"]
+        actual_multalts = [record for record in actual_coordinates if record.info == "JQ_MULT_ALT_LOCUS"]
 
         expected = []
         self.assertEquals(expected, actual_multalts)
@@ -210,9 +221,9 @@ class MergeTestCase(unittest.TestCase):
         mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
                         MockVcfReader(records=[fileBrec1, fileBrec2])]
 
-        actual = merge2._build_coordinates(mock_readers)
+        actual_coordinates = merge2._build_coordinates(mock_readers)[0]
 
-        actual_multalts = [record for record in actual if record.info == "JQ_MULT_ALT_LOCUS"]
+        actual_multalts = [record for record in actual_coordinates if record.info == "JQ_MULT_ALT_LOCUS"]
 
         expected = [fileArec2, fileBrec1]
         self.assertEquals(expected, actual_multalts)

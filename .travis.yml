@@ -12,7 +12,7 @@ before_script:
     - pip install coveralls
 
 script: 
-    - nosetests --with-coverage --verbose
+    - nosetests --with-coverage --verbose --cover-package=jacquard
     #- nosetests
 
 after_success:

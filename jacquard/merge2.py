@@ -58,6 +58,7 @@ class GenericBufferedReader(object):
         self._iterator = iterator
         self._current_element = self._iterator.next()
 
+    #TODO (cgates): remove
     def check_current_element(self):
         return self._current_element
     
@@ -162,6 +163,7 @@ def add_subparser(subparser):
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
 def _build_coordinates(vcf_readers):
+    sample_list = []
     coordinate_set = OrderedDict()
     mult_alts = defaultdict(set)
 
@@ -187,7 +189,7 @@ def _build_coordinates(vcf_readers):
 
     coordinate_list = coordinate_set.keys()
     coordinate_list.sort()
-    return coordinate_list
+    return coordinate_list, sample_list
 
 def _build_tag_set(vcf_records):
     sample_tag_unordered = {}
