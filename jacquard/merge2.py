@@ -20,7 +20,7 @@ class BufferedReader(object):
     def extract(self, element):
         sample_dict = {}
         if element:
-            for i, sample_name in enumerate(self.reader.samples):
+            for i, sample_name in enumerate(self.reader.sample_names):
                 key = self.reader.file_name + "|" + sample_name
                 sample_dict[key] = element.sample_dict[i]
         return sample_dict
@@ -57,10 +57,6 @@ class GenericBufferedReader(object):
     def __init__(self, iterator):
         self._iterator = iterator
         self._current_element = self._iterator.next()
-
-    #TODO (cgates): remove
-    def check_current_element(self):
-        return self._current_element
     
     def get_if_equals(self, requested_element):
         result = None
@@ -92,32 +88,6 @@ def _produce_merged_metaheaders(vcf_reader, all_meta_headers, count):
 
     return all_meta_headers
 
-def _extract_format_ids(all_meta_headers):
-    pattern = re.compile("##FORMAT=.*[<,]ID=([A-Za-z0-9_]+)")
-    format_tags = Set()
-    for meta_header in all_meta_headers:
-        match = pattern.search(meta_header)
-        if match:
-            format_tags.add(match.group(1))
-
-    return format_tags
-
-#TODO (cgates): Remove this and associated tests
-def _add_to_coordinate_set(vcf_reader, coordinate_set):
-    vcf_reader.open()
-    for vcf_record in vcf_reader.vcf_records():
-        coordinate_set.add(vcf_record.get_empty_record())
-
-    vcf_reader.close()
-
-    return coordinate_set
-
-#TODO (cgates): Remove this and associated tests
-def _sort_coordinate_set(coordinate_set):
-    coordinate_list = list(coordinate_set)
-    coordinate_list.sort()
-    return coordinate_list
-
 def _write_metaheaders(file_writer,
                        all_metaheaders,
                        column_header,
@@ -135,7 +105,7 @@ def _create_reader_lists(input_files):
         vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
         vcf_readers.append(vcf_reader)
         vcf_reader.open()
-        buffered_readers.append(BufferedReader(vcf_reader))
+        buffered_readers.append(GenericBufferedReader(vcf_reader.vcf_records()))
 
     return buffered_readers, vcf_readers
 
@@ -170,7 +140,7 @@ def _build_coordinates(vcf_readers):
     for vcf_reader in vcf_readers:
         try:
             vcf_reader.open()
-            sample_list.extend(vcf_reader.samples)
+            sample_list.extend(vcf_reader.sample_names)
             for vcf_record in vcf_reader.vcf_records():
                 coordinate_set[(vcf_record.get_empty_record())] = 0
                 mult_alts[(vcf_record.chrom, vcf_record.pos, vcf_record.ref)]\
@@ -192,79 +162,34 @@ def _build_coordinates(vcf_readers):
     coordinate_list.sort()
     sample_list.sort()
     return coordinate_list, sample_list
-
-def _build_tag_set(vcf_records):
-    sample_tag_unordered = {}
-    
-    tag_set = set()
-    for record in vcf_records:
-        sample_tag_unordered.update(record.sample_tag_values)
-        first_sample = record.sample_tag_values.keys()[0]
-        for tag in record.sample_tag_values[first_sample]: 
-            tag_set.add(tag)
-    
-    return sample_tag_unordered, sorted(list(tag_set))
-    
-def _sort_sample_tag_values(sample_tag_unordered, tag_tracker_list, all_sample_names):
-    sample_tag_ordered = OrderedDict()
-    
-    for sample in sample_tag_unordered.keys():
-        all_sample_names.add(sample)
-        
-    for sample in sorted(list(all_sample_names)):
-        if sample in sample_tag_unordered:
-            sorted_tags = OrderedDict()
-            for tag in tag_tracker_list:
-                sorted_tags[tag] = "."
-                if tag in sample_tag_unordered[sample]:
-                    tag_value = sample_tag_unordered[sample][tag]
-                    sorted_tags[tag] = tag_value
-                    
-            sample_tag_ordered[sample] = sorted_tags
-            
-        else:
-            sample_tag_ordered[sample] = OrderedDict()
-            
-    return sample_tag_ordered
-        
+  
 def _build_merged_record(coordinate, vcf_records, all_sample_names):
-#    A modest suggestion (cgates)
-#     for sample in records
-#         for tag, value in sample.items()
-#         all_tag.add(tag)
-#         sparse_matrix[sample][tag] = value
-#     
-#     
-#     full_matrix = OD()
-#     for sample in all_samples
-#         full_matrix[sample] = OD()
-#         for tag in sorted(all_tags):
-#             full_matrix[sample][tag] = sparse_matrix[sample][tag] // "."
-
+    all_tags = set()
+    sparse_matrix = {}
     
-    sample_tag_unordered, tag_tracker_list = _build_tag_set(vcf_records)
-    sample_tag_ordered = _sort_sample_tag_values(sample_tag_unordered, tag_tracker_list, all_sample_names)
-        
+    for record in vcf_records:
+        for sample,tags in record.sample_tag_values.items():
+            sparse_matrix[sample] = {}
+            for tag, value in tags.items():
+                all_tags.add(tag)
+                sparse_matrix[sample][tag] = value
+     
+    full_matrix = OrderedDict()
+    for sample in all_sample_names:
+        full_matrix[sample] = OrderedDict()
+        for tag in sorted(all_tags):
+            try:
+                full_matrix[sample][tag] = sparse_matrix[sample][tag]
+            except KeyError:
+                full_matrix[sample][tag] = "."
+   
     merged_record = vcf.VcfRecord(coordinate.chrom, coordinate.pos, 
                                   coordinate.ref, coordinate.alt,
                                   coordinate.id, coordinate.qual, 
                                   coordinate.filter, coordinate.info,
-                                  sample_tag_values = sample_tag_ordered)
+                                  sample_tag_values = full_matrix)
     
     return merged_record 
-
-# def _get_tag_sample_values(buffered_readers, merged_record):
-#     tag_dict = defaultdict(dict)
-#     for reader in buffered_readers:
-#         record = reader.get_if_equals(merged_record)
-#         if record:
-#             sample_tag = record.sample_tag_values
-#             for sample in sample_tag:
-#                 for tag in sample_tag[sample]:
-#                     value = sample_tag[sample][tag]
-#                     tag_dict[tag].update({sample:value})
-#             
-#     return tag_dict
 
 def _pull_matching_records(coordinate, buffered_readers):
     vcf_records = []
@@ -275,12 +200,7 @@ def _pull_matching_records(coordinate, buffered_readers):
             
     return vcf_records
 
-def _merge_records(coordinates, buffered_readers, writer):
-    all_sample_names = set()
-    for reader in buffered_readers:
-        record = reader.check_current_element()
-        for sample in record.sample_tag_values:
-            all_sample_names.add(sample)
+def _merge_records(coordinates, buffered_readers, writer, all_sample_names):
         
     for coordinate in coordinates:
         vcf_records = _pull_matching_records(coordinate, buffered_readers)
@@ -293,54 +213,64 @@ def _merge_records(coordinates, buffered_readers, writer):
 #         dest_record.set_sample_dict(total_sample_dict)
 #         writer.write(dest_record.asText())
 
-#TODO (cgates): Rewrite this to use build_coordinates
-def execute(args, execution_context):
-    input_path = os.path.abspath(args.input)
-    output_path = os.path.abspath(args.output)
-
+def _process_inputs(input_files, writer):
     all_metaheaders = []
-    coordinate_set = set()
-    input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
-
-    file_writer = vcf.FileWriter(output_path)
-    file_writer.open()
-
     count = 1
     samples = []
+    
     for input_file in input_files:
         vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
         all_metaheaders = _produce_merged_metaheaders(vcf_reader,
                                                       all_metaheaders,
                                                       count)
 
-        split_column_header = vcf_reader.column_header.split("\t")
-        sample_cols = split_column_header[9:]
-        samples.extend([vcf_reader.file_name + "|" +  i for i in sample_cols])
-        column_header = split_column_header[0:9]
+        vcf_reader.sample_names 
+        column_header = vcf_reader.column_header.split("\t")[0:9]
+        
+        samples.extend([vcf_reader.file_name + "|" +  i for i in vcf_reader.sample_names])
 
-        coordinate_set = _add_to_coordinate_set(vcf_reader, coordinate_set)
+#         coordinate_set = _add_to_coordinate_set(vcf_reader, coordinate_set)
         count += 1
 
     column_header.extend(samples)
+
+    return all_metaheaders, column_header
+
+#TODO (cgates): Rewrite this to use build_coordinates
+def execute(args, execution_context):
+    input_path = os.path.abspath(args.input)
+    output_path = os.path.abspath(args.output)
+
+#     coordinate_set = set()
+    input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
+
+    file_writer = vcf.FileWriter(output_path)
+    file_writer.open()
+
+    all_metaheaders, column_header = _process_inputs(input_files, file_writer)
 
     _write_metaheaders(file_writer,
                        all_metaheaders,
                        column_header,
                        execution_context)
 
-    format_tags = _extract_format_ids(all_metaheaders)
-    sorted_coordinates = _sort_coordinate_set(coordinate_set)
+#     format_tags = _extract_format_ids(all_metaheaders)
+#     sorted_coordinates = _sort_coordinate_set(coordinate_set)
 
     buffered_readers, vcf_readers = _create_reader_lists(input_files)
 
-    for coordinate in sorted_coordinates:
-        for reader in buffered_readers:
-            if reader.current_record:
-                current_record = reader.current_record
-                reader.get_sample_info(coordinate)
-                line = current_record.asText()
-
-        file_writer.write(line)
+    coordinates, all_sample_names = _build_coordinates(vcf_readers)
+    
+    _merge_records(coordinates, buffered_readers, file_writer, all_sample_names)
+    
+#     for coordinate in sorted_coordinates:
+#         for reader in buffered_readers:
+#             if reader.current_record:
+#                 current_record = reader.current_record
+#                 reader.get_sample_info(coordinate)
+#                 line = current_record.asText()
+# 
+#         file_writer.write(line)
 
     for vcf_reader in vcf_readers:
         vcf_reader.close()
