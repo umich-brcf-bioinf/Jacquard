@@ -409,33 +409,6 @@ class Merge2FunctionalTestCase(test_case.JacquardBaseTestCase):
             self.assertCommand(command, expected_dir)
 
 
-class BufferedReaderTestCase(test_case.JacquardBaseTestCase):
-    def test_get_sample_info_emptyIfNotRequestedCoordinateDoesNotMatch(self):
-        rec1 = VcfRecord.parse_record("chr2\t2\t.\tA\tG\t.\tPASS\tINFO\tDP\t42\t16", ["SA", "SB"])
-
-        mock_reader = MockVcfReader(input_filepath="fileA.vcf",
-                                    records=[rec1],
-                                    sample_names=["NORMAL", "TUMOR"])
-        buffered_reader = merge2.BufferedReader(mock_reader)
-
-        input_coordinate = VcfRecord("chr1", "1", "X", "X")
-        self.assertEquals({}, buffered_reader.get_sample_info(input_coordinate))
-
-    def Xtest_get_sample_info(self):
-        rec1 = VcfRecord.parse_record("chr2\t2\t.\tA\tG\t.\tPASS\tINFO\tDP\t42\t16", ["SA", "SB"])
-
-        mock_reader = MockVcfReader(input_filepath="fileA.vcf",
-                                    records=[rec1],
-                                    samples=["NORMAL", "TUMOR"])
-        buffered_reader = merge2.BufferedReader(mock_reader)
-
-        input_coordinate = VcfRecord("chr2", "2", "A", "G")
-        actual_sample_info = buffered_reader.get_sample_info(input_coordinate)
-
-        self.assertEquals(["fileA.vcf|NORMAL", "fileA.vcf|TUMOR"], sorted(actual_sample_info.keys()))
-        self.assertEquals(OrderedDict({"DP": "42"}), actual_sample_info["fileA.vcf|NORMAL"])
-        self.assertEquals(OrderedDict({"DP": "16"}), actual_sample_info["fileA.vcf|TUMOR"])
-
 class GenericBufferedReaderTestCase(test_case.JacquardBaseTestCase):
     def test_get_sample_info_advancesCurrentElementWhenMatched(self):
         reader = [1, 5, 10, 15]
