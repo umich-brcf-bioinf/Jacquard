@@ -170,6 +170,7 @@ def _build_coordinates(vcf_readers):
     for vcf_reader in vcf_readers:
         try:
             vcf_reader.open()
+            sample_list.extend(vcf_reader.samples)
             for vcf_record in vcf_reader.vcf_records():
                 coordinate_set[(vcf_record.get_empty_record())] = 0
                 mult_alts[(vcf_record.chrom, vcf_record.pos, vcf_record.ref)]\
@@ -189,6 +190,7 @@ def _build_coordinates(vcf_readers):
 
     coordinate_list = coordinate_set.keys()
     coordinate_list.sort()
+    sample_list.sort()
     return coordinate_list, sample_list
 
 def _build_tag_set(vcf_records):
@@ -226,6 +228,20 @@ def _sort_sample_tag_values(sample_tag_unordered, tag_tracker_list, all_sample_n
     return sample_tag_ordered
         
 def _build_merged_record(coordinate, vcf_records, all_sample_names):
+#    A modest suggestion (cgates)
+#     for sample in records
+#         for tag, value in sample.items()
+#         all_tag.add(tag)
+#         sparse_matrix[sample][tag] = value
+#     
+#     
+#     full_matrix = OD()
+#     for sample in all_samples
+#         full_matrix[sample] = OD()
+#         for tag in sorted(all_tags):
+#             full_matrix[sample][tag] = sparse_matrix[sample][tag] // "."
+
+    
     sample_tag_unordered, tag_tracker_list = _build_tag_set(vcf_records)
     sample_tag_ordered = _sort_sample_tag_values(sample_tag_unordered, tag_tracker_list, all_sample_names)
         
