@@ -8,11 +8,12 @@ install:
     - pip install -r requirements.txt
  
 before_script:
-    - pip install python-coveralls
+    - pip install coverage
+    - pip install coveralls
 
 script: 
-    #- nosetests --with-coverage --cover-package=jacquard,variant_callers
-    - nosetests
+    - nosetests --with-coverage --cover-package=jacquard,variant_callers
+    #- nosetests
 
 after_success:
     - coveralls
@@ -20,5 +21,5 @@ after_success:
 notifications:
     email:
         - cgates@umich.edu
-        - jebene@umich.edu
-        - kmeng@umich.edu
+        #- jebene@umich.edu
+        #- kmeng@umich.edu
