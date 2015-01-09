@@ -1,6 +1,7 @@
 # pylint: disable=missing-docstring
 from __future__ import print_function
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
+import re
 import os
 import sys
 
@@ -166,6 +167,8 @@ class VcfRecord(object):
         self.qual = qual
         self.filter = vcf_filter
         self.info = info
+        self.info_dict = self.get_info_dict()
+
         if sample_tag_values is None:
             self.sample_tag_values = {}
         else:
@@ -181,7 +184,6 @@ class VcfRecord(object):
             tags = set(self.sample_tag_values[first_sample].keys())
         return tags
 
-
     def get_info_dict(self):
         info_list = self.info.split(";")
         info_dict = {}
@@ -191,7 +193,34 @@ class VcfRecord(object):
                 info_dict[key] = value
             else:
                 info_dict[key_value] = key_value
+
         return info_dict
+
+    def add_info_field(self, field):
+        if field in self.info_dict:
+            msg = "New info field [{}] already exists.".format(field)
+            raise KeyError(msg)
+
+        if "=" in field:
+            key, value = field.split("=")
+            self.info_dict[key] = value
+        else:
+            self.info_dict[field] = field
+
+        self._join_info_fields()
+
+    def _join_info_fields(self):
+        info_fields = []
+
+        if len(self.info_dict) > 1:
+            self.info_dict.pop(".", None)
+        for field, value in self.info_dict.items():
+            if field == value:
+                info_fields.append(value)
+            else:
+                info_fields.append("=".join([field, value]))
+
+        self.info = ";".join(info_fields)
 
     def get_empty_record(self):
         return VcfRecord(chrom=self.chrom,
@@ -229,6 +258,16 @@ class VcfRecord(object):
         #pylint: disable=line-too-long
         return set(new_sample_values.keys()) == set(self.sample_tag_values.keys())
 
+    def filter_sample_tag_values(self, desired_tags):
+        new_sample_tag_values = defaultdict(dict)
+        for sample, tags in self.sample_tag_values.items():
+            for tag, value in tags.items():
+                for desired_tag in desired_tags:
+                    if re.match(desired_tag, tag):
+                        new_sample_tag_values[sample][tag] = value
+                        
+        self.sample_tag_values = new_sample_tag_values
+        
     def add_sample_tag_value(self, tag_name, new_sample_values):
         if tag_name in self.format_tags:
             msg = "New format value [{}] already exists.".format(tag_name)

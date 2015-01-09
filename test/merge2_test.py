@@ -226,6 +226,9 @@ class MergeTestCase(unittest.TestCase):
 
         actual_multalts = [record for record in actual_coordinates if record.info == "JQ_MULT_ALT_LOCUS"]
 
+#         print record.info_string
+#         print record.info
+#         print record.info_dict
         expected = [fileArec2, fileBrec1]
         self.assertEquals(expected, actual_multalts)
 
@@ -507,7 +510,7 @@ chr2|10|.|A|C|.|.|INFO|FORMAT|C_2|D_2
         self.assertEquals("chr2\t10\t.\tA\tC\t.\t.\t.\tFORMAT\t.\t.\tC_2\tD_2\n", actual_output_lines[12])
 
 class Merge2FunctionalTestCase(test_case.JacquardBaseTestCase):
-    def Xtest_merge2(self):
+    def xtest_merge2(self):
         with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir, "functional_tests", "04_merge2")

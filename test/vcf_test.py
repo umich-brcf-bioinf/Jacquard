@@ -1,4 +1,5 @@
-# pylint: disable=line-too-long,too-many-public-methods,invalid-name
+#pylint: disable=line-too-long,too-many-public-methods,invalid-name
+#pylint: disable=missing-docstring,protected-access
 from StringIO import StringIO
 from collections import OrderedDict
 from jacquard.vcf import VcfRecord, VcfReader, FileWriter, FileReader
@@ -93,6 +94,19 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals({"foo":"SA_foo", "bar":"SA_bar"}, sample_tag_values["sampleA"])
         self.assertEquals({"foo":"SB_foo", "bar":"SB_bar"}, sample_tag_values["sampleB"])
 
+    def test_filter_sample_tag_values(self):
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FOO:BAR|A:B|C:D\n")
+        record = VcfRecord.parse_record(input_line, sample_names=["sampleA", "sampleB"])
+        desired_tags = ["FO*"]
+        record.filter_sample_tag_values(desired_tags)
+        self.assertEquals({"sampleA":{"FOO":"A"},"sampleB":{"FOO":"C"}}, record.sample_tag_values)
+
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FOO:BAR|A:B|C:D\n")
+        record = VcfRecord.parse_record(input_line, sample_names=["sampleA", "sampleB"])
+        desired_tags = ["BA*"]
+        record.filter_sample_tag_values(desired_tags)
+        self.assertEquals({"sampleA":{"BAR":"B"},"sampleB":{"BAR":"D"}}, record.sample_tag_values)
+
     def test_sample_tag_values_emptyDictWhenExplicitNullSampleData(self):
         input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|.|.|.\n")
         record = VcfRecord.parse_record(input_line, sample_names=["sampleA", "sampleB"])
@@ -158,7 +172,40 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         sample_names = ["SampleA"]
         input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|k1=v1;k2=v2|F|S\n")
         vcf_record = VcfRecord.parse_record(input_line, sample_names)
-        self.assertEquals({"k1":"v1", "k2":"v2"}, vcf_record.get_info_dict())
+        self.assertEquals({"k1": "v1", "k2": "v2"}, vcf_record.get_info_dict())
+
+    def test_add_info_field_assignedField(self):
+        sample_names = ["SampleA"]
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|k1=v1;k2=v2;baz|F|S\n")
+        vcf_record = VcfRecord.parse_record(input_line, sample_names)
+        vcf_record.add_info_field("foo=bar")
+        self.assertEquals({"k1": "v1", "k2": "v2", "baz": "baz", "foo": "bar"}, vcf_record.info_dict)
+
+    def test_add_info_field_nonAssignedField(self):
+        sample_names = ["SampleA"]
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|k1=v1;k2=v2;baz|F|S\n")
+        vcf_record = VcfRecord.parse_record(input_line, sample_names)
+        vcf_record.add_info_field("foo")
+        self.assertEquals({"k1": "v1", "k2": "v2", "baz": "baz", "foo": "foo"}, vcf_record.info_dict)
+
+    def test_join_info_fields(self):
+        sample_names = ["SampleA"]
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|k1=v1;k2=v2;baz|F|S\n")
+        vcf_record = VcfRecord.parse_record(input_line, sample_names)
+        vcf_record._join_info_fields()
+        self.assertEquals("k2=v2;k1=v1;baz", vcf_record.info)
+
+    def test_join_info_fields_nullValues(self):
+        sample_names = ["SampleA"]
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|.|F|S\n")
+        vcf_record = VcfRecord.parse_record(input_line, sample_names)
+        vcf_record._join_info_fields()
+        self.assertEquals(".", vcf_record.info)
+
+        vcf_record = VcfRecord.parse_record(input_line, sample_names)
+        vcf_record.add_info_field("foo")
+        vcf_record._join_info_fields()
+        self.assertEquals("foo", vcf_record.info)
 
     def test_asText(self):
         sampleA = OrderedDict({"F1":"SA.1", "F2":"SA.2", "F3":"SA.3"})

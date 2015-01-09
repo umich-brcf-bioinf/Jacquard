@@ -108,10 +108,7 @@ def _build_coordinates(vcf_readers):
                                         vcf_record.pos,
                                         vcf_record.ref]
         if len(alts_for_this_locus) > 1:
-            #TODO: (cgates) move this logic inside VcfRecord
-            info = vcf_record.info.split(";") if vcf_record.info != "." else []
-            info.append("JQ_MULT_ALT_LOCUS")
-            vcf_record.info = ";".join(info)
+            vcf_record.add_info_field("JQ_MULT_ALT_LOCUS")
 
     coordinate_list = coordinate_set.keys()
     coordinate_list.sort()
@@ -127,12 +124,11 @@ def _build_merged_record(coordinate,
     sparse_matrix = {}
 
     for record in vcf_records:
+        record.filter_sample_tag_values(tags_to_keep)
         for sample, tags in record.sample_tag_values.items():
             sparse_matrix[sample] = {}
             for tag, value in tags.items():
-                for desired_tag in tags_to_keep:
-                    if re.match(desired_tag, tag):
-                        all_tags.add(tag)
+                all_tags.add(tag)
                 sparse_matrix[sample][tag] = value
 
     full_matrix = OrderedDict()
