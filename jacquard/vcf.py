@@ -59,7 +59,7 @@ class VcfReader(object):
         return sample_names
 
     def _create_qualified_sample_names(self):
-        return ["|".join([self.file_name, i]) for i in self.sample_names]
+        return ["|".join([self.file_name.split(".")[0], i]) for i in self.sample_names]
 
     @property
     def metaheaders(self):
@@ -265,9 +265,9 @@ class VcfRecord(object):
                 for desired_tag in desired_tags:
                     if re.match(desired_tag, tag):
                         new_sample_tag_values[sample][tag] = value
-                        
+
         self.sample_tag_values = new_sample_tag_values
-        
+
     def add_sample_tag_value(self, tag_name, new_sample_values):
         if tag_name in self.format_tags:
             msg = "New format value [{}] already exists.".format(tag_name)

@@ -41,8 +41,8 @@ def _produce_merged_metaheaders(vcf_reader, all_meta_headers, count):
             all_meta_headers.append(meta_header)
 
     samples = vcf_reader.column_header.split("\t")[9:]
-    all_meta_headers.append("##jacquard.merge.file{0}={1}({2})"\
-                            .format(count, vcf_reader.file_name, samples))
+#     all_meta_headers.append("##jacquard.merge.file{0}={1}({2})"\
+#                             .format(count, vcf_reader.file_name, samples))
 
     mult_alt_header = '##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,'\
                       'Description="dbSNP Membership",Source="Jacquard",'\
@@ -115,6 +115,7 @@ def _build_coordinates(vcf_readers):
 
     return coordinate_list
 
+
 def _build_merged_record(coordinate,
                          vcf_records,
                          all_sample_names,
@@ -126,7 +127,8 @@ def _build_merged_record(coordinate,
     for record in vcf_records:
         record.filter_sample_tag_values(tags_to_keep)
         for sample, tags in record.sample_tag_values.items():
-            sparse_matrix[sample] = {}
+            if sample not in sparse_matrix:
+                sparse_matrix[sample] = {}
             for tag, value in tags.items():
                 all_tags.add(tag)
                 sparse_matrix[sample][tag] = value
@@ -175,28 +177,43 @@ def _merge_records(coordinates,
                                              tags_to_keep)
         writer.write(merged_record.asText())
 
-#TODO: (cgates) Adjust to make better use of VcfReader;
-#never parse outside of VcfReader/VcfRecord!
 def _process_inputs(input_files):
     #pylint: disable=line-too-long
     all_headers = []
     count = 1
-    all_sample_names = []
+    all_sample_names = set()
+    patient_to_file = defaultdict(list)
 
     for input_file in input_files:
         vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
+
+        patient = vcf_reader.file_name.split(".")[0]
+        patient_samples = [patient + "|" +  i for i in vcf_reader.sample_names]
+
+        for patient_sample in patient_samples:
+            all_sample_names.add(patient_sample)
+            patient_to_file[patient_sample].append(vcf_reader.file_name)
+
         all_headers = _produce_merged_metaheaders(vcf_reader,
                                                   all_headers,
                                                   count)
+
         column_header = vcf_reader.column_header.split("\t")[0:9]
-        all_sample_names.extend([vcf_reader.file_name + "|" +  i for i in vcf_reader.sample_names])
         count += 1
 
-    all_sample_names.sort()
-    column_header.extend(all_sample_names)
+    patient_to_file_ordered = OrderedDict(sorted(patient_to_file.items(), key=lambda t: t[0]))
+
+    for i,patient in enumerate(patient_to_file_ordered):
+        all_headers.append(("##jacquard.merge.sample=<Column={0},"+
+                            "Name={1},Source={2}>")\
+                            .format(i+1, patient,
+                                    "|".join(patient_to_file[patient])))
+
+    sorted_all_sample_names = sorted(list(all_sample_names))
+    column_header.extend(sorted_all_sample_names)
     all_headers.append("\t".join(column_header))
 
-    return all_headers, all_sample_names
+    return all_headers, sorted_all_sample_names
 
 def add_subparser(subparser):
     #pylint: disable=line-too-long
