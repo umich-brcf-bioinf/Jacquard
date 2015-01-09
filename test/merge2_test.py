@@ -1,9 +1,8 @@
 #pylint: disable=missing-docstring,line-too-long,too-many-public-methods
 #pylint: disable=too-few-public-methods,too-many-instance-attributes
-#pylint: disable=too-many-arguments,invalid-name
+#pylint: disable=too-many-arguments,invalid-name,protected-access
 from collections import OrderedDict
 import os
-from sets import Set
 from testfixtures import TempDirectory
 import unittest
 
@@ -11,6 +10,7 @@ import jacquard.merge2 as merge2
 import jacquard.vcf as vcf
 import test_case as test_case
 from jacquard.vcf import VcfRecord
+import jacquard.utils as utils
 
 class MockVcfReader(object):
     def __init__(self,
@@ -53,7 +53,7 @@ class MockBufferedReader(object):
 
     def get_if_equals(self, requested_record):
         return self.vcf_records_iter.next()
-    
+
 class MockVcfRecord(object):
     @classmethod
     def parse_record(cls, vcf_line):
@@ -137,7 +137,6 @@ class MergeTestCase(unittest.TestCase):
                                         metaheaders=meta_headers,
                                         column_header='CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR',
                                         records=[])
-        
 
         actual_meta_headers = merge2._produce_merged_metaheaders(mock_vcf_reader, [], 1)
 
@@ -152,10 +151,10 @@ class MergeTestCase(unittest.TestCase):
 #                         '##FORMAT=<ID=JQ_VS_AF,Number=A,Type=Float,Description="foo",Source="Jacquard",Version=0.21>',
 #                         '##FORMAT=<Number=A,Type=Float,Description="foo",Source="Jacquard",Version=0.21,ID=JQ_SK_AF>',
 #                         '##contig=<ID=chr1,length=249350621,assembly=hg19']
-# 
+#
 #         actual_format_tags = merge2._extract_format_ids(meta_headers)
 #         expected_format_tags = Set(["JQ_MT_AF", "JQ_VS_AF", "JQ_SK_AF"])
-# 
+#
 #         self.assertEquals(expected_format_tags, actual_format_tags)
 
 #     def test_extract_format_ids_malformedMetaHeaders(self):
@@ -165,10 +164,10 @@ class MergeTestCase(unittest.TestCase):
 #                         '##FORMAT=<ID="JQ_SK_AF">',
 #                         '##FORMAT=<ID=JQ_VS_AF>',
 #                         '##FORMAT=<ID=JQ_VS_AF>']
-# 
+#
 #         actual_format_tags = merge2._extract_format_ids(meta_headers)
 #         expected_format_tags = Set(["JQ_SK2_AF", "JQ_VS_AF"])
-# 
+#
 #         self.assertEquals(expected_format_tags, actual_format_tags)
 
 
@@ -274,7 +273,6 @@ class MergeTestCase(unittest.TestCase):
         self.assertEquals("C", actual_record.alt)
         self.assertEquals("baseInfo", actual_record.info)
 
-    
     def test_build_merged_record_tagsOrdered(self):
         OD = OrderedDict
         coordinate = VcfRecord("chr1", "1", "A", "C", info="baseInfo")
@@ -342,44 +340,33 @@ class MergeTestCase(unittest.TestCase):
 #         reader3 = MockBufferedReader([record3])
 #         buffered_readers = [reader1, reader2, reader3]
 #         merged_record = VcfRecord("chr1", "1", "A", "C")
-# 
+#
 #         actual_sample_tag_values = merge2._get_tag_sample_values(buffered_readers, merged_record)
-# 
+#
 #         self.assertEqual(set(["foo", "bar"]), set(actual_sample_tag_values.keys()))
 #         self.assertEqual(OD({"SA":"A1","SB":"B1","SC":"C1","SD":"D1"}), actual_sample_tag_values["foo"])
 #         self.assertEqual(OD({"SA":"A2","SB":"B2","SC":"C2","SD":"D2"}), actual_sample_tag_values["bar"])
 
-    def Xtest_merge_records(self):
+    def test_merge_records(self):
         coordinates = [VcfRecord("chrom","pos","ref","alt")]
-        OD = OrderedDict 
+        OD = OrderedDict
         record1 = VcfRecord("chrom","pos","ref","alt", sample_tag_values=OD({"SA": OD({"foo":"A"}), "SB":OD({"foo":"B"})}))
         record2 = VcfRecord("chrom","pos","ref","alt", sample_tag_values=OD({"SC": OD({"foo":"C"}), "SD":OD({"foo":"D"})}))
         buffered_readers = [MockBufferedReader([record1]),MockBufferedReader([record2])]
         writer = MockFileWriter()
-        merge2._merge_records(coordinates, buffered_readers, writer)
-        self.assertEqual("chrom\tpos\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD",writer.written[0])
 
-    def Xtest_pull_matching_records(self):
+        merge2._merge_records(coordinates, buffered_readers, writer, ["SA", "SB", "SC", "SD"])
+        self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD\n",writer.written[0])
+
+    def test_pull_matching_records(self):
         coordinate = VcfRecord("chrom","pos","ref","alt")
-        OD = OrderedDict 
+        OD = OrderedDict
         record1 = VcfRecord("chrom","pos","ref","alt", sample_tag_values=OD({"SA": OD({"foo":"A"}), "SB":OD({"foo":"B"})}))
         record2 = VcfRecord("chrom","pos","ref","alt", sample_tag_values=OD({"SC": OD({"foo":"C"}), "SD":OD({"foo":"D"})}))
-        record3 = VcfRecord("chrom","foo","ref","alt", sample_tag_values=OD({"SC": OD({"foo":"C"}), "SD":OD({"foo":"D"})}))
-        buffered_readers = [MockBufferedReader([record1]),MockBufferedReader([record2]),MockBufferedReader([record3])]
+        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+
         vcf_records = merge2._pull_matching_records(coordinate, buffered_readers)
         self.assertEqual([record1, record2], vcf_records)
-
-    def Xtest_sort_coordinate_set_multAlts(self):
-        coordinate_dict = {"chr1^1^A": ["chr1^1^A^C"],
-                           "chr12^24^A": ["chr12^24^A^G"],
-                           "chr4^16^G": ["chr4^16^G^C"]}
-
-        sorted_coordinates = merge2._sort_coordinate_set(coordinate_dict)
-        expected_coordinates = OrderedDict([("chr1^1^A", ["chr1^1^A^C"]),
-                                            ("chr4^16^G", ["chr4^16^G^C"]),
-                                            ("chr12^24^A", ["chr12^24^A^G"])])
-
-        self.assertEquals(expected_coordinates, sorted_coordinates)
 
     def test_get_record_sample_data(self):
         mock_vcf_reader = MockVcfReader(content=["chr1\t1\t.\tA\tC\t.\t.\tINFO\tDP:AF\t42:0.23\t25:0.77",
@@ -394,6 +381,31 @@ class MergeTestCase(unittest.TestCase):
         expected_samples = {0: OrderedDict([("DP", "42"), ("AF", "0.23"), ("foo", ".")]),
                             1: OrderedDict([("DP", "25"), ("AF", "0.77"), ("foo", ".")])}
         self.assertEquals(expected_samples, samples)
+
+    def test_process_inputs(self):
+        with TempDirectory() as input_dir:
+            fileA = input_dir.write("fileA.vcf",
+                                    "##source=strelka\n"
+                                    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_A\tSample_B\n")
+            fileB = input_dir.write("fileB.vcf",
+                                    "##source=strelka\n"
+                                    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_C\tSample_D\n")
+            input_files = [fileA, fileB]
+            actual_meta_headers, actual_column_header = merge2._process_inputs(input_files)
+
+            expected_meta_headers = ['##source=strelka',
+                                     "##jacquard.merge.file1=fileA.vcf(['Sample_A', 'Sample_B'])",
+                                     '##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,Description="dbSNP Membership",Source="Jacquard",Version="{}">'.format(utils.__version__),
+                                     "##jacquard.merge.file2=fileB.vcf(['Sample_C', 'Sample_D'])"]
+            expected_column_header = ["#CHROM", "POS", "ID", "REF", "ALT",
+                                      "QUAL", "FILTER", "INFO", "FORMAT",
+                                      "fileA.vcf|Sample_A", "fileA.vcf|Sample_B",
+                                      "fileB.vcf|Sample_C", "fileB.vcf|Sample_D"]
+
+            self.assertEquals(4, len(actual_meta_headers))
+            self.assertEquals(expected_meta_headers, actual_meta_headers)
+            self.assertEquals(13, len(actual_column_header))
+            self.assertEquals(expected_column_header, actual_column_header)
 
 class Merge2FunctionalTestCase(test_case.JacquardBaseTestCase):
     def Xtest_merge2(self):

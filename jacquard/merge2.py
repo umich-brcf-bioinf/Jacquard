@@ -41,9 +41,12 @@ def _produce_merged_metaheaders(vcf_reader, all_meta_headers, count):
     samples = vcf_reader.column_header.split("\t")[9:]
     all_meta_headers.append("##jacquard.merge.file{0}={1}({2})"\
                             .format(count, vcf_reader.file_name, samples))
-    all_meta_headers.append('##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,'\
-                            'Description="dbSNP Membership",Source="Jacquard",'\
-                            'Version="{}">'.format(utils.__version__))
+    mult_alt_header = '##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,'\
+                      'Description="dbSNP Membership",Source="Jacquard",'\
+                      'Version="{}">'.format(utils.__version__)
+    if mult_alt_header not in all_meta_headers:
+        all_meta_headers.append(mult_alt_header)
+
     vcf_reader.close()
 
     return all_meta_headers
@@ -83,15 +86,6 @@ def _get_record_sample_data(vcf_record, format_tags):
 
     return all_samples
 
-#pylint: disable=line-too-long
-def add_subparser(subparser):
-    parser = subparser.add_parser("merge2", help="Accepts a directory of VCFs and returns a single merged VCF file.")
-    parser.add_argument("input", help="Path to directory containing VCFs. Other file types ignored")
-    parser.add_argument("output", help="Path to output variant-level VCF file")
-    parser.add_argument("-a", "--allow_inconsistent_sample_sets", action="store_true", default=False, help="Allow inconsistent sample sets across callers. Not recommended.")
-    parser.add_argument("-v", "--verbose", action='store_true')
-    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
-
 def _build_coordinates(vcf_readers):
     sample_list = []
     coordinate_set = OrderedDict()
@@ -113,7 +107,7 @@ def _build_coordinates(vcf_readers):
                                         vcf_record.pos,
                                         vcf_record.ref]
         if len(alts_for_this_locus) > 1:
-            #TODO (cgates): move this logic inside VcfRecord
+            #TODO: (cgates) move this logic inside VcfRecord
             info = vcf_record.info.split(";") if vcf_record.info != "." else []
             info.append("JQ_MULT_ALT_LOCUS")
             vcf_record.info = ";".join(info)
@@ -161,15 +155,19 @@ def _pull_matching_records(coordinate, buffered_readers):
         record = reader.get_if_equals(coordinate)
         if record:
             vcf_records.append(record)
+
     return vcf_records
 
 def _merge_records(coordinates, buffered_readers, writer, all_sample_names):
     for coordinate in coordinates:
         vcf_records = _pull_matching_records(coordinate, buffered_readers)
-        merged_record = _build_merged_record(coordinate, vcf_records, all_sample_names)
+        merged_record = _build_merged_record(coordinate,
+                                             vcf_records,
+                                             all_sample_names)
         writer.write(merged_record.asText())
 
-#TODO (cgates): Adjust to make better use of VcfReader; never parse outside of VcfReader/VcfRecord!
+#TODO (cgates): Adjust to make better use of VcfReader;
+#never parse outside of VcfReader/VcfRecord!
 def _process_inputs(input_files):
     all_metaheaders = []
     count = 1
@@ -181,12 +179,22 @@ def _process_inputs(input_files):
                                                       all_metaheaders,
                                                       count)
         column_header = vcf_reader.column_header.split("\t")[0:9]
-        samples.extend([vcf_reader.file_name + "|" +  i for i in vcf_reader.sample_names])
+        samples.extend([vcf_reader.file_name + "|" +  i for i in vcf_reader.\
+                        sample_names])
         count += 1
 
     column_header.extend(samples)
 
     return all_metaheaders, column_header
+
+def add_subparser(subparser):
+    #pylint: disable=line-too-long
+    parser = subparser.add_parser("merge2", help="Accepts a directory of VCFs and returns a single merged VCF file.")
+    parser.add_argument("input", help="Path to directory containing VCFs. Other file types ignored")
+    parser.add_argument("output", help="Path to output variant-level VCF file")
+    parser.add_argument("-a", "--allow_inconsistent_sample_sets", action="store_true", default=False, help="Allow inconsistent sample sets across callers. Not recommended.")
+    parser.add_argument("-v", "--verbose", action='store_true')
+    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
 def execute(args, execution_context):
     input_path = os.path.abspath(args.input)
