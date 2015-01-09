@@ -70,7 +70,7 @@ class VcfReader(object):
         return sample_names
 
     def _create_qualified_sample_names(self):
-        return ["|".join([self.file_name, i]) for i in self.sample_names]
+        return ["|".join([self.file_name.split(".")[0], i]) for i in self.sample_names]
 
     @property
     def metaheaders(self):
