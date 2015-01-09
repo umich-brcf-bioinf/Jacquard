@@ -1,6 +1,7 @@
 #pylint: disable=missing-docstring,line-too-long,too-many-public-methods
 #pylint: disable=too-few-public-methods,too-many-instance-attributes
 #pylint: disable=too-many-arguments,invalid-name,protected-access
+from argparse import Namespace
 from collections import OrderedDict
 import os
 from testfixtures import TempDirectory
@@ -406,6 +407,58 @@ class MergeTestCase(unittest.TestCase):
             self.assertEquals(expected_meta_headers, actual_meta_headers)
             self.assertEquals(13, len(actual_column_header))
             self.assertEquals(expected_column_header, actual_column_header)
+
+    def test_write_metaheaders(self):
+        mock_writer = MockFileWriter()
+        meta_headers = ["##foo", "##bar"]
+        column_header = ["#CHROM", "POS"]
+        exectution_context = ["##execution_context"]
+        merge2._write_metaheaders(mock_writer, meta_headers, column_header, exectution_context)
+
+        self.assertEquals(["##foo\n##bar\n##execution_context\n", "#CHROM\tPOS\n"], mock_writer.written)
+
+    def test_execute(self):
+        vcf_content1 = ('''##source=strelka
+##file1
+#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleA|SampleB
+chr1|1|.|A|C|.|.|INFO|FORMAT|A_1|B_1
+chr2|1|.|A|C|.|.|INFO|FORMAT|A_2|B_2
+''').replace('|', "\t")
+        vcf_content2 = ('''##source=strelka
+##file2
+#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleC|SampleD
+chr1|10|.|A|C|.|.|INFO|FORMAT|C_1|D_1
+chr2|10|.|A|C|.|.|INFO|FORMAT|C_2|D_2
+''').replace('|', "\t")
+
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("fileA.vcf", vcf_content1)
+            input_dir.write("fileB.vcf", vcf_content2)
+            args = Namespace(input=input_dir.path,
+                             output=os.path.join(output_dir.path, "fileC.vcf"))
+
+            merge2.execute(args, ["##extra_header1", "##extra_header2"])
+
+            output_dir.check("fileC.vcf")
+            with open(os.path.join(output_dir.path, "fileC.vcf")) as actual_output_file:
+                actual_output_lines = actual_output_file.readlines()
+
+        expected_output_headers = ["##source=strelka\n",
+                                   "##file1\n",
+                                   "##jacquard.merge.file1=fileA.vcf(['SampleA', 'SampleB'])\n",
+                                   '##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,Description="dbSNP Membership",Source="Jacquard",Version="0.21">\n',
+                                   "##file2\n",
+                                   "##jacquard.merge.file2=fileB.vcf(['SampleC', 'SampleD'])\n",
+                                   "##extra_header1\n",
+                                   "##extra_header2\n",
+                                   "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfileA.vcf|SampleA\tfileA.vcf|SampleB\tfileB.vcf|SampleC\tfileB.vcf|SampleD\n"]
+
+        self.assertEquals(13, len(actual_output_lines))
+        self.assertEquals(expected_output_headers, actual_output_lines[0:9])
+        self.assertEquals("chr1\t1\t.\tA\tC\t.\t.\t.\tFORMAT\tA_1\tB_1\t.\t.\n", actual_output_lines[9])
+        self.assertEquals("chr1\t10\t.\tA\tC\t.\t.\t.\tFORMAT\t.\t.\tC_1\tD_1\n", actual_output_lines[10])
+        self.assertEquals("chr2\t1\t.\tA\tC\t.\t.\t.\tFORMAT\tA_2\tB_2\t.\t.\n", actual_output_lines[11])
+        self.assertEquals("chr2\t10\t.\tA\tC\t.\t.\t.\tFORMAT\t.\t.\tC_2\tD_2\n", actual_output_lines[12])
 
 class Merge2FunctionalTestCase(test_case.JacquardBaseTestCase):
     def Xtest_merge2(self):
