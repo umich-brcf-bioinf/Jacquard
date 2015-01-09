@@ -47,13 +47,18 @@ class VcfReader(object):
         self._file_reader = file_reader
         (self.column_header, self._metaheaders) = self._read_headers()
         self.sample_names = self._init_sample_names()
+        self.qualified_sample_names = self._create_qualified_sample_names()
 
     def _init_sample_names(self):
         sample_names = []
         column_fields = self.column_header.split("\t")
         if column_fields > 8:
             sample_names = column_fields[9:]
+
         return sample_names
+
+    def _create_qualified_sample_names(self):
+        return ["|".join([self.file_name, i]) for i in self.sample_names]
 
     @property
     def metaheaders(self):
@@ -81,11 +86,14 @@ class VcfReader(object):
 
         return column_header, metaheaders
 
-    def vcf_records(self):
+    def vcf_records(self, qualified=False):
+        #pylint: disable=line-too-long
+        sample_names = self.qualified_sample_names if qualified else self.sample_names
+
         for line in self._file_reader.read_lines():
             if line.startswith("#"):
                 continue
-            yield VcfRecord.parse_record(line, self.sample_names)
+            yield VcfRecord.parse_record(line, sample_names)
 
     def open(self):
         self._file_reader.open()
@@ -96,7 +104,6 @@ class VcfReader(object):
 ## pylint: disable=too-many-instance-attributes
 # Alas, something must encapsulate the myriad VCF fields.
 class VcfRecord(object):
-
     EMPTY_SET = set()
 
     @classmethod
@@ -218,8 +225,8 @@ class VcfRecord(object):
 
         return "\t".join(stringifier) + "\n"
 
-#pylint: disable=line-too-long
     def _samples_match(self, new_sample_values):
+        #pylint: disable=line-too-long
         return set(new_sample_values.keys()) == set(self.sample_tag_values.keys())
 
     def add_sample_tag_value(self, tag_name, new_sample_values):

@@ -51,14 +51,12 @@ def _produce_merged_metaheaders(vcf_reader, all_meta_headers, count):
 
     return all_meta_headers
 
-def _write_metaheaders(file_writer,
-                       all_metaheaders,
-                       column_header,
-                       execution_context):
+def _write_metaheaders(file_writer, all_headers, execution_context):
+    column_header = all_headers.pop()
+    all_headers.extend(execution_context)
 
-    all_metaheaders.extend(execution_context)
-    file_writer.write("\n".join(all_metaheaders) + "\n")
-    file_writer.write("\t".join(column_header) + "\n")
+    file_writer.write("\n".join(all_headers) + "\n")
+    file_writer.write(column_header + "\n")
 
 def _create_reader_lists(input_files):
     buffered_readers = []
@@ -68,7 +66,9 @@ def _create_reader_lists(input_files):
         vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
         vcf_readers.append(vcf_reader)
         vcf_reader.open()
-        buffered_readers.append(GenericBufferedReader(vcf_reader.vcf_records()))
+
+        records = vcf_reader.vcf_records(qualified=True)
+        buffered_readers.append(GenericBufferedReader(records))
 
     return buffered_readers, vcf_readers
 
@@ -87,14 +87,14 @@ def _get_record_sample_data(vcf_record, format_tags):
     return all_samples
 
 def _build_coordinates(vcf_readers):
-    sample_list = []
+#     sample_list = []
     coordinate_set = OrderedDict()
     mult_alts = defaultdict(set)
 
     for vcf_reader in vcf_readers:
         try:
             vcf_reader.open()
-            sample_list.extend(vcf_reader.sample_names)
+#             sample_list.extend(vcf_reader.sample_names)
             for vcf_record in vcf_reader.vcf_records():
                 coordinate_set[(vcf_record.get_empty_record())] = 0
                 mult_alts[(vcf_record.chrom, vcf_record.pos, vcf_record.ref)]\
@@ -114,8 +114,9 @@ def _build_coordinates(vcf_readers):
 
     coordinate_list = coordinate_set.keys()
     coordinate_list.sort()
-    sample_list.sort()
-    return coordinate_list, sample_list
+#     sample_list.sort()
+
+    return coordinate_list
 
 def _build_merged_record(coordinate, vcf_records, all_sample_names):
     all_tags = set()
@@ -169,23 +170,24 @@ def _merge_records(coordinates, buffered_readers, writer, all_sample_names):
 #TODO (cgates): Adjust to make better use of VcfReader;
 #never parse outside of VcfReader/VcfRecord!
 def _process_inputs(input_files):
-    all_metaheaders = []
+    all_headers = []
     count = 1
-    samples = []
+    all_sample_names = []
 
     for input_file in input_files:
         vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
-        all_metaheaders = _produce_merged_metaheaders(vcf_reader,
-                                                      all_metaheaders,
-                                                      count)
+        all_headers = _produce_merged_metaheaders(vcf_reader,
+                                                  all_headers,
+                                                  count)
         column_header = vcf_reader.column_header.split("\t")[0:9]
-        samples.extend([vcf_reader.file_name + "|" +  i for i in vcf_reader.\
-                        sample_names])
+        all_sample_names.extend([vcf_reader.file_name + "|" +  i for i in vcf_reader.sample_names])
         count += 1
 
-    column_header.extend(samples)
+    all_sample_names.sort()
+    column_header.extend(all_sample_names)
+    all_headers.append("\t".join(column_header))
 
-    return all_metaheaders, column_header
+    return all_headers, all_sample_names
 
 def add_subparser(subparser):
     #pylint: disable=line-too-long
@@ -203,14 +205,13 @@ def execute(args, execution_context):
     file_writer = vcf.FileWriter(output_path)
     file_writer.open()
 
-    all_metaheaders, column_header = _process_inputs(input_files)
+    headers, all_sample_names = _process_inputs(input_files)
 
     _write_metaheaders(file_writer,
-                       all_metaheaders,
-                       column_header,
+                       headers,
                        execution_context)
     buffered_readers, vcf_readers = _create_reader_lists(input_files)
-    coordinates, all_sample_names = _build_coordinates(vcf_readers)
+    coordinates = _build_coordinates(vcf_readers)
     _merge_records(coordinates, buffered_readers, file_writer, all_sample_names)
 
     for vcf_reader in vcf_readers:
