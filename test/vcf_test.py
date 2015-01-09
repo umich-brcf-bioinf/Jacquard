@@ -303,7 +303,6 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
         self.output.close()
         sys.stderr = self.saved_stderr
 
-
     def test_init(self):
         file_contents = ["##metaheader1\n",
                          "##metaheader2\n",
@@ -331,7 +330,6 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
         actual_vcf_reader = VcfReader(mock_reader)
         self.assertEquals(["SampleA", "SampleB"], actual_vcf_reader.sample_names)
 
-
     def test_metaheadersAreImmutable(self):
         file_contents = ["##metaheader1\n",
                          "##metaheader2\n",
@@ -345,6 +343,52 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
         reader.metaheaders.append("foo")
 
         self.assertEquals(original_length, len(reader.metaheaders))
+
+    def test_format_tag_ids(self):
+        file_contents = ["##metaheader1\n",
+                         "##FORMAT=<ID=AF,Number=A,Type=Float,Description='Allele Frequency'>\n",
+                         "##FORMAT=<ID=DP,Number=1,Type=Integer,Description='Read Depth'>\n",
+                         self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
+                         self.entab("chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR\n"),
+                         self.entab("chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR")]
+        mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+        reader = VcfReader(mock_reader)
+
+        self.assertEquals(set(["AF", "DP"]), reader.format_tag_ids)
+
+    def test_format_tag_ids_idsAreUnique(self):
+        file_contents = ["##metaheader1\n",
+                         "##FORMAT=<ID=AF,Description='Allele Frequency 1'>\n",
+                         "##FORMAT=<ID=AF,Description='Allele Frequency 2'>\n",
+                         self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
+                         self.entab("chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR\n"),
+                         self.entab("chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR")]
+        mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+        reader = VcfReader(mock_reader)
+
+        self.assertEquals(set(["AF"]), reader.format_tag_ids)
+
+    def test_format_tag_ids_emptyWhenNoFormatTags(self):
+        file_contents = ["##metaheader1\n",
+                         "##INFO=<ID=AF,Number=A,Type=Float,Description='Allele Frequency'>\n",
+                         self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
+                         self.entab("chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR\n"),
+                         self.entab("chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR")]
+        mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+        reader = VcfReader(mock_reader)
+
+        self.assertEquals(set(), reader.format_tag_ids)
+
+    def test_format_tag_ids_immutable(self):
+        file_contents = ["##metaheader1\n",
+                         "##FORMAT=<ID=DP,Number=1,Type=Integer,Description='Read Depth'>\n",
+                         self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
+                         self.entab("chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR\n"),
+                         self.entab("chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR")]
+        mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+        reader = VcfReader(mock_reader)
+
+        self.assertIsInstance(reader.format_tag_ids, frozenset)
 
     def test_vcf_records(self):
         file_contents = ["##metaheader1\n",

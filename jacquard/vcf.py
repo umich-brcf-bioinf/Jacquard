@@ -42,11 +42,22 @@ class RecognizedVcfReader(object):
 #TODO cgates: add context management to open/close
 class VcfReader(object):
     '''Wraps a file reader, providing VCF metaheaders and records'''
+
+    @staticmethod
+    def _get_format_tag_ids(metaheader_strings):
+        ids = set()
+        for metaheader in metaheader_strings:
+            format_tag = re.match("^##FORMAT=.*[<,]ID=([^,]*)", metaheader)
+            if format_tag:
+                ids.add(format_tag.group(1))
+        return frozenset(ids)
+
     def __init__(self, file_reader):
         self.input_filepath = file_reader.input_filepath
         self.file_name = file_reader.file_name
         self._file_reader = file_reader
         (self.column_header, self._metaheaders) = self._read_headers()
+        self.format_tag_ids = VcfReader._get_format_tag_ids(self.metaheaders)
         self.sample_names = self._init_sample_names()
         self.qualified_sample_names = self._create_qualified_sample_names()
 
