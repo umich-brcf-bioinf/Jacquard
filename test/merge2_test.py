@@ -443,6 +443,25 @@ class MergeTestCase(unittest.TestCase):
 
         self.assertEquals(["##foo\n##bar\n##execution_context\n", "#CHROM\tPOS\n"], mock_writer.written)
 
+    def test_create_reader_lists(self):
+        with TempDirectory() as input_dir:
+            fileA = input_dir.write("fileA.vcf",
+                                    "##source=strelka\n"
+                                    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_A\tSample_B\n"
+                                    "chr1\t31\t.\tA\tT\t.\t.\t.\tDP\t23\t52\n")
+            fileB = input_dir.write("fileB.vcf",
+                                    "##source=strelka\n"
+                                    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_C\tSample_D\n"
+                                    "chr2\t32\t.\tA\tT\t.\t.\t.\tDP\t24\t53\n")
+            input_files = [fileA, fileB]
+            buffered_readers, vcf_readers = merge2._create_reader_lists(input_files)
+
+            for vcf_reader in vcf_readers:
+                vcf_reader.close()
+
+            self.assertEquals(2, len(buffered_readers))
+            self.assertEquals(2, len(vcf_readers))
+
     def xtest_execute(self):
         vcf_content1 = ('''##source=strelka
 ##file1

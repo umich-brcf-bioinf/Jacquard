@@ -41,6 +41,7 @@ def _produce_merged_metaheaders(vcf_reader, all_meta_headers, count):
     samples = vcf_reader.column_header.split("\t")[9:]
     all_meta_headers.append("##jacquard.merge.file{0}={1}({2})"\
                             .format(count, vcf_reader.file_name, samples))
+
     mult_alt_header = '##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,'\
                       'Description="dbSNP Membership",Source="Jacquard",'\
                       'Version="{}">'.format(utils.__version__)
@@ -87,14 +88,12 @@ def _get_record_sample_data(vcf_record, format_tags):
     return all_samples
 
 def _build_coordinates(vcf_readers):
-#     sample_list = []
     coordinate_set = OrderedDict()
     mult_alts = defaultdict(set)
 
     for vcf_reader in vcf_readers:
         try:
             vcf_reader.open()
-#             sample_list.extend(vcf_reader.sample_names)
             for vcf_record in vcf_reader.vcf_records():
                 coordinate_set[(vcf_record.get_empty_record())] = 0
                 mult_alts[(vcf_record.chrom, vcf_record.pos, vcf_record.ref)]\
@@ -114,7 +113,6 @@ def _build_coordinates(vcf_readers):
 
     coordinate_list = coordinate_set.keys()
     coordinate_list.sort()
-#     sample_list.sort()
 
     return coordinate_list
 
@@ -126,6 +124,7 @@ def _build_merged_record(coordinate, vcf_records, all_sample_names):
         for sample, tags in record.sample_tag_values.items():
             sparse_matrix[sample] = {}
             for tag, value in tags.items():
+                #TODO: only allow JQ tags right now
                 all_tags.add(tag)
                 sparse_matrix[sample][tag] = value
 
@@ -167,9 +166,10 @@ def _merge_records(coordinates, buffered_readers, writer, all_sample_names):
                                              all_sample_names)
         writer.write(merged_record.asText())
 
-#TODO (cgates): Adjust to make better use of VcfReader;
+#TODO: (cgates) Adjust to make better use of VcfReader;
 #never parse outside of VcfReader/VcfRecord!
 def _process_inputs(input_files):
+    #pylint: disable=line-too-long
     all_headers = []
     count = 1
     all_sample_names = []
