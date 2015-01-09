@@ -99,13 +99,13 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         record = VcfRecord.parse_record(input_line, sample_names=["sampleA", "sampleB"])
         desired_tags = ["FO*"]
         record.filter_sample_tag_values(desired_tags)
-        self.assertEquals({"sampleA":{"FOO":"A"},"sampleB":{"FOO":"C"}}, record.sample_tag_values)
+        self.assertEquals({"sampleA":{"FOO":"A"}, "sampleB":{"FOO":"C"}}, record.sample_tag_values)
 
         input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FOO:BAR|A:B|C:D\n")
         record = VcfRecord.parse_record(input_line, sample_names=["sampleA", "sampleB"])
         desired_tags = ["BA*"]
         record.filter_sample_tag_values(desired_tags)
-        self.assertEquals({"sampleA":{"BAR":"B"},"sampleB":{"BAR":"D"}}, record.sample_tag_values)
+        self.assertEquals({"sampleA":{"BAR":"B"}, "sampleB":{"BAR":"D"}}, record.sample_tag_values)
 
     def test_sample_tag_values_emptyDictWhenExplicitNullSampleData(self):
         input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|.|.|.\n")
