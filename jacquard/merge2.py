@@ -2,6 +2,8 @@
 from collections import defaultdict, OrderedDict
 import glob
 import os
+import re
+
 import utils as utils
 import vcf as vcf
 
@@ -116,7 +118,11 @@ def _build_coordinates(vcf_readers):
 
     return coordinate_list
 
-def _build_merged_record(coordinate, vcf_records, all_sample_names):
+def _build_merged_record(coordinate,
+                         vcf_records,
+                         all_sample_names,
+                         tags_to_keep):
+
     all_tags = set()
     sparse_matrix = {}
 
@@ -124,8 +130,9 @@ def _build_merged_record(coordinate, vcf_records, all_sample_names):
         for sample, tags in record.sample_tag_values.items():
             sparse_matrix[sample] = {}
             for tag, value in tags.items():
-                #TODO: only allow JQ tags right now
-                all_tags.add(tag)
+                for desired_tag in tags_to_keep:
+                    if re.match(desired_tag, tag):
+                        all_tags.add(tag)
                 sparse_matrix[sample][tag] = value
 
     full_matrix = OrderedDict()
@@ -158,12 +165,18 @@ def _pull_matching_records(coordinate, buffered_readers):
 
     return vcf_records
 
-def _merge_records(coordinates, buffered_readers, writer, all_sample_names):
+def _merge_records(coordinates,
+                   buffered_readers,
+                   writer,
+                   all_sample_names,
+                   tags_to_keep):
+
     for coordinate in coordinates:
         vcf_records = _pull_matching_records(coordinate, buffered_readers)
         merged_record = _build_merged_record(coordinate,
                                              vcf_records,
-                                             all_sample_names)
+                                             all_sample_names,
+                                             tags_to_keep)
         writer.write(merged_record.asText())
 
 #TODO: (cgates) Adjust to make better use of VcfReader;
@@ -205,6 +218,10 @@ def execute(args, execution_context):
     file_writer = vcf.FileWriter(output_path)
     file_writer.open()
 
+    ##(jebene) Since we're contemplating making this a command-line argument,
+    ##I didn't make this a global variable
+    tags_to_keep = ["JQ_*"]
+
     headers, all_sample_names = _process_inputs(input_files)
 
     _write_metaheaders(file_writer,
@@ -212,7 +229,12 @@ def execute(args, execution_context):
                        execution_context)
     buffered_readers, vcf_readers = _create_reader_lists(input_files)
     coordinates = _build_coordinates(vcf_readers)
-    _merge_records(coordinates, buffered_readers, file_writer, all_sample_names)
+
+    _merge_records(coordinates,
+                   buffered_readers,
+                   file_writer,
+                   all_sample_names,
+                   tags_to_keep)
 
     for vcf_reader in vcf_readers:
         vcf_reader.close()

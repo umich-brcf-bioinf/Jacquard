@@ -229,6 +229,27 @@ class MergeTestCase(unittest.TestCase):
         expected = [fileArec2, fileBrec1]
         self.assertEquals(expected, actual_multalts)
 
+    def test_build_merged_record_onlyKeepJQTags(self):
+        OD = OrderedDict
+        coordinate = VcfRecord("chr1", "1", "A", "C", info="baseInfo")
+        samples1 = OD({"SD": {"JQ_foo":"bar1",
+                              "blahJQ_": "bar2"},
+                       "SC": {"JQ_foo":"bar3",
+                              "blah":"bar4"}})
+        samples2 = OD({"SB": {"JQ_foo":"bar5"},
+                       "SA": {"JQ_foo":"bar6"}})
+        record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
+        record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
+
+        sample_list = ["SA", "SB", "SC", "SD"]
+        tags_to_keep = ["JQ_*"]
+        actual_record = merge2._build_merged_record(coordinate, [record1, record2], sample_list, tags_to_keep)
+
+        self.assertEquals(OD([("JQ_foo", "bar6")]), actual_record.sample_tag_values["SA"])
+        self.assertEquals(OD([("JQ_foo", "bar5")]), actual_record.sample_tag_values["SB"])
+        self.assertEquals(OD([("JQ_foo", "bar3")]), actual_record.sample_tag_values["SC"])
+        self.assertEquals(OD([("JQ_foo", "bar1")]), actual_record.sample_tag_values["SD"])
+
     def test_build_merged_record_preserveSampleNamesAndOrder(self):
         OD = OrderedDict
         coordinate = VcfRecord("chr1", "1", "A", "C", info="baseInfo")
@@ -240,7 +261,8 @@ class MergeTestCase(unittest.TestCase):
         record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
 
         sample_list = ["SD", "SA", "SC", "SB"]
-        actual_record = merge2._build_merged_record(coordinate, [record1, record2], sample_list)
+        tags_to_keep = ["foo"]
+        actual_record = merge2._build_merged_record(coordinate, [record1, record2], sample_list, tags_to_keep)
 
         self.assertEquals(sample_list,  actual_record.sample_tag_values.keys())
 
@@ -252,7 +274,8 @@ class MergeTestCase(unittest.TestCase):
         record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
 
         sample_list = ["SA", "SB", "SC", "SD"]
-        actual_record = merge2._build_merged_record(coordinate, [record1], sample_list)
+        tags_to_keep = ["foo"]
+        actual_record = merge2._build_merged_record(coordinate, [record1], sample_list, tags_to_keep)
 
         self.assertEquals(sample_list,  actual_record.sample_tag_values.keys())
 
@@ -266,7 +289,7 @@ class MergeTestCase(unittest.TestCase):
         record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
         record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
 
-        actual_record = merge2._build_merged_record(coordinate, [record1, record2], [])
+        actual_record = merge2._build_merged_record(coordinate, [record1, record2], [], [])
 
         self.assertEquals("chr1", actual_record.chrom)
         self.assertEquals("1", actual_record.pos)
@@ -288,7 +311,9 @@ class MergeTestCase(unittest.TestCase):
         record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
         record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
 
-        actual_record = merge2._build_merged_record(coordinate, [record1, record2], ["SA", "SB", "SC", "SD"])
+        sample_list = ["SA", "SB", "SC", "SD"]
+        tags_to_keep = ["foo", "bar"]
+        actual_record = merge2._build_merged_record(coordinate, [record1, record2], sample_list, tags_to_keep)
 
         self.assertEquals(OD([("bar", "A2"), ("foo", "A1")]), actual_record.sample_tag_values["SA"])
         self.assertEquals(OD([("bar", "B2"), ("foo", "B1")]), actual_record.sample_tag_values["SB"])
@@ -309,7 +334,9 @@ class MergeTestCase(unittest.TestCase):
         record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
         record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
 
-        actual_record = merge2._build_merged_record(coordinate, [record1, record2], ["SA", "SB", "SC", "SD"])
+        sample_list = ["SA", "SB", "SC", "SD"]
+        tags_to_keep = ["foo", "bar", "baz"]
+        actual_record = merge2._build_merged_record(coordinate, [record1, record2], sample_list, tags_to_keep)
 
         self.assertEquals("chr1", actual_record.chrom)
         self.assertEquals("1", actual_record.pos)
@@ -321,7 +348,6 @@ class MergeTestCase(unittest.TestCase):
         self.assertEquals(OD([("bar", "B2"), ("baz", "."), ("foo", "B1")]), actual_record.sample_tag_values["SB"])
         self.assertEquals(OD([("bar", "."), ("baz", "C1"), ("foo", ".")]), actual_record.sample_tag_values["SC"])
         self.assertEquals(OD([("bar", "."), ("baz", "D1"), ("foo", ".")]), actual_record.sample_tag_values["SD"])
-
 
 #     def test_get_sample_tag_values(self):
 #         OD = OrderedDict
@@ -356,7 +382,7 @@ class MergeTestCase(unittest.TestCase):
         buffered_readers = [MockBufferedReader([record1]),MockBufferedReader([record2])]
         writer = MockFileWriter()
 
-        merge2._merge_records(coordinates, buffered_readers, writer, ["SA", "SB", "SC", "SD"])
+        merge2._merge_records(coordinates, buffered_readers, writer, ["SA", "SB", "SC", "SD"], ["foo"])
         self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD\n",writer.written[0])
 
     def test_pull_matching_records(self):
@@ -382,31 +408,6 @@ class MergeTestCase(unittest.TestCase):
         expected_samples = {0: OrderedDict([("DP", "42"), ("AF", "0.23"), ("foo", ".")]),
                             1: OrderedDict([("DP", "25"), ("AF", "0.77"), ("foo", ".")])}
         self.assertEquals(expected_samples, samples)
-
-    def xtest_process_inputs(self):
-        with TempDirectory() as input_dir:
-            fileA = input_dir.write("fileA.vcf",
-                                    "##source=strelka\n"
-                                    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_A\tSample_B\n")
-            fileB = input_dir.write("fileB.vcf",
-                                    "##source=strelka\n"
-                                    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_C\tSample_D\n")
-            input_files = [fileA, fileB]
-            actual_meta_headers, actual_column_header = merge2._process_inputs(input_files)
-
-            expected_meta_headers = ['##source=strelka',
-                                     "##jacquard.merge.file1=fileA.vcf(['Sample_A', 'Sample_B'])",
-                                     '##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,Description="dbSNP Membership",Source="Jacquard",Version="{}">'.format(utils.__version__),
-                                     "##jacquard.merge.file2=fileB.vcf(['Sample_C', 'Sample_D'])"]
-            expected_column_header = ["#CHROM", "POS", "ID", "REF", "ALT",
-                                      "QUAL", "FILTER", "INFO", "FORMAT",
-                                      "fileA.vcf|Sample_A", "fileA.vcf|Sample_B",
-                                      "fileB.vcf|Sample_C", "fileB.vcf|Sample_D"]
-
-            self.assertEquals(4, len(actual_meta_headers))
-            self.assertEquals(expected_meta_headers, actual_meta_headers)
-            self.assertEquals(13, len(actual_column_header))
-            self.assertEquals(expected_column_header, actual_column_header)
 
     def test_process_inputs(self):
         with TempDirectory() as input_dir:
