@@ -265,9 +265,9 @@ class VcfRecord(object):
                 for desired_tag in desired_tags:
                     if re.match(desired_tag, tag):
                         new_sample_tag_values[sample][tag] = value
-                        
+
         self.sample_tag_values = new_sample_tag_values
-        
+
     def add_sample_tag_value(self, tag_name, new_sample_values):
         if tag_name in self.format_tags:
             msg = "New format value [{}] already exists.".format(tag_name)

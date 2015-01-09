@@ -115,6 +115,7 @@ def _build_coordinates(vcf_readers):
 
     return coordinate_list
 
+
 def _build_merged_record(coordinate,
                          vcf_records,
                          all_sample_names,
@@ -175,8 +176,6 @@ def _merge_records(coordinates,
                                              tags_to_keep)
         writer.write(merged_record.asText())
 
-#TODO: (cgates) Adjust to make better use of VcfReader;
-#never parse outside of VcfReader/VcfRecord!
 def _process_inputs(input_files):
     #pylint: disable=line-too-long
     all_headers = []
