@@ -466,18 +466,19 @@ class MergeTestCase(unittest.TestCase):
             self.assertEquals(2, len(buffered_readers))
             self.assertEquals(2, len(vcf_readers))
 
-    def xtest_execute(self):
+    def test_execute(self):
         vcf_content1 = ('''##source=strelka
 ##file1
 #CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleA|SampleB
-chr1|1|.|A|C|.|.|INFO|FORMAT|A_1|B_1
-chr2|1|.|A|C|.|.|INFO|FORMAT|A_2|B_2
+chr1|1|.|A|C|.|.|INFO|JQ_FORMAT|A_1|B_1
+chr1|1|.|A|T|.|.|INFO|JQ_FORMAT|A_1|B_1
+chr2|1|.|A|C|.|.|INFO|JQ_FORMAT|A_2|B_2
 ''').replace('|', "\t")
         vcf_content2 = ('''##source=strelka
 ##file2
 #CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleC|SampleD
-chr1|10|.|A|C|.|.|INFO|FORMAT|C_1|D_1
-chr2|10|.|A|C|.|.|INFO|FORMAT|C_2|D_2
+chr1|10|.|A|C|.|.|INFO|JQ_FORMAT|C_1|D_1
+chr2|10|.|A|C|.|.|INFO|JQ_FORMAT|C_2|D_2
 ''').replace('|', "\t")
 
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
@@ -502,15 +503,16 @@ chr2|10|.|A|C|.|.|INFO|FORMAT|C_2|D_2
                                    "##extra_header2\n",
                                    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfileA.vcf|SampleA\tfileA.vcf|SampleB\tfileB.vcf|SampleC\tfileB.vcf|SampleD\n"]
 
-        self.assertEquals(13, len(actual_output_lines))
+        self.assertEquals(14, len(actual_output_lines))
         self.assertEquals(expected_output_headers, actual_output_lines[0:9])
-        self.assertEquals("chr1\t1\t.\tA\tC\t.\t.\t.\tFORMAT\tA_1\tB_1\t.\t.\n", actual_output_lines[9])
-        self.assertEquals("chr1\t10\t.\tA\tC\t.\t.\t.\tFORMAT\t.\t.\tC_1\tD_1\n", actual_output_lines[10])
-        self.assertEquals("chr2\t1\t.\tA\tC\t.\t.\t.\tFORMAT\tA_2\tB_2\t.\t.\n", actual_output_lines[11])
-        self.assertEquals("chr2\t10\t.\tA\tC\t.\t.\t.\tFORMAT\t.\t.\tC_2\tD_2\n", actual_output_lines[12])
+        self.assertEquals("chr1\t1\t.\tA\tC\t.\t.\tJQ_MULT_ALT_LOCUS\tJQ_FORMAT\tA_1\tB_1\t.\t.\n", actual_output_lines[9])
+        self.assertEquals("chr1\t1\t.\tA\tT\t.\t.\tJQ_MULT_ALT_LOCUS\tJQ_FORMAT\tA_1\tB_1\t.\t.\n", actual_output_lines[10])
+        self.assertEquals("chr1\t10\t.\tA\tC\t.\t.\t.\tJQ_FORMAT\t.\t.\tC_1\tD_1\n", actual_output_lines[11])
+        self.assertEquals("chr2\t1\t.\tA\tC\t.\t.\t.\tJQ_FORMAT\tA_2\tB_2\t.\t.\n", actual_output_lines[12])
+        self.assertEquals("chr2\t10\t.\tA\tC\t.\t.\t.\tJQ_FORMAT\t.\t.\tC_2\tD_2\n", actual_output_lines[13])
 
 class Merge2FunctionalTestCase(test_case.JacquardBaseTestCase):
-    def xtest_merge2(self):
+    def test_merge2(self):
         with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir, "functional_tests", "04_merge2")
