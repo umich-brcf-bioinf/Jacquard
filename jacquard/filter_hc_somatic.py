@@ -10,7 +10,9 @@ import vcf as vcf
 import logger as logger
 from collections import defaultdict
 
-#TODO (cgates): refactor this as a stats object that collects info in the main processing loop
+#TODO: (cgates): This class contains lots of file parsing/processing which should be using vcfReader structures
+
+#TODO: (cgates): refactor this as a stats object that collects info in the main processing loop
 def _iterate_file(vcf_reader, num_records, somatic_positions, somatic):
     filtered_records = 0
     vcf_reader.open()
@@ -122,12 +124,12 @@ def _write_somatic(in_files, output_dir, somatic_positions, execution_context):
         headers.append(excluded_variants)
         headers.extend(execution_context)
 
-        sorted_headers = utils.sort_headers(headers)
-        for i,header in enumerate(sorted_headers):
-            if not header.endswith("\n") and i!=len(sorted_headers)-1:
-                sorted_headers[i]+="\n"
+        sorted_headers = _sort_headers(headers)
+        for i, header in enumerate(sorted_headers):
+            if not header.endswith("\n") and i != len(sorted_headers) - 1:
+                sorted_headers[i] += "\n"
 
-        utils.write_output(out_file, sorted_headers, actual_sorted_variants)
+        _write_output(out_file, sorted_headers, actual_sorted_variants)
         total_number_of_calls += len(actual_sorted_variants)
 
         in_file.close()
@@ -141,7 +143,7 @@ def _write_somatic(in_files, output_dir, somatic_positions, execution_context):
                 output_dir)
 
 def filter_somatic_positions(input_dir, output_dir, execution_context=[]):
-    in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
+    in_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
     if len(in_files) < 1:
         logger.error("Specified input directory [{}] contains no VCF files. "
                      "Check parameters and try again.", input_dir)
@@ -164,6 +166,29 @@ def add_subparser(subparser):
     parser.add_argument("output", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+
+
+def _write_output(writer, headers, actual_sorted_variants):
+    for line in headers:
+        writer.write(line)
+    for line in actual_sorted_variants:
+        writer.write(line)
+
+
+def _sort_headers(headers):
+    meta_headers = []
+    field_header = ""
+    for header in headers:
+        if header.startswith("##"):
+            header = header.replace("\t", "")
+            meta_headers.append(header)
+        else:
+            field_header = header
+
+    meta_headers.append(field_header)
+
+    return meta_headers
+
 
 def execute(args, execution_context): 
     input_dir = os.path.abspath(args.input)

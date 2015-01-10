@@ -82,29 +82,6 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
             self.assertEqual(cm.exception.code, 1)
             global mock_log_called
             self.assertTrue(mock_log_called)
-#             self.assertRegexpMatches(self.output.getvalue(),
-#                                      r"Output directory \[.*\] could not be created. Check parameters and try again")
-
-class WriteOutputTestCase(unittest.TestCase):
-    def test_writeOutput(self):
-        mock_writer = MockWriter()
-        headers = ["#foo", "#bar"]
-        actual_sorted_variants = ["123", "456"]
-
-        utils.write_output(mock_writer, headers, actual_sorted_variants)
-        actualLines = mock_writer.lines()
-
-        self.assertEqual("#foo", actualLines[0])
-        self.assertEqual("#bar", actualLines[1])
-        self.assertEqual("123", actualLines[2])
-        self.assertEqual("456", actualLines[3])
-
-class SortTestCase(unittest.TestCase):
-    def test_sort_sortHeaders(self):
-        headers = ["##foo", "##bar", "#CHROM", "##baz"]
-        sorted_headers = utils.sort_headers(headers)
-        expected_sorted_headers = ["##foo", "##bar", "##baz", "#CHROM"]
-        self.assertEqual(expected_sorted_headers, sorted_headers)
 
 def is_windows_os():
     return sys.platform.lower().startswith("win")

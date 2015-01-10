@@ -5,7 +5,7 @@ from StringIO import StringIO
 import sys
 
 from testfixtures import TempDirectory
-from jacquard.filter_hc_somatic import _write_somatic, _find_somatic_positions
+from jacquard.filter_hc_somatic import _write_somatic, _find_somatic_positions, _sort_headers, _write_output
 import jacquard.logger as logger
 import test_case as test_case
 
@@ -146,6 +146,40 @@ class FilterSomaticTestCase(unittest.TestCase):
             self.assertEqual(["mutect_HCsomatic.vcf", "varscan_HCsomatic.vcf"], output_dir.actual())
             self.assertIn("Filtered to [1] calls in high-confidence loci.", mock_log_messages)
 
+    def test_sort_sortHeaders(self):
+        headers = ["##foo", "##bar", "#CHROM", "##baz"]
+        sorted_headers = _sort_headers(headers)
+        expected_sorted_headers = ["##foo", "##bar", "##baz", "#CHROM"]
+        self.assertEqual(expected_sorted_headers, sorted_headers)
+
+
+    def test_writeOutput(self):
+        mock_writer = MockWriter()
+        headers = ["#foo", "#bar"]
+        actual_sorted_variants = ["123", "456"]
+
+        _write_output(mock_writer, headers, actual_sorted_variants)
+        actualLines = mock_writer.lines()
+
+        self.assertEqual("#foo", actualLines[0])
+        self.assertEqual("#bar", actualLines[1])
+        self.assertEqual("123", actualLines[2])
+        self.assertEqual("456", actualLines[3])
+
+
+class MockWriter(object):
+    def __init__(self):
+        self._content = []
+        self.wasClosed = False
+
+    def write(self, content):
+        self._content.extend(content.splitlines())
+
+    def lines(self):
+        return self._content
+
+    def close(self):
+        self.wasClosed = True
 class FilterHCSomaticFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_filter_hc_somatic(self):
         with TempDirectory() as output_dir:

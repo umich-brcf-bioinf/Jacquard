@@ -2,10 +2,14 @@
 from collections import defaultdict, OrderedDict
 import glob
 import os
-import re
 
 import utils as utils
 import vcf as vcf
+
+MULT_ALT_HEADER = ('##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,'
+                   'Description="dbSNP Membership",Source="Jacquard",'
+                   'Version="{}">').format(utils.__version__)
+
 
 # pylint: disable=too-few-public-methods
 # This class must capture the state of the incoming iterator and provide
@@ -33,24 +37,12 @@ class GenericBufferedReader(object):
         except StopIteration:
             return None
 
-def _produce_merged_metaheaders(vcf_reader, all_meta_headers, count):
-    vcf_reader.open()
-    for meta_header in vcf_reader.metaheaders:
-        if meta_header not in all_meta_headers:
-#             if re.search('##FORMAT=.*Source="Jacquard")', meta_header):
-            all_meta_headers.append(meta_header)
-
-    samples = vcf_reader.column_header.split("\t")[9:]
-#     all_meta_headers.append("##jacquard.merge.file{0}={1}({2})"\
-#                             .format(count, vcf_reader.file_name, samples))
-
-    mult_alt_header = '##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,'\
-                      'Description="dbSNP Membership",Source="Jacquard",'\
-                      'Version="{}">'.format(utils.__version__)
-    if mult_alt_header not in all_meta_headers:
-        all_meta_headers.append(mult_alt_header)
-
-    vcf_reader.close()
+def _merge_existing_metaheaders(vcf_readers):
+    all_meta_headers = utils.OrderedSet()
+    for vcf_reader in vcf_readers:
+        for meta_header in vcf_reader.metaheaders:
+            all_meta_headers.add(meta_header)
+    all_meta_headers.add(MULT_ALT_HEADER)
 
     return all_meta_headers
 
@@ -177,16 +169,16 @@ def _merge_records(coordinates,
                                              tags_to_keep)
         writer.write(merged_record.asText())
 
-def _process_inputs(input_files):
-    #pylint: disable=line-too-long
-    all_headers = []
-    count = 1
+
+def _process_headers(vcf_readers):
+    all_headers = utils.OrderedSet()
     all_sample_names = set()
     patient_to_file = defaultdict(list)
 
-    for input_file in input_files:
-        vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
+    for metaheader in _merge_existing_metaheaders(vcf_readers):
+        all_headers.add(metaheader)
 
+    for vcf_reader in vcf_readers:
         patient = vcf_reader.file_name.split(".")[0]
         patient_samples = [patient + "|" +  i for i in vcf_reader.sample_names]
 
@@ -194,26 +186,32 @@ def _process_inputs(input_files):
             all_sample_names.add(patient_sample)
             patient_to_file[patient_sample].append(vcf_reader.file_name)
 
-        all_headers = _produce_merged_metaheaders(vcf_reader,
-                                                  all_headers,
-                                                  count)
-
+        #TODO: (cgates) Could we use a constant instead of parsing inside a loop?
         column_header = vcf_reader.column_header.split("\t")[0:9]
-        count += 1
 
-    patient_to_file_ordered = OrderedDict(sorted(patient_to_file.items(), key=lambda t: t[0]))
+    patient_to_file_ordered = OrderedDict(sorted(patient_to_file.items(),
+                                                 key=lambda t: t[0]))
 
-    for i,patient in enumerate(patient_to_file_ordered):
-        all_headers.append(("##jacquard.merge.sample=<Column={0},"+
-                            "Name={1},Source={2}>")\
-                            .format(i+1, patient,
-                                    "|".join(patient_to_file[patient])))
+    merge_metaheaders = _build_merge_metaheaders(patient_to_file_ordered)
+    for metaheader in merge_metaheaders:
+        all_headers.add(metaheader)
 
     sorted_all_sample_names = sorted(list(all_sample_names))
     column_header.extend(sorted_all_sample_names)
-    all_headers.append("\t".join(column_header))
+    all_headers.add("\t".join(column_header))
 
-    return all_headers, sorted_all_sample_names
+    return list(all_headers), sorted_all_sample_names
+
+
+def _build_merge_metaheaders(patient_to_file):
+    metaheaders = []
+    metaheader_fmt = "##jacquard.merge.sample=<Column={0},Name={1},Source={2}>"
+    for i, patient in enumerate(patient_to_file):
+        filenames_string = "|".join(patient_to_file[patient])
+        metaheader = metaheader_fmt.format(i+1, patient, filenames_string)
+        metaheaders.append(metaheader)
+    return metaheaders
+
 
 def add_subparser(subparser):
     #pylint: disable=line-too-long
@@ -235,12 +233,13 @@ def execute(args, execution_context):
     ##I didn't make this a global variable
     tags_to_keep = ["JQ_*"]
 
-    headers, all_sample_names = _process_inputs(input_files)
+    buffered_readers, vcf_readers = _create_reader_lists(input_files)
+    headers, all_sample_names = _process_headers(vcf_readers)
+
 
     _write_metaheaders(file_writer,
                        headers,
                        execution_context)
-    buffered_readers, vcf_readers = _create_reader_lists(input_files)
     coordinates = _build_coordinates(vcf_readers)
 
     _merge_records(coordinates,
