@@ -1,7 +1,7 @@
-# pylint: disable=C0111
+from __future__ import print_function, absolute_import
+import jacquard.utils as utils
 import numpy as np
 
-import jacquard.utils as utils
 
 JQ_CONSENSUS_TAG = "JQ_CONS_"
 
@@ -49,7 +49,7 @@ def _calculate_average(tags):
     rounded_tags = []
 
     for i in xrange(len(tag_array[0,])):
-        tag_values = tag_array.astype(float)[:,i]
+        tag_values = tag_array.astype(float)[:, i]
         rounded_tag = _round_two_digits(str(np.mean(tag_values)))
         rounded_tags.append(rounded_tag)
 
@@ -62,7 +62,7 @@ def _calculate_range(tags, all_ranges):
         tag_range = []
 
         for i in xrange(len(cons_tag_array[0,])):
-            tag_values = cons_tag_array.astype(float)[:,i]
+            tag_values = cons_tag_array.astype(float)[:, i]
             this_tag_range = np.max(tag_values) - np.min(tag_values)
             rounded_tag_range = _round_two_digits(str(this_tag_range))
             tag_range.append(rounded_tag_range)
@@ -127,7 +127,7 @@ def _calculate_count(tags):
 
     return ",".join(counts)
 
-class _AlleleFreqTag():
+class _AlleleFreqTag(object):
     def __init__(self):
         self.metaheader = self._get_metaheader()
         self.all_ranges = []
@@ -169,21 +169,21 @@ class _AlleleFreqTag():
                                                                 self.all_ranges)
 
         vcf_record.add_sample_tag_value(JQ_CONSENSUS_TAG + "AF_AVERAGE",
-                                      tag_consensus)
+                                        tag_consensus)
         vcf_record.add_sample_tag_value(JQ_CONSENSUS_TAG + "AF_RANGE",
-                                      tag_range)
+                                        tag_range)
 
     def insert_zscore(self, vcf_record, pop_mean_range, pop_std_range):
         tag = JQ_CONSENSUS_TAG + "AF_RANGE"
         zscore_dict = _calculate_zscore(vcf_record,
-                                       tag,
-                                       pop_mean_range,
-                                       pop_std_range)
+                                        tag,
+                                        pop_mean_range,
+                                        pop_std_range)
 
         vcf_record.add_sample_tag_value(JQ_CONSENSUS_TAG + "AF_ZSCORE",
-                                       zscore_dict)
+                                        zscore_dict)
 
-class _DepthTag():
+class _DepthTag(object):
     def __init__(self):
         self.metaheader = self._get_metaheader()
         self.all_ranges = []
@@ -240,7 +240,8 @@ class _DepthTag():
         vcf_record.add_sample_tag_value(JQ_CONSENSUS_TAG + "DP_ZSCORE",
                                         zscore_dict)
 
-class _SomaticTag():
+#pylint: disable=too-few-public-methods
+class _SomaticTag(object):
     def __init__(self):
         self.metaheader = self._get_metaheader()
         self.all_ranges = []

@@ -1,10 +1,11 @@
 # pylint: disable=missing-docstring
+from __future__ import print_function, absolute_import
 from collections import defaultdict, OrderedDict
 import glob
+import jacquard.utils as utils
+import jacquard.vcf as vcf
 import os
 
-import utils as utils
-import vcf as vcf
 
 MULT_ALT_HEADER = ('##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,'
                    'Description="dbSNP Membership",Source="Jacquard",'
@@ -234,14 +235,15 @@ def execute(args, execution_context):
     tags_to_keep = ["JQ_*"]
 
     buffered_readers, vcf_readers = _create_reader_lists(input_files)
+    #TODO: (cgates): this should return tags_to_keep list based on filtered set of actual found FORMAT tags
     headers, all_sample_names = _process_headers(vcf_readers)
-
 
     _write_metaheaders(file_writer,
                        headers,
                        execution_context)
     coordinates = _build_coordinates(vcf_readers)
 
+    #TODO: (cgates): this must accept tags_to_keep
     _merge_records(coordinates,
                    buffered_readers,
                    file_writer,

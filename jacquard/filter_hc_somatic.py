@@ -1,16 +1,14 @@
-# pylint: disable=C0111
-# pylint: disable-msg=W0403
+from __future__ import print_function, absolute_import
+from collections import defaultdict
 import glob
+import jacquard.logger as logger
+import jacquard.utils as utils
+import jacquard.variant_callers.variant_caller_factory as variant_caller_factory
+import jacquard.vcf as vcf
 import os
 import re
 
-import utils
-import variant_callers.variant_caller_factory as variant_caller_factory
-import vcf as vcf
-import logger as logger
-from collections import defaultdict
-
-#TODO: (cgates): This class contains lots of file parsing/processing which should be using vcfReader structures
+#TODO: (cgates): This module contains lots of file parsing/processing which should be using vcfReader structures
 
 #TODO: (cgates): refactor this as a stats object that collects info in the main processing loop
 def _iterate_file(vcf_reader, num_records, somatic_positions, somatic):
@@ -66,7 +64,7 @@ def _find_somatic_positions(in_files):
         count += 1
 
     total_filtered_records = 0
-    
+
     for caller in callers:
         total_filtered_records += callers[caller]
         if callers[caller]:
@@ -190,7 +188,7 @@ def _sort_headers(headers):
     return meta_headers
 
 
-def execute(args, execution_context): 
+def execute(args, execution_context):
     input_dir = os.path.abspath(args.input)
     output_dir = os.path.abspath(args.output)
 

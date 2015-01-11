@@ -1,8 +1,7 @@
-#!/usr/bin/env python2.7
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 from datetime import datetime
-import logging
 import getpass
+import logging
 import os
 import socket
 import sys

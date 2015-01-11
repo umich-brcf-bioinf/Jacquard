@@ -1,3 +1,4 @@
+from __future__ import print_function, absolute_import
 import jacquard.utils as utils
 import re
 import os
@@ -6,8 +7,15 @@ JQ_MUTECT_TAG = "JQ_MT_"
 
 #pylint: disable=too-few-public-methods
 class _AlleleFreqTag(object):
+#pylint: disable=line-too-long
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID={0}AF,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)",Source="Jacquard",Version={1}>'.format(JQ_MUTECT_TAG, utils.__version__)
+        self.metaheader = ('##FORMAT=<ID={0}AF,'
+                           'Number=A,'
+                           'Type=Float,'
+                           'Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)",'
+                           'Source="Jacquard",'
+                           'Version={1}>').format(JQ_MUTECT_TAG,
+                                                  utils.__version__)
 
     def format(self, vcf_record):
         if "FA" in vcf_record.format_tags:
@@ -17,7 +25,8 @@ class _AlleleFreqTag(object):
                 sample_values[sample] = self._roundTwoDigits(freq)
             vcf_record.add_sample_tag_value(JQ_MUTECT_TAG + "AF", sample_values)
 
-    def _roundTwoDigits(self, value):
+    @staticmethod
+    def _roundTwoDigits(value):
         new_values = []
         for val in value:
             if len(val.split(".")[1]) <= 2:
@@ -27,8 +36,15 @@ class _AlleleFreqTag(object):
         return ",".join(new_values)
 
 class _DepthTag(object):
+    #pylint: disable=line-too-long
     def __init__(self):
-        self.metaheader = '##FORMAT=<ID={0}DP,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP)",Source="Jacquard",Version={1}>'.format(JQ_MUTECT_TAG, utils.__version__)
+        self.metaheader = ('##FORMAT=<ID={0}DP,'
+                           'Number=1,'
+                           'Type=Float,'
+                           'Description="Jacquard depth for MuTect (based on DP)",'
+                           'Source="Jacquard",'
+                           'Version={1}>').format(JQ_MUTECT_TAG,
+                                                  utils.__version__)
 
     def format(self, vcf_record):
         if "DP" in vcf_record.format_tags:
@@ -37,7 +53,8 @@ class _DepthTag(object):
                 sample_values[sample] = vcf_record.sample_tag_values[sample]["DP"]
             vcf_record.add_sample_tag_value(JQ_MUTECT_TAG + "DP", sample_values)
 
-class _SomaticTag():
+class _SomaticTag(object):
+    #pylint: disable=line-too-long
     def __init__(self):
         self.metaheader = ('##FORMAT=<ID={0}HC_SOM,'
                            'Number=1,'
@@ -59,35 +76,37 @@ class _SomaticTag():
                 sample_values[sample] = "0"
         vcf_record.add_sample_tag_value(mutect_tag, sample_values)
 
-    def _somatic_status(self, ss_value):
+    @staticmethod
+    def _somatic_status(ss_value):
         if ss_value == "2":
             return "1"
         else:
             return "0"
 
-class Mutect():
+class Mutect(object):
     def __init__(self):
         self.name = "MuTect"
-        self.tags = [_AlleleFreqTag(),_DepthTag(),_SomaticTag()]
+        self.tags = [_AlleleFreqTag(), _DepthTag(), _SomaticTag()]
         self.file_name_search = ""
-        
-    def _get_mutect_cmd_parameters(self, line, mutect_dict):
+
+    @staticmethod
+    def _get_mutect_cmd_parameters(line, mutect_dict):
         split_line = line.split(" ")
-        
+
         for item in split_line:
             split_item = item.split("=")
             try:
                 mutect_dict[split_item[0]] = split_item[1]
-            except:
+            except IndexError:
                 pass
 
         return mutect_dict
 
     def decorate_files(self, filenames, decorator):
         output_file = None
-        for i in xrange(len(filenames)):
-            output_file = os.path.basename(re.sub(r"\.vcf$", "." + decorator + ".vcf",
-                                                  filenames[i]))
+        for file_name in filenames:
+            name = re.sub(r"\.vcf$", "." + decorator + ".vcf", file_name)
+            output_file = os.path.basename(name)
         return output_file
 
     def validate_vcfs_in_directory(self, in_files):
@@ -95,12 +114,12 @@ class Mutect():
             if not in_file.lower().endswith("vcf"):
                 raise utils.JQException("ERROR: Non-VCF file in directory. "
                                         "Check parameters and try again")
-#         
+
     def normalize(self, file_writer, file_readers):
         if len(file_readers) != 1:
-                raise utils.JQException("MuTect directories should have exactly "
-                                        "one input file per patient, but "
-                                        "found [{}].".format(len(file_readers)))
+            raise utils.JQException(("MuTect directories should have exactly "
+                                     "one input file per patient, but "
+                                     "found [{}].").format(len(file_readers)))
         file_writer.open()
         for file_reader in file_readers:
             file_reader.open()
@@ -108,7 +127,8 @@ class Mutect():
             mutect_dict = {}
             for line in file_reader.read_lines():
                 if "##MuTect=" in line:
-                    mutect_dict = self._get_mutect_cmd_parameters(line, mutect_dict)
+                    mutect_dict = self._get_mutect_cmd_parameters(line,
+                                                                  mutect_dict)
                 if "#CHROM" in line:
                     if "normal_sample_name" in mutect_dict and "tumor_sample_name" in mutect_dict:
                         line = re.sub(mutect_dict["normal_sample_name"], "NORMAL", line)
@@ -132,10 +152,9 @@ class Mutect():
             if "##MuTect" in line:
                 valid = 1
                 break
+        return valid
 
-        return (valid)
-
-    def add_tags(self,vcf_record):
+    def add_tags(self, vcf_record):
         for tag in self.tags:
             tag.format(vcf_record)
         return vcf_record.asText()

@@ -1,11 +1,11 @@
+from __future__ import print_function, absolute_import
 from collections import OrderedDict
 import glob
+import jacquard.logger as logger
+import jacquard.utils as utils
+import jacquard.vcf as vcf
 import os
 import re
-
-import logger as logger
-import utils as utils
-import vcf as vcf
 
 def _read_col_spec(col_spec):
     if not os.path.isfile(col_spec):
@@ -227,6 +227,11 @@ def add_subparser(subparser):
     parser.add_argument("-c", "--column_specification", help="Path to text file containing column regular expressions to be included in output file")
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
+#pylint: disable=unused-argument
+# Command signatures must be consistent and execution not appropriate to write to output file
+# In the future, execution context may be written to glossary
+#TODO: (cgates): Leave the file handling in execute and delegate the meat to
+#another method to separate concerns (and expedite testing)
 def execute(args, execution_context):
     input_path = os.path.abspath(args.input)
     output_path = os.path.abspath(args.output)

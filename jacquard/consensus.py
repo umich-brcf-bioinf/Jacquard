@@ -1,16 +1,16 @@
-# pylint: disable=C0111
+from __future__ import print_function, absolute_import
 import os
 
-from variant_callers import consensus_helper
-import vcf as vcf
-import utils as utils
-import logger as logger
+from jacquard.variant_callers import consensus_helper
+import jacquard.vcf as vcf
+import jacquard.utils as utils
+import jacquard.logger as logger
 
 def _write_metaheaders(cons_helper,
                        vcf_reader,
                        file_writer,
-                       execution_context = 0,
-                       new_meta_headers = 0):
+                       execution_context=0,
+                       new_meta_headers=0):
 
     new_headers = vcf_reader.metaheaders
 
@@ -116,11 +116,11 @@ def execute(args, execution_context):
             output_file = output
     else:
         utils.validate_directories(os.path.dirname(input_file), output)
-        output_file = os.path.join(output,"consensus.vcf")
+        output_file = os.path.join(output, "consensus.vcf")
 
     cons_helper = consensus_helper.ConsensusHelper()
 
-    vcf_reader =  vcf.VcfReader(vcf.FileReader(input_file))
+    vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
     tmp_output_file = output_file + ".tmp"
     tmp_writer = vcf.FileWriter(tmp_output_file)
 

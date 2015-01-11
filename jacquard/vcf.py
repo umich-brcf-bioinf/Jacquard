@@ -1,11 +1,11 @@
 # pylint: disable=missing-docstring
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 from collections import OrderedDict, defaultdict
 import re
 import os
 import sys
 
-import utils
+import jacquard.utils as utils
 
 class RecognizedVcfReader(object):
     '''VcfReader with recognized caller'''
@@ -39,7 +39,9 @@ class RecognizedVcfReader(object):
         return self._vcf_reader.vcf_records()
 
 
-#TODO cgates: add context management to open/close
+#TODO: (cgates): add context management to open/close
+#TODO: (cgates): Do we need filepath and file_name? COuld one be derived?
+#Why distinct conventions for these variables?
 class VcfReader(object):
     '''Wraps a file reader, providing VCF metaheaders and records'''
 
@@ -70,7 +72,11 @@ class VcfReader(object):
         return sample_names
 
     def _create_qualified_sample_names(self):
-        return ["|".join([self.file_name.split(".")[0], i]) for i in self.sample_names]
+        patient_prefix = self.file_name.split(".")[0]
+        qualified_names = []
+        for sample_name in self.sample_names:
+            qualified_names.append("|".join([patient_prefix, sample_name]))
+        return qualified_names
 
     @property
     def metaheaders(self):

@@ -1,13 +1,15 @@
-import jacquard.utils as utils
+from __future__ import print_function, absolute_import
 from jacquard.vcf import VcfReader
-import re
+import jacquard.utils as utils
 import os
+import re
 
 JQ_STRELKA_TAG = "JQ_SK_"
 
 #pylint: disable=too-few-public-methods
 class _AlleleFreqTag(object):
     def __init__(self):
+        #pylint: disable=line-too-long
         self.metaheader = ('##FORMAT=<ID={0}AF,'
                            'Number=A,'
                            'Type=Float,'
@@ -16,7 +18,8 @@ class _AlleleFreqTag(object):
                            'Version={1}>').format(JQ_STRELKA_TAG,
                                                   utils.__version__)
 
-    def _get_tier2_base_depth(self, sample_format_dict, alt_allele):
+    @staticmethod
+    def _get_tier2_base_depth(sample_format_dict, alt_allele):
         numerator = float(sample_format_dict[alt_allele + "U"].split(",")[1])
         tags = ["AU", "CU", "TU", "GU"]
         depth = 0
@@ -76,7 +79,8 @@ class _AlleleFreqTag(object):
             vcf_record.add_sample_tag_value(JQ_STRELKA_TAG + "AF",
                                             sample_values)
 
-    def _round_two_digits(self, value):
+    @staticmethod
+    def _round_two_digits(value):
         if len(value.split(".")[1]) <= 2:
             return value
         else:
@@ -97,6 +101,7 @@ class _DepthTag(object):
         return str(depth)
 
     def __init__(self):
+        #pylint: disable=line-too-long
         self.metaheader = ('##FORMAT=<ID={0}DP,'
                            'Number=1,'
                            'Type=Float,'
@@ -116,6 +121,7 @@ class _DepthTag(object):
 
 class _SomaticTag(object):
     def __init__(self):
+        #pylint: disable=line-too-long
         self.metaheader = ('##FORMAT=<ID={0}HC_SOM,'
                            'Number=1,Type=Integer,'
                            'Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",'
@@ -143,7 +149,8 @@ class Strelka(object):
         self.tags = [_AlleleFreqTag(), _DepthTag(), _SomaticTag()]
         self.meta_header = "##jacquard.normalize_strelka.sources={0},{1}\n"
 
-    def _validate_raw_input_files(self, file_readers):
+    @staticmethod
+    def _validate_raw_input_files(file_readers):
         if len(file_readers) != 2:
             raise utils.JQException("Strelka directories should have exactly "
                                     "two input files per patient, but found "
@@ -171,7 +178,8 @@ class Strelka(object):
                 .format(vcf_readers[0].file_name, vcf_readers[1].file_name))
         return vcf_readers
 
-    def _parse_vcf_readers(self, vcf_readers):
+    @staticmethod
+    def _parse_vcf_readers(vcf_readers):
         all_records = []
         metaheader_list = []
         column_header = vcf_readers[0].column_header
@@ -232,8 +240,9 @@ class Strelka(object):
         return True
 
     def final_steps(self, hc_candidates, merge_candidates, output_dir):
-        print "Wrote [{0}] VCF files to [{1}]". \
-            format(len(merge_candidates.keys()), output_dir)
+        output_file_count = len(merge_candidates.keys())
+        print ("Wrote [{0}] VCF files to [{1}]").format(output_file_count,
+                                                        output_dir)
         return merge_candidates
 
     def handle_hc_files(self, in_file, out_dir, hc_candidates):

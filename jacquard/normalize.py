@@ -1,22 +1,16 @@
-# pylint: disable=C0111
+from __future__ import absolute_import
 from collections import defaultdict
-import glob
-import os
-import re
-import shutil
-from utils import JQException
 import collections
+import glob
+import jacquard.logger as logger
+import jacquard.utils as utils
+import jacquard.variant_callers as variant_callers
+import jacquard.vcf as vcf
+import os
+import shutil
 
-import variant_callers.varscan 
-import variant_callers.strelka
-import variant_callers.mutect
-import variant_callers.variant_caller_factory as variant_caller_factory
 
-import utils as utils
-import vcf as vcf
-import logger as logger
-
-#TODO: hook up to something
+#TODO: (cgates): this code is not referenced anywhere; it will be eliminated when normalize is rewritten
 def _validate_single_caller(filepaths, get_caller):
     callers = set()
     try:
@@ -38,8 +32,8 @@ def _validate_single_caller(filepaths, get_caller):
     else:
         return iter(callers).next()
 
+# pylint: disable=line-too-long
 def add_subparser(subparser):
-    # pylint: disable=C0301
     parser = subparser.add_parser("normalize", help="Accepts a directory containing VarScan VCF snp/indel results or Strelka VCF snvs/indels results and creates a new directory of merged, sorted VCFs with added high confidence tags")
     parser.add_argument("input", help="Path to directory containing VCFs. Each sample must have exactly two files matching these patterns: <sample>.indel.vcf, <sample>.snp.vcf, <sample>.indel.Germline.hc, <sample>.snp.Germline.hc, <sample>.indel.LOH.hc, <sample>.snp.LOH.hc, <sample>.indel.Somatic.hc, <sample>.snp.somatic.hc, <sample>.indel.*.hc, <sample>.snp.*.hc ")
     parser.add_argument("output", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
@@ -55,9 +49,9 @@ def _partition_input_files(in_files, output_dir, caller):
         patient_to_files[patient].append(file_path)
 
     writer_to_readers = {}
-    for patient,in_files in patient_to_files.items():
+    for patient, in_files in patient_to_files.items():
         output_file = caller.decorate_files(in_files, "normalized")
-        file_writer = vcf.FileWriter(os.path.join(output_dir,output_file))
+        file_writer = vcf.FileWriter(os.path.join(output_dir, output_file))
         file_readers = []
 
         for file_path in patient_to_files[patient]:
@@ -67,8 +61,9 @@ def _partition_input_files(in_files, output_dir, caller):
 
     return writer_to_readers
 
+#pylint: disable=line-too-long
 def _determine_caller_per_directory(in_files,
-                                    get_caller=variant_caller_factory.get_caller):
+                                    get_caller=variant_callers.variant_caller_factory.get_caller):
     for in_file in in_files:
         extension = os.path.splitext(os.path.basename(in_file))[1]
         if extension == ".vcf":
@@ -82,14 +77,15 @@ def _determine_caller_per_directory(in_files,
 def _log_caller_info(vcf_readers):
     caller_count = collections.defaultdict(int)
 
-    for vcf in vcf_readers:
-        caller_count[vcf.caller.name] += 1
+    for vcf_reader in vcf_readers:
+        caller_count[vcf_reader.caller.name] += 1
 
     for caller_name in sorted(caller_count):
         logger.info("Recognized [{0}] {1} file(s)",
-             caller_count[caller_name], caller_name)
+                    caller_count[caller_name], caller_name)
 
-def execute(args, execution_context): 
+#TODO: (cgates): normalized files should contain execution context - do they?
+def execute(args, execution_context):
     input_dir = os.path.abspath(args.input)
     output_dir = os.path.abspath(args.output)
 
@@ -105,7 +101,7 @@ def execute(args, execution_context):
 
     if not writer_to_readers:
         logger.error("Specified input directory [{0}] contains no files."
-             "Check parameters and try again.", input_dir)
+                     "Check parameters and try again.", input_dir)
 
         #TODO cgates: move to jacquard.py
         shutil.rmtree(output_dir)

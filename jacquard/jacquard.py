@@ -13,10 +13,9 @@
 ##   See the License for the specific language governing permissions and
 ##   limitations under the License.
 
-# pylint: disable=C0111
-# pylint: disable-msg=W0403
+# pylint: disable=missing-docstring,
 
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 import argparse
 import os
 import signal
@@ -24,15 +23,15 @@ import shutil
 import sys
 import traceback
 
-import tag as tag
-import normalize as normalize
-import filter_hc_somatic as filter_hc_somatic
-import merge as merge
-import merge2 as merge2
-import consensus as consensus
-import expand as expand
-import utils as utils
-import logger as logger
+import jacquard.tag as tag
+import jacquard.normalize as normalize
+import jacquard.filter_hc_somatic as filter_hc_somatic
+import jacquard.merge as merge
+import jacquard.merge2 as merge2
+import jacquard.consensus as consensus
+import jacquard.expand as expand
+import jacquard.utils as utils
+import jacquard.logger as logger
 
 _SUBCOMMANDS = [normalize,
                 tag,
@@ -104,10 +103,10 @@ def _create_temp_directory(original_output_dir, force=0):
                                   original_output_fname)
     else:
         tmp_output = os.path.join(original_output_dir, TMP_DIR_NAME)
-    
+
     try:
         os.mkdir(original_output_dir)
-    except:
+    except OSError:
         pass
 
     if len(os.listdir(original_output_dir)) != 0:
@@ -196,7 +195,7 @@ def dispatch(modules, arguments):
         else:
             logger.info("Done")
 
-    # pylint: disable=W0703
+    #pylint: disable=broad-except
     except Exception as exception:
         logger.error(str(exception))
         logger.error("Jacquard encountered an unanticipated problem. Please review log file and contact your sysadmin or Jacquard support for assistance.")
