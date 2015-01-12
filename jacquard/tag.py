@@ -9,8 +9,8 @@ import jacquard.utils as utils
 import jacquard.vcf as vcf
 import jacquard.logger as logger
 
-#pylint: disable=line-too-long
 def add_subparser(subparser):
+    #pylint: disable=line-too-long
     parser = subparser.add_parser("tag", help="Accepts a directory of VCf results and creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
     parser.add_argument("input", help="Path to directory containing VCFs. Other file types ignored")
     parser.add_argument("output", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
@@ -26,6 +26,7 @@ def _comma_separated(line):
 
 #TODO: (cgates): This works, but would rather see this as a collection of validator methods
 def _check_records(reader):
+    #pylint: disable=line-too-long
     correct_ref = "ACGTNacgtn"
     correct_alt = "*.ACGTNacgtn"
     anomalous_set = set()

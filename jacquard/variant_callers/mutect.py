@@ -1,3 +1,4 @@
+#pylint: disable=too-few-public-methods, unused-argument
 from __future__ import print_function, absolute_import
 import jacquard.utils as utils
 import re
@@ -5,10 +6,9 @@ import os
 
 JQ_MUTECT_TAG = "JQ_MT_"
 
-#pylint: disable=too-few-public-methods
 class _AlleleFreqTag(object):
-#pylint: disable=line-too-long
     def __init__(self):
+        #pylint: disable=line-too-long
         self.metaheader = ('##FORMAT=<ID={0}AF,'
                            'Number=A,'
                            'Type=Float,'
@@ -22,11 +22,11 @@ class _AlleleFreqTag(object):
             sample_values = {}
             for sample in vcf_record.sample_tag_values:
                 freq = vcf_record.sample_tag_values[sample]["FA"].split(",")
-                sample_values[sample] = self._roundTwoDigits(freq)
+                sample_values[sample] = self._round_two_digits(freq)
             vcf_record.add_sample_tag_value(JQ_MUTECT_TAG + "AF", sample_values)
 
     @staticmethod
-    def _roundTwoDigits(value):
+    def _round_two_digits(value):
         new_values = []
         for val in value:
             if len(val.split(".")[1]) <= 2:
@@ -46,7 +46,8 @@ class _DepthTag(object):
                            'Version={1}>').format(JQ_MUTECT_TAG,
                                                   utils.__version__)
 
-    def format(self, vcf_record):
+    @staticmethod
+    def format(vcf_record):
         if "DP" in vcf_record.format_tags:
             sample_values = {}
             for sample in vcf_record.sample_tag_values:
@@ -102,14 +103,16 @@ class Mutect(object):
 
         return mutect_dict
 
-    def decorate_files(self, filenames, decorator):
+    @staticmethod
+    def decorate_files(filenames, decorator):
         output_file = None
         for file_name in filenames:
             name = re.sub(r"\.vcf$", "." + decorator + ".vcf", file_name)
             output_file = os.path.basename(name)
         return output_file
 
-    def validate_vcfs_in_directory(self, in_files):
+    @staticmethod
+    def validate_vcfs_in_directory(in_files):
         for in_file in in_files:
             if not in_file.lower().endswith("vcf"):
                 raise utils.JQException("ERROR: Non-VCF file in directory. "
@@ -130,13 +133,18 @@ class Mutect(object):
                     mutect_dict = self._get_mutect_cmd_parameters(line,
                                                                   mutect_dict)
                 if "#CHROM" in line:
-                    if "normal_sample_name" in mutect_dict and "tumor_sample_name" in mutect_dict:
-                        line = re.sub(mutect_dict["normal_sample_name"], "NORMAL", line)
-                        line = re.sub(mutect_dict["tumor_sample_name"], "TUMOR", line)
+                    if "normal_sample_name" in mutect_dict:
+                        if "tumor_sample_name" in mutect_dict:
+                            line = re.sub(mutect_dict["normal_sample_name"],
+                                          "NORMAL",
+                                          line)
+                            line = re.sub(mutect_dict["tumor_sample_name"],
+                                          "TUMOR",
+                                          line)
                     else:
-                        raise utils.JQException("Unable to determine normal and "
-                                                "tumor sample ordering based on "
-                                                "MuTect metaheader.")
+                        raise utils.JQException("Unable to determine normal "
+                                                "and tumor sample ordering "
+                                                "based on MuTect metaheader.")
 
                 file_writer.write(line)
 
@@ -146,7 +154,8 @@ class Mutect(object):
     def get_new_metaheaders(self):
         return [tag.metaheader for tag in self.tags]
 
-    def validate_input_file(self, meta_headers, column_header):
+    @staticmethod
+    def validate_input_file(meta_headers, column_header):
         valid = 0
         for line in meta_headers:
             if "##MuTect" in line:

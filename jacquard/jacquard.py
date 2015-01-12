@@ -13,7 +13,7 @@
 ##   See the License for the specific language governing permissions and
 ##   limitations under the License.
 
-# pylint: disable=missing-docstring,
+# pylint: disable=missing-docstring,global-statement
 
 from __future__ import absolute_import, print_function
 import argparse

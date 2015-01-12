@@ -1,3 +1,4 @@
+#pylint: disable=invalid-name, global-statement
 from __future__ import print_function, absolute_import
 from datetime import datetime
 import getpass
@@ -12,12 +13,12 @@ _DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 _FILE_LOG_FORMAT = ('%(asctime)s|%(levelname)s|%(start_time)s|%(host)s|%(user)s'
                     '|%(tool)s|%(message)s')
 _CONSOLE_LOG_FORMAT = '%(asctime)s|%(levelname)s|%(tool)s|%(message)s'
-# pylint: disable=C0103
+
 logging_dict = {}
 _verbose = False
 log_filename = None
 
-#pylint: disable=W0603
+
 def initialize_logger(tool, verbose=False):
     global log_filename
     log_filename = os.path.join(os.getcwd(), "jacquard.log")

@@ -1,3 +1,4 @@
+#pylint: disable=invalid-name
 from __future__ import absolute_import, print_function
 from os import listdir
 import collections

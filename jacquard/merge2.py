@@ -1,4 +1,4 @@
-# pylint: disable=missing-docstring, too-many-locals
+# pylint: disable=missing-docstring, too-many-locals, too-few-public-methods
 from __future__ import print_function, absolute_import
 from collections import defaultdict, OrderedDict
 import glob
@@ -13,7 +13,6 @@ MULT_ALT_HEADER = ('##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,'
                    'Version="{}">').format(utils.__version__)
 
 
-# pylint: disable=too-few-public-methods
 # This class must capture the state of the incoming iterator and provide
 # modified behavior based on data in that iterator. A small class works ok, but
 # suspect there may be a more pythonic way to curry iterator in a partial

@@ -1,3 +1,4 @@
+#pylint: disable=too-many-locals
 from __future__ import print_function, absolute_import
 from collections import defaultdict
 import glob
@@ -51,7 +52,14 @@ def _find_somatic_positions(in_files):
                                                    vcf_reader.column_header,
                                                    vcf_reader.file_name)
 
-        filtered_records, num_records, somatic_positions, somatic =_iterate_file(vcf_reader, num_records, somatic_positions, somatic)
+        (filtered_records,
+         num_records,
+         somatic_positions,
+         somatic) =_iterate_file(vcf_reader,
+                                 num_records,
+                                 somatic_positions,
+                                 somatic)
+
         callers[caller.name] += filtered_records
 
         if somatic == 0:
@@ -140,7 +148,10 @@ def _write_somatic(in_files, output_dir, somatic_positions, execution_context):
                 len(in_files),
                 output_dir)
 
-def filter_somatic_positions(input_dir, output_dir, execution_context=[]):
+def filter_somatic_positions(input_dir, output_dir, execution_context=None):
+    if not execution_context:
+        execution_context = []
+
     in_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
     if len(in_files) < 1:
         logger.error("Specified input directory [{}] contains no VCF files. "
@@ -151,14 +162,15 @@ def filter_somatic_positions(input_dir, output_dir, execution_context=[]):
                 len(in_files),
                 input_dir)
 
-    somatic_positions, somatic_positions_header = _find_somatic_positions(in_files)
+    (somatic_positions,
+     somatic_positions_header) = _find_somatic_positions(in_files)
     execution_context.append(somatic_positions_header)
 
     _write_somatic(in_files, output_dir, somatic_positions, execution_context)
 
 
 def add_subparser(subparser):
-    # pylint: disable=C0301
+    # pylint: disable=line-too-long
     parser = subparser.add_parser("filter_hc_somatic", help="Accepts a directory of Jacquard-tagged VCF results from one or more callers and creates a new directory of VCFs, where rows have been filtered to contain only positions that were called high-confidence somatic in any VCF.")
     parser.add_argument("input", help="Path to directory containing VCFs. All VCFs in this directory must have Jacquard-specific tags (see jacquard.py tag for more info")
     parser.add_argument("output", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")

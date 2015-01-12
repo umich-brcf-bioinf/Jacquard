@@ -32,8 +32,8 @@ def _validate_single_caller(filepaths, get_caller):
     else:
         return iter(callers).next()
 
-# pylint: disable=line-too-long
 def add_subparser(subparser):
+    # pylint: disable=line-too-long
     parser = subparser.add_parser("normalize", help="Accepts a directory containing VarScan VCF snp/indel results or Strelka VCF snvs/indels results and creates a new directory of merged, sorted VCFs with added high confidence tags")
     parser.add_argument("input", help="Path to directory containing VCFs. Each sample must have exactly two files matching these patterns: <sample>.indel.vcf, <sample>.snp.vcf, <sample>.indel.Germline.hc, <sample>.snp.Germline.hc, <sample>.indel.LOH.hc, <sample>.snp.LOH.hc, <sample>.indel.Somatic.hc, <sample>.snp.somatic.hc, <sample>.indel.*.hc, <sample>.snp.*.hc ")
     parser.add_argument("output", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
@@ -62,8 +62,7 @@ def _partition_input_files(in_files, output_dir, caller):
     return writer_to_readers
 
 #pylint: disable=line-too-long
-def _determine_caller_per_directory(in_files,
-                                    get_caller=variant_callers.variant_caller_factory.get_caller):
+def _determine_caller_per_directory(in_files, get_caller=variant_callers.variant_caller_factory.get_caller):
     for in_file in in_files:
         extension = os.path.splitext(os.path.basename(in_file))[1]
         if extension == ".vcf":
@@ -79,7 +78,6 @@ def _log_caller_info(vcf_readers):
 
     for vcf_reader in vcf_readers:
         caller_count[vcf_reader.caller.name] += 1
-
     for caller_name in sorted(caller_count):
         logger.info("Recognized [{0}] {1} file(s)",
                     caller_count[caller_name], caller_name)

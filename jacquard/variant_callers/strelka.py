@@ -1,3 +1,4 @@
+#pylint: disable=too-few-public-methods, unused-argument
 from __future__ import print_function, absolute_import
 from jacquard.vcf import VcfReader
 import jacquard.utils as utils
@@ -6,7 +7,6 @@ import re
 
 JQ_STRELKA_TAG = "JQ_SK_"
 
-#pylint: disable=too-few-public-methods
 class _AlleleFreqTag(object):
     def __init__(self):
         #pylint: disable=line-too-long

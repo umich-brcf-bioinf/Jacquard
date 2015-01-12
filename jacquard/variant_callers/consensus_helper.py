@@ -1,7 +1,7 @@
+#pylint: disable=no-member
 from __future__ import print_function, absolute_import
 import jacquard.utils as utils
 import numpy as np
-
 
 JQ_CONSENSUS_TAG = "JQ_CONS_"
 
@@ -133,7 +133,8 @@ class _AlleleFreqTag(object):
         self.all_ranges = []
         self.name = "AF"
 
-    def _get_metaheader(self):
+    @staticmethod
+    def _get_metaheader():
         af_average = '##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,' \
                       'Description="Average allele frequency across ' \
                       'recognized variant callers that reported ' \
@@ -154,7 +155,8 @@ class _AlleleFreqTag(object):
                     .format(JQ_CONSENSUS_TAG, utils.__version__)
         return "\n".join([af_average, af_range, af_zscore])
 
-    def _get_allele_freq_tags(self, vcf_record):
+    @staticmethod
+    def _get_allele_freq_tags(vcf_record):
         tags = []
         for tag in vcf_record.format_tags:
             if tag.startswith("JQ_") and tag.endswith("_AF"):
@@ -173,7 +175,8 @@ class _AlleleFreqTag(object):
         vcf_record.add_sample_tag_value(JQ_CONSENSUS_TAG + "AF_RANGE",
                                         tag_range)
 
-    def insert_zscore(self, vcf_record, pop_mean_range, pop_std_range):
+    @staticmethod
+    def insert_zscore(vcf_record, pop_mean_range, pop_std_range):
         tag = JQ_CONSENSUS_TAG + "AF_RANGE"
         zscore_dict = _calculate_zscore(vcf_record,
                                         tag,
@@ -189,7 +192,8 @@ class _DepthTag(object):
         self.all_ranges = []
         self.name = "DP"
 
-    def _get_metaheader(self):
+    @staticmethod
+    def _get_metaheader():
         dp_average = '##FORMAT=<ID={0}DP_AVERAGE,Number=1,Type=Float,' \
                       'Description="Average allele frequency across ' \
                       'recognized variant callers that reported ' \
@@ -211,7 +215,8 @@ class _DepthTag(object):
                     .format(JQ_CONSENSUS_TAG, utils.__version__)
         return "\n".join([dp_average, dp_range, dp_zscore])
 
-    def _get_depth_tags(self, vcf_record):
+    @staticmethod
+    def _get_depth_tags(vcf_record):
         tags = []
         for tag in vcf_record.format_tags:
             if tag.startswith("JQ_") and tag.endswith("_DP"):
@@ -230,7 +235,8 @@ class _DepthTag(object):
         vcf_record.add_sample_tag_value(JQ_CONSENSUS_TAG + "DP_RANGE",
                                         tag_range)
 
-    def insert_zscore(self, vcf_record, pop_mean_range, pop_std_range):
+    @staticmethod
+    def insert_zscore(vcf_record, pop_mean_range, pop_std_range):
         tag = JQ_CONSENSUS_TAG + "DP_RANGE"
         zscore_dict = _calculate_zscore(vcf_record,
                                         tag,
@@ -247,7 +253,8 @@ class _SomaticTag(object):
         self.all_ranges = []
         self.name = "SOM"
 
-    def _get_metaheader(self):
+    @staticmethod
+    def _get_metaheader():
         som_count = '##FORMAT=<ID={0}SOM_COUNT,Number=1,Type=Integer,' \
                       'Description="Count of recognized variant callers,' \
                       'which reported confident somatic call for this'\
@@ -255,7 +262,8 @@ class _SomaticTag(object):
                       .format(JQ_CONSENSUS_TAG, utils.__version__)
         return som_count
 
-    def _get_somatic_tags(self, vcf_record):
+    @staticmethod
+    def _get_somatic_tags(vcf_record):
         tags = []
         for tag in vcf_record.format_tags:
             if tag.startswith("JQ_") and tag.endswith("_HC_SOM"):

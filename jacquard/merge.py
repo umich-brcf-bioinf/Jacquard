@@ -1,6 +1,6 @@
-# pylint: disable=C0111
-# pylint: disable-msg=W0403
-
+#pylint: disable=maybe-no-member, no-member, cell-var-from-loop, redefined-builtin
+#pylint: disable=unnecessary-lambda
+from __future__ import absolute_import
 from collections import defaultdict, OrderedDict
 import glob
 import os
@@ -10,8 +10,8 @@ import pandas as pd
 from pandas import *
 import re
 
-import utils
-import logger
+import jacquard.utils as utils
+import jacquard.logger as logger
 
 class PivotError(Exception):
     """Base class for exceptions in this module."""
@@ -217,6 +217,7 @@ def rearrange_columns(output_df):
     return output_df
 
 def create_dict(df, row, columns):
+    #pylint: disable=anomalous-backslash-in-string
     file_dict = defaultdict(list)
     all_tags = []
 
@@ -243,7 +244,7 @@ def create_dict(df, row, columns):
             for tag in tags:
                 try:
                     float(tag)
-                except:
+                except ValueError:
                     if tag not in all_tags:
                         all_tags.append(tag)
 
@@ -271,6 +272,7 @@ def sort_format_tags(file_dict):
     return sorted_file_dict
 
 def remove_non_jq_tags(df, file_dict):
+    #pylint: disable=unused-argument
     sample_keys = []
 #     sample_names = {}
     for sample_list in file_dict.values():
@@ -291,7 +293,7 @@ def cleanup_df(df, file_dict):
     for key in file_dict.keys():
         try:
             del df[key + "|FORMAT"]
-        except:
+        except KeyError:
             pass
     for col in df.columns:
         df = df.applymap(lambda x: str(x).replace(":" + col, ""))
@@ -307,6 +309,7 @@ def cleanup_df(df, file_dict):
     return df
 
 def create_merging_dict(df, row, columns):
+    #pylint: disable=anomalous-backslash-in-string
     file_dict = defaultdict(list)
     sample_names = []
     sample_columns = []
@@ -331,6 +334,7 @@ def create_merging_dict(df, row, columns):
     return file_dict
 
 def remove_old_columns(df):
+    #pylint: disable=anomalous-backslash-in-string
     columns_to_remove = []
     for row, col in df.T.iteritems():
         columns = col.index.values
@@ -345,6 +349,7 @@ def remove_old_columns(df):
     return df
 
 def combine_format_columns(df, all_inconsistent_sample_sets):
+    #pylint: disable=unused-argument
     row_total = len(df.index)
     logger.info("Processing merged matrix phase 1: [{} x {}] rows x columns",
                 row_total, len(df.columns))
@@ -489,7 +494,7 @@ def validate_samples_for_callers(all_merge_column_context, all_inconsistent_samp
         caller = column.split("|")[0]
         sample = column.split("|")[1]
         sample_column = column.split("|")[2]
-        
+
         samples.append(sample)
         sample_dict[caller].append(sample)
     logger.info("Detected VCFs from {}", sample_dict.keys())
@@ -589,7 +594,7 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
     rearranged_df = rearrange_columns(formatted_df)
     try:
         rearranged_df.ix[:, "CHROM"] = rearranged_df.ix[:, "CHROM"].apply(lambda x: int(x.strip("chr")))
-    except:
+    except ValueError:
         rearranged_df.ix[:, "CHROM"] = rearranged_df.ix[:, "CHROM"].apply(lambda x: x.strip("chr"))
     rearranged_df.ix[:, "POS"] = rearranged_df.ix[:, "POS"].apply(lambda x: int(x))
 
@@ -704,6 +709,6 @@ def execute(args, execution_context):
                   headers, header_names, first_line,
                   all_inconsistent_sample_sets, execution_context)
 
-def _combine_format_values(format, sample):
-    return OrderedDict(zip(format.split(":"), sample.strip().split(":")))
+def _combine_format_values(format_field, sample):
+    return OrderedDict(zip(format_field.split(":"), sample.strip().split(":")))
 

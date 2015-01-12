@@ -1,11 +1,10 @@
-# pylint: disable=missing-docstring
+
 from __future__ import print_function, absolute_import
 from collections import OrderedDict, defaultdict
 import jacquard.utils as utils
 import os
 import re
 import sys
-
 
 class RecognizedVcfReader(object):
     '''VcfReader with recognized caller'''
@@ -133,9 +132,10 @@ class VcfReader(object):
     def close(self):
         self._file_reader.close()
 
-## pylint: disable=too-many-instance-attributes
+
 # Alas, something must encapsulate the myriad VCF fields.
 class VcfRecord(object):
+    #pylint: disable=too-many-instance-attributes
     EMPTY_SET = set()
 
     @classmethod
