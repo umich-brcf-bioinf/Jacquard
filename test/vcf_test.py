@@ -371,6 +371,7 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
         reader = VcfReader(mock_reader)
 
         self.assertEquals(["AF"], reader.format_metaheaders.keys())
+        self.assertEquals("##FORMAT=<ID=AF,Description='Allele Frequency 2'>", reader.format_metaheaders["AF"])
 
     def test_format_tag_ids_emptyWhenNoFormatTags(self):
         file_contents = ["##metaheader1\n",
