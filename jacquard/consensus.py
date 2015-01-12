@@ -12,7 +12,7 @@ def _write_metaheaders(cons_helper,
                        execution_context=0,
                        new_meta_headers=0):
 
-    new_headers = vcf_reader.metaheaders
+    new_headers = list(vcf_reader.metaheaders)
 
     if execution_context:
         new_headers.extend(execution_context)

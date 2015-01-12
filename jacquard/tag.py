@@ -77,7 +77,7 @@ def _write_records(reader, writer, anomalous_records):
         writer.write(reader.caller.add_tags(vcf_record))
 
 def _modify_metaheaders(reader, writer, execution_context, anomalous_set):
-    new_headers = reader.metaheaders
+    new_headers = list(reader.metaheaders)
     new_headers.extend(execution_context)
     new_headers.append("##jacquard.tag.caller={0}".format(reader.caller.name))
     new_headers.extend(reader.caller.get_new_metaheaders())

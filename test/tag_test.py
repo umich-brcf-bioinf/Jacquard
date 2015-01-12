@@ -140,11 +140,11 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             vcf_readers = tag._build_vcf_readers(input_dir.path)
 
             self.assertEqual("A.vcf", vcf_readers[0].file_name)
-            self.assertEqual(["##source=strelka"], vcf_readers[0].metaheaders)
+            self.assertEqual(("##source=strelka",), vcf_readers[0].metaheaders)
             self.assertEqual("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR",
                               vcf_readers[0].column_header)
             self.assertEqual("B.vcf", vcf_readers[1].file_name)
-            self.assertEqual(["##source=strelka"], vcf_readers[1].metaheaders)
+            self.assertEqual(("##source=strelka",), vcf_readers[1].metaheaders)
             self.assertEqual("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR",
                               vcf_readers[1].column_header)
             self.assertEqual(2, len(vcf_readers))

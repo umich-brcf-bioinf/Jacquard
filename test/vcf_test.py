@@ -316,7 +316,7 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals("my_dir/my_file.txt", actual_vcf_reader.input_filepath)
         self.assertEquals("my_file.txt", actual_vcf_reader.file_name)
         self.assertEquals("#columnHeader", actual_vcf_reader.column_header)
-        self.assertEquals(["##metaheader1", "##metaheader2"], actual_vcf_reader.metaheaders)
+        self.assertEquals(("##metaheader1", "##metaheader2"), actual_vcf_reader.metaheaders)
         self.assertEquals([], actual_vcf_reader.sample_names)
 
     def test_init_sampleNamesInitialized(self):
@@ -330,31 +330,35 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
         actual_vcf_reader = VcfReader(mock_reader)
         self.assertEquals(["SampleA", "SampleB"], actual_vcf_reader.sample_names)
 
-    def test_metaheadersAreImmutable(self):
+    def test_format_metaheaders(self):
         file_contents = ["##metaheader1\n",
-                         "##metaheader2\n",
-                         "#columnHeader\n",
-                         "record1\n",
-                         "record2"]
-        mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
-        reader = VcfReader(mock_reader)
-
-        original_length = len(reader.metaheaders)
-        reader.metaheaders.append("foo")
-
-        self.assertEquals(original_length, len(reader.metaheaders))
-
-    def test_format_tag_ids(self):
-        file_contents = ["##metaheader1\n",
-                         "##FORMAT=<ID=AF,Number=A,Type=Float,Description='Allele Frequency'>\n",
-                         "##FORMAT=<ID=DP,Number=1,Type=Integer,Description='Read Depth'>\n",
+                         "##FORMAT=<ID=AF,Number=A,Type=Float,Description=\"Allele Frequency\">\n",
+                         "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">\n",
                          self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
                          self.entab("chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR\n"),
                          self.entab("chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR")]
         mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
         reader = VcfReader(mock_reader)
 
-        self.assertEquals(set(["AF", "DP"]), reader.format_tag_ids)
+        expected_metaheaders = {"AF" : '##FORMAT=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">',
+                               "DP" : '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">'}
+
+        self.assertEquals(expected_metaheaders, reader.format_metaheaders)
+
+    def test_format_tag_ids_ignoresRelatedFieldNames(self):
+        file_contents = ["##metaheader1\n",
+                         "##FORMAT=<UUID=DPX1,ID=DP1>\n",
+                         "##FORMAT=<ID=DP2,UUID=DPX2>\n",
+                         "##FORMAT=<ID=DP3,ID=DPX3>\n",
+                         "##FORMAT=<NOID=DPX>\n",
+                         self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
+                         self.entab("chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR\n"),
+                         self.entab("chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR")]
+        mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+        reader = VcfReader(mock_reader)
+
+        self.assertEquals(set(["DP1", "DP2", "DP3"]), set(reader.format_metaheaders.keys()))
+
 
     def test_format_tag_ids_idsAreUnique(self):
         file_contents = ["##metaheader1\n",
@@ -366,7 +370,7 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
         mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
         reader = VcfReader(mock_reader)
 
-        self.assertEquals(set(["AF"]), reader.format_tag_ids)
+        self.assertEquals(["AF"], reader.format_metaheaders.keys())
 
     def test_format_tag_ids_emptyWhenNoFormatTags(self):
         file_contents = ["##metaheader1\n",
@@ -377,7 +381,7 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
         mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
         reader = VcfReader(mock_reader)
 
-        self.assertEquals(set(), reader.format_tag_ids)
+        self.assertEquals(0, len(reader.format_metaheaders))
 
     def test_format_tag_ids_immutable(self):
         file_contents = ["##metaheader1\n",
@@ -388,7 +392,9 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
         mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
         reader = VcfReader(mock_reader)
 
-        self.assertIsInstance(reader.format_tag_ids, frozenset)
+        self.assertEquals(["DP"], reader.format_metaheaders.keys())
+        del reader.format_metaheaders["DP"]
+        self.assertEquals(["DP"], reader.format_metaheaders.keys())
 
     def test_vcf_records(self):
         file_contents = ["##metaheader1\n",

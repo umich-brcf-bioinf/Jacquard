@@ -1,11 +1,11 @@
 # pylint: disable=missing-docstring
 from __future__ import print_function, absolute_import
 from collections import OrderedDict, defaultdict
-import re
+import jacquard.utils as utils
 import os
+import re
 import sys
 
-import jacquard.utils as utils
 
 class RecognizedVcfReader(object):
     '''VcfReader with recognized caller'''
@@ -40,28 +40,37 @@ class RecognizedVcfReader(object):
 
 
 #TODO: (cgates): add context management to open/close
-#TODO: (cgates): Do we need filepath and file_name? COuld one be derived?
-#Why distinct conventions for these variables?
 class VcfReader(object):
     '''Wraps a file reader, providing VCF metaheaders and records'''
 
     @staticmethod
-    def _get_format_tag_ids(metaheader_strings):
-        ids = set()
+    def _get_format_metaheaders(metaheader_strings):
+        format_ids = {}
         for metaheader in metaheader_strings:
-            format_tag = re.match("^##FORMAT=.*[<,]ID=([^,]*)", metaheader)
+            format_tag = re.match("^##FORMAT=.*?[<,]ID=([^,>]*)", metaheader)
             if format_tag:
-                ids.add(format_tag.group(1))
-        return frozenset(ids)
+                format_id = format_tag.group(1)
+                format_ids[format_id] = metaheader.strip()
+        return format_ids
 
     def __init__(self, file_reader):
-        self.input_filepath = file_reader.input_filepath
-        self.file_name = file_reader.file_name
         self._file_reader = file_reader
-        (self.column_header, self._metaheaders) = self._read_headers()
-        self.format_tag_ids = VcfReader._get_format_tag_ids(self.metaheaders)
+        (self.column_header, self.metaheaders) = self._read_headers()
+        self._format_metaheaders = self._get_format_metaheaders(self.metaheaders)
         self.sample_names = self._init_sample_names()
         self.qualified_sample_names = self._create_qualified_sample_names()
+
+    @property
+    def file_name(self):
+        return self._file_reader.file_name
+
+    @property
+    def input_filepath(self):
+        return self._file_reader.input_filepath
+
+    @property
+    def format_metaheaders(self):
+        return dict(self._format_metaheaders)
 
     def _init_sample_names(self):
         sample_names = []
@@ -77,10 +86,6 @@ class VcfReader(object):
         for sample_name in self.sample_names:
             qualified_names.append("|".join([patient_prefix, sample_name]))
         return qualified_names
-
-    @property
-    def metaheaders(self):
-        return list(self._metaheaders)
 
     def _read_headers(self):
         metaheaders = []
@@ -102,7 +107,7 @@ class VcfReader(object):
                                     "column header or metaheaders."\
                                     .format(self.file_name))
 
-        return column_header, metaheaders
+        return column_header, tuple(metaheaders)
 
     def vcf_records(self, qualified=False):
         #pylint: disable=line-too-long
