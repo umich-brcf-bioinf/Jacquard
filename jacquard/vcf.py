@@ -46,6 +46,24 @@ class VcfReader(object):
         self._file_reader = file_reader
         (self.column_header, self._metaheaders) = self._read_headers()
 
+    def _get_tag_metaheaders(self, regex_exp):
+        tag_dict = {}
+        for metaheader in self.metaheaders:
+            tag = re.match(regex_exp, metaheader)
+            if tag:
+                tag_key = tag.group(1)
+                tag_dict[tag_key] = metaheader.strip()
+
+        return tag_dict
+
+    @property
+    def format_metaheaders(self):
+        return dict(self._get_tag_metaheaders("^##FORMAT=.*?[<,]ID=([^,>]*)"))
+
+    @property
+    def info_metaheaders(self):
+        return dict(self._get_tag_metaheaders("^##INFO=.*?[<,]ID=([^,>]*)"))
+
     @property
     def metaheaders(self):
         return list(self._metaheaders)
@@ -75,26 +93,6 @@ class VcfReader(object):
             if line.startswith("#"):
                 continue
             yield VcfRecord(line)
-
-    def _create_header_dict(self, regex_pattern):
-        tags = []
-        for meta_header in self.metaheaders:
-            match = re.search(regex_pattern, meta_header)
-
-            if match:
-                contents = match.group(1)
-                pairs = [i.split("=", 1) for i in contents.split(",")]
-#                 print(pairs)
-                header_dict = dict((k,v) for (k,v) in pairs)
-                tags.append(header_dict["ID"])
-
-        return tags
-
-    def get_format_tag_list(self):
-        return self._create_header_dict("##FORMAT=<(.*)>")
-
-    def get_info_field_list(self):
-        return self._create_header_dict("##INFO=<(.*)>")
 
     def get_col_header_list(self):
         col_header = self.column_header.strip("#\n")

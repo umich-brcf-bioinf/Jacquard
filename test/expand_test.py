@@ -1,4 +1,7 @@
-# pylint: disable=C0103,C0301,R0903,R0904,W0603,W0613,W0212,C0111
+#pylint: disable=line-too-long, too-many-instance-attributes, unused-argument
+#pylint: disable=global-statement, star-args, too-few-public-methods, invalid-name
+#pylint: disable=too-many-public-methods
+from __future__ import absolute_import
 from argparse import Namespace
 from collections import OrderedDict
 import glob
@@ -10,24 +13,24 @@ import jacquard.utils as utils
 import jacquard.logger as logger
 import jacquard.expand as expand
 from jacquard.vcf import FileReader, VcfReader
+import test.test_case as test_case
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
-mock_log_called = False
-mock_warnings = []
+MOCK_LOG_CALLED = False
+MOCK_WARNINGS = []
 
 def mock_log(msg, *args):
-    global mock_log_called
-    mock_log_called = True
+    global MOCK_LOG_CALLED
+    MOCK_LOG_CALLED = True
 
 def mock_warning(msg, *args):
-    global mock_warnings
-    mock_warnings.append(msg.format(*[str(i) for i in args]))
+    MOCK_WARNINGS.append(msg.format(*[str(i) for i in args]))
 
 def _change_mock_logger():
-    global mock_log_called
-    mock_log_called = False
-    global mock_warnings
-    mock_warnings = []
+    global MOCK_LOG_CALLED
+    MOCK_LOG_CALLED = False
+    global MOCK_WARNINGS
+    MOCK_WARNINGS = []
     logger.info = mock_log
     logger.error = mock_log
     logger.warning = mock_warning
@@ -51,7 +54,6 @@ class MockFileReader(object):
     def close(self):
         self.close_was_called = True
 
-# pylint: disable=W0102
 class MockVcfReader(object):
     def __init__(self,
                  input_filepath="vcfName",
@@ -167,9 +169,9 @@ class ExpandTestCase(unittest.TestCase):
         potential_col_list = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL"]
         col_spec = ["FOO", "BAR", "BAZ"]
 
-        self.assertRaises(utils.JQException, 
+        self.assertRaises(utils.JQException,
                           expand._create_actual_column_list,
-                          col_spec, 
+                          col_spec,
                           potential_col_list,
                           "col_spec.txt")
 
@@ -191,7 +193,7 @@ class ExpandTestCase(unittest.TestCase):
                          "columns may have matched earlier expressions, or "+
                          "this expression may be irrelevant.")
 
-        self.assertEquals([exp_warning_1, exp_warning_2], mock_warnings)
+        self.assertEquals([exp_warning_1, exp_warning_2], MOCK_WARNINGS)
 
     def test_create_potential_column_list(self):
         file_contents = ['##INFO=<ID=AF,Number=1>\n',
@@ -206,7 +208,7 @@ class ExpandTestCase(unittest.TestCase):
 
         actual_col_list = expand._create_potential_column_list(vcf_reader)
         expected_col_list = ["chrom", "pos", "id", "ref", "alt",
-                             "AF", "AA",
+                             "AA", "AF",
                              "GT", "GQ"]
         self.assertEquals(expected_col_list, actual_col_list)
 
@@ -249,7 +251,7 @@ chr2|1|.|A|C|.|.|SOMATIC|GT|0/1|0/1
             with open(os.path.join(output_dir.path, "P1.txt")) as actual_output_file:
                 actual_output_lines = actual_output_file.readlines()
         print actual_output_lines
-        self.assertEquals(7, len(actual_output_lines))
+        self.assertEquals(3, len(actual_output_lines))
 
     def test_execute_dirs(self):
         vcf_content = ('''##source=strelka
@@ -273,7 +275,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             with open(os.path.join(output_dir.path, "P1.txt")) as actual_output_file:
                 actual_output_lines = actual_output_file.readlines()
 
-        self.assertEquals(7, len(actual_output_lines))
+        self.assertEquals(3, len(actual_output_lines))
 
     def test_expand_emptyInputDir(self):
 
@@ -412,4 +414,27 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                     self.assertTrue(actual[i] == "##jacquard.command=bar")
                 else:
                     self.assertEquals(expected[i], actual[i])
+
+class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):
+    def test_expand(self):
+        with TempDirectory() as output_dir:
+            test_dir = os.path.dirname(os.path.realpath(__file__))
+            module_testdir = os.path.join(test_dir, "functional_tests", "06_expand")
+            input_dir = os.path.join(module_testdir, "input")
+
+            command = ["expand", input_dir, output_dir.path, "--force"]
+            expected_dir = os.path.join(module_testdir, "benchmark")
+
+            self.assertCommand(command, expected_dir)
+
+    def test_expand_colSpec(self):
+        with TempDirectory() as output_dir:
+            test_dir = os.path.dirname(os.path.realpath(__file__))
+            module_testdir = os.path.join(test_dir, "functional_tests", "06_expand_col_spec")
+            input_dir = os.path.join(module_testdir, "input")
+            col_spec = os.path.join(test_dir, "functional_tests", "col_spec.txt")
+            command = ["expand", input_dir, output_dir.path, "--force", "--column_specification=" + col_spec]
+            expected_dir = os.path.join(module_testdir, "benchmark")
+
+            self.assertCommand(command, expected_dir)
 

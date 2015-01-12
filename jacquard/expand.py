@@ -81,7 +81,7 @@ def _create_row_dict(column_list, vcf_record):
                 "QUAL" : vcf_record.qual,
                 "FILTER" : vcf_record.filter}
 
-    for i,sample_name in enumerate(column_list[9:]):
+    for i, sample_name in enumerate(column_list[9:]):
         format_key_values = vcf_record.sample_dict[i]
         for format_key, format_value in format_key_values.items():
             row_dict[format_key + "|" + sample_name] = format_value
@@ -98,7 +98,7 @@ def _create_actual_column_list(column_spec_list,
     for i, column_regex in enumerate(column_spec_list):
         no_columns_found = True
         for column_name in potential_col_list:
-            if re.search(column_regex, column_name):
+            if re.match(column_regex, column_name):
                 actual_column_list.append(column_name)
                 no_columns_found = False
 
@@ -119,17 +119,18 @@ def _create_actual_column_list(column_spec_list,
 
 def _create_potential_column_list(vcf_reader):
     column_headers = vcf_reader.get_col_header_list()
-    info_fields = vcf_reader.get_info_field_list()
-#     print info_fields
-    format_tags = vcf_reader.get_format_tag_list()
+    info_dict = vcf_reader.info_metaheaders
+    format_dict = vcf_reader.format_metaheaders
 
-    return column_headers + info_fields + format_tags
+    format_sample_names = []
+    for sample_name in column_headers[9:]:
+        for format_tag in format_dict.keys():
+            format_sample_names.append(format_tag + "|" + sample_name)
 
-def _write_metaheaders(file_writer, vcf_reader, execution_context):
-    meta_headers = []
-    meta_headers.extend(vcf_reader.metaheaders)
-    meta_headers.extend(execution_context)
-    file_writer.write("\n".join(meta_headers) +  "\n")
+    static_column_headers = column_headers[0:10]
+    processed_column_headers = static_column_headers + format_sample_names
+
+    return processed_column_headers + info_dict.keys() + format_dict.keys()
 
 # pylint: disable=C0301
 def add_subparser(subparser):
@@ -162,7 +163,6 @@ def execute(args, execution_context):
         file_writer = vcf.FileWriter(output_file)
         file_writer.open()
 
-        _write_metaheaders(file_writer, vcf_reader, execution_context)
         potential_columns = _create_potential_column_list(vcf_reader)
 
         if col_spec_columns:
@@ -171,6 +171,8 @@ def execute(args, execution_context):
                                                         col_spec)
         else:
             actual_columns = potential_columns
+
+        file_writer.write("#" + "\t".join(actual_columns) + "\n")
 
         vcf_reader.open()
         for vcf_record in vcf_reader.vcf_records():
@@ -181,9 +183,12 @@ def execute(args, execution_context):
             for col in actual_columns:
                 if col in row_dict:
                     new_line.append(row_dict[col])
+                else:
+                    new_line.append(".")
 
             file_writer.write("\t".join(new_line) + "\n")
         file_writer.close()
+        vcf_reader.close()
 
     logger.info("Wrote [{}] VCF files to [{}]", len(input_files), output_path)
 

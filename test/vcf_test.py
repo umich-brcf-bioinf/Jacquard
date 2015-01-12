@@ -1,7 +1,6 @@
 # pylint: disable=C0103,C0301,R0903,R0904,C0111
 import os
 import unittest
-from sets import Set
 import sys
 from StringIO import StringIO
 from testfixtures import TempDirectory
@@ -159,10 +158,10 @@ class VcfReaderTestCase(unittest.TestCase):
         mock_file_reader = MockFileReader("my_dir/my_file.txt", file_contents)
 
         vcf_reader = VcfReader(mock_file_reader)
-        actual_format_set = vcf_reader.get_format_tag_list()
+        actual_format_set = vcf_reader.format_metaheaders
         expected_format_set = ["GT", "GQ"]
 
-        self.assertEquals(expected_format_set, actual_format_set)
+        self.assertEquals(expected_format_set, actual_format_set.keys())
 
     def test_get_info_field_list(self):
         file_contents = ['##INFO=<ID=AF,Number=1>\n',
@@ -174,10 +173,10 @@ class VcfReaderTestCase(unittest.TestCase):
         mock_file_reader = MockFileReader("my_dir/my_file.txt", file_contents)
 
         vcf_reader = VcfReader(mock_file_reader)
-        actual_format_set = vcf_reader.get_info_field_list()
-        expected_format_set = ["AF", "AA"]
+        actual_format_set = vcf_reader.info_metaheaders
+        expected_format_set = ["AA", "AF"]
 
-        self.assertEquals(expected_format_set, actual_format_set)
+        self.assertEquals(expected_format_set, actual_format_set.keys())
 
 class VcfWriterTestCase(unittest.TestCase):
     def test_write(self):
