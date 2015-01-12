@@ -110,7 +110,8 @@ class _DepthTag(object):
                            'Version={1}>').format(JQ_STRELKA_TAG,
                                                   utils.__version__)
 
-    def format(self, vcf_record):
+    @staticmethod
+    def format(vcf_record):
         if vcf_record.format_tags.isdisjoint(_DepthTag.REQUIRED_TAGS):
             return
         sample_values = {}
@@ -129,7 +130,8 @@ class _SomaticTag(object):
                            'Version={1}>').format(JQ_STRELKA_TAG,
                                                   utils.__version__)
 
-    def format(self, vcf_record):
+    @staticmethod
+    def format(vcf_record):
         sample_values = {}
         for i, sample in enumerate(vcf_record.sample_tag_values):
             sample_values[sample] = _SomaticTag._somatic_status(i, vcf_record)
@@ -196,7 +198,8 @@ class Strelka(object):
 
         return metaheader_list, column_header, parsed_records
 
-    def decorate_files(self, filenames, decorator):
+    @staticmethod
+    def decorate_files(filenames, decorator):
         output_file = None
         file_name_search = "snvs|indels"
         for filename in filenames:
@@ -208,7 +211,8 @@ class Strelka(object):
         raise utils.JQException("Each patient in a Strelka directory should "
                                 "have a snvs file and an indels file.")
 
-    def validate_vcfs_in_directory(self, in_files):
+    @staticmethod
+    def validate_vcfs_in_directory(in_files):
         for in_file in in_files:
             if not in_file.lower().endswith("vcf"):
                 raise utils.JQException("ERROR: Non-VCF file in directory. "
@@ -216,7 +220,10 @@ class Strelka(object):
 
     def normalize(self, file_writer, file_readers):
         vcf_readers = self._validate_raw_input_files(file_readers)
-        metaheader_list, column_header, parsed_records = self._parse_vcf_readers(vcf_readers)
+        (metaheader_list,
+         column_header,
+         parsed_records) = self._parse_vcf_readers(vcf_readers)
+
         sorted_metaheader_set = sorted(set(metaheader_list))
 
         file_writer.open()
@@ -233,19 +240,23 @@ class Strelka(object):
     def get_new_metaheaders(self):
         return [tag.metaheader for tag in self.tags]
 
-    def validate_input_file(self, meta_headers, column_header):
+    @staticmethod
+    def validate_input_file(meta_headers, column_header):
         return "##source=strelka" in meta_headers
 
-    def validate_record(self,vcfRecord):
+    @staticmethod
+    def validate_record(vcf_record):
         return True
 
-    def final_steps(self, hc_candidates, merge_candidates, output_dir):
+    @staticmethod
+    def final_steps(hc_candidates, merge_candidates, output_dir):
         output_file_count = len(merge_candidates.keys())
         print ("Wrote [{0}] VCF files to [{1}]").format(output_file_count,
                                                         output_dir)
         return merge_candidates
 
-    def handle_hc_files(self, in_file, out_dir, hc_candidates):
+    @staticmethod
+    def handle_hc_files(in_file, out_dir, hc_candidates):
         return hc_candidates
 
     def validate_file_set(self, all_keys):

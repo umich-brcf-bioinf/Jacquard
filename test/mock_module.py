@@ -1,4 +1,4 @@
-# pylint: disable=C0103,C0301,R0903,R0904,W0613,W0603
+#pylint: disable=invalid-name, global-statement, unused-argument
 execute_called = False
 my_exception_string = None
 

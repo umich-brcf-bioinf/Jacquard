@@ -31,7 +31,8 @@ class _AlleleFreqTag(object):
                            'Version={1}>').format(JQ_VARSCAN_TAG,
                                                   utils.__version__)
 
-    def format(self, vcf_record):
+    @staticmethod
+    def format(vcf_record):
         sample_values = {}
         if "FREQ" in vcf_record.format_tags:
             for sample in vcf_record.sample_tag_values:
@@ -52,7 +53,8 @@ class _DepthTag(object):
                            'Version={1}>').format(JQ_VARSCAN_TAG,
                                                   utils.__version__)
 
-    def format(self, vcf_record):
+    @staticmethod
+    def format(vcf_record):
         if "DP" in vcf_record.format_tags:
             sample_values = {}
             for sample in vcf_record.sample_tag_values:
@@ -80,7 +82,8 @@ class _SomaticTag(object):
                            'Version={1}>').format(JQ_VARSCAN_TAG,
                                                   utils.__version__)
 
-    def format(self, vcf_record):
+    @staticmethod
+    def format(vcf_record):
         info_array = vcf_record.info.split(";")
         varscan_tag = JQ_VARSCAN_TAG + "HC_SOM"
         sample_values = {}
@@ -100,7 +103,8 @@ class Varscan(object):
         self.tags = [_AlleleFreqTag(), _DepthTag(), _SomaticTag()]
         self.meta_header = "##jacquard.normalize_varscan.sources={0},{1}\n"
 
-    def validate_input_file(self, meta_headers, column_header):
+    @staticmethod
+    def validate_input_file(meta_headers, column_header):
         if "##source=VarScan2" not in meta_headers:
             return 0
 
@@ -110,7 +114,7 @@ class Varscan(object):
             raise utils.JQException("Unexpected VarScan VCF structure - "
                                     "missing NORMAL and TUMOR headers.")
 
-    #TODO: (cgates): Can we imagine a clearer way to express the intent of this method?
+    #TODO: (cgates) Can we imagine a clearer way to express the intent of this method?
     @staticmethod
     def _validate_vcf_fileset(vcf_readers):
         if len(vcf_readers) != 2:
@@ -219,7 +223,8 @@ class Varscan(object):
                         'intersection with filtered VarScan variants.">'
         return metaheader, hc_keys
 
-    def decorate_files(self, filenames, decorator):
+    @staticmethod
+    def decorate_files(filenames, decorator):
         output_file = None
         file_name_search = "snp|indel"
         for filename in filenames:
@@ -232,19 +237,24 @@ class Varscan(object):
         raise utils.JQException("Each patient in a VarScan directory should "
                                 "have a snp file and an indel file.")
 
-    def validate_vcfs_in_directory(self, in_files):
+    @staticmethod
+    def validate_vcfs_in_directory(in_files):
         for in_file in in_files:
-            if not in_file.lower().endswith("vcf") and not in_file.lower().endswith("fpfilter.pass"):
-                raise utils.JQException("ERROR: Non-VCF or fpfilter file "
-                                        "in directory. Check parameters and "
-                                        "try again")
+            if not in_file.lower().endswith("vcf"):
+                if not in_file.lower().endswith("fpfilter.pass"):
+                    raise utils.JQException("ERROR: Non-VCF or fpfilter file "
+                                            "in directory. Check parameters "
+                                            "and try again")
 
-#TODO: Add to normalize.py.        
+#TODO: Add to normalize.py
     def normalize(self, file_writer, file_readers):
-        vcf_readers, hc_candidates = self._validate_raw_input_files(file_readers)
+        (vcf_readers,
+         hc_candidates) = self._validate_raw_input_files(file_readers)
 
         hc_metaheader, hc_keys = self._process_hc_files(hc_candidates)
-        metaheader_list, column_header, parsed_records = self._parse_vcf_readers(vcf_readers, hc_keys)
+        (metaheader_list,
+         column_header,
+         parsed_records) = self._parse_vcf_readers(vcf_readers, hc_keys)
 
         if hc_metaheader is not None:
             metaheader_list.append(hc_metaheader)

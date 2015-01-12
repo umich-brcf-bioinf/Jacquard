@@ -1,11 +1,12 @@
-# pylint: disable=missing-docstring
+# pylint: disable=missing-docstring, too-many-locals
 from __future__ import print_function, absolute_import
 from collections import defaultdict, OrderedDict
 import glob
 import jacquard.utils as utils
 import jacquard.vcf as vcf
 import os
-
+import re
+import jacquard.logger as logger
 
 MULT_ALT_HEADER = ('##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,'
                    'Description="dbSNP Membership",Source="Jacquard",'
@@ -38,14 +39,23 @@ class GenericBufferedReader(object):
         except StopIteration:
             return None
 
-def _merge_existing_metaheaders(vcf_readers):
+def _merge_existing_metaheaders(vcf_readers, tags_to_keep):
     all_meta_headers = utils.OrderedSet()
+    all_tags_to_keep = []
+
     for vcf_reader in vcf_readers:
-        for meta_header in vcf_reader.metaheaders:
+        for tag_regex in tags_to_keep:
+            for tag, format_metaheader in vcf_reader.format_metaheaders.items():
+                if re.match(tag_regex+"$", tag):
+                    all_tags_to_keep.append(tag)
+                    all_meta_headers.add(format_metaheader)
+
+        for meta_header in vcf_reader.non_format_metaheaders:
             all_meta_headers.add(meta_header)
+
     all_meta_headers.add(MULT_ALT_HEADER)
 
-    return all_meta_headers
+    return all_meta_headers, all_tags_to_keep
 
 def _write_metaheaders(file_writer, all_headers, execution_context):
     column_header = all_headers.pop()
@@ -85,16 +95,28 @@ def _get_record_sample_data(vcf_record, format_tags):
 def _build_coordinates(vcf_readers):
     coordinate_set = OrderedDict()
     mult_alts = defaultdict(set)
+    error = 0
 
     for vcf_reader in vcf_readers:
+        previous_record = None
         try:
             vcf_reader.open()
+
             for vcf_record in vcf_reader.vcf_records():
+                if previous_record and vcf_record < previous_record:
+                    logger.error("VCF File [{}] is not sorted."
+                                 .format(vcf_reader.file_name))
+                    error = 1
+                previous_record = vcf_record
                 coordinate_set[(vcf_record.get_empty_record())] = 0
                 mult_alts[(vcf_record.chrom, vcf_record.pos, vcf_record.ref)]\
                     .add(vcf_record.alt)
         finally:
             vcf_reader.close()
+
+    if error:
+        raise utils.JQException("One or more VCF files were not sorted. "
+                                "Review inputs and try again.")
 
     for vcf_record in coordinate_set:
         alts_for_this_locus = mult_alts[vcf_record.chrom,
@@ -118,13 +140,13 @@ def _build_merged_record(coordinate,
     sparse_matrix = {}
 
     for record in vcf_records:
-        record.filter_sample_tag_values(tags_to_keep)
         for sample, tags in record.sample_tag_values.items():
             if sample not in sparse_matrix:
                 sparse_matrix[sample] = {}
             for tag, value in tags.items():
-                all_tags.add(tag)
-                sparse_matrix[sample][tag] = value
+                if tag in tags_to_keep:
+                    all_tags.add(tag)
+                    sparse_matrix[sample][tag] = value
 
     full_matrix = OrderedDict()
     for sample in all_sample_names:
@@ -171,13 +193,12 @@ def _merge_records(coordinates,
         writer.write(merged_record.asText())
 
 
-def _process_headers(vcf_readers):
-    all_headers = utils.OrderedSet()
+def _process_headers(vcf_readers, tags_to_keep):
     all_sample_names = set()
     patient_to_file = defaultdict(list)
 
-    for metaheader in _merge_existing_metaheaders(vcf_readers):
-        all_headers.add(metaheader)
+    (all_headers,
+     all_tags_to_keep) = _merge_existing_metaheaders(vcf_readers, tags_to_keep)
 
     for vcf_reader in vcf_readers:
         patient = vcf_reader.file_name.split(".")[0]
@@ -201,7 +222,7 @@ def _process_headers(vcf_readers):
     column_header.extend(sorted_all_sample_names)
     all_headers.add("\t".join(column_header))
 
-    return list(all_headers), sorted_all_sample_names
+    return list(all_headers), sorted_all_sample_names, all_tags_to_keep
 
 
 def _build_merge_metaheaders(patient_to_file):
@@ -222,25 +243,26 @@ def add_subparser(subparser):
     parser.add_argument("-a", "--allow_inconsistent_sample_sets", action="store_true", default=False, help="Allow inconsistent sample sets across callers. Not recommended.")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+    parser.add_argument("--include_format_tags", dest='tags', help="Comma-separated list of regexs for format tags to include in output. Defaults to all JQ tags.")
 
 def execute(args, execution_context):
     input_path = os.path.abspath(args.input)
     output_path = os.path.abspath(args.output)
+    tags_to_keep = args.tags.split(",") if args.tags else ["JQ_.*"]
+
     input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
     file_writer = vcf.FileWriter(output_path)
     file_writer.open()
 
-    ##(jebene) Since we're contemplating making this a command-line argument,
-    ##I didn't make this a global variable
-    tags_to_keep = ["JQ_*"]
-
     buffered_readers, vcf_readers = _create_reader_lists(input_files)
     #TODO: (cgates): this should return tags_to_keep list based on filtered set of actual found FORMAT tags
-    headers, all_sample_names = _process_headers(vcf_readers)
+    headers, all_sample_names, all_tags_to_keep = _process_headers(vcf_readers,
+                                                                   tags_to_keep)
 
     _write_metaheaders(file_writer,
                        headers,
                        execution_context)
+
     coordinates = _build_coordinates(vcf_readers)
 
     #TODO: (cgates): this must accept tags_to_keep
@@ -248,7 +270,7 @@ def execute(args, execution_context):
                    buffered_readers,
                    file_writer,
                    all_sample_names,
-                   tags_to_keep)
+                   all_tags_to_keep)
 
     for vcf_reader in vcf_readers:
         vcf_reader.close()

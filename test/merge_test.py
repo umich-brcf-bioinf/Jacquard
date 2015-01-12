@@ -1,3 +1,7 @@
+#pylint: disable=line-too-long, global-statement, invalid-name, unused-argument
+#pylint: disable=unused-variable, too-few-public-methods, too-many-public-methods
+#pylint: disable=anomalous-backslash-in-string, maybe-no-member, undefined-variable
+from __future__ import absolute_import
 from argparse import Namespace
 from collections import OrderedDict
 import glob
@@ -9,14 +13,11 @@ import sys
 from testfixtures import TempDirectory
 import unittest
 
-from jacquard.merge import PivotError, VariantPivoter, merge_samples, _add_mult_alt_flags, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, combine_format_columns, _combine_format_values, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller_and_split_mult_alts, validate_samples_for_callers, validate_sample_caller_vcfs, create_new_line, create_merging_dict, remove_old_columns
+from jacquard.merge import PivotError, VariantPivoter, merge_samples, _add_mult_alt_flags, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, _combine_format_values, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller_and_split_mult_alts, validate_samples_for_callers, create_new_line, create_merging_dict, remove_old_columns
 import jacquard.merge as merge
-import jacquard.utils as utils
-from jacquard.vcf import FileReader
 import jacquard.logger as logger
 from jacquard.utils import JQException
-import test.mock_module as mock_module
-import test_case as test_case
+import test.test_case as test_case
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
@@ -39,21 +40,21 @@ def dataframe(input_data, sep="\t", index_col=None):
 
     return df
 
-class MockWriter():
+class MockWriter(object):
     def __init__(self):
         self._content = []
         self.wasClosed = False
 
     def write(self, content):
         self._content.extend(content.splitlines())
-        
+
     def lines(self):
         return self._content
 
     def close(self):
         self.wasClosed = True
-        
-class MockReader():
+
+class MockReader(object):
     def __init__(self, content):
         lines = [line + "\n" for line in content.split("\n") if line != ""]
         self._iter = lines.__iter__()
@@ -81,10 +82,11 @@ class MergeTestCase(unittest.TestCase):
         sys.stderr = self.saved_stderr
         self._reset_mock_logger()
 
-    def _change_mock_logger(self):
+    @staticmethod
+    def _change_mock_logger():
         global mock_log_called
         mock_log_called = False
-        global mock_log
+
         logger.info = mock_log
         logger.error = mock_log
         logger.warning = mock_log
@@ -115,18 +117,19 @@ class MergeTestCase(unittest.TestCase):
             input_dir.write("A.strelka.vcf", vcfRecordFormat.format("Strelka","T","A,C","INFO_Strelka","SK"))
             input_dir.write("A.varscan.vcf", vcfRecordFormat.format("VarScan","T","A,C","INFO_VarScan","VS"))
 
-            args = Namespace(input=input_dir.path, 
-                         output=os.path.join(output_dir.path,"tmp.vcf"), 
+            args = Namespace(input=input_dir.path,
+                         output=os.path.join(output_dir.path,"tmp.vcf"),
                          allow_inconsistent_sample_sets=False,
-                         keys=None) 
+                         keys=None)
             merge.execute(args, [])
 
             actual_merged = output_dir.read('tmp.vcf').split("\n")
-            
+
             print actual_merged
             self.assertEquals(14, len(actual_merged))
 
     def test_addFiles(self):
+        #pylint: disable=no-self-use
         rows = ["CHROM", "POS", "REF", "ALT"]
 
         pivoter = VariantPivoter(rows)
@@ -142,10 +145,10 @@ class MergeTestCase(unittest.TestCase):
 2\t24\tA\tT\tfoo\tDP:ESAF\t2:0.2
 3\t25\tA\tT\tfoo\tDP:ESAF\t74:0.2
 4\t26\tA\tT\tfoo\tDP:ESAF\t25:0.2'''
-    
+
         pivoter.add_file(StringIO(sample_A_file), 0, "MuTect", "file1")
         pivoter.add_file(StringIO(sample_B_file), 0, "MuTect", "file2")
-        
+
         actual_df = pivoter._combined_df
         actual_df.columns.names = [""]
 
@@ -159,7 +162,7 @@ class MergeTestCase(unittest.TestCase):
         expected_df.columns.names = [""]
 
         tm.assert_frame_equal(expected_df, actual_df)
-         
+
     def test_validateSampleCallerVcfs(self):
         dataString1 = \
 '''COORDINATE\tVarScan|foo|FORMAT\tVarScan|sample_A\tVarScan|sample_B\tMuTect|foo|FORMAT\tMuTect|foo|sample_A\tMuTect|foo|sample_A
@@ -174,15 +177,14 @@ class MergeTestCase(unittest.TestCase):
                                     merge.validate_sample_caller_vcfs,
                                     df)
 #         self.assertTrue("Sample [foo|sample_A] appears to be called by [MuTect] in multiple files." in self.output.getvalue())
-        global mock_log_called
         self.assertTrue(mock_log_called)
-        
-    def test_isCompatible_raiseIfMissingRequiredColumns(self): 
+
+    def test_isCompatible_raiseIfMissingRequiredColumns(self):
         rows = ['COORDINATE', 'foo']
         cols = ['SAMPLE_NAME']
         pivot_values = ['DP']
         pivoter = VariantPivoter(rows)
-        
+
         input_string = \
 '''COORDINATE\tFORMAT\tsample_A\tsample_B
 1\tDP:ESAF\t10:0.2\t100:0.2
@@ -190,15 +192,15 @@ class MergeTestCase(unittest.TestCase):
 3\tDP:ESAF\t30:0.2\t300:0.2
 4\tDP:ESAF\t40:0.2\t400:0.2'''
         df = dataframe(input_string)
-        
+
         self.assertRaises(PivotError, pivoter.is_compatible, df)
-        
+
     def test_checkRequiredColumnsPresent(self):
         rows = ['Foo']
         cols = ['SAMPLE_NAME']
         pivot_values = ['DP']
         pivoter = VariantPivoter(rows)
-       
+
         expected_string = \
 '''COORDINATE\tsample_A\tsample_B
 1\t10\t100
@@ -206,15 +208,15 @@ class MergeTestCase(unittest.TestCase):
 3\t30\t300
 4\t40\t400'''
         df = dataframe(expected_string)
-        
+
         self.assertRaises(PivotError, pivoter._check_required_columns_present, df)
-        
+
     def test_checkPivotIsUnique_DuplicateRaisesError(self):
         rows = ["Foo", "Bar", "Baz"]
         cols = ["Blah"]
         pivot_values = ['DP']
         pivoter = VariantPivoter(rows)
-       
+
         expected_string = \
 '''Foo\tBar\tBaz\tBlah
 1\tA\t42\t2
@@ -223,8 +225,9 @@ class MergeTestCase(unittest.TestCase):
         df = dataframe(expected_string)
 
         self.assertRaises(PivotError, pivoter._check_pivot_is_unique, df)
-        
+
     def Ytest_validateSampleData_nonUniqueRows(self):
+        #pylint: disable=no-self-use
         rows = ["CHROM", "POS", "REF", "ALT"]
 
         input_string = \
@@ -235,10 +238,10 @@ class MergeTestCase(unittest.TestCase):
 2\t3\tC\tG\tGT\t11'''
         df = dataframe(input_string)
         combined_df = df
-        
+
         pivoter = VariantPivoter(rows, combined_df)
         actual_df = pivoter.validate_sample_data()
-        
+
         expected_string = \
 '''CHROM\tPOS\tREF\tALT\tFORMAT\tSAMPLE_DATA
 1\t2\tA\tCG\tGT\t10
@@ -247,7 +250,7 @@ class MergeTestCase(unittest.TestCase):
         expected_df = dataframe(expected_string)
 
         tm.assert_frame_equal(expected_df, actual_df)
-    
+
     ##validate parameters
     def test_validateParameters_allValid(self):
         input_keys = ["CHROM", "POS", "REF"]
@@ -257,52 +260,52 @@ class MergeTestCase(unittest.TestCase):
         output, message = validate_parameters(input_keys, first_line, header_names)
 
         self.assertEqual(0, output)
-    
+
     def test_validateParameters_invalidKeys(self):
         input_keys = ["foo"]
         first_line = ["1\t24\tA\tC\tGT:DP\tfoo;bar\t1/1:258"]
         header_names = "CHROM\tPOS\tREF\tALT\tFORMAT\tINFO\tsample2"
 
         output, message = validate_parameters(input_keys, first_line, header_names)
-        
+
         self.assertEqual(1, output)
         self.assertEqual("Invalid input parameter(s) ['foo']", message)
-        
+
     #TODO: move out of reference files
     def test_determineInputKeysVcf(self):
         input_dir = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_vcf"
         actual_lst = determine_input_keys(input_dir)
-        
+
         expected_lst = ["CHROM", "POS", "REF", "ALT"]
-        
+
         self.assertEquals(expected_lst, actual_lst)
-        
+
     def test_determineInputKeysInvalid(self):
         input_dir = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_invalid"
-        
+
         self.assertRaises(PivotError, determine_input_keys, input_dir)
-    
+
     ##get headers, readers
     def test_getHeadersAndReaders(self):
         input_dir = TEST_DIRECTORY + "/functional_tests/test_input/test_input_valid"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*")))
         sample_file_readers, headers, header_names, first_line, meta_headers = get_headers_and_readers(in_files)
-        
+
         self.assertEquals([os.path.join(input_dir, "foo1.txt")], sample_file_readers)
         self.assertEquals([3], headers)
         self.assertEquals("CHROM\tPOS\tREF\tALT\tGENE_SYMBOL\tFORMAT\tSample_2384\tSample_2385", header_names.rstrip())
         self.assertEquals("1\t2342\tA\tT\tEGFR\tGT:DP\t1/1:241\t0/1:70", first_line[0].rstrip())
         self.assertEquals(['##FORMAT=<ID=JQ_FOO'], meta_headers)
-        
+
     def test_getHeadersAndReaders_invalid(self):
         input_dir = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_txt"
         in_files = sorted(glob.glob(os.path.join(input_dir,"*")))
-        
+
         self.assertRaisesRegexp(JQException,
                                 r"VCF file\(s\) .* have no Jacquard tags. Run \[jacquard tag\] on these files and try again.",
                                 get_headers_and_readers,
                                 in_files)
-                
+
     def test_buildPivoter_invalidHeaderRaisesPivotError(self):
         input_string = \
 '''COORDINATE\tFORMAT\tsample_A\tsample_B
@@ -311,28 +314,30 @@ class MergeTestCase(unittest.TestCase):
 3\tGT:ESAF\t30:0.2\t300:0.2
 4\tGT:ESAF\t40:0.2\t400:0.2'''
         input_keys = ['CHROM', 'POS']
-            
+
         self.assertRaises(PivotError, build_pivoter, StringIO(input_string), input_keys, 0)
 
     ##create_initial_df
     def test_createInitialDf(self):
-        reader = StringIO( 
+        #pylint: disable=no-self-use
+        reader = StringIO(
 '''#CHROM\tPOS\tREF
 1\t42\tA
-2\t43\tC''');
+2\t43\tC''')
 
         actual_df = create_initial_df(reader, 0)
 
         expected_data = StringIO(
 '''#CHROM\tPOS\tREF\tINFO
 1\t42\tA\t.
-2\t43\tC\t.''');
+2\t43\tC\t.''')
 
         expected_df = pd.read_csv(expected_data, sep="\t", header=False, dtype='str')
 
         tm.assert_frame_equal(expected_df, actual_df)
 
-    def test_mergeSamples_emptyCombinedDf(self): 
+    def test_mergeSamples_emptyCombinedDf(self):
+        #pylint: disable=no-self-use
         dataString = \
 '''CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tsample_A\tsample_B
 1\t23\tA\tG\tfoo\tGT:ESAF\t10:0.2\t100:0.2
@@ -351,31 +356,33 @@ class MergeTestCase(unittest.TestCase):
 3\t25\tA\tG\tfoo\tGT:ESAF\t30:0.2\t300:0.2
 4\t26\tA\tG\tfoo\tGT:ESAF\t40:0.2\t400:0.2''')
         expected_df = pd.read_csv(expected_data, sep="\t", header=False, dtype='str')
-        
+
         tm.assert_frame_equal(expected_df, actual_df)
-    
+
     def test_addMultAltFlags(self):
+        #pylint: disable=no-self-use
         dataString = \
 '''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A
 1\t12\tA\tG\t.\tGT:ESAF\t10:0.2
 1\t12\tA\tC\t.\tGT:ESAF\t10:0.2'''
         df = pd.read_csv(StringIO(dataString), sep="\t", header=False, dtype='str')
-        
+
         actual_df = _add_mult_alt_flags(df)
-        
+
         expectedString =  \
 '''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A
 1\t12\tA\tG\tMult_Alt\tGT:ESAF\t10:0.2
 1\t12\tA\tC\tMult_Alt\tGT:ESAF\t10:0.2'''
         expected_df = pd.read_csv(StringIO(expectedString), sep="\t", header=False, dtype='str')
         tm.assert_frame_equal(expected_df, actual_df)
-        
+
     def test_mergeSamples_multAlts(self):
+        #pylint: disable=no-self-use
         dataString1 = \
 '''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B
 1\t12\tA\tG\t.\tGT:ESAF\t10:0.2\t100:0.2'''
         df1 = pd.read_csv(StringIO(dataString1), sep="\t", header=False, dtype='str')
-        
+
         dataString2 = \
 '''CHROM\tPOS\tREF\tALT\tINFO\tfile2|FORMAT\tfile2|sample_C\tfile2|sample_D
 1\t12\tA\tC\t.\tGT:ESAF\t10:0.2\t100:0.2'''
@@ -389,10 +396,11 @@ class MergeTestCase(unittest.TestCase):
 1\t12\tA\tG\t.\tGT:ESAF\t10:0.2\t100:0.2\tnan\tnan\tnan
 1\t12\tA\tC\t.\tnan\tnan\tnan\tGT:ESAF\t10:0.2\t100:0.2'''
         expected_df = pd.read_csv(StringIO(expectedString), sep="\t", header=False, dtype='str')
-        
+
         tm.assert_frame_equal(expected_df, actual_df)
-        
-    def test_mergeSamples_populatedCombinedDf(self): 
+
+    def test_mergeSamples_populatedCombinedDf(self):
+        #pylint: disable=no-self-use
         dataString1 = \
 '''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B
 1\t12\tA\tG\tfoo\tGT:ESAF\t10:0.2\t100:0.2
@@ -400,7 +408,7 @@ class MergeTestCase(unittest.TestCase):
 3\t14\tA\tG\tfoo\tGT:ESAF\t30:0.2\t300:0.2
 4\t15\tA\tG\tfoo\tGT:ESAF\t40:0.2\t400:0.2'''
         df1 = pd.read_csv(StringIO(dataString1), sep="\t", header=False, dtype='str')
-        
+
         dataString2 = \
 '''CHROM\tPOS\tREF\tALT\tINFO\tfile2|FORMAT\tfile2|sample_C\tfile2|sample_D
 1\t12\tA\tG\tfoo\tGT:ESAF\t10:0.2\t100:0.2
@@ -419,12 +427,13 @@ class MergeTestCase(unittest.TestCase):
 3\t14\tA\tG\tfoo\tGT:ESAF\t30:0.2\t300:0.2\tGT:ESAF\t30:0.2\t300:0.2
 4\t15\tA\tG\tfoo\tGT:ESAF\t40:0.2\t400:0.2\tGT:ESAF\t40:0.2\t400:0.2''')
         expected_df = pd.read_csv(expected_data, sep="\t", header=False, dtype='str')
-        
+
         print actual_df
         tm.assert_frame_equal(expected_df, actual_df)
-    
+
     ##rearrange columns
     def test_rearrangeColumns(self):
+        #pylint: disable=no-self-use
         input_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tFORMAT\tsample_A\tsample_B\tINFO
 1\t2\t.\tA\tG\tQUAL\tFILTER\tDP\t57\t57\tfoo
@@ -435,7 +444,7 @@ class MergeTestCase(unittest.TestCase):
 '''
         df = dataframe(input_string)
         actual_df = rearrange_columns(df)
-        
+
         expected_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsample_A\tsample_B
 1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tDP\t57\t57
@@ -447,7 +456,7 @@ class MergeTestCase(unittest.TestCase):
         expected_df = dataframe(expected_string)
 
         tm.assert_frame_equal(expected_df, actual_df)
-    
+
     def test_determineCaller_valid(self):
         reader = MockReader("##foo\n##jacquard.tag.caller=MuTect\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2\n1\t2324\t.\tA\tG,T\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.234,0.124:78:25,312")
         writer = MockWriter()
@@ -457,7 +466,7 @@ class MergeTestCase(unittest.TestCase):
         self.assertEquals(0, unknown_callers)
 
         self.assertEquals(["##foo", "##jacquard.tag.caller=MuTect", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
-     
+
     def test_determineCaller_invalid(self):
         reader = MockReader("##foo\n##jacquard.tag.foo\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2\n1\t2324\t.\tA\tG,T\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.234,0.124:78:25,312")
         writer = MockWriter()
@@ -466,7 +475,7 @@ class MergeTestCase(unittest.TestCase):
         self.assertEquals("unknown", caller)
         self.assertEquals(3, unknown_callers)
         self.assertEquals(["##foo", "##jacquard.tag.foo", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
-        
+
     def test_createNewLine(self):
         fields = ["1", "42", ".", "A", "G,CT", ".", ".", ".", "DP:JQ_VS_AF:AF", "23:0.24,0.32:0.2354,0.324", "23:0.25,0.36:0.254,0.3456"]
 
@@ -484,25 +493,25 @@ class MergeTestCase(unittest.TestCase):
         context = ["jacquard.foo=file1|13523|tumor(file1.vcf)", "jacquard.foo=file2|13523|tumor(file2.vcf)", "jacquard.foo=file3|13523|tumor(file3.vcf)"]
         value = validate_samples_for_callers(context, False)
         self.assertEqual(1, value)
-        
+
     def test_validateSamplesForCallers_validAllow(self):
         context = ["jacquard.foo=file1|13523|tumor(file1.vcf)", "jacquard.foo=file2|13523|tumor(file2.vcf)", "jacquard.foo=file3|13523|tumor(file3.vcf)"]
         value = validate_samples_for_callers(context, True)
         self.assertEqual(1, value)
-    
+
     def test_validateSamplesForCallers_invalid(self):
         context = ["jacquard.foo=file1|13523|tumor(file1.vcf)", "jacquard.foo=file2|23|tumor(file2.vcf)", "jacquard.foo=file3|768|tumor(file3.vcf)"]
-    
+
         self.assertRaisesRegexp(JQException,
                                 "Some samples were not present for all callers. Review log warnings and move/adjust input files as appropriate.",
                                 validate_samples_for_callers,
                                 context, False)
-        
+
     def test_validateSamplesForCallers_invalidAllow(self):
         context = ["jacquard.foo=file1|13523|tumor(file1.vcf)", "jacquard.foo=file2|23|tumor(file2.vcf)", "jacquard.foo=file3|768|tumor(file3.vcf)"]
         value = validate_samples_for_callers(context, True)
         self.assertEqual(1, value)
-        
+
     def test_createDict(self):
         input_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B
@@ -518,7 +527,7 @@ class MergeTestCase(unittest.TestCase):
         expected_file_dict = {'MuTect': [OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_B')])]}
         file_dict, all_tags = create_dict(df, row, col)
         self.assertEqual(expected_file_dict, file_dict)
-    
+
     def test_createDict_multFiles(self):
         input_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tMuTect|file2|FORMAT\tMuTect|file2|sample_A\tMuTect|file2|sample_B
@@ -534,8 +543,9 @@ class MergeTestCase(unittest.TestCase):
         expected_file_dict = {'MuTect': [OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_B')]), OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file2|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file2|sample_B')])]}
         file_dict, all_tags = create_dict(df, row, col)
         self.assertEqual(expected_file_dict, file_dict)
-        
+
     def test_cleanupDf(self):
+        #pylint: disable=no-self-use
         input_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|FORMAT\tfile2|sample_A\tfile2|sample_B
 1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tDP:sample_name\t57:file1|sample_A\t57:file1|sample_B\tDP:sample_name\t57:file2|sample_A\t57:file2|sample_B
@@ -547,7 +557,7 @@ class MergeTestCase(unittest.TestCase):
         df = dataframe(input_string)
         file_dict = {"file1":"foo", "file2": "foo"}
         actual_df = cleanup_df(df, file_dict)
-        
+
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|sample_A\tfile2|sample_B
 1\t2\t.\tA\tG\t.\t.\tfoo\tDP\t57\t57\t57\t57
@@ -558,8 +568,9 @@ class MergeTestCase(unittest.TestCase):
 '''
         expected_df = dataframe(expected_string)
         tm.assert_frame_equal(expected_df, actual_df)
-        
+
     def test_cleanupDf_rearranged(self):
+        #pylint: disable=no-self-use
         input_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tMuTect|file2|FORMAT\tMuTect|file2|sample_A\tMuTect|file2|sample_B
 1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tsample_name:DP\t57:MuTect|file1|sample_A\t57:MuTect|file1|sample_B\tDP:sample_name\t57:MuTect|file2|sample_A\t57:MuTect|file2|sample_B
@@ -571,7 +582,7 @@ class MergeTestCase(unittest.TestCase):
         df = dataframe(input_string)
         file_dict = {"MuTect|file1":"foo", "MuTect|file2": "foo"}
         actual_df = cleanup_df(df, file_dict)
-        
+
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tMuTect|file2|sample_A\tMuTect|file2|sample_B
 1\t2\t.\tA\tG\t.\t.\tfoo\tDP\t57\t57\t57\t57
@@ -582,7 +593,7 @@ class MergeTestCase(unittest.TestCase):
 '''
         expected_df = dataframe(expected_string)
         tm.assert_frame_equal(expected_df, actual_df)
-        
+
     def test_createMergingDict(self):
         input_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B
@@ -598,7 +609,7 @@ class MergeTestCase(unittest.TestCase):
         file_dict = create_merging_dict(df, row, col)
         expected_file_dict = {'file1|sample_A': [OrderedDict([('JQ_DP', '57')])], 'file1|sample_B': [OrderedDict([('JQ_DP', '57')])]}
         self.assertEquals(expected_file_dict, file_dict)
-    
+
     def test_createMergingDict_multipleCallers(self):
         input_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tVarScan|file1|sample_A\tVarScan|file1|sample_B
@@ -614,8 +625,9 @@ class MergeTestCase(unittest.TestCase):
         file_dict = create_merging_dict(df, row, col)
         expected_file_dict = {'file1|sample_A': [OrderedDict([('JQ_DP_VS', '.'), ('JQ_DP_MT', '57')]), OrderedDict([('JQ_DP_VS', '57'), ('JQ_DP_MT', '.')])], 'file1|sample_B': [OrderedDict([('JQ_DP_VS', '.'), ('JQ_DP_MT', '57')]), OrderedDict([('JQ_DP_VS', '57'), ('JQ_DP_MT', '.')])]}
         self.assertEquals(expected_file_dict, file_dict)
-    
+
     def test_removeOldColumns(self):
+        #pylint: disable=no-self-use
         input_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tfile1|sample_A\tfile1|sample_B
 1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t57\t57\t57\t57
@@ -626,7 +638,7 @@ class MergeTestCase(unittest.TestCase):
 '''
         df = dataframe(input_string)
         actual_df = remove_old_columns(df)
-        
+
         expected_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
 1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t57\t57
@@ -636,9 +648,9 @@ class MergeTestCase(unittest.TestCase):
 13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t57\t57
 '''
         expected_df = dataframe(expected_string)
-        
+
         tm.assert_frame_equal(expected_df, actual_df)
-        
+
     def test_combineFormatColumns(self):
         input_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B
@@ -651,8 +663,7 @@ class MergeTestCase(unittest.TestCase):
         df = dataframe(input_string)
 
         actual_df = merge.combine_format_columns(df, 0)
-        
-        global mock_log_called
+
         self.assertTrue(mock_log_called)
 
         expected_string = \
@@ -666,7 +677,7 @@ class MergeTestCase(unittest.TestCase):
         expected_df = dataframe(expected_string)
 
         tm.assert_frame_equal(expected_df, actual_df)
-        
+
     def test_combineFormatColumns_differentSampleNames(self):
         input_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tVarScan|file1|FORMAT\tVarScan|file1|sample_a\tVarScan|file1|sample_b
@@ -680,10 +691,9 @@ class MergeTestCase(unittest.TestCase):
 
 
         actual_df = merge.combine_format_columns(df, 0)
-        
-        global mock_log_called
+
         self.assertTrue(mock_log_called)
-        
+
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_b\tfile1|sample_A\tfile1|sample_B\tfile1|sample_a
 1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t.:25\t1:.\t20:.\t.:6
@@ -695,7 +705,7 @@ class MergeTestCase(unittest.TestCase):
         expected_df = dataframe(expected_string, "\t", False)
 
         tm.assert_frame_equal(expected_df, actual_df)
-        
+
     def test_combineFormatColumns_missingTags(self):
         input_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tVarScan|file1|FORMAT\tVarScan|file1|sample_A\tVarScan|file1|sample_B
@@ -705,14 +715,13 @@ class MergeTestCase(unittest.TestCase):
 13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t4\t23\tJQ_DP_VS\t9\t28
 13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t5\t24\tJQ_DP_VS\t10\t29
 '''
-        
+
         df = dataframe(input_string)
 
         actual_df = merge.combine_format_columns(df, 0)
-        
-        global mock_log_called
+
         self.assertTrue(mock_log_called)
-        
+
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
 1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_DP_MT\t1\t20
@@ -725,7 +734,7 @@ class MergeTestCase(unittest.TestCase):
         expected_df = dataframe(expected_string)
 
         tm.assert_frame_equal(expected_df, actual_df)
-        
+
     def test_combineFormatColumns_validateOrder(self):
         input_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tVarScan|file1|FORMAT\tVarScan|file1|sample_A\tVarScan|file1|sample_B
@@ -738,10 +747,9 @@ class MergeTestCase(unittest.TestCase):
         df = dataframe(input_string)
 
         actual_df = merge.combine_format_columns(df, 0)
-        
-        global mock_log_called
+
         self.assertTrue(mock_log_called)
-        
+
         expected_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
 1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t1:6\t20:25
@@ -753,7 +761,7 @@ class MergeTestCase(unittest.TestCase):
         expected_df = dataframe(expected_string)
 
         tm.assert_frame_equal(expected_df, actual_df)
-        
+
     def test_combineFormatColumns_inconsistentSampleSets(self):
         input_string = \
 '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tMuTect|file2|FORMAT\tMuTect|file2|sample_A\tMuTect|file2|sample_B
@@ -766,8 +774,7 @@ class MergeTestCase(unittest.TestCase):
         df = dataframe(input_string)
 
         actual_df = merge.combine_format_columns(df, 1)
-        
-        global mock_log_called
+
         self.assertTrue(mock_log_called)
 
         expected_string = \
@@ -778,7 +785,7 @@ class MergeTestCase(unittest.TestCase):
 13\t5\t.\tT\tAA\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
 13\t5\t.\tT\tAAAA\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t.\t.
 '''
-        
+
         expected_df = dataframe(expected_string)
 
         tm.assert_frame_equal(expected_df, actual_df)
@@ -796,8 +803,7 @@ class MergeTestCase(unittest.TestCase):
 
 
         actual_df = merge.combine_format_columns(df, 0)
-        
-        global mock_log_called
+
         self.assertTrue(mock_log_called)
 
         expected_string = \
@@ -808,7 +814,7 @@ class MergeTestCase(unittest.TestCase):
 13\t5\t.\tT\tAA\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
 13\t5\t.\tT\tAAAA\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
 '''
-        
+
         expected_df = dataframe(expected_string)
 
         tm.assert_frame_equal(expected_df, actual_df)
@@ -822,8 +828,7 @@ class MergeTestCase(unittest.TestCase):
         df = dataframe(input_string)
 
         actual_df = merge.combine_format_columns(df, 0)
-        
-        global mock_log_called
+
         self.assertTrue(mock_log_called)
 
         expected_string = \
@@ -831,11 +836,11 @@ class MergeTestCase(unittest.TestCase):
 1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_DP:JQ_GT\t57:0/1\t.:.
 1\t3\t.\tA\tG\t.\t.\tfoo\tJQ_DP:JQ_GT\t.:.\t58:0/1
 '''
-        
+
         expected_df = dataframe(expected_string)
 
         tm.assert_frame_equal(expected_df, actual_df)
-        
+
     def test_removeNonJQTags(self):
         fake_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_A\tfile2|sample_B\tfile1|sample_A\tfile1|sample_B
@@ -844,9 +849,9 @@ class MergeTestCase(unittest.TestCase):
         file_dict = {'file2': [OrderedDict([('DP', '57'), ('JQ_foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('DP', '57'), ('JQ_foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_B')])]}
         actual_file_dict = remove_non_jq_tags(df, file_dict)
         expected_file_dict = {'file2': [OrderedDict([('JQ_foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('JQ_foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('JQ_foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('JQ_foo', '.'), ('sample_name', 'file1|sample_B')])]}
-       
+
         self.assertEquals(expected_file_dict, actual_file_dict)
-    
+
     def test_removeNonJQTags_noTags(self):
         fake_string = \
         '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_A\tfile2|sample_B\tfile1|sample_A\tfile1|sample_B
@@ -855,25 +860,25 @@ class MergeTestCase(unittest.TestCase):
         file_dict = {'file2': [OrderedDict([('DP', '57'), ('foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('DP', '57'), ('foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('DP', '57'), ('foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('DP', '57'), ('foo', '.'), ('sample_name', 'file1|sample_B')])]}
         actual_file_dict = remove_non_jq_tags(df, file_dict)
         expected_file_dict = {'file2': [OrderedDict([('sample_name', 'file2|sample_A')]), OrderedDict([('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('sample_name', 'file1|sample_A')]), OrderedDict([('sample_name', 'file1|sample_B')])]}
-       
+
         self.assertEquals(expected_file_dict, actual_file_dict)
-    
+
     def test_addAllTags(self):
         file_dict = {'file2': [OrderedDict([('JQ_DP', '57'), ('JQ_foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('JQ_foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('JQ_DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('JQ_DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_B')])]}
         sample_keys = ["JQ_DP", "JQ_foo"]
-        
+
         actual_file_dict = add_all_tags(file_dict, sample_keys)
         expected_file_dict = {'file2': [OrderedDict([('JQ_DP', '57'), ('JQ_foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('JQ_foo', '1'), ('sample_name', 'file2|sample_B'), ('JQ_DP', '^')])], 'file1': [OrderedDict([('JQ_DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('JQ_DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_B')])]}
         self.assertEquals(expected_file_dict, actual_file_dict)
-        
+
     def test_sortFormatTags(self):
         file_dict = {'file2': [OrderedDict([('JQ_DP', '57'), ('JQ_foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('JQ_foo', '1'), ('sample_name', 'file2|sample_B'), ('JQ_DP', '.')])], 'file1': [OrderedDict([('JQ_DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('JQ_DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_B')])]}
-        
+
         sorted_dict = sort_format_tags(file_dict)
         expected_sorted_dict = {'file2': [OrderedDict([('JQ_DP', '57'), ('JQ_foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('JQ_DP', '.'), ('JQ_foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('JQ_DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('JQ_DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_B')])]}
-        
+
         self.assertEquals(expected_sorted_dict, sorted_dict)
-        
+
     def test_determineMergeContext(self):
         all_merge_context = []
         all_merge_column_context = []

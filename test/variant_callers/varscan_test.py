@@ -1,16 +1,13 @@
 # pylint: disable=C0103,C0301,R0904
-from collections import OrderedDict,defaultdict
 import os
 import unittest
 
 from jacquard.variant_callers import varscan
-from jacquard.utils import __version__,jq_af_tag,jq_dp_tag,jq_somatic_tag,\
-    JQException
-from test.variant_callers.mutect_test import MockTag
+from jacquard.utils import __version__, JQException
 from jacquard.vcf import VcfRecord, FileReader
 from testfixtures import TempDirectory
 
-class MockWriter():
+class MockWriter(object):
     def __init__(self):
         self._content = []
         self.opened = False
@@ -29,10 +26,13 @@ class MockWriter():
         self.closed = True
 
 class MockFileReader(object):
-    def __init__(self, input_filepath="/foo/mockFileReader.txt", content = []):
+    def __init__(self, input_filepath="/foo/mockFileReader.txt", content = None):
         self.input_filepath = input_filepath
         self.file_name = os.path.basename(input_filepath)
-        self._content = content
+        if content:
+            self._content = content
+        else:
+            self._content = []
         self.open_was_called = False
         self.close_was_called = False
 
@@ -236,9 +236,9 @@ class VarscanTestCase(unittest.TestCase):
                             "chr3|99463179|G|A|22|0|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n"+
                             "").replace("|","\t"))
             hc_readers.append(FileReader(os.path.join(input_dir.path,"A")))
-            
+
             actual = self.caller._process_hc_files(hc_readers)
-            
+
             metaheader = ('##INFO=<ID={0}HC'
                           ',Number=1,Type=Flag,Description="Jacquard '
                           'high-confidence somatic flag for VarScan. Based on '
@@ -326,6 +326,11 @@ class VarscanTestCase(unittest.TestCase):
         with self.assertRaisesRegexp(JQException,r"Each patient in a VarScan directory should have a snp file and an indel file."):
             self.caller.normalize(MockWriter(), readers)
 
-    def append_hc_files(self, readers, file1="snp.somatic.hc.fpfilter.pass", file2="indel.somatic.hc.fpfilter.pass", content1=[], content2=[]):
+    @staticmethod
+    def append_hc_files(readers, file1="snp.somatic.hc.fpfilter.pass", file2="indel.somatic.hc.fpfilter.pass", content1=None, content2=None):
+        if not content1:
+            content1 = []
+        if not content2:
+            content2 = []
         readers.append(MockFileReader(file1, content1))
         readers.append(MockFileReader(file2, content2))

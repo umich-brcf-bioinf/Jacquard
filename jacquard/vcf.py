@@ -43,21 +43,27 @@ class RecognizedVcfReader(object):
 class VcfReader(object):
     '''Wraps a file reader, providing VCF metaheaders and records'''
 
+    def __init__(self, file_reader):
+        self._file_reader = file_reader
+        (self.column_header, self.metaheaders) = self._init_headers()
+        (self._format_metaheaders,
+         self._non_format_metaheaders) = self._init_format_metaheaders()
+        self.sample_names = self._init_sample_names()
+        self.qualified_sample_names = self._create_qualified_sample_names()
+
     def _init_format_metaheaders(self):
         format_ids = {}
+        non_format_metaheaders = set()
+
         for metaheader in self.metaheaders:
             format_tag = re.match("^##FORMAT=.*?[<,]ID=([^,>]*)", metaheader)
             if format_tag:
                 format_id = format_tag.group(1)
                 format_ids[format_id] = metaheader.strip()
-        return format_ids
+            else:
+                non_format_metaheaders.add(metaheader)
 
-    def __init__(self, file_reader):
-        self._file_reader = file_reader
-        (self.column_header, self.metaheaders) = self._init_headers()
-        self._format_metaheaders = self._init_format_metaheaders()
-        self.sample_names = self._init_sample_names()
-        self.qualified_sample_names = self._create_qualified_sample_names()
+        return format_ids, non_format_metaheaders
 
     @property
     def file_name(self):
@@ -70,6 +76,10 @@ class VcfReader(object):
     @property
     def format_metaheaders(self):
         return dict(self._format_metaheaders)
+
+    @property
+    def non_format_metaheaders(self):
+        return list(self._non_format_metaheaders)
 
     def _init_sample_names(self):
         sample_names = []

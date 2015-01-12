@@ -1,6 +1,7 @@
-# pylint: disable=C0111,C0301,R0904,C0111,W0212
+#pylint: disable=invalid-name, global-statement, line-too-long
+#pylint: disable=too-many-public-methods, too-few-public-methods, unused-argument
+from __future__ import absolute_import
 from argparse import Namespace
-import glob
 import os
 from StringIO import StringIO
 import sys
@@ -10,8 +11,7 @@ import unittest
 import jacquard.utils as utils
 import jacquard.consensus as consensus
 import jacquard.logger as logger
-import jacquard.vcf as vcf
-import test_case as test_case
+import test.test_case as test_case
 
 class MockFileWriter(object):
     def __init__(self):
@@ -34,10 +34,15 @@ class MockFileWriter(object):
         self.closed = True
 
 class MockVcfReader(object):
-    def __init__(self, input_filepath="vcfName", metaheaders=["##metaheaders"],
+    def __init__(self, input_filepath="vcfName", metaheaders=None,
                  column_header="#header"):
         self.input_filepath = input_filepath
-        self.metaheaders = metaheaders
+
+        if metaheaders:
+            self.metaheaders = metaheaders
+        else:
+            self.metaheaders = ["##metaheaders"]
+
         self.column_header = column_header
         self.opened = False
         self.closed = False
@@ -45,23 +50,30 @@ class MockVcfReader(object):
     def open(self):
         self.opened = True
 
-    def vcf_records(self):
+    @staticmethod
+    def vcf_records():
         return iter(["foo"])
 
     def close(self):
         self.closed = True
 
 class MockConsensusTag(object):
-    def __init__(self, metaheader = "##consensus_metaheader", all_ranges = []):
+    def __init__(self, metaheader = "##consensus_metaheader", all_ranges = None):
         self.metaheader = metaheader
         self.format_called = False
-        self.all_ranges = all_ranges
+
+        if all_ranges:
+            self.all_ranges = all_ranges
+        else:
+            self.all_ranges = []
+
         self.name = "af"
 
     def format(self):
         self.format_called = True
 
-    def _roundTwoDigits(self, value):
+    @staticmethod
+    def _round_two_digits(value):
         split_value = value.split(".")
 
         if len(split_value[1]) <= 2:
@@ -73,11 +85,15 @@ class MockConsensusTag(object):
             return str(round(100 * float(value))/100)
 
 class MockConsensusHelper(object):
-    def __init__(self, tag, ranges=[0.0]):
+    def __init__(self, tag, ranges = None):
         self.tags = [tag]
         self.add_tags_called = False
         self.add_zscore_called = False
-        self.ranges = ranges
+
+        if ranges:
+            self.ranges = ranges
+        else:
+            self.ranges = []
 
     def add_tags(self, vcf_record):
         for tag in self.tags:
@@ -92,11 +108,11 @@ class MockConsensusHelper(object):
     def get_consensus_metaheaders(self):
         return [tag.metaheader for tag in self.tags]
 
-mock_log_called = False
+MOCK_LOG_CALLED = False
 
 def mock_log(msg, *args):
-    global mock_log_called
-    mock_log_called = True
+    global MOCK_LOG_CALLED
+    MOCK_LOG_CALLED = True
 
 class ConsensusTestCase(unittest.TestCase):
     def setUp(self):
@@ -114,10 +130,11 @@ class ConsensusTestCase(unittest.TestCase):
         sys.stderr = self.saved_stderr
         self._reset_mock_logger()
 
-    def _change_mock_logger(self):
-        global mock_log_called
-        mock_log_called = False
-        global mock_log
+    @staticmethod
+    def _change_mock_logger():
+        global MOCK_LOG_CALLED
+        MOCK_LOG_CALLED = False
+
         logger.info = mock_log
         logger.error = mock_log
         logger.warning = mock_log
@@ -202,6 +219,7 @@ class ConsensusTestCase(unittest.TestCase):
         self.assertTrue(tag.format_called)
 
     def test_execute_outputFile(self):
+        #pylint: disable=no-self-use
         input_data = ("##blah\n#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"+
                     "SAMPLE\n1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF:JQ_VS_DP:JQ_MT_DP|0.2:0.4:30:45")\
                     .replace("|","\t")
@@ -227,7 +245,7 @@ class ConsensusTestCase(unittest.TestCase):
                              output=output_file,
                              column_specification=None)
             self.assertRaisesRegexp(utils.JQException, "Input file "+
-                                    "\[.*foo.txt\] must be a VCF file.",
+                                    r"\[.*foo.txt\] must be a VCF file.",
                                     consensus.execute, args, ["##foo"])
 
     def test_execute_badOutputFile(self):
@@ -239,10 +257,11 @@ class ConsensusTestCase(unittest.TestCase):
                              output=output_file,
                              column_specification=None)
             self.assertRaisesRegexp(utils.JQException, "Output file "+
-                                    "\[.*baz.txt\] must be a VCF file.",
+                                    r"\[.*baz.txt\] must be a VCF file.",
                                     consensus.execute, args, ["##foo"])
 
     def test_execute_outputDirectory(self):
+        #pylint: disable=no-self-use
         input_data = ("##blah\n#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"+
                     "SAMPLE\n1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF:JQ_VS_DP:JQ_MT_DP|0.2:0.4:30:45")\
                     .replace("|","\t")

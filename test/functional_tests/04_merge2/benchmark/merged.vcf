@@ -1,247 +1,217 @@
-##fileformat=VCFv4.1
-##FILTER=<ID=PASS,Description="Accept as a confident somatic mutation">
-##FILTER=<ID=REJECT,Description="Rejected as a confident somatic mutation">
-##FORMAT=<ID=AD,Number=.,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">
-##FORMAT=<ID=BQ,Number=A,Type=Float,Description="Average base quality for reads supporting alleles">
-##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">
-##FORMAT=<ID=FA,Number=A,Type=Float,Description="Allele fraction of the alternate allele with regard to reference">
-##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
-##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
-##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification">
-##FORMAT=<ID=SS,Number=1,Type=Integer,Description="Variant status relative to non-adjacent Normal,0=wildtype,1=germline,2=somatic,3=LOH,4=post-transcriptional modification,5=unknown">
-##INFO=<ID=DB,Number=0,Type=Flag,Description="dbSNP Membership">
-##INFO=<ID=MQ0,Number=1,Type=Integer,Description="Total Mapping Quality Zero Reads">
-##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description="Somatic event">
-##INFO=<ID=VT,Number=1,Type=String,Description="Variant type, can be SNP, INS or DEL">
-##MuTect="analysis_type=MuTect input_file=[11N_25714.sorted.bam, 11Ta_25715.sorted.bam] read_buffer_size=null phone_home=STANDARD gatk_key=null tag=NA read_filter=[BadCigar] intervals=[/ccmb/BioinfCore/SoftwareDev/common/TargetRegion_buffered10bases.bed] excludeIntervals=null interval_set_rule=UNION interval_merging=ALL interval_padding=0 reference_sequence=/ccmb/BioinfCore/Common/SOFTWARES/hg19bundle/ucsc.hg19.fasta nonDeterministicRandomSeed=false disableRandomization=false maxRuntime=-1 maxRuntimeUnits=MINUTES downsampling_type=BY_SAMPLE downsample_to_fraction=null downsample_to_coverage=1000 enable_experimental_downsampling=false baq=OFF baqGapOpenPenalty=40.0 performanceLog=null useOriginalQualities=false BQSR=null quantize_quals=0 disable_indel_quals=false emit_original_quals=false preserve_qscores_less_than=6 defaultBaseQualities=-1 validation_strictness=SILENT remove_program_records=false keep_program_records=false unsafe=null num_threads=1 num_cpu_threads_per_data_thread=1 num_io_threads=0 monitorThreadEfficiency=false num_bam_file_handles=null read_group_black_list=null pedigree=[] pedigreeString=[] pedigreeValidationType=STRICT allow_intervals_with_unindexed_bam=false generateShadowBCF=false logging_level=INFO log_to_file=null help=false noop=false enable_extended_output=false artifact_detection_mode=false tumor_sample_name=25715 bam_tumor_sample_name=null normal_sample_name=25714 force_output=false force_alleles=false only_passing_calls=false initial_tumor_lod=4.0 tumor_lod=6.3 fraction_contamination=0.02 minimum_mutation_cell_fraction=0.0 normal_lod=2.2 normal_artifact_lod=1.0 strand_artifact_lod=2.0 strand_artifact_power_threshold=0.9 dbsnp_normal_lod=5.5 somatic_classification_normal_power_threshold=0.95 minimum_normal_allele_fraction=0.0 tumor_f_pretest=0.0050 min_qscore=5 gap_events_threshold=3 heavily_clipped_read_fraction=0.3 clipping_bias_pvalue_threshold=0.05 fraction_mapq0_threshold=0.5 pir_median_threshold=10.0 pir_mad_threshold=3.0 required_maximum_alt_allele_mapping_quality_score=20 max_alt_alleles_in_normal_count=2 max_alt_alleles_in_normal_qscore_sum=20 max_alt_allele_in_normal_fraction=0.03 power_constant_qscore=30 absolute_copy_number_data=null power_constant_af=0.30000001192092896 vcf=org.broadinstitute.sting.gatk.io.stubs.VariantContextWriterStub no_cmdline_in_header=org.broadinstitute.sting.gatk.io.stubs.VariantContextWriterStub sites_only=org.broadinstitute.sting.gatk.io.stubs.VariantContextWriterStub bcf=org.broadinstitute.sting.gatk.io.stubs.VariantContextWriterStub dbsnp=[(RodBinding name=dbsnp source=/ccmb/BioinfCore/Common/SOFTWARES/hg19bundle/dbsnp_138.hg19.vcf)] cosmic=[(RodBinding name=cosmic source=/ccmb/BioinfCore/SoftwareDev/common/Cosmic.v68.hg19.vcf)] normal_panel=[] coverage_20_q20_file=null power_file=null tumor_depth_file=null normal_depth_file=null filter_mismatching_base_and_quals=false"
-##contig=<ID=chrM,length=16571,assembly=hg19>
-##contig=<ID=chr1,length=249250621,assembly=hg19>
-##contig=<ID=chr2,length=243199373,assembly=hg19>
-##contig=<ID=chr3,length=198022430,assembly=hg19>
-##contig=<ID=chr4,length=191154276,assembly=hg19>
-##contig=<ID=chr5,length=180915260,assembly=hg19>
-##contig=<ID=chr6,length=171115067,assembly=hg19>
-##contig=<ID=chr7,length=159138663,assembly=hg19>
-##contig=<ID=chr8,length=146364022,assembly=hg19>
-##contig=<ID=chr9,length=141213431,assembly=hg19>
-##contig=<ID=chr10,length=135534747,assembly=hg19>
-##contig=<ID=chr11,length=135006516,assembly=hg19>
-##contig=<ID=chr12,length=133851895,assembly=hg19>
-##contig=<ID=chr13,length=115169878,assembly=hg19>
-##contig=<ID=chr14,length=107349540,assembly=hg19>
-##contig=<ID=chr15,length=102531392,assembly=hg19>
-##contig=<ID=chr16,length=90354753,assembly=hg19>
-##contig=<ID=chr17,length=81195210,assembly=hg19>
-##contig=<ID=chr18,length=78077248,assembly=hg19>
-##contig=<ID=chr19,length=59128983,assembly=hg19>
-##contig=<ID=chr20,length=63025520,assembly=hg19>
-##contig=<ID=chr21,length=48129895,assembly=hg19>
-##contig=<ID=chr22,length=51304566,assembly=hg19>
-##contig=<ID=chrX,length=155270560,assembly=hg19>
-##contig=<ID=chrY,length=59373566,assembly=hg19>
-##contig=<ID=chr1_gl000191_random,length=106433,assembly=hg19>
-##contig=<ID=chr1_gl000192_random,length=547496,assembly=hg19>
-##contig=<ID=chr4_ctg9_hap1,length=590426,assembly=hg19>
-##contig=<ID=chr4_gl000193_random,length=189789,assembly=hg19>
-##contig=<ID=chr4_gl000194_random,length=191469,assembly=hg19>
-##contig=<ID=chr6_apd_hap1,length=4622290,assembly=hg19>
-##contig=<ID=chr6_cox_hap2,length=4795371,assembly=hg19>
-##contig=<ID=chr6_dbb_hap3,length=4610396,assembly=hg19>
-##contig=<ID=chr6_mann_hap4,length=4683263,assembly=hg19>
-##contig=<ID=chr6_mcf_hap5,length=4833398,assembly=hg19>
-##contig=<ID=chr6_qbl_hap6,length=4611984,assembly=hg19>
-##contig=<ID=chr6_ssto_hap7,length=4928567,assembly=hg19>
-##contig=<ID=chr7_gl000195_random,length=182896,assembly=hg19>
-##contig=<ID=chr8_gl000196_random,length=38914,assembly=hg19>
-##contig=<ID=chr8_gl000197_random,length=37175,assembly=hg19>
-##contig=<ID=chr9_gl000198_random,length=90085,assembly=hg19>
-##contig=<ID=chr9_gl000199_random,length=169874,assembly=hg19>
-##contig=<ID=chr9_gl000200_random,length=187035,assembly=hg19>
-##contig=<ID=chr9_gl000201_random,length=36148,assembly=hg19>
-##contig=<ID=chr11_gl000202_random,length=40103,assembly=hg19>
-##contig=<ID=chr17_ctg5_hap1,length=1680828,assembly=hg19>
-##contig=<ID=chr17_gl000203_random,length=37498,assembly=hg19>
-##contig=<ID=chr17_gl000204_random,length=81310,assembly=hg19>
-##contig=<ID=chr17_gl000205_random,length=174588,assembly=hg19>
-##contig=<ID=chr17_gl000206_random,length=41001,assembly=hg19>
-##contig=<ID=chr18_gl000207_random,length=4262,assembly=hg19>
-##contig=<ID=chr19_gl000208_random,length=92689,assembly=hg19>
-##contig=<ID=chr19_gl000209_random,length=159169,assembly=hg19>
-##contig=<ID=chr21_gl000210_random,length=27682,assembly=hg19>
-##contig=<ID=chrUn_gl000211,length=166566,assembly=hg19>
-##contig=<ID=chrUn_gl000212,length=186858,assembly=hg19>
-##contig=<ID=chrUn_gl000213,length=164239,assembly=hg19>
-##contig=<ID=chrUn_gl000214,length=137718,assembly=hg19>
-##contig=<ID=chrUn_gl000215,length=172545,assembly=hg19>
-##contig=<ID=chrUn_gl000216,length=172294,assembly=hg19>
-##contig=<ID=chrUn_gl000217,length=172149,assembly=hg19>
-##contig=<ID=chrUn_gl000218,length=161147,assembly=hg19>
-##contig=<ID=chrUn_gl000219,length=179198,assembly=hg19>
-##contig=<ID=chrUn_gl000220,length=161802,assembly=hg19>
-##contig=<ID=chrUn_gl000221,length=155397,assembly=hg19>
-##contig=<ID=chrUn_gl000222,length=186861,assembly=hg19>
-##contig=<ID=chrUn_gl000223,length=180455,assembly=hg19>
-##contig=<ID=chrUn_gl000224,length=179693,assembly=hg19>
-##contig=<ID=chrUn_gl000225,length=211173,assembly=hg19>
-##contig=<ID=chrUn_gl000226,length=15008,assembly=hg19>
-##contig=<ID=chrUn_gl000227,length=128374,assembly=hg19>
-##contig=<ID=chrUn_gl000228,length=129120,assembly=hg19>
-##contig=<ID=chrUn_gl000229,length=19913,assembly=hg19>
-##contig=<ID=chrUn_gl000230,length=43691,assembly=hg19>
-##contig=<ID=chrUn_gl000231,length=27386,assembly=hg19>
-##contig=<ID=chrUn_gl000232,length=40652,assembly=hg19>
-##contig=<ID=chrUn_gl000233,length=45941,assembly=hg19>
-##contig=<ID=chrUn_gl000234,length=40531,assembly=hg19>
-##contig=<ID=chrUn_gl000235,length=34474,assembly=hg19>
-##contig=<ID=chrUn_gl000236,length=41934,assembly=hg19>
-##contig=<ID=chrUn_gl000237,length=45867,assembly=hg19>
-##contig=<ID=chrUn_gl000238,length=39939,assembly=hg19>
-##contig=<ID=chrUn_gl000239,length=33824,assembly=hg19>
-##contig=<ID=chrUn_gl000240,length=41933,assembly=hg19>
-##contig=<ID=chrUn_gl000241,length=42152,assembly=hg19>
-##contig=<ID=chrUn_gl000242,length=43523,assembly=hg19>
-##contig=<ID=chrUn_gl000243,length=43341,assembly=hg19>
-##contig=<ID=chrUn_gl000244,length=39929,assembly=hg19>
-##contig=<ID=chrUn_gl000245,length=36651,assembly=hg19>
-##contig=<ID=chrUn_gl000246,length=38154,assembly=hg19>
-##contig=<ID=chrUn_gl000247,length=36422,assembly=hg19>
-##contig=<ID=chrUn_gl000248,length=39786,assembly=hg19>
-##contig=<ID=chrUn_gl000249,length=38502,assembly=hg19>
-##reference=file:///ccmb/BioinfCore/Common/SOFTWARES/hg19bundle/ucsc.hg19.fasta
-##jacquard.version=0.21
-##jacquard.command=tag c:\users\jebene\appdata\local\temp\tmptivahf\normalize c:\users\jebene\appdata\local\temp\tmptivahf\tag --force
-##jacquard.cwd=C:\Users\jebene\git
-##jacquard.tag.caller=MuTect
-##FORMAT=<ID=JQ_MT_AF,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_MT_DP,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP)",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_MT_AF,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_MT_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)",Source="Jacquard",Version=0.21>
-##jacquard.filterHCSomatic.excluded_variants=37
-##jacquard.command=filter_hc_somatic c:\users\jebene\appdata\local\temp\tmptivahf\tag c:\users\jebene\appdata\local\temp\tmptivahf\filter_hc_somatic --force
+##contig=<ID=chr6_ssto_hap7,length=4928567,assembly=hg19>
+##contig=<ID=chrUn_gl000228,length=129120,assembly=hg19>
+##contig=<ID=chrUn_gl000231,length=27386,assembly=hg19>
+##contig=<ID=chrUn_gl000237,length=45867,assembly=hg19>
+##contig=<ID=chrUn_gl000225,length=211173,assembly=hg19>
+##contig=<ID=chr13,length=115169878,assembly=hg19>
+##contig=<ID=chr7,length=159138663,assembly=hg19>
+##contig=<ID=chrUn_gl000226,length=15008,assembly=hg19>
+##contig=<ID=chr8,length=146364022,assembly=hg19>
+##contig=<ID=chr5,length=180915260,assembly=hg19>
+##contig=<ID=chr6_mann_hap4,length=4683263,assembly=hg19>
+##contig=<ID=chr6_cox_hap2,length=4795371,assembly=hg19>
+##reference=file:///ccmb/BioinfCore/Common/SOFTWARES/hg19bundle/ucsc.hg19.fasta
+##contig=<ID=chrUn_gl000222,length=186861,assembly=hg19>
+##contig=<ID=chr8_gl000196_random,length=38914,assembly=hg19>
+##jacquard.command=tag c:\users\jebene\appdata\local\temp\tmptivahf\normalize c:\users\jebene\appdata\local\temp\tmptivahf\tag --force
+##contig=<ID=chrUn_gl000218,length=161147,assembly=hg19>
+##contig=<ID=chr7_gl000195_random,length=182896,assembly=hg19>
+##contig=<ID=chr8_gl000197_random,length=37175,assembly=hg19>
+##contig=<ID=chrUn_gl000217,length=172149,assembly=hg19>
+##contig=<ID=chr1_gl000192_random,length=547496,assembly=hg19>
+##contig=<ID=chrUn_gl000232,length=40652,assembly=hg19>
+##contig=<ID=chrUn_gl000246,length=38154,assembly=hg19>
+##contig=<ID=chrUn_gl000238,length=39939,assembly=hg19>
+##contig=<ID=chr16,length=90354753,assembly=hg19>
+##contig=<ID=chrUn_gl000243,length=43341,assembly=hg19>
+##contig=<ID=chr6_dbb_hap3,length=4610396,assembly=hg19>
+##contig=<ID=chr15,length=102531392,assembly=hg19>
+##contig=<ID=chrUn_gl000230,length=43691,assembly=hg19>
+##contig=<ID=chrY,length=59373566,assembly=hg19>
+##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description="Somatic event">
+##contig=<ID=chr17_gl000203_random,length=37498,assembly=hg19>
+##contig=<ID=chrUn_gl000236,length=41934,assembly=hg19>
+##contig=<ID=chrUn_gl000227,length=128374,assembly=hg19>
+##contig=<ID=chrUn_gl000240,length=41933,assembly=hg19>
+##jacquard.tag.caller=MuTect
+##contig=<ID=chr9_gl000199_random,length=169874,assembly=hg19>
+##contig=<ID=chrUn_gl000220,length=161802,assembly=hg19>
+##contig=<ID=chrX,length=155270560,assembly=hg19>
+##contig=<ID=chrUn_gl000224,length=179693,assembly=hg19>
+##contig=<ID=chrUn_gl000229,length=19913,assembly=hg19>
+##contig=<ID=chr9_gl000201_random,length=36148,assembly=hg19>
+##contig=<ID=chr9,length=141213431,assembly=hg19>
+##contig=<ID=chrUn_gl000249,length=38502,assembly=hg19>
+##contig=<ID=chrUn_gl000245,length=36651,assembly=hg19>
+##contig=<ID=chr6_mcf_hap5,length=4833398,assembly=hg19>
+##contig=<ID=chrUn_gl000239,length=33824,assembly=hg19>
+##contig=<ID=chrUn_gl000214,length=137718,assembly=hg19>
+##contig=<ID=chrUn_gl000248,length=39786,assembly=hg19>
+##contig=<ID=chr1_gl000191_random,length=106433,assembly=hg19>
 ##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=12
-##jacquard.merge.file1=tiny.mutect.normalized.jacquardTags_HCsomatic.vcf(['NORMAL', 'TUMOR'])
-##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,Description="dbSNP Membership",Source="Jacquard",Version="0.21">
-##FILTER=<ID=BCNoise,Description="Average fraction of filtered basecalls within 50 bases of the indel exceeds 0.3">
-##FILTER=<ID=BCNoise,Description="Fraction of basecalls filtered at this site in either sample is at or above 0.4">
-##FILTER=<ID=QSI_ref,Description="Normal sample is not homozygous ref or sindel Q-score < 30, ie calls with NT!=ref or QSI_NT < 30">
-##FILTER=<ID=QSS_ref,Description="Normal sample is not homozygous ref or ssnv Q-score < 15, ie calls with NT!=ref or QSS_NT < 15">
-##FILTER=<ID=Repeat,Description="Sequence repeat of more than 8x in the reference sequence">
-##FILTER=<ID=SpanDel,Description="Fraction of reads crossing site with spanning deletions in either sample exceeeds 0.75">
-##FILTER=<ID=iHpol,Description="Indel overlaps an interupted homopolymer longer than 14x in the reference sequence">
-##FORMAT=<ID=AU,Number=2,Type=Integer,Description="Number of 'A' alleles used in tiers 1,2">
-##FORMAT=<ID=CU,Number=2,Type=Integer,Description="Number of 'C' alleles used in tiers 1,2">
-##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth for tier1 (used+filtered)">
-##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth for tier1">
-##FORMAT=<ID=DP2,Number=1,Type=Integer,Description="Read depth for tier2">
-##FORMAT=<ID=DP50,Number=1,Type=Float,Description="Average tier1 read depth within 50 bases">
-##FORMAT=<ID=FDP,Number=1,Type=Integer,Description="Number of basecalls filtered from original read depth for tier1">
-##FORMAT=<ID=FDP50,Number=1,Type=Float,Description="Average tier1 number of basecalls filtered from original read depth within 50 bases">
-##FORMAT=<ID=GU,Number=2,Type=Integer,Description="Number of 'G' alleles used in tiers 1,2">
-##FORMAT=<ID=SDP,Number=1,Type=Integer,Description="Number of reads with deletions spanning this site at tier1">
-##FORMAT=<ID=SUBDP,Number=1,Type=Integer,Description="Number of reads below tier1 mapping quality threshold aligned across this site">
-##FORMAT=<ID=SUBDP50,Number=1,Type=Float,Description="Average number of reads below tier1 mapping quality threshold aligned across sites within 50 bases">
-##FORMAT=<ID=TAR,Number=2,Type=Integer,Description="Reads strongly supporting alternate allele for tiers 1,2">
-##FORMAT=<ID=TIR,Number=2,Type=Integer,Description="Reads strongly supporting indel allele for tiers 1,2">
-##FORMAT=<ID=TOR,Number=2,Type=Integer,Description="Other reads (weak support or insufficient indel breakpoint overlap) for tiers 1,2">
-##FORMAT=<ID=TU,Number=2,Type=Integer,Description="Number of 'T' alleles used in tiers 1,2">
-##INFO=<ID=IC,Number=1,Type=Integer,Description="Number of times RU repeats in the indel allele">
-##INFO=<ID=IHP,Number=1,Type=Integer,Description="Largest reference interupted homopolymer length intersecting with the indel">
-##INFO=<ID=NT,Number=1,Type=String,Description="Genotype of the normal in all data tiers, as used to classify somatic variants. One of {ref,het,hom,conflict}.">
-##INFO=<ID=OVERLAP,Number=0,Type=Flag,Description="Somatic indel possibly overlaps a second indel.">
-##INFO=<ID=QSI,Number=1,Type=Integer,Description="Quality score for any somatic variant, ie. for the ALT haplotype to be present at a significantly different frequency in the tumor and normal">
-##INFO=<ID=QSI_NT,Number=1,Type=Integer,Description="Quality score reflecting the joint probability of a somatic variant and NT">
-##INFO=<ID=QSS,Number=1,Type=Integer,Description="Quality score for any somatic snv, ie. for the ALT allele to be present at a significantly different frequency in the tumor and normal">
-##INFO=<ID=QSS_NT,Number=1,Type=Integer,Description="Quality score reflecting the joint probability of a somatic variant and NT">
-##INFO=<ID=RC,Number=1,Type=Integer,Description="Number of times RU repeats in the reference allele">
-##INFO=<ID=RU,Number=1,Type=String,Description="Smallest repeating sequence unit in inserted or deleted sequence">
-##INFO=<ID=SGT,Number=1,Type=String,Description="Most likely somatic genotype excluding normal noise states">
-##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description="Somatic mutation">
-##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
-##INFO=<ID=TQSI,Number=1,Type=Integer,Description="Data tier used to compute QSI">
-##INFO=<ID=TQSI_NT,Number=1,Type=Integer,Description="Data tier used to compute QSI_NT">
-##INFO=<ID=TQSS,Number=1,Type=Integer,Description="Data tier used to compute QSS">
-##INFO=<ID=TQSS_NT,Number=1,Type=Integer,Description="Data tier used to compute QSS_NT">
-##cmdline=/ccmb/BioinfCore/SoftwareDev/tools/strelka/libexec/consolidateResults.pl --config=/ccmb/BioinfCore/Projects/Hardiman_746_747_kmha_pulintz_abhasi_EX5_2/Strelka/p11/results1/config/run.config.ini
-##content=strelka somatic indel calls
-##content=strelka somatic snv calls
-##contig=<ID=chr1,length=249250621>
-##contig=<ID=chr10,length=135534747>
-##contig=<ID=chr11,length=135006516>
-##contig=<ID=chr12,length=133851895>
-##contig=<ID=chr13,length=115169878>
-##contig=<ID=chr14,length=107349540>
-##contig=<ID=chr15,length=102531392>
-##contig=<ID=chr16,length=90354753>
-##contig=<ID=chr17,length=81195210>
-##contig=<ID=chr18,length=78077248>
-##contig=<ID=chr19,length=59128983>
-##contig=<ID=chr2,length=243199373>
-##contig=<ID=chr20,length=63025520>
-##contig=<ID=chr21,length=48129895>
-##contig=<ID=chr22,length=51304566>
-##contig=<ID=chr3,length=198022430>
-##contig=<ID=chr4,length=191154276>
-##contig=<ID=chr5,length=180915260>
-##contig=<ID=chr6,length=171115067>
-##contig=<ID=chr7,length=159138663>
-##contig=<ID=chr8,length=146364022>
-##contig=<ID=chr9,length=141213431>
-##contig=<ID=chrM,length=16571>
-##contig=<ID=chrX,length=155270560>
-##contig=<ID=chrY,length=59373566>
-##fileDate=20140709
-##germlineIndelTheta=0.0001
-##germlineSnvTheta=0.001
-##priorSomaticIndelRate=1e-06
-##priorSomaticSnvRate=1e-06
-##source=strelka
-##source_version=2.0.15
-##startTime=Wed Jul  9 13:37:22 2014
-##jacquard.command=tag c:\users\jebene\appdata\local\temp\tmpfyxdri\normalize c:\users\jebene\appdata\local\temp\tmpfyxdri\tag --force
-##jacquard.tag.caller=Strelka
+##contig=<ID=chr19_gl000208_random,length=92689,assembly=hg19>
+##contig=<ID=chr17,length=81195210,assembly=hg19>
+##contig=<ID=chrUn_gl000244,length=39929,assembly=hg19>
+##jacquard.version=0.21
+##contig=<ID=chrUn_gl000247,length=36422,assembly=hg19>
+##contig=<ID=chr18,length=78077248,assembly=hg19>
+##contig=<ID=chr4_gl000194_random,length=191469,assembly=hg19>
+##contig=<ID=chrUn_gl000216,length=172294,assembly=hg19>
+##jacquard.cwd=C:\Users\jebene\git
+##contig=<ID=chrUn_gl000235,length=34474,assembly=hg19>
+##contig=<ID=chr12,length=133851895,assembly=hg19>
+##contig=<ID=chrUn_gl000241,length=42152,assembly=hg19>
+##contig=<ID=chr14,length=107349540,assembly=hg19>
+##jacquard.command=filter_hc_somatic c:\users\jebene\appdata\local\temp\tmptivahf\tag c:\users\jebene\appdata\local\temp\tmptivahf\filter_hc_somatic --force
+##contig=<ID=chrUn_gl000221,length=155397,assembly=hg19>
+##contig=<ID=chr9_gl000200_random,length=187035,assembly=hg19>
+##contig=<ID=chrUn_gl000215,length=172545,assembly=hg19>
+##contig=<ID=chr17_ctg5_hap1,length=1680828,assembly=hg19>
+##INFO=<ID=DB,Number=0,Type=Flag,Description="dbSNP Membership">
+##contig=<ID=chr20,length=63025520,assembly=hg19>
+##contig=<ID=chr6,length=171115067,assembly=hg19>
+##contig=<ID=chr9_gl000198_random,length=90085,assembly=hg19>
+##contig=<ID=chrUn_gl000211,length=166566,assembly=hg19>
+##contig=<ID=chr19,length=59128983,assembly=hg19>
+##contig=<ID=chrM,length=16571,assembly=hg19>
+##contig=<ID=chr21,length=48129895,assembly=hg19>
+##contig=<ID=chr4_gl000193_random,length=189789,assembly=hg19>
+##contig=<ID=chr1,length=249250621,assembly=hg19>
+##contig=<ID=chrUn_gl000212,length=186858,assembly=hg19>
+##contig=<ID=chrUn_gl000219,length=179198,assembly=hg19>
+##FILTER=<ID=PASS,Description="Accept as a confident somatic mutation">
+##contig=<ID=chrUn_gl000234,length=40531,assembly=hg19>
+##FILTER=<ID=REJECT,Description="Rejected as a confident somatic mutation">
+##contig=<ID=chr4,length=191154276,assembly=hg19>
+##contig=<ID=chr10,length=135534747,assembly=hg19>
+##contig=<ID=chr19_gl000209_random,length=159169,assembly=hg19>
+##contig=<ID=chr17_gl000206_random,length=41001,assembly=hg19>
+##fileformat=VCFv4.1
+##contig=<ID=chrUn_gl000213,length=164239,assembly=hg19>
+##contig=<ID=chr4_ctg9_hap1,length=590426,assembly=hg19>
+##jacquard.filterHCSomatic.excluded_variants=37
+##contig=<ID=chrUn_gl000223,length=180455,assembly=hg19>
+##MuTect="analysis_type=MuTect input_file=[11N_25714.sorted.bam, 11Ta_25715.sorted.bam] read_buffer_size=null phone_home=STANDARD gatk_key=null tag=NA read_filter=[BadCigar] intervals=[/ccmb/BioinfCore/SoftwareDev/common/TargetRegion_buffered10bases.bed] excludeIntervals=null interval_set_rule=UNION interval_merging=ALL interval_padding=0 reference_sequence=/ccmb/BioinfCore/Common/SOFTWARES/hg19bundle/ucsc.hg19.fasta nonDeterministicRandomSeed=false disableRandomization=false maxRuntime=-1 maxRuntimeUnits=MINUTES downsampling_type=BY_SAMPLE downsample_to_fraction=null downsample_to_coverage=1000 enable_experimental_downsampling=false baq=OFF baqGapOpenPenalty=40.0 performanceLog=null useOriginalQualities=false BQSR=null quantize_quals=0 disable_indel_quals=false emit_original_quals=false preserve_qscores_less_than=6 defaultBaseQualities=-1 validation_strictness=SILENT remove_program_records=false keep_program_records=false unsafe=null num_threads=1 num_cpu_threads_per_data_thread=1 num_io_threads=0 monitorThreadEfficiency=false num_bam_file_handles=null read_group_black_list=null pedigree=[] pedigreeString=[] pedigreeValidationType=STRICT allow_intervals_with_unindexed_bam=false generateShadowBCF=false logging_level=INFO log_to_file=null help=false noop=false enable_extended_output=false artifact_detection_mode=false tumor_sample_name=25715 bam_tumor_sample_name=null normal_sample_name=25714 force_output=false force_alleles=false only_passing_calls=false initial_tumor_lod=4.0 tumor_lod=6.3 fraction_contamination=0.02 minimum_mutation_cell_fraction=0.0 normal_lod=2.2 normal_artifact_lod=1.0 strand_artifact_lod=2.0 strand_artifact_power_threshold=0.9 dbsnp_normal_lod=5.5 somatic_classification_normal_power_threshold=0.95 minimum_normal_allele_fraction=0.0 tumor_f_pretest=0.0050 min_qscore=5 gap_events_threshold=3 heavily_clipped_read_fraction=0.3 clipping_bias_pvalue_threshold=0.05 fraction_mapq0_threshold=0.5 pir_median_threshold=10.0 pir_mad_threshold=3.0 required_maximum_alt_allele_mapping_quality_score=20 max_alt_alleles_in_normal_count=2 max_alt_alleles_in_normal_qscore_sum=20 max_alt_allele_in_normal_fraction=0.03 power_constant_qscore=30 absolute_copy_number_data=null power_constant_af=0.30000001192092896 vcf=org.broadinstitute.sting.gatk.io.stubs.VariantContextWriterStub no_cmdline_in_header=org.broadinstitute.sting.gatk.io.stubs.VariantContextWriterStub sites_only=org.broadinstitute.sting.gatk.io.stubs.VariantContextWriterStub bcf=org.broadinstitute.sting.gatk.io.stubs.VariantContextWriterStub dbsnp=[(RodBinding name=dbsnp source=/ccmb/BioinfCore/Common/SOFTWARES/hg19bundle/dbsnp_138.hg19.vcf)] cosmic=[(RodBinding name=cosmic source=/ccmb/BioinfCore/SoftwareDev/common/Cosmic.v68.hg19.vcf)] normal_panel=[] coverage_20_q20_file=null power_file=null tumor_depth_file=null normal_depth_file=null filter_mismatching_base_and_quals=false"
+##contig=<ID=chr11_gl000202_random,length=40103,assembly=hg19>
+##contig=<ID=chr18_gl000207_random,length=4262,assembly=hg19>
+##contig=<ID=chr11,length=135006516,assembly=hg19>
+##contig=<ID=chrUn_gl000242,length=43523,assembly=hg19>
+##contig=<ID=chr22,length=51304566,assembly=hg19>
+##INFO=<ID=VT,Number=1,Type=String,Description="Variant type, can be SNP, INS or DEL">
+##contig=<ID=chr17_gl000205_random,length=174588,assembly=hg19>
+##INFO=<ID=MQ0,Number=1,Type=Integer,Description="Total Mapping Quality Zero Reads">
+##contig=<ID=chr21_gl000210_random,length=27682,assembly=hg19>
+##contig=<ID=chr6_apd_hap1,length=4622290,assembly=hg19>
+##contig=<ID=chr3,length=198022430,assembly=hg19>
+##contig=<ID=chrUn_gl000233,length=45941,assembly=hg19>
+##contig=<ID=chr17_gl000204_random,length=81310,assembly=hg19>
+##contig=<ID=chr6_qbl_hap6,length=4611984,assembly=hg19>
+##contig=<ID=chr2,length=243199373,assembly=hg19>
 ##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",Source="Jacquard",Version=0.21>
+##contig=<ID=chr12,length=133851895>
+##contig=<ID=chrM,length=16571>
+##INFO=<ID=IC,Number=1,Type=Integer,Description="Number of times RU repeats in the indel allele">
+##contig=<ID=chr16,length=90354753>
+##FILTER=<ID=Repeat,Description="Sequence repeat of more than 8x in the reference sequence">
+##INFO=<ID=RC,Number=1,Type=Integer,Description="Number of times RU repeats in the reference allele">
+##germlineIndelTheta=0.0001
+##contig=<ID=chr5,length=180915260>
+##FILTER=<ID=QSS_ref,Description="Normal sample is not homozygous ref or ssnv Q-score < 15, ie calls with NT!=ref or QSS_NT < 15">
+##contig=<ID=chr21,length=48129895>
+##source_version=2.0.15
+##contig=<ID=chr8,length=146364022>
+##priorSomaticIndelRate=1e-06
+##content=strelka somatic indel calls
+##INFO=<ID=QSS_NT,Number=1,Type=Integer,Description="Quality score reflecting the joint probability of a somatic variant and NT">
+##contig=<ID=chr1,length=249250621>
+##contig=<ID=chr7,length=159138663>
+##contig=<ID=chr20,length=63025520>
+##INFO=<ID=TQSI_NT,Number=1,Type=Integer,Description="Data tier used to compute QSI_NT">
 ##FILTER=<ID=JQ_EXCLUDE,Description="This variant record is problematic and will be excluded from downstream Jacquard processing.",Source="Jacquard",Version="">
-##FILTER=<ID=JQ_MISSING_ALT,Description="The alternate allele is missing for this variant record.",Source="Jacquard",Version="">
+##content=strelka somatic snv calls
+##contig=<ID=chr3,length=198022430>
+##FILTER=<ID=iHpol,Description="Indel overlaps an interupted homopolymer longer than 14x in the reference sequence">
+##INFO=<ID=NT,Number=1,Type=String,Description="Genotype of the normal in all data tiers, as used to classify somatic variants. One of {ref,het,hom,conflict}.">
+##contig=<ID=chr18,length=78077248>
+##INFO=<ID=QSI,Number=1,Type=Integer,Description="Quality score for any somatic variant, ie. for the ALT haplotype to be present at a significantly different frequency in the tumor and normal">
+##INFO=<ID=QSS,Number=1,Type=Integer,Description="Quality score for any somatic snv, ie. for the ALT allele to be present at a significantly different frequency in the tumor and normal">
 ##jacquard.filterHCSomatic.excluded_variants=33
+##INFO=<ID=OVERLAP,Number=0,Type=Flag,Description="Somatic indel possibly overlaps a second indel.">
+##contig=<ID=chr15,length=102531392>
+##source=strelka
+##contig=<ID=chr10,length=135534747>
+##INFO=<ID=SGT,Number=1,Type=String,Description="Most likely somatic genotype excluding normal noise states">
+##INFO=<ID=TQSI,Number=1,Type=Integer,Description="Data tier used to compute QSI">
+##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description="Somatic mutation">
+##contig=<ID=chrY,length=59373566>
+##contig=<ID=chrX,length=155270560>
+##contig=<ID=chr4,length=191154276>
+##FILTER=<ID=SpanDel,Description="Fraction of reads crossing site with spanning deletions in either sample exceeeds 0.75">
+##contig=<ID=chr2,length=243199373>
+##FILTER=<ID=QSI_ref,Description="Normal sample is not homozygous ref or sindel Q-score < 30, ie calls with NT!=ref or QSI_NT < 30">
+##priorSomaticSnvRate=1e-06
+##INFO=<ID=TQSS,Number=1,Type=Integer,Description="Data tier used to compute QSS">
+##germlineSnvTheta=0.001
+##INFO=<ID=TQSS_NT,Number=1,Type=Integer,Description="Data tier used to compute QSS_NT">
+##INFO=<ID=QSI_NT,Number=1,Type=Integer,Description="Quality score reflecting the joint probability of a somatic variant and NT">
+##INFO=<ID=RU,Number=1,Type=String,Description="Smallest repeating sequence unit in inserted or deleted sequence">
+##contig=<ID=chr14,length=107349540>
+##contig=<ID=chr6,length=171115067>
+##FILTER=<ID=BCNoise,Description="Fraction of basecalls filtered at this site in either sample is at or above 0.4">
+##contig=<ID=chr17,length=81195210>
 ##jacquard.command=filter_hc_somatic c:\users\jebene\appdata\local\temp\tmpfyxdri\tag c:\users\jebene\appdata\local\temp\tmpfyxdri\filter_hc_somatic --force
-##jacquard.merge.file2=tiny.strelka.normalized.jacquardTags_HCsomatic.vcf(['NORMAL', 'TUMOR'])
-##FILTER=<ID=indelError,Description="Likely artifact due to indel reads at this position">
-##FILTER=<ID=str10,Description="Less than 10% or more than 90% of variant supporting reads on one strand">
-##FORMAT=<ID=AD,Number=1,Type=Integer,Description="Depth of variant-supporting bases (reads2)">
-##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
-##FORMAT=<ID=DP4,Number=1,Type=String,Description="Strand read counts: ref/fwd, ref/rev, var/fwd, var/rev">
-##FORMAT=<ID=FREQ,Number=1,Type=String,Description="Variant allele frequency">
-##FORMAT=<ID=RD,Number=1,Type=Integer,Description="Depth of reference-supporting bases (reads1)">
-##INFO=<ID=DP,Number=1,Type=Integer,Description="Total depth of quality bases">
-##INFO=<ID=GPV,Number=1,Type=Float,Description="Fisher's Exact Test P-value of tumor+normal versus no variant for Germline calls">
-##INFO=<ID=JQ_VS_HC,Number=1,Type=Flag,Description="Jacquard high-confidence somatic flag for VarScan. Based on intersection with filtered VarScan variants.">
-##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description="Indicates if record is a somatic mutation">
-##INFO=<ID=SPV,Number=1,Type=Float,Description="Fisher's Exact Test P-value of tumor versus normal for Somatic/LOH calls">
-##INFO=<ID=SS,Number=1,Type=String,Description="Somatic status of variant (0=Reference,1=Germline,2=Somatic,3=LOH, or 5=Unknown)">
-##INFO=<ID=SSC,Number=1,Type=String,Description="Somatic score in Phred scale (0-255) derived from somatic p-value">
-##source=VarScan2
-##jacquard.command=tag c:\users\jebene\appdata\local\temp\tmpfuwrpl\normalize c:\users\jebene\appdata\local\temp\tmpfuwrpl\tag --force
-##jacquard.tag.caller=VarScan
+##FILTER=<ID=JQ_MISSING_ALT,Description="The alternate allele is missing for this variant record.",Source="Jacquard",Version="">
+##FILTER=<ID=BCNoise,Description="Average fraction of filtered basecalls within 50 bases of the indel exceeds 0.3">
+##contig=<ID=chr11,length=135006516>
+##startTime=Wed Jul  9 13:37:22 2014
+##jacquard.tag.caller=Strelka
+##contig=<ID=chr13,length=115169878>
+##cmdline=/ccmb/BioinfCore/SoftwareDev/tools/strelka/libexec/consolidateResults.pl --config=/ccmb/BioinfCore/Projects/Hardiman_746_747_kmha_pulintz_abhasi_EX5_2/Strelka/p11/results1/config/run.config.ini
+##contig=<ID=chr22,length=51304566>
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=IHP,Number=1,Type=Integer,Description="Largest reference interupted homopolymer length intersecting with the indel">
+##fileDate=20140709
+##contig=<ID=chr9,length=141213431>
+##jacquard.command=tag c:\users\jebene\appdata\local\temp\tmpfyxdri\normalize c:\users\jebene\appdata\local\temp\tmpfyxdri\tag --force
+##contig=<ID=chr19,length=59128983>
 ##FORMAT=<ID=JQ_VS_AF,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)",Source="Jacquard",Version=0.21>
-##FORMAT=<ID=JQ_VS_DP,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_VS_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)",Source="Jacquard",Version=0.21>
-##jacquard.filterHCSomatic.excluded_variants=43
+##FORMAT=<ID=JQ_VS_DP,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)",Source="Jacquard",Version=0.21>
+##jacquard.tag.caller=VarScan
+##FILTER=<ID=str10,Description="Less than 10% or more than 90% of variant supporting reads on one strand">
 ##jacquard.command=filter_hc_somatic c:\users\jebene\appdata\local\temp\tmpfuwrpl\tag c:\users\jebene\appdata\local\temp\tmpfuwrpl\filter_hc_somatic --force
-##jacquard.merge.file3=tiny.varscan.normalized.jacquardTags_HCsomatic.vcf(['NORMAL', 'TUMOR'])
+##jacquard.command=tag c:\users\jebene\appdata\local\temp\tmpfuwrpl\normalize c:\users\jebene\appdata\local\temp\tmpfuwrpl\tag --force
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Total depth of quality bases">
+##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description="Indicates if record is a somatic mutation">
+##INFO=<ID=GPV,Number=1,Type=Float,Description="Fisher's Exact Test P-value of tumor+normal versus no variant for Germline calls">
+##source=VarScan2
+##INFO=<ID=SSC,Number=1,Type=String,Description="Somatic score in Phred scale (0-255) derived from somatic p-value">
+##INFO=<ID=SS,Number=1,Type=String,Description="Somatic status of variant (0=Reference,1=Germline,2=Somatic,3=LOH, or 5=Unknown)">
+##FILTER=<ID=indelError,Description="Likely artifact due to indel reads at this position">
+##jacquard.filterHCSomatic.excluded_variants=43
+##INFO=<ID=SPV,Number=1,Type=Float,Description="Fisher's Exact Test P-value of tumor versus normal for Somatic/LOH calls">
+##INFO=<ID=JQ_VS_HC,Number=1,Type=Flag,Description="Jacquard high-confidence somatic flag for VarScan. Based on intersection with filtered VarScan variants.">
+##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,Description="dbSNP Membership",Source="Jacquard",Version="0.21">
+##jacquard.merge.sample=<Column=1,Name=tiny|NORMAL,Source=tiny.mutect.normalized.jacquardTags_HCsomatic.vcf|tiny.strelka.normalized.jacquardTags_HCsomatic.vcf|tiny.varscan.normalized.jacquardTags_HCsomatic.vcf>
+##jacquard.merge.sample=<Column=2,Name=tiny|TUMOR,Source=tiny.mutect.normalized.jacquardTags_HCsomatic.vcf|tiny.strelka.normalized.jacquardTags_HCsomatic.vcf|tiny.varscan.normalized.jacquardTags_HCsomatic.vcf>
 ##jacquard.version=0.21
-##jacquard.command=merge2 C:\\Users\\jebene\\git\\Jacquard\\test\\functional_tests\\04_merge2\\input c:\\users\\jebene\\appdata\\local\\temp\\tmp37hahb\\merged.vcf --force
-##jacquard.cwd=C:\\Users\\jebene\\git
-#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	tiny.mutect.normalized.jacquardTags_HCsomatic.vcf|NORMAL	tiny.mutect.normalized.jacquardTags_HCsomatic.vcf|TUMOR	tiny.strelka.normalized.jacquardTags_HCsomatic.vcf|NORMAL	tiny.strelka.normalized.jacquardTags_HCsomatic.vcf|TUMOR	tiny.varscan.normalized.jacquardTags_HCsomatic.vcf|NORMAL	tiny.varscan.normalized.jacquardTags_HCsomatic.vcf|TUMOR
-chr1	14948	.	G	A	.	.	.	JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0.09:174:0:.:.:.	0.13:302:0:.:.:.	.:.:.:.:.:.	.:.:.:.:.:.	.:.:.:0.06:171:0	.:.:.:0.14:303:1
-chr1	137622	.	G	A	.	.	.	JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0.24:35:0	0.29:42:1	.:.:.	.:.:.	.:.:.	.:.:.
-chr1	1147545	.	A	G	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	.:.:.	.:.:.	0.0:27:0	0.31:35:1	.:.:.	.:.:.
-chr1	1169795	.	C	T	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	.:.:.	.:.:.	0.0:37:0	0.22:46:1	.:.:.	.:.:.
-chr1	1444553	.	C	T	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	.:.:.	.:.:.	0.0:29:0	0.35:31:1	.:.:.	.:.:.
-chr1	1459635	.	C	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	.:.:.	.:.:.	0.0:35:0	0.17:30:1	.:.:.	.:.:.
-chr1	1572893	.	G	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	.:.:.	.:.:.	0.02:65:0	0.09:81:1	.:.:.	.:.:.
-chr1	1696633	.	GA	G	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	.:.:.	.:.:.	0.0:48:0	0.27:45:1	.:.:.	.:.:.
-chr1	1910112	.	G	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	.:.:.	.:.:.	0.0:28:0	0.34:35:1	.:.:.	.:.:.
-chr1	1912090	.	G	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	.:.:.	.:.:.	0.0:27:0	0.31:32:1	.:.:.	.:.:.
-chr1	3412474	.	G	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	.:.:.	.:.:.	0.0:46:0	0.31:61:1	.:.:.	.:.:.
-chr1	3545096	.	G	T	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	.:.:.	.:.:.	0.0:37:0	0.25:63:1	.:.:.	.:.:.
+##jacquard.command=merge2 C:\Users\jebene\git\Jacquard\test\functional_tests\04_merge2\input c:\users\jebene\appdata\local\temp\tmpbcajat\merged.vcf --force
+##jacquard.cwd=C:\Users\jebene\git
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	tiny|NORMAL	tiny|TUMOR
+chr1	14948	.	G	A	.	.	.	JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0.09:174:0:0.06:171:0	0.13:302:0:0.14:303:1
+chr1	137622	.	G	A	.	.	.	JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0.24:35:0	0.29:42:1
+chr1	1147545	.	A	G	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.0:27:0	0.31:35:1
+chr1	1169795	.	C	T	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.0:37:0	0.22:46:1
+chr1	1444553	.	C	T	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.0:29:0	0.35:31:1
+chr1	1459635	.	C	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.0:35:0	0.17:30:1
+chr1	1572893	.	G	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.02:65:0	0.09:81:1
+chr1	1696633	.	GA	G	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.0:48:0	0.27:45:1
+chr1	1910112	.	G	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.0:28:0	0.34:35:1
+chr1	1912090	.	G	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.0:27:0	0.31:32:1
+chr1	3412474	.	G	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.0:46:0	0.31:61:1
+chr1	3545096	.	G	T	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	0.0:37:0	0.25:63:1

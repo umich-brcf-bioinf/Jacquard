@@ -1,4 +1,5 @@
-# pylint: disable=C0103,C0301,R0903,R0904,C0111
+#pylint: disable=line-too-long, global-statement, redefined-outer-name
+#pylint: disable=unused-argument, invalid-name
 from argparse import Namespace
 import os
 from re import findall, MULTILINE
@@ -14,8 +15,8 @@ import jacquard.variant_callers.strelka as strelka
 import jacquard.variant_callers.varscan as varscan
 import test_case as test_case
 
-mock_log_called = False
-mock_log_messages = []
+MOCK_LOG_CALLED = False
+MOCK_LOG_MESSAGES = []
 
 class MockVcfRecord(object):
     def __init__(self, ref = "foo", alt = "bar", filter = "baz"):
@@ -23,14 +24,14 @@ class MockVcfRecord(object):
         self.alt = "bar"
         self.filter = "baz"
         self.content = "foo"
-  
+
 mock_vcf_record = MockVcfRecord()
 
 def mock_log(msg, *args):
-    global mock_log_called
-    mock_log_called = True
-    global mock_log_messages
-    mock_log_messages.append(msg.format(*[str(i) for i in args]))
+    global MOCK_LOG_CALLED
+    MOCK_LOG_CALLED = True
+
+    MOCK_LOG_MESSAGES.append(msg.format(*[str(i) for i in args]))
 
 class MockWriter():
     def __init__(self):
@@ -52,9 +53,13 @@ class MockWriter():
         self.closed = True
 
 class MockCaller(object):
-    def __init__(self, name="MockCaller", metaheaders=["##mockMetaheader1"]):
+    def __init__(self, name="MockCaller", metaheaders=None):
         self.name = name
-        self.metaheaders = metaheaders
+
+        if metaheaders:
+            self.metaheaders = metaheaders
+        else:
+            self.metaheaders = ["##mockMetaheader1"]
 
     def add_tags(self, vcfRecord):
         return vcfRecord.content
@@ -63,10 +68,15 @@ class MockCaller(object):
         return self.metaheaders
 
 class MockVcfReader(object):
-    def __init__(self, input_filepath="vcfName", metaheaders=["##metaheaders"], column_header="#header", file_name = "foo"):
+    def __init__(self, input_filepath="vcfName", metaheaders=None, column_header="#header", file_name = "foo"):
         self.input_filepath = input_filepath
         self.file_name = file_name
-        self.metaheaders = metaheaders
+
+        if metaheaders:
+            self.metaheaders = metaheaders
+        else:
+            self.metaheaders = ["##metaheaders"]
+
         self.caller = MockCaller()
         self.column_header = column_header
         self.opened = False
@@ -76,7 +86,6 @@ class MockVcfReader(object):
         self.opened = True
 
     def vcf_records(self):
-        global mock_vcf_record
         yield mock_vcf_record
 
     def close(self):
@@ -108,10 +117,11 @@ class TagTestCase(unittest.TestCase):
         sys.stderr = self.saved_stderr
         self._reset_mock_logger()
 
-    def _change_mock_logger(self):
-        global mock_log_called
-        mock_log_called = False
-        global mock_log
+    @staticmethod
+    def _change_mock_logger():
+        global MOCK_LOG_CALLED
+        MOCK_LOG_CALLED = False
+
         logger.info = mock_log
         logger.error = mock_log
         logger.warning = mock_log
@@ -122,8 +132,9 @@ class TagTestCase(unittest.TestCase):
         logger.error = self.original_error
         logger.warning = self.original_warning
         logger.debug = self.original_debug
-        global mock_log_messages
-        mock_log_messages = []
+
+        global MOCK_LOG_MESSAGES
+        MOCK_LOG_MESSAGES = []
 
     def test_build_vcf_readers(self):
         vcf_content ='''##source=strelka
@@ -190,8 +201,8 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
             output_lines = self.output.getvalue().rstrip().split("\n")
             self.assertEquals(1, len(output_lines))
-            global mock_log_called
-            self.assertTrue(mock_log_called)
+
+            self.assertTrue(MOCK_LOG_CALLED)
 #             self.assertRegexpMatches(output_lines[0], 'Recognized \[2\] Strelka file\(s\)')
 
     def test_build_vcf_readers_exceptionIsRaisedDetailsLogged(self):
@@ -332,9 +343,9 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
 
-        self.assertIn("foo|Added filter flag [JQ_MALFORMED_REF] to [1] variant records.", mock_log_messages)
-        self.assertIn("Added a filter flag to [1] problematic MockCaller variant records.", mock_log_messages)
-        self.assertIn("A total of [1] problematic variant records failed Jacquard's filters. See output and log for details.", mock_log_messages)
+        self.assertIn("foo|Added filter flag [JQ_MALFORMED_REF] to [1] variant records.", MOCK_LOG_MESSAGES)
+        self.assertIn("Added a filter flag to [1] problematic MockCaller variant records.", MOCK_LOG_MESSAGES)
+        self.assertIn("A total of [1] problematic variant records failed Jacquard's filters. See output and log for details.", MOCK_LOG_MESSAGES)
 
     def test_tag_files_multipleCallers(self):
         class MockVcfRecord(object):
@@ -360,10 +371,10 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                       build_mock_get_caller_method([MockCaller(name="foo"),
                                                     MockCaller(name="bar")]))
 
-        self.assertIn("foo|Added filter flag [JQ_MALFORMED_REF] to [1] variant records.", mock_log_messages)
-        self.assertIn("Added a filter flag to [1] problematic foo variant records.", mock_log_messages)
-        self.assertIn("Added a filter flag to [1] problematic bar variant records.", mock_log_messages)
-        self.assertIn("A total of [2] problematic variant records failed Jacquard's filters. See output and log for details.", mock_log_messages)
+        self.assertIn("foo|Added filter flag [JQ_MALFORMED_REF] to [1] variant records.", MOCK_LOG_MESSAGES)
+        self.assertIn("Added a filter flag to [1] problematic foo variant records.", MOCK_LOG_MESSAGES)
+        self.assertIn("Added a filter flag to [1] problematic bar variant records.", MOCK_LOG_MESSAGES)
+        self.assertIn("A total of [2] problematic variant records failed Jacquard's filters. See output and log for details.", MOCK_LOG_MESSAGES)
 
     def test_tag_files_malformedRef_emptyFilter(self):
         class MockVcfRecord(object):
@@ -399,9 +410,9 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
 
-        self.assertIn("foo|Added filter flag [JQ_MALFORMED_REF] to [1] variant records.", mock_log_messages)
-        self.assertIn("Added a filter flag to [1] problematic MockCaller variant records.", mock_log_messages)
-        self.assertIn("A total of [1] problematic variant records failed Jacquard's filters. See output and log for details.", mock_log_messages)
+        self.assertIn("foo|Added filter flag [JQ_MALFORMED_REF] to [1] variant records.", MOCK_LOG_MESSAGES)
+        self.assertIn("Added a filter flag to [1] problematic MockCaller variant records.", MOCK_LOG_MESSAGES)
+        self.assertIn("A total of [1] problematic variant records failed Jacquard's filters. See output and log for details.", MOCK_LOG_MESSAGES)
 
     def test_tag_files_malformedAlt(self):
         class MockVcfRecord(object):
@@ -437,9 +448,9 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
 
-        self.assertIn("foo|Added filter flag [JQ_MALFORMED_ALT] to [1] variant records.", mock_log_messages)
-        self.assertIn("Added a filter flag to [1] problematic MockCaller variant records.", mock_log_messages)
-        self.assertIn("A total of [1] problematic variant records failed Jacquard's filters. See output and log for details.", mock_log_messages)
+        self.assertIn("foo|Added filter flag [JQ_MALFORMED_ALT] to [1] variant records.", MOCK_LOG_MESSAGES)
+        self.assertIn("Added a filter flag to [1] problematic MockCaller variant records.", MOCK_LOG_MESSAGES)
+        self.assertIn("A total of [1] problematic variant records failed Jacquard's filters. See output and log for details.", MOCK_LOG_MESSAGES)
 
     def test_tag_files_missingAltDot(self):
         class MockVcfRecord(object):
@@ -475,9 +486,9 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
 
-        self.assertIn("foo|Added filter flag [JQ_MISSING_ALT] to [1] variant records.", mock_log_messages)
-        self.assertIn("Added a filter flag to [1] problematic MockCaller variant records.", mock_log_messages)
-        self.assertIn("A total of [1] problematic variant records failed Jacquard's filters. See output and log for details.", mock_log_messages)
+        self.assertIn("foo|Added filter flag [JQ_MISSING_ALT] to [1] variant records.", MOCK_LOG_MESSAGES)
+        self.assertIn("Added a filter flag to [1] problematic MockCaller variant records.", MOCK_LOG_MESSAGES)
+        self.assertIn("A total of [1] problematic variant records failed Jacquard's filters. See output and log for details.", MOCK_LOG_MESSAGES)
 
     def test_tag_files_missingAltAsterisk(self):
         class MockVcfRecord(object):
@@ -513,9 +524,9 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
 
-        self.assertIn("foo|Added filter flag [JQ_MISSING_ALT] to [1] variant records.", mock_log_messages)
-        self.assertIn("Added a filter flag to [1] problematic MockCaller variant records.", mock_log_messages)
-        self.assertIn("A total of [1] problematic variant records failed Jacquard's filters. See output and log for details.", mock_log_messages)
+        self.assertIn("foo|Added filter flag [JQ_MISSING_ALT] to [1] variant records.", MOCK_LOG_MESSAGES)
+        self.assertIn("Added a filter flag to [1] problematic MockCaller variant records.", MOCK_LOG_MESSAGES)
+        self.assertIn("A total of [1] problematic variant records failed Jacquard's filters. See output and log for details.", MOCK_LOG_MESSAGES)
 
     def test_execute(self):
         vcf_content1 = '''##source=strelka

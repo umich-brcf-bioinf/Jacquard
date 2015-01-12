@@ -1,4 +1,5 @@
 # pylint: disable=line-too-long, invalid-name, global-statement, star-args, too-many-public-methods
+from __future__ import absolute_import
 import os
 import unittest
 from StringIO import StringIO
@@ -7,7 +8,7 @@ import sys
 from testfixtures import TempDirectory
 from jacquard.filter_hc_somatic import _write_somatic, _find_somatic_positions, _sort_headers, _write_output
 import jacquard.logger as logger
-import test_case as test_case
+import test.test_case as test_case
 
 VCF_HEADER = "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsampleA\tsampleB\n"
 
@@ -35,9 +36,11 @@ class FilterSomaticTestCase(unittest.TestCase):
         sys.stderr = self.saved_stderr
         self._reset_mock_logger()
 
-    def _change_mock_logger(self):
+    @staticmethod
+    def _change_mock_logger():
         global mock_log_called
         mock_log_called = False
+
         logger.info = mock_log
         logger.error = mock_log
         logger.warning = mock_log

@@ -1,5 +1,6 @@
 # pylint: disable=line-too-long,invalid-name,global-statement,unused-argument
 # pylint: disable=too-many-instance-attributes,too-few-public-methods,too-many-public-methods
+from __future__ import absolute_import
 from argparse import Namespace
 from collections import OrderedDict
 import os
@@ -11,7 +12,7 @@ import jacquard.vcf as vcf
 from jacquard.expand import _parse_meta_headers, \
     _append_format_tags_to_samples, _get_headers, _write_vcf_records, \
     _disambiguate_column_names, _filter_and_sort, execute
-import test_case as test_case
+import test.test_case as test_case
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 mock_log_called = False

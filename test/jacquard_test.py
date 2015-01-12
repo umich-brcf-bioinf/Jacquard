@@ -1,4 +1,5 @@
-# pylint: disable=C0103,C0301,R0903,R0904,W0603,W0613,C0111,W0212
+# pylint: disable=line-too-long, global-statement, unused-argument, invalid-name, too-many-locals, too-many-public-methods
+from __future__ import absolute_import
 import os
 from StringIO import StringIO
 import sys
@@ -7,27 +8,27 @@ import unittest
 
 import jacquard.jacquard as jacquard
 import jacquard.logger as logger
-import test_case as test_case
+import test.test_case as test_case
 
 
 import test.mock_module as mock_module
 
-mock_create_tmp_called = False
-mock_move_tmp_contents_called = False
+MOCK_CREATE_TMP_CALLED = False
+MOCK_MOVE_TEMP_CONTENTS_CALLED = False
 
-# pylint: disable=W0603,W0613
 def mock_create_temp_directory(output_dir, force=0):
-    global mock_create_tmp_called
-    mock_create_tmp_called = True
+# pylint: disable=W0603,W0613
+    global MOCK_CREATE_TMP_CALLED
+    MOCK_CREATE_TMP_CALLED = True
 
     if len(os.listdir(output_dir)) != 0:
         if not force:
             sys.exit(1)
 
-# pylint: disable=W0603,W0613
 def mock_move_tmp_contents_to_original(tmp_output, output_dir):
-    global mock_move_tmp_contents_called
-    mock_move_tmp_contents_called = True
+# pylint: disable=W0603,W0613
+    global MOCK_MOVE_TEMP_CONTENTS_CALLED
+    MOCK_MOVE_TEMP_CONTENTS_CALLED = True
 
 def _change_mock_methods():
 #    global mock_create_temp_directory
@@ -36,11 +37,11 @@ def _change_mock_methods():
 #    global mock_move_tmp_contents_to_original
     jacquard._move_tmp_contents_to_original = mock_move_tmp_contents_to_original
 
-mock_log_called = False
+MOCK_LOG_CALLED = False
 
 def mock_log(msg, *args):
-    global mock_log_called
-    mock_log_called = True
+    global MOCK_LOG_CALLED
+    MOCK_LOG_CALLED = True
 
 class JacquardTestCase(unittest.TestCase):
     def setUp(self):
@@ -118,8 +119,8 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
             jacquard.dispatch([mock_module], ["mock_module", output_dir.path])
             self.assertTrue(mock_module.execute_called)
 
-            self.assertTrue(mock_create_tmp_called)
-            self.assertTrue(mock_move_tmp_contents_called)
+            self.assertTrue(MOCK_CREATE_TMP_CALLED)
+            self.assertTrue(MOCK_MOVE_TEMP_CONTENTS_CALLED)
 
     def test_dispatch_nonEmptyOutputDir(self):
         with TempDirectory() as output_dir:

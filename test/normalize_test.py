@@ -1,11 +1,12 @@
-# pylint: disable=C0103,C0301,R0903,R0904,C0111,W0212
+#pylint: disable=line-too-long, global-statement, unused-argument
+#pylint: disable=invalid-name, too-few-public-methods, too-many-public-methods
+from __future__ import absolute_import
 from argparse import Namespace
 import os
 from StringIO import StringIO
 import sys
 from testfixtures import TempDirectory
 import unittest
-import glob
 
 from jacquard.variant_callers import variant_caller_factory
 from jacquard.normalize import _partition_input_files, _determine_caller_per_directory
@@ -13,13 +14,13 @@ from jacquard.vcf import FileReader, FileWriter
 import jacquard.utils as utils
 import jacquard.normalize as normalize
 import jacquard.logger as logger
-import test_case as test_case
+import test.test_case as test_case
 
-mock_log_called = False
+MOCK_LOG_CALLED = False
 
 def mock_log(msg, *args):
-    global mock_log_called
-    mock_log_called = True
+    global MOCK_LOG_CALLED
+    MOCK_LOG_CALLED = True
 
 class MockCallerFactory(object):
     def __init__(self, caller):
@@ -31,25 +32,35 @@ class MockCallerFactory(object):
         return self.caller
 
 class MockCaller(object):
-    def __init__(self, name="MockCaller", metaheaders=["##mockMetaheader1"]):
+    def __init__(self, name="MockCaller", metaheaders=None):
         self.name = name
-        self.metaheaders = metaheaders
+        if metaheaders:
+            self.metaheaders = metaheaders
+        else:
+            self.metaheaders = ["##mockMetaheader1"]
         self.file_name_search = "snps|indels"
 
-    def add_tags(self, vcfRecord):
+    @staticmethod
+    def add_tags(vcfRecord):
         return vcfRecord
 
-    def decorate_files(self, filenames, decorator):
+    @staticmethod
+    def decorate_files(filenames, decorator):
         return filenames[0]+"foo"
 
     def get_new_metaheaders(self):
         return self.metaheaders
 
 class MockFileReader(object):
-    def __init__(self, input_filepath="/foo/mockFileReader.txt", content = []):
+    def __init__(self, input_filepath="/foo/mockFileReader.txt", content=None):
         self.input_filepath = input_filepath
         self.file_name = os.path.basename(input_filepath)
-        self._content = content
+
+        if content:
+            self._content = content
+        else:
+            self._content = []
+
         self.open_was_called = False
         self.close_was_called = False
 
@@ -63,7 +74,7 @@ class MockFileReader(object):
     def close(self):
         self.close_was_called = True
 
-class MockFileWriter():
+class MockFileWriter(object):
     def __init__(self):
         self._content = []
         self.opened = False
@@ -99,10 +110,11 @@ class NormalizeTestCase(unittest.TestCase):
         unittest.TestCase.tearDown(self)
         self._reset_mock_logger()
 
-    def _change_mock_logger(self):
-        global mock_log_called
-        mock_log_called = False
-        global mock_log
+    @staticmethod
+    def _change_mock_logger():
+        global MOCK_LOG_CALLED
+        MOCK_LOG_CALLED = False
+
         logger.info = mock_log
         logger.error = mock_log
         logger.warning = mock_log
