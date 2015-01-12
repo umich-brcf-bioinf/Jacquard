@@ -43,10 +43,9 @@ class RecognizedVcfReader(object):
 class VcfReader(object):
     '''Wraps a file reader, providing VCF metaheaders and records'''
 
-    @staticmethod
-    def _get_format_metaheaders(metaheader_strings):
+    def _init_format_metaheaders(self):
         format_ids = {}
-        for metaheader in metaheader_strings:
+        for metaheader in self.metaheaders:
             format_tag = re.match("^##FORMAT=.*?[<,]ID=([^,>]*)", metaheader)
             if format_tag:
                 format_id = format_tag.group(1)
@@ -55,8 +54,8 @@ class VcfReader(object):
 
     def __init__(self, file_reader):
         self._file_reader = file_reader
-        (self.column_header, self.metaheaders) = self._read_headers()
-        self._format_metaheaders = self._get_format_metaheaders(self.metaheaders)
+        (self.column_header, self.metaheaders) = self._init_headers()
+        self._format_metaheaders = self._init_format_metaheaders()
         self.sample_names = self._init_sample_names()
         self.qualified_sample_names = self._create_qualified_sample_names()
 
@@ -87,7 +86,7 @@ class VcfReader(object):
             qualified_names.append("|".join([patient_prefix, sample_name]))
         return qualified_names
 
-    def _read_headers(self):
+    def _init_headers(self):
         metaheaders = []
         column_header = None
         try:

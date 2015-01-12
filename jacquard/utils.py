@@ -22,10 +22,11 @@ jq_dp_tag = "DP"
 class JQException(Exception):
     """Base class for exceptions in this module."""
     def __init__(self, msg, *args):
+        #pylint: disable=star-args
         error_msg = msg.format(*[str(i) for i in args])
         super(JQException, self).__init__(error_msg)
 
-
+#TODO: (cgates): Suspect this should raise exception instead of logging and exiting?
 def validate_directories(input_dir, output_dir):
     if not os.path.isdir(input_dir):
         logger.error("Specified input directory [{}] does not exist.",
@@ -46,7 +47,6 @@ def validate_directories(input_dir, output_dir):
                          "Check parameters and try again", output_dir)
             exit(1)
 
-#TODO: cgates: standard recipe, but should be tested
 class OrderedSet(collections.MutableSet):
 
     def __init__(self, iterable=None):

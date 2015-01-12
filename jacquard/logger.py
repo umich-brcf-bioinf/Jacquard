@@ -63,11 +63,10 @@ def _print(level, message, args):
                                  'message': _format(message, args)},
           file=sys.stderr)
 
-# pylint: disable=W0703
 def _format(message, args):
     try:
         log_message = message.format(*[str(i) for i in args])
-    except Exception as err:
+    except IndexError as err:
         log_message = ("Malformed log message ({}: {})"
                        "|{}|{}").format(type(err).__name__,
                                         err,

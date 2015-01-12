@@ -1,25 +1,127 @@
-# pylint: disable=C0103,C0301,R0903,R0904,C0111
-from collections import OrderedDict
-import os
+#pylint: disable=line-too-long, too-many-public-methods, invalid-name
+#pylint: disable=missing-docstring, protected-access, global-statement
 from StringIO import StringIO
+from testfixtures import TempDirectory
+import jacquard.logger as logger
+import jacquard.utils as utils
+import os
 import subprocess
 import sys
-from testfixtures import TempDirectory
-import unittest
+import test.test_case as test_case
 
-import jacquard.utils as utils
-import jacquard.logger as logger
 
-# logger.initialize_logger("utils")
 mock_log_called = False
 mock_message = ""
 
+#pylint: disable=unused-argument
 def mock_log(msg, *args):
     global mock_log_called
     mock_log_called = True
-#     print msg.format(*[str(i) for i in args])
 
-class ValidateDirectoriesTestCase(unittest.TestCase):
+class JQExceptionTestCase(test_case.JacquardBaseTestCase):
+    def test_init(self):
+        actual = utils.JQException("msg:{}, {}", "bar", [1, 2, 3])
+        self.assertIsInstance(actual, Exception)
+        self.assertEquals(actual.message, "msg:bar, [1, 2, 3]")
+
+class OrderedSetTestCase(test_case.JacquardBaseTestCase):
+    def test_isOrderedSet(self):
+        actual = utils.OrderedSet(["B", "A", "B"])
+        self.assertEquals(2, len(actual))
+        it = iter(actual)
+        self.assertEquals("B", it.next())
+        self.assertEquals("A", it.next())
+
+    def test_contains(self):
+        actual = utils.OrderedSet(["A", "B"])
+        self.assertIn("A", actual)
+        self.assertIn("B", actual)
+        self.assertNotIn("C", actual)
+
+    def test_add(self):
+        actual = utils.OrderedSet(["B", "A"])
+        actual.add("A")
+        self.assertEquals(2, len(actual))
+        it = iter(actual)
+        self.assertEquals("B", it.next())
+        self.assertEquals("A", it.next())
+
+        actual.add("C")
+        self.assertEquals(3, len(actual))
+        it = iter(actual)
+        self.assertEquals("B", it.next())
+        self.assertEquals("A", it.next())
+        self.assertEquals("C", it.next())
+
+    def test_discard(self):
+        actual = utils.OrderedSet(["B", "A"])
+        actual.discard("B")
+        self.assertEquals(1, len(actual))
+        it = iter(actual)
+        self.assertEquals("A", it.next())
+
+        actual.add("B")
+        self.assertEquals(2, len(actual))
+        it = iter(actual)
+        self.assertEquals("A", it.next())
+        self.assertEquals("B", it.next())
+
+        actual.discard("C")
+        self.assertEquals(2, len(actual))
+
+    def test_reversed(self):
+        actual = utils.OrderedSet(["B", "A"])
+
+        self.assertEquals(2, len(actual))
+        it = reversed(actual)
+        self.assertEquals("A", it.next())
+        self.assertEquals("B", it.next())
+
+    def test_pop_right(self):
+        actual = utils.OrderedSet(["B", "A"])
+
+        self.assertEquals(2, len(actual))
+        self.assertEquals("A", actual.pop())
+        self.assertEquals(1, len(actual))
+        self.assertEquals("B", actual.pop())
+        self.assertEquals(0, len(actual))
+        self.assertRaises(KeyError, actual.pop)
+
+    def test_pop_left(self):
+        actual = utils.OrderedSet(["B", "A"])
+
+        self.assertEquals(2, len(actual))
+        self.assertEquals("B", actual.pop(last=False))
+        self.assertEquals(1, len(actual))
+        self.assertEquals("A", actual.pop(last=False))
+        self.assertEquals(0, len(actual))
+        self.assertRaises(KeyError, actual.pop)
+
+    def test_eq(self):
+        base = utils.OrderedSet(["A", "B"])
+        same = utils.OrderedSet(["A", "B"])
+        equivalentSet = set(["A", "B"])
+        equivalentList = ["A", "B"]
+        differentClass = "foo"
+        differentOrder = utils.OrderedSet(["B", "A"])
+        differentMembers = utils.OrderedSet(["A", "B", "C"])
+
+        self.assertEquals(base, same)
+        self.assertEquals(base, equivalentSet)
+        self.assertEquals(base, equivalentList)
+        self.assertNotEquals(base, differentClass)
+        self.assertNotEquals(base, differentOrder)
+        self.assertNotEquals(base, differentMembers)
+
+    def test_repr(self):
+        actual = utils.OrderedSet([])
+        self.assertRegexpMatches(actual.__repr__(), r"OrderedSet")
+        actual.add("B")
+        actual.add("A")
+        self.assertRegexpMatches(actual.__repr__(), r"['B','A']")
+
+
+class ValidateDirectoriesTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         self.original_info = logger.info
         self.original_error = logger.error
@@ -35,10 +137,10 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
         sys.stderr = self.saved_stderr
         self._reset_mock_logger()
 
-    def _change_mock_logger(self):
+    @staticmethod
+    def _change_mock_logger():
         global mock_log_called
         mock_log_called = False
-        global mock_log
         logger.info = mock_log
         logger.error = mock_log
         logger.warning = mock_log
@@ -59,7 +161,6 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
             utils.validate_directories(input_dir, output_dir)
         self.assertEqual(cm.exception.code, 1)
 
-        global mock_log_called
         self.assertTrue(mock_log_called)
 #         self.assertRegexpMatches(self.output.getvalue(),
 #                                  r"Specified input directory \[.*\] does not exist.")
@@ -80,7 +181,6 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
                 cleanup_unwriteable_dir(unwriteable_dir)
 
             self.assertEqual(cm.exception.code, 1)
-            global mock_log_called
             self.assertTrue(mock_log_called)
 
 def is_windows_os():
