@@ -28,7 +28,7 @@ def _comma_separated(line):
 def _check_records(reader):
     #pylint: disable=line-too-long
     correct_ref = "ACGTNacgtn"
-    correct_alt = "*.ACGTNacgtn"
+    correct_alt = "*.ACGTNacgtn,"
     anomalous_set = set()
     anomalous_records = []
 
@@ -113,8 +113,9 @@ def tag_files(vcf_readers_to_writers, execution_context,
     callers = collections.defaultdict(int)
     for count, item in enumerate(vcf_readers_to_writers.items()):
         reader, writer = item
+        file_name = os.path.basename(reader.input_filepath)
         logger.info("Reading [{}] ({}/{})",
-                    reader.input_filepath,
+                    file_name,
                     count + 1,
                     total_number_of_files)
         reader.open()

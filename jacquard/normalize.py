@@ -108,7 +108,8 @@ def execute(args, execution_context):
     logger.info("Normalizing input files")
     count = 1
     for writer, readers in writer_to_readers.items():
-        logger.info("Writing to [{}] ({}/{})", writer.output_filepath, count,
+        file_name = os.path.basename(writer.output_filepath)
+        logger.info("Writing to [{}] ({}/{})", file_name, count,
                     len(writer_to_readers))
 
         caller.normalize(writer, readers)

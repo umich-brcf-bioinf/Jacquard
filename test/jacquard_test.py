@@ -189,7 +189,7 @@ class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
             self.move_files([vs_normalize_output,
                              sk_normalize_output,
                              mt_normalize_output],
-                             normalize_output)
+                            normalize_output)
 
             commands = [["tag", normalize_output, tag_output, "--force"],
                         ["filter_hc_somatic", tag_output, filter_output, "--force"],

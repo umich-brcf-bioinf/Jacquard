@@ -114,7 +114,7 @@ class Varscan(object):
             raise utils.JQException("Unexpected VarScan VCF structure - "
                                     "missing NORMAL and TUMOR headers.")
 
-    #TODO: (cgates) Can we imagine a clearer way to express the intent of this method?
+    #TODO: (cgates) Clarify intent of this method?
     @staticmethod
     def _validate_vcf_fileset(vcf_readers):
         if len(vcf_readers) != 2:
