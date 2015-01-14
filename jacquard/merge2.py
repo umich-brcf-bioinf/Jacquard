@@ -217,7 +217,7 @@ def _process_headers(vcf_readers, tags_to_keep):
     for metaheader in merge_metaheaders:
         all_headers.add(metaheader)
 
-    sorted_all_sample_names = sorted(list(all_sample_names))
+    sorted_all_sample_names = utils.NaturalSort(list(all_sample_names)).sorted
     column_header.extend(sorted_all_sample_names)
     all_headers.add("\t".join(column_header))
 
@@ -239,7 +239,6 @@ def add_subparser(subparser):
     parser = subparser.add_parser("merge2", help="Accepts a directory of VCFs and returns a single merged VCF file.")
     parser.add_argument("input", help="Path to directory containing VCFs. Other file types ignored")
     parser.add_argument("output", help="Path to output variant-level VCF file")
-    parser.add_argument("-a", "--allow_inconsistent_sample_sets", action="store_true", default=False, help="Allow inconsistent sample sets across callers. Not recommended.")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
     parser.add_argument("--include_format_tags", dest='tags', help="Comma-separated list of regexs for format tags to include in output. Defaults to all JQ tags.")
@@ -254,7 +253,6 @@ def execute(args, execution_context):
     file_writer.open()
 
     buffered_readers, vcf_readers = _create_reader_lists(input_files)
-    #TODO: (cgates): this should return tags_to_keep list based on filtered set of actual found FORMAT tags
     headers, all_sample_names, all_tags_to_keep = _process_headers(vcf_readers,
                                                                    tags_to_keep)
 
@@ -264,7 +262,6 @@ def execute(args, execution_context):
 
     coordinates = _build_coordinates(vcf_readers)
 
-    #TODO: (cgates): this must accept tags_to_keep
     _merge_records(coordinates,
                    buffered_readers,
                    file_writer,

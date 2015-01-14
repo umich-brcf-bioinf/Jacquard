@@ -1,5 +1,5 @@
 #pylint: disable=line-too-long, too-many-public-methods, invalid-name
-#pylint: disable=missing-docstring, protected-access, global-statement
+#pylint: disable=missing-docstring, protected-access, global-statement, too-few-public-methods
 from StringIO import StringIO
 from testfixtures import TempDirectory
 import jacquard.logger as logger
@@ -120,6 +120,19 @@ class OrderedSetTestCase(test_case.JacquardBaseTestCase):
         actual.add("A")
         self.assertRegexpMatches(actual.__repr__(), r"['B','A']")
 
+
+class NaturalSortTestCase(test_case.JacquardBaseTestCase):
+    def test_natsort(self):
+        unsorted = ["123a","1abc","13d"]
+        expected = ["1abc","13d","123a"]
+        actual = utils.NaturalSort(unsorted).sorted
+        self.assertEquals(expected, actual)
+
+    def test_natsort_lowerAndUpperCase(self):
+        unsorted = ["123ABC","123abc","1abc","13d"]
+        expected = ["1abc","13d","123ABC","123abc"]
+        actual = utils.NaturalSort(unsorted).sorted
+        self.assertEquals(expected, actual)
 
 class ValidateDirectoriesTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):

@@ -1,9 +1,11 @@
-#pylint: disable=invalid-name
+#pylint: disable=invalid-name,too-few-public-methods
 from __future__ import absolute_import, print_function
 from os import listdir
 import collections
 import jacquard.logger as logger
 import os
+import copy
+import re
 #TODO cgates: This should be in jacquard.__init__?
 __version__ = 0.21
 
@@ -107,3 +109,26 @@ class OrderedSet(collections.MutableSet):
             return len(self) == len(other) and list(self) == list(other)
         return set(self) == set(other)
 
+class NaturalSort(object):
+    def __init__(self, seq):
+        self.seq = seq
+        self.temp = copy.copy(self.seq)
+        self._natsort()
+        self.sorted = self.temp
+
+    def _natsort(self):
+        self.temp.sort(self._natcmp)
+
+    def _natcmp(self, a, b):
+        return cmp(self._natsort_key(a),self._natsort_key(b))
+
+    def _natsort_key(self, s):
+        "Used internally to get a tuple by which s is sorted."
+        return map(self._try_int, re.findall(r'(\d+|\D+)', s))
+
+    @staticmethod
+    def _try_int(s):
+        try:
+            return int(s)
+        except ValueError:
+            return s

@@ -531,6 +531,42 @@ class MergeTestCase(unittest.TestCase):
         self.assertEquals(4, len(actual_all_sample_names))
         self.assertEquals(expected_all_sample_names, actual_all_sample_names)
 
+    def test_process_headers_naturalSorting(self):
+        reader1 = MockVcfReader("PA.foo.vcf",
+                                metaheaders=["##source=strelka"],
+                                column_header="#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_123\tSample_12",
+                                sample_names=["Sample_123", "Sample_2", "Sample_12"],
+                                records=[])
+        reader2 = MockVcfReader("PA.bar.vcf",
+                                metaheaders=["##source=strelka"],
+                                column_header="#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_a\tSample_A",
+                                sample_names=["Sample_a", "Sample_A"],
+                                records=[])
+
+        readers = [reader1, reader2]
+
+        actual_headers, actual_all_sample_names, dummy = merge2._process_headers(readers, ["JQ_*"])
+
+        expected_headers = ['##source=strelka',
+                            '##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,Description="dbSNP Membership",Source="Jacquard",Version="{}">'.format(utils.__version__),
+                            "##jacquard.merge.sample=<Column=1,Name=PA|Sample_12,Source=PA.foo.vcf>",
+                            "##jacquard.merge.sample=<Column=2,Name=PA|Sample_123,Source=PA.foo.vcf>",
+                            "##jacquard.merge.sample=<Column=3,Name=PA|Sample_2,Source=PA.foo.vcf>",
+                            "##jacquard.merge.sample=<Column=4,Name=PA|Sample_A,Source=PA.bar.vcf>",
+                            "##jacquard.merge.sample=<Column=5,Name=PA|Sample_a,Source=PA.bar.vcf>",
+                            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tPA|Sample_2\tPA|Sample_12\tPA|Sample_123\tPA|Sample_A\tPA|Sample_a"]
+
+        expected_all_sample_names = ["PA|Sample_2",
+                                     "PA|Sample_12",
+                                     "PA|Sample_123",
+                                     "PA|Sample_A",
+                                     "PA|Sample_a"]
+
+        print actual_headers
+
+        self.assertEquals(expected_headers, actual_headers)
+        self.assertEquals(expected_all_sample_names, actual_all_sample_names)
+
     def test_write_metaheaders(self):
         mock_writer = MockFileWriter()
         headers = ["##foo", "##bar", "#CHROM\tPOS"]
