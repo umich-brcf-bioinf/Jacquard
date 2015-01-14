@@ -341,9 +341,44 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
         reader = VcfReader(mock_reader)
 
         expected_metaheaders = {"AF" : '##FORMAT=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">',
-                               "DP" : '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">'}
+                                "DP" : '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">'}
 
         self.assertEquals(expected_metaheaders, reader.format_metaheaders)
+
+    def test_info_metaheaders(self):
+        file_contents = ["##metaheader1\n",
+                         "##FORMAT=<ID=AF,Number=A,Type=Float,Description=\"Allele Frequency\">\n",
+                         "##INFO=<ID=SNP,Number=1,Type=Integer,Description=\"snp\">\n",
+                         "##INFO=<ID=FOO,Number=1,Type=Integer,Description=\"foo\">\n",
+                         "##INFO=<ID=BAR,Number=1,Type=Integer,Description=\"bar\">\n",
+                         self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
+                         self.entab("chr1|1|.|A|C|.|.|SNP;BAR|FORMAT|NORMAL|TUMOR\n"),
+                         self.entab("chr2|1|.|A|C|.|.|BAR|FORMAT|NORMAL|TUMOR")]
+        mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+        reader = VcfReader(mock_reader)
+
+        expected_metaheaders = {"SNP" : "##INFO=<ID=SNP,Number=1,Type=Integer,Description=\"snp\">",
+                                "FOO" : "##INFO=<ID=FOO,Number=1,Type=Integer,Description=\"foo\">",
+                                "BAR" : "##INFO=<ID=BAR,Number=1,Type=Integer,Description=\"bar\">"}
+
+        self.assertEquals(expected_metaheaders, reader.info_metaheaders)
+
+    def test_filter_metaheaders(self):
+        file_contents = ["##metaheader1\n",
+                         "##FORMAT=<ID=AF,Number=A,Type=Float,Description=\"Allele Frequency\">\n",
+                         "##INFO=<ID=SNP,Number=1,Type=Integer,Description=\"snp\">\n",
+                         "##FILTER=<ID=.,Number=1,Type=Integer,Description=\"foo\">\n",
+                         "##FILTER=<ID=PASS,Number=1,Type=Integer,Description=\"bar\">\n",
+                         self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
+                         self.entab("chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR\n"),
+                         self.entab("chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR")]
+        mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+        reader = VcfReader(mock_reader)
+
+        expected_metaheaders = {"." : "##FILTER=<ID=.,Number=1,Type=Integer,Description=\"foo\">",
+                                "PASS" : "##FILTER=<ID=PASS,Number=1,Type=Integer,Description=\"bar\">",}
+
+        self.assertEquals(expected_metaheaders, reader.filter_metaheaders)
 
     def test_format_tag_ids_ignoresRelatedFieldNames(self):
         file_contents = ["##metaheader1\n",

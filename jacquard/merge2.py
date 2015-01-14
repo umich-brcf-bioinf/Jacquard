@@ -41,18 +41,34 @@ class GenericBufferedReader(object):
 def _merge_existing_metaheaders(vcf_readers, tags_to_keep):
     all_meta_headers = utils.OrderedSet()
     all_tags_to_keep = []
+    visited_metaheaders = set()
+
+    all_meta_headers.add(MULT_ALT_HEADER)
 
     for vcf_reader in vcf_readers:
         for tag_regex in tags_to_keep:
             for tag, format_metaheader in vcf_reader.format_metaheaders.items():
+                visited_metaheaders.add(format_metaheader)
                 if re.match(tag_regex+"$", tag):
                     all_tags_to_keep.append(tag)
                     all_meta_headers.add(format_metaheader)
 
-        for meta_header in vcf_reader.non_format_metaheaders:
-            all_meta_headers.add(meta_header)
+#TODO: (jebene) - Only include JQ_MULT_ALT_LOCUS metaheaders if there is at least one mult-alt in the file
+        for tag, info_metaheader in vcf_reader.info_metaheaders.items():
+            visited_metaheaders.add(info_metaheader)
+            if tag == "JQ_MULT_ALT_LOCUS":
+                all_tags_to_keep.append(tag)
+                all_meta_headers.add(info_metaheader)
 
-    all_meta_headers.add(MULT_ALT_HEADER)
+#TODO: (jebene) - Since the FILTER fields will always be null, we could re-think the way we're doing this.
+        for tag, filter_metaheader in vcf_reader.filter_metaheaders.items():
+            visited_metaheaders.add(filter_metaheader)
+
+        orig_metaheaders = set(vcf_reader.metaheaders)
+        remaining_metaheaders = orig_metaheaders.difference(visited_metaheaders)
+#TODO: (jebene) - add an update() method to utils.OrderedSet() to avoid this iteration
+        for meta_header in remaining_metaheaders:
+            all_meta_headers.add(meta_header)
 
     return all_meta_headers, all_tags_to_keep
 
@@ -117,16 +133,19 @@ def _build_coordinates(vcf_readers):
         raise utils.JQException("One or more VCF files were not sorted. "
                                 "Review inputs and try again.")
 
+#     mult_alt_in_file = 0
     for vcf_record in coordinate_set:
         alts_for_this_locus = mult_alts[vcf_record.chrom,
                                         vcf_record.pos,
                                         vcf_record.ref]
         if len(alts_for_this_locus) > 1:
             vcf_record.add_info_field("JQ_MULT_ALT_LOCUS")
+#             mult_alt_in_file = 1
 
     coordinate_list = coordinate_set.keys()
     coordinate_list.sort()
 
+#     return coordinate_list, mult_alt_in_file
     return coordinate_list
 
 

@@ -45,24 +45,18 @@ class VcfReader(object):
     def __init__(self, file_reader):
         self._file_reader = file_reader
         (self.column_header, self.metaheaders) = self._init_headers()
-        (self._format_metaheaders,
-         self._non_format_metaheaders) = self._init_format_metaheaders()
         self.sample_names = self._init_sample_names()
         self.qualified_sample_names = self._create_qualified_sample_names()
 
-    def _init_format_metaheaders(self):
-        format_ids = {}
-        non_format_metaheaders = set()
-
+    def _get_tag_metaheaders(self, regex_exp):
+        tag_dict = {}
         for metaheader in self.metaheaders:
-            format_tag = re.match("^##FORMAT=.*?[<,]ID=([^,>]*)", metaheader)
-            if format_tag:
-                format_id = format_tag.group(1)
-                format_ids[format_id] = metaheader.strip()
-            else:
-                non_format_metaheaders.add(metaheader)
+            tag = re.match(regex_exp, metaheader)
+            if tag:
+                tag_key = tag.group(1)
+                tag_dict[tag_key] = metaheader.strip()
 
-        return format_ids, non_format_metaheaders
+        return tag_dict
 
     @property
     def file_name(self):
@@ -74,11 +68,15 @@ class VcfReader(object):
 
     @property
     def format_metaheaders(self):
-        return dict(self._format_metaheaders)
+        return dict(self._get_tag_metaheaders("^##FORMAT=.*?[<,]ID=([^,>]*)"))
 
     @property
-    def non_format_metaheaders(self):
-        return list(self._non_format_metaheaders)
+    def info_metaheaders(self):
+        return dict(self._get_tag_metaheaders("^##INFO=.*?[<,]ID=([^,>]*)"))
+
+    @property
+    def filter_metaheaders(self):
+        return dict(self._get_tag_metaheaders("^##FILTER=.*?[<,]ID=([^,>]*)"))
 
     def _init_sample_names(self):
         sample_names = []

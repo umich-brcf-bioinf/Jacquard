@@ -51,7 +51,6 @@ def validate_directories(input_dir, output_dir):
             exit(1)
 
 class OrderedSet(collections.MutableSet):
-
     def __init__(self, iterable=None):
         self.end = end = []
         end += [None, end, end]         # sentinel node for doubly linked list
