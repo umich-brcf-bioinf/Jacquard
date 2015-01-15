@@ -1,18 +1,18 @@
-# pylint: disable=C0111
+from __future__ import print_function, absolute_import
 import os
 
-from variant_callers import consensus_helper
-import vcf as vcf
-import utils as utils
-import logger as logger
+from jacquard.variant_callers import consensus_helper
+import jacquard.vcf as vcf
+import jacquard.utils as utils
+import jacquard.logger as logger
 
 def _write_metaheaders(cons_helper,
                        vcf_reader,
                        file_writer,
-                       execution_context = 0,
-                       new_meta_headers = 0):
+                       execution_context=0,
+                       new_meta_headers=0):
 
-    new_headers = vcf_reader.metaheaders
+    new_headers = list(vcf_reader.metaheaders)
 
     if execution_context:
         new_headers.extend(execution_context)
@@ -89,7 +89,7 @@ def _add_zscore(cons_helper, vcf_reader, file_writer, pop_values):
         file_writer.write(cons_helper.add_zscore(vcf_record, pop_values))
 
 def add_subparser(subparser):
-    # pylint: disable=C0301
+    # pylint: disable=line-too-long
     parser = subparser.add_parser("consensus", help="Accepts a Jacquard-merged VCf file and creates a new file, adding consensus fields.")
     parser.add_argument("input", help="Path to Jacquard-merged VCF (or any VCF with Jacquard tags (e.g. JQ_SOM_MT)")
     parser.add_argument("output", help="Path to output VCf")
@@ -116,11 +116,11 @@ def execute(args, execution_context):
             output_file = output
     else:
         utils.validate_directories(os.path.dirname(input_file), output)
-        output_file = os.path.join(output,"consensus.vcf")
+        output_file = os.path.join(output, "consensus.vcf")
 
     cons_helper = consensus_helper.ConsensusHelper()
 
-    vcf_reader =  vcf.VcfReader(vcf.FileReader(input_file))
+    vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
     tmp_output_file = output_file + ".tmp"
     tmp_writer = vcf.FileWriter(tmp_output_file)
 

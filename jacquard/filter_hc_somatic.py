@@ -1,26 +1,30 @@
-# pylint: disable=C0111
-# pylint: disable-msg=W0403
+#pylint: disable=too-many-locals
+from __future__ import print_function, absolute_import
+from collections import defaultdict
 import glob
+import jacquard.logger as logger
+import jacquard.utils as utils
+import jacquard.variant_callers.variant_caller_factory as variant_caller_factory
+import jacquard.vcf as vcf
 import os
 import re
 
-import utils
-import variant_callers.variant_caller_factory as variant_caller_factory
-import vcf as vcf
-import logger as logger
-from collections import defaultdict
+#TODO: (cgates): This module contains lots of file parsing/processing which should be using vcfReader structures
 
-def _iterate_file(in_file, vcf_reader, filtered_records, num_records, somatic_positions, somatic):
+#TODO: (cgates): refactor this as a stats object that collects info in the main processing loop
+def _iterate_file(vcf_reader, num_records, somatic_positions, somatic):
+    filtered_records = 0
     vcf_reader.open()
     for record in vcf_reader.vcf_records():
         if "JQ_EXCLUDE" in record.filter:
             filtered_records += 1
         else:
+            sample_tag_values = record.sample_tag_values
             num_records += 1
-            for key in record.sample_dict:
-                for tag in record.sample_dict[key]:
+            for sample in sample_tag_values:
+                for tag in sample_tag_values[sample]:
                     if re.search(utils.jq_somatic_tag, tag):
-                        if record.sample_dict[key][tag] == "1":
+                        if sample_tag_values[sample][tag] == "1":
                             somatic_key = "^".join([record.chrom,
                                                     record.pos])
                             somatic_positions[somatic_key] = 1
@@ -29,7 +33,7 @@ def _iterate_file(in_file, vcf_reader, filtered_records, num_records, somatic_po
 
     return filtered_records, num_records, somatic_positions, somatic
 
-def _find_somatic_positions(in_files, output_dir):
+def _find_somatic_positions(in_files):
     somatic_positions = {}
     no_jq_tags = []
 
@@ -48,10 +52,14 @@ def _find_somatic_positions(in_files, output_dir):
                                                    vcf_reader.column_header,
                                                    vcf_reader.file_name)
 
-        in_file = open(input_file, "r")
-        filtered_records = 0
+        (filtered_records,
+         num_records,
+         somatic_positions,
+         somatic) =_iterate_file(vcf_reader,
+                                 num_records,
+                                 somatic_positions,
+                                 somatic)
 
-        filtered_records, num_records, somatic_positions, somatic =_iterate_file(in_file, vcf_reader, filtered_records, num_records, somatic_positions, somatic)
         callers[caller.name] += filtered_records
 
         if somatic == 0:
@@ -59,12 +67,12 @@ def _find_somatic_positions(in_files, output_dir):
             logger.warning("Input file [{}] has no high-confidence somatic "
                            "variants.", os.path.basename(input_file))
 
-        in_file.close()
+#        in_file.close()
 
         count += 1
 
     total_filtered_records = 0
-    
+
     for caller in callers:
         total_filtered_records += callers[caller]
         if callers[caller]:
@@ -122,12 +130,12 @@ def _write_somatic(in_files, output_dir, somatic_positions, execution_context):
         headers.append(excluded_variants)
         headers.extend(execution_context)
 
-        sorted_headers = utils.sort_headers(headers)
-        for i,header in enumerate(sorted_headers):
-            if not header.endswith("\n") and i!=len(sorted_headers)-1:
-                sorted_headers[i]+="\n"
+        sorted_headers = _sort_headers(headers)
+        for i, header in enumerate(sorted_headers):
+            if not header.endswith("\n") and i != len(sorted_headers) - 1:
+                sorted_headers[i] += "\n"
 
-        utils.write_output(out_file, sorted_headers, actual_sorted_variants)
+        _write_output(out_file, sorted_headers, actual_sorted_variants)
         total_number_of_calls += len(actual_sorted_variants)
 
         in_file.close()
@@ -140,8 +148,11 @@ def _write_somatic(in_files, output_dir, somatic_positions, execution_context):
                 len(in_files),
                 output_dir)
 
-def filter_somatic_positions(input_dir, output_dir, execution_context=[]):
-    in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
+def filter_somatic_positions(input_dir, output_dir, execution_context=None):
+    if not execution_context:
+        execution_context = []
+
+    in_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
     if len(in_files) < 1:
         logger.error("Specified input directory [{}] contains no VCF files. "
                      "Check parameters and try again.", input_dir)
@@ -151,23 +162,45 @@ def filter_somatic_positions(input_dir, output_dir, execution_context=[]):
                 len(in_files),
                 input_dir)
 
-# pylint: disable=C0301
-    somatic_positions, somatic_positions_header = _find_somatic_positions(in_files,
-                                                                          output_dir)
+    (somatic_positions,
+     somatic_positions_header) = _find_somatic_positions(in_files)
     execution_context.append(somatic_positions_header)
 
     _write_somatic(in_files, output_dir, somatic_positions, execution_context)
 
 
 def add_subparser(subparser):
-    # pylint: disable=C0301
+    # pylint: disable=line-too-long
     parser = subparser.add_parser("filter_hc_somatic", help="Accepts a directory of Jacquard-tagged VCF results from one or more callers and creates a new directory of VCFs, where rows have been filtered to contain only positions that were called high-confidence somatic in any VCF.")
     parser.add_argument("input", help="Path to directory containing VCFs. All VCFs in this directory must have Jacquard-specific tags (see jacquard.py tag for more info")
     parser.add_argument("output", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
-def execute(args, execution_context): 
+
+def _write_output(writer, headers, actual_sorted_variants):
+    for line in headers:
+        writer.write(line)
+    for line in actual_sorted_variants:
+        writer.write(line)
+
+
+def _sort_headers(headers):
+    meta_headers = []
+    field_header = ""
+    for header in headers:
+        if header.startswith("##"):
+            header = header.replace("\t", "")
+            meta_headers.append(header)
+        else:
+            field_header = header
+
+    meta_headers.append(field_header)
+
+    return meta_headers
+
+
+def execute(args, execution_context):
     input_dir = os.path.abspath(args.input)
     output_dir = os.path.abspath(args.output)
 

@@ -1,8 +1,8 @@
-#!/usr/bin/env python2.7
-from __future__ import print_function
+#pylint: disable=invalid-name, global-statement
+from __future__ import print_function, absolute_import
 from datetime import datetime
-import logging
 import getpass
+import logging
 import os
 import socket
 import sys
@@ -13,12 +13,12 @@ _DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 _FILE_LOG_FORMAT = ('%(asctime)s|%(levelname)s|%(start_time)s|%(host)s|%(user)s'
                     '|%(tool)s|%(message)s')
 _CONSOLE_LOG_FORMAT = '%(asctime)s|%(levelname)s|%(tool)s|%(message)s'
-# pylint: disable=C0103
+
 logging_dict = {}
 _verbose = False
 log_filename = None
 
-#pylint: disable=W0603
+
 def initialize_logger(tool, verbose=False):
     global log_filename
     log_filename = os.path.join(os.getcwd(), "jacquard.log")
@@ -64,11 +64,10 @@ def _print(level, message, args):
                                  'message': _format(message, args)},
           file=sys.stderr)
 
-# pylint: disable=W0703
 def _format(message, args):
     try:
         log_message = message.format(*[str(i) for i in args])
-    except Exception as err:
+    except IndexError as err:
         log_message = ("Malformed log message ({}: {})"
                        "|{}|{}").format(type(err).__name__,
                                         err,

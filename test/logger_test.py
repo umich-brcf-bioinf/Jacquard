@@ -1,4 +1,4 @@
-# pylint: disable=C0103,C0301,R0903,R0904
+#pylint: disable=line-too-long, invalid-name, too-many-public-methods
 from datetime import datetime
 import os
 import sys

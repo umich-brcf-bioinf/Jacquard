@@ -1,16 +1,13 @@
 # pylint: disable=C0103,C0301,R0904
-from collections import OrderedDict,defaultdict
 import os
 import unittest
 
 from jacquard.variant_callers import varscan
-from jacquard.utils import __version__,jq_af_tag,jq_dp_tag,jq_somatic_tag,\
-    JQException
-from test.variant_callers.mutect_test import MockTag
+from jacquard.utils import __version__, JQException
 from jacquard.vcf import VcfRecord, FileReader
 from testfixtures import TempDirectory
 
-class MockWriter():
+class MockWriter(object):
     def __init__(self):
         self._content = []
         self.opened = False
@@ -29,10 +26,13 @@ class MockWriter():
         self.closed = True
 
 class MockFileReader(object):
-    def __init__(self, input_filepath="/foo/mockFileReader.txt", content = []):
+    def __init__(self, input_filepath="/foo/mockFileReader.txt", content = None):
         self.input_filepath = input_filepath
         self.file_name = os.path.basename(input_filepath)
-        self._content = content
+        if content:
+            self._content = content
+        else:
+            self._content = []
         self.open_was_called = False
         self.close_was_called = False
 
@@ -49,96 +49,90 @@ class MockFileReader(object):
 
 class AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}AF,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)",Source="Jacquard",Version={1}>'.format(varscan.JQ_VARSCAN_TAG, __version__), varscan.AlleleFreqTag().metaheader)
+        self.assertEqual('##FORMAT=<ID={0}AF,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)",Source="Jacquard",Version={1}>'.format(varscan.JQ_VARSCAN_TAG, __version__),
+                         varscan._AlleleFreqTag().metaheader)
 
     def test_format_missingAFTag(self):
-        tag = varscan.AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
-        originalVcfRecord = VcfRecord(line)
-        processedVcfRecord = VcfRecord(line)
+        tag = varscan._AlleleFreqTag()
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
+        originalVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
 
     def test_format_presentAFTag(self):
-        tag = varscan.AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FREQ:F2:F3|56.7%:SA.2:SA.3|83.4%:SB.2:SB.3\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FREQ:F2:F3:{0}AF|56.7%:SA.2:SA.3:0.57|83.4%:SB.2:SB.3:0.83\n".format(varscan.JQ_VARSCAN_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord(line)
+        tag = varscan._AlleleFreqTag()
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FREQ:F2:F3|56.7%:SA.2:SA.3|83.4%:SB.2:SB.3\n".replace('|', "\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FREQ:F2:F3:{0}AF|56.7%:SA.2:SA.3:0.57|83.4%:SB.2:SB.3:0.83\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_format_multAlt(self):
-        tag = varscan.AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FREQ:F2:F3|56.7%,41%:SA.2:SA.3|83.4%,23%:SB.2:SB.3\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FREQ:F2:F3:{0}AF|56.7%,41%:SA.2:SA.3:0.57,0.41|83.4%,23%:SB.2:SB.3:0.83,0.23\n".format(varscan.JQ_VARSCAN_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord(line)
+        tag = varscan._AlleleFreqTag()
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FREQ:F2:F3|56.7%,41%:SA.2:SA.3|83.4%,23%:SB.2:SB.3\n".replace('|', "\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FREQ:F2:F3:{0}AF|56.7%,41%:SA.2:SA.3:0.57,0.41|83.4%,23%:SB.2:SB.3:0.83,0.23\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
 class DepthTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}DP,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)",Source="Jacquard",Version={1}>'.format(varscan.JQ_VARSCAN_TAG, __version__), varscan.DepthTag().metaheader)
+        self.assertEqual('##FORMAT=<ID={0}DP,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)",Source="Jacquard",Version={1}>'.format(varscan.JQ_VARSCAN_TAG, __version__),
+                         varscan._DepthTag().metaheader)
 
     def test_format_missingDPTag(self):
-        tag = varscan.DepthTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
-        originalVcfRecord = VcfRecord(line)
-        processedVcfRecord = VcfRecord(line)
+        tag = varscan._DepthTag()
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
+        originalVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
 
     def test_format_presentDPTag(self):
-        tag = varscan.DepthTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP:F2:F3|2:SA.2:SA.3|4:SB.2:SB.3\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP:F2:F3:{0}DP|2:SA.2:SA.3:2|4:SB.2:SB.3:4\n".format(varscan.JQ_VARSCAN_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord(line)
+        tag = varscan._DepthTag()
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP:F2:F3|2:SA.2:SA.3|4:SB.2:SB.3\n".replace('|', "\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP:F2:F3:{0}DP|2:SA.2:SA.3:2|4:SB.2:SB.3:4\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
 class SomaticTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)",Source="Jacquard",Version={1}>'.format(varscan.JQ_VARSCAN_TAG,__version__), varscan.SomaticTag().metaheader)
+        self.assertEqual('##FORMAT=<ID={0}HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)",Source="Jacquard",Version={1}>'.format(varscan.JQ_VARSCAN_TAG, __version__),
+                         varscan._SomaticTag().metaheader)
 
     def test_format_missingSSTag(self):
-        tag = varscan.SomaticTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
-        expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:{0}HC_SOM|SA.1:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n").format(varscan.JQ_VARSCAN_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord(line)
+        tag = varscan._SomaticTag()
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
+        expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:{0}HC_SOM|SA.1:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n").format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_format_presentSSTag_withHC(self):
-        tag = varscan.SomaticTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|{0}HC;SS=2|F1:F2:F3|2:SA.2:SA.3|SB.1:SB.2:SB.3\n".format(varscan.JQ_VARSCAN_TAG).replace('|',"\t")
-        expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|{0}HC;SS=2|F1:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:1\n").format(varscan.JQ_VARSCAN_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord(line)
+        tag = varscan._SomaticTag()
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|{0}HC;SS=2|F1:F2:F3|2:SA.2:SA.3|SB.1:SB.2:SB.3\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|{0}HC;SS=2|F1:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:1\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_format_presentSSTag_withoutHC(self):
-        tag = varscan.SomaticTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|SS=2|F1:F2:F3|2:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
-        expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|SS=2|F1:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n").format(varscan.JQ_VARSCAN_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord(line)
+        tag = varscan._SomaticTag()
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|SS=2|F1:F2:F3|2:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|SS=2|F1:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_format_SSTag_notEqual2(self):
-        tag = varscan.SomaticTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|SS=5|F1:F2:F3|2:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
-        expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|SS=5|F1:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n").format(varscan.JQ_VARSCAN_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord(line)
+        tag = varscan._SomaticTag()
+        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|SS=5|F1:F2:F3|2:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|SS=5|F1:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
-
-class MockTag(object):
-    def __init__(self, field_name, field_value, metaheader=None):
-        self.field_name = field_name
-        self.field_value = field_value
-        self.metaheader = metaheader
-
-    def format(self, vcfRecord):
-        vcfRecord.insert_format_field(self.field_name, {0:self.field_value, 1:self.field_value})
 
 class VarscanTestCase(unittest.TestCase):
     def setUp(self):
@@ -146,14 +140,19 @@ class VarscanTestCase(unittest.TestCase):
         self.caller = varscan.Varscan()
 
     def test_validate_vcfs_in_directory(self):
-        in_files = ["A.vcf","B.vcf","A.somatic.hc.fpfilter.pass"]
+        in_files = ["A.vcf",
+                    "B.vcf",
+                    "A.somatic.hc.fpfilter.pass"]
         self.caller.validate_vcfs_in_directory(in_files)
 
-        in_files = ["A.vcf","B"]
+        in_files = ["A.vcf", "B"]
         self.assertRaisesRegexp(JQException, "ERROR: Non-VCF or fpfilter file in directory. Check parameters and try again", self.caller.validate_vcfs_in_directory, in_files)
 
     def test_decorate_files(self):
-        filenames = ["A/A.varscan.snp.vcf","A.varscan.indel.vcf","A.snp.somatic.hc.fpfilter.pass","A.indel.somatic.hc.fpfilter.pass"]
+        filenames = ["A/A.varscan.snp.vcf",
+                     "A.varscan.indel.vcf",
+                     "A.snp.somatic.hc.fpfilter.pass",
+                     "A.indel.somatic.hc.fpfilter.pass"]
         decorator = "normalized"
 
         actual_filenames = self.caller.decorate_files(filenames, decorator)
@@ -183,28 +182,31 @@ class VarscanTestCase(unittest.TestCase):
 
     def test_normalize_modifyBasedOnHCVariants(self):
         writer = MockWriter()
-        content1 = ["##FOO", "#bar", "chr1|161332554|.|A|G|.|.|.|.|.\n".replace("|","\t")]
-        content2 = ["##FOO", "#bar", "chr1|161332554|.|G|G|.|.|.|.|.\n".replace("|","\t")]
+        column_header = "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleA".replace("|", "\t")
+        content1 = ["##FOO\n", column_header, "chr1|161332554|.|A|G|.|.|.|.|.\n".replace("|", "\t")]
+        content2 = ["##FOO\n", column_header, "chr1|161332554|.|G|G|.|.|.|.|.\n".replace("|", "\t")]
         readers = []
         readers.append(MockFileReader("indel.vcf", content1))
         readers.append(MockFileReader("snp.vcf", content2))
-        self.append_hc_files(readers,content1=["chr1|161332554|A|G|25|1|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n".replace("|","\t")])
+        self.append_hc_files(readers, content1=["chr1|161332554|A|G|25|1|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n".replace("|", "\t")])
         self.caller.normalize(writer, readers)
         self.maxDiff = None
 
-        self.assertEquals(["##FOO", 
-                        '##INFO=<ID={0}HC'
-                        ',Number=1,Type=Flag,Description="Jaquard high-confidence '
-                        'somatic flag for VarScan. Based on intersection with '
-                        'filtered VarScan variants.">'.format(varscan.JQ_VARSCAN_TAG),
-                        "#bar",
-                        "chr1|161332554|.|A|G|.|.|.;{0}HC|.|.".format(varscan.JQ_VARSCAN_TAG).replace("|","\t"),
-                        "chr1|161332554|.|G|G|.|.|.|.|.".replace("|","\t")], writer.lines())
+        self.assertEquals(["##FOO",
+                           '##INFO=<ID={0}HC'
+                           ',Number=1,Type=Flag,Description="Jacquard high-confidence '
+                           'somatic flag for VarScan. Based on intersection with '
+                           'filtered VarScan variants.">'.format(varscan.JQ_VARSCAN_TAG),
+                           column_header,
+                           "chr1|161332554|.|A|G|.|.|.;{0}HC|.|.".format(varscan.JQ_VARSCAN_TAG).replace("|", "\t"),
+                           "chr1|161332554|.|G|G|.|.|.|.|.".replace("|", "\t")], writer.lines())
 
     def test_normalize_wrongNumberOfFiles(self):
         self.assertRaisesRegexp(JQException,
-            r"VarScan directories should have exactly two input VCF files per patient, but found \[1\].",
-            self.caller.normalize, MockWriter(), [MockFileReader(input_filepath="foo.vcf", content=["##foo", "#bar"])])
+                                r"VarScan directories should have exactly two input VCF files per patient, but found \[1\].",
+                                self.caller.normalize,
+                                MockWriter(),
+                                [MockFileReader(input_filepath="foo.vcf", content=["##foo", "#bar"])])
 
     def test_normalize_mismatchedColumnHeaders(self):
         writer = MockWriter()
@@ -218,7 +220,7 @@ class VarscanTestCase(unittest.TestCase):
         self.assertRaisesRegexp(JQException, r"The column headers for VCF files \[indel.vcf,snp.vcf\] do not match.",
                                  self.caller.normalize, writer, readers)
 
-    def test__process_hc_files(self):
+    def test_process_hc_files(self):
         hc_readers = []
         with TempDirectory() as input_dir:
             input_dir.write("A",
@@ -234,13 +236,19 @@ class VarscanTestCase(unittest.TestCase):
                             "chr3|99463179|G|A|22|0|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n"+
                             "").replace("|","\t"))
             hc_readers.append(FileReader(os.path.join(input_dir.path,"A")))
-            expected = ('##INFO=<ID={0}HC'
-                        ',Number=1,Type=Flag,Description="Jaquard '
-                        'high-confidence somatic flag for VarScan. Based on '
-                        'intersection with filtered VarScan '
-                        'variants.">'.format(varscan.JQ_VARSCAN_TAG),
-                        ["chr1_161332554_A_G","chr2_161332557_G_A","chr3_99463179_G_A"])
-            self.assertEquals(expected,self.caller._process_hc_files(hc_readers))
+
+            actual = self.caller._process_hc_files(hc_readers)
+
+            metaheader = ('##INFO=<ID={0}HC'
+                          ',Number=1,Type=Flag,Description="Jacquard '
+                          'high-confidence somatic flag for VarScan. Based on '
+                          'intersection with filtered VarScan '
+                          'variants.">').format(varscan.JQ_VARSCAN_TAG)
+            hc_records = [VcfRecord("chr1", "161332554", "A", "G"),
+                          VcfRecord("chr2", "161332557", "G", "A"),
+                          VcfRecord("chr3", "99463179", "G", "A")]
+            expected = (metaheader, hc_records)
+            self.assertEquals(expected, actual)
 
     def test_normalize_raisesExceptionMissingIndelSnvs(self):
         self.assert_two_vcf_files_throw_exception("foo.vcf", "bar.vcf")
@@ -318,6 +326,11 @@ class VarscanTestCase(unittest.TestCase):
         with self.assertRaisesRegexp(JQException,r"Each patient in a VarScan directory should have a snp file and an indel file."):
             self.caller.normalize(MockWriter(), readers)
 
-    def append_hc_files(self, readers, file1="snp.somatic.hc.fpfilter.pass", file2="indel.somatic.hc.fpfilter.pass", content1=[], content2=[]):
+    @staticmethod
+    def append_hc_files(readers, file1="snp.somatic.hc.fpfilter.pass", file2="indel.somatic.hc.fpfilter.pass", content1=None, content2=None):
+        if not content1:
+            content1 = []
+        if not content2:
+            content2 = []
         readers.append(MockFileReader(file1, content1))
         readers.append(MockFileReader(file2, content2))

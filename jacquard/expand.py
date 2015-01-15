@@ -1,11 +1,12 @@
+#pylint: disable=unused-argument, too-many-locals
+from __future__ import print_function, absolute_import
 from collections import OrderedDict
 import glob
+import jacquard.logger as logger
+import jacquard.utils as utils
+import jacquard.vcf as vcf
 import os
 import re
-
-import logger as logger
-import utils as utils
-import vcf as vcf
 
 def _read_col_spec(col_spec):
     if not os.path.isfile(col_spec):
@@ -171,20 +172,16 @@ def _parse_info_field(vcf_record, info_header):
 
     return info_columns
 
-def _parse_format_tags(vcf_record, format_header, column_header):
-    samples = column_header.split("\t")[9:]
-    sample_dict = vcf_record.sample_dict
+def _parse_format_tags(vcf_record, format_header):
     format_columns = []
-
-    for key in sample_dict.keys():
-        sample_dict[samples[key]] = sample_dict.pop(key)
 
     for field in format_header:
         tag = field.split("|")[0]
         sample_name = "|".join(field.split("|")[1:])
 
         try:
-            format_columns.append(sample_dict[sample_name][tag])
+            tag_value = vcf_record.sample_tag_values[sample_name][tag]
+            format_columns.append(tag_value)
         except KeyError:
             format_columns.append("")
 
@@ -207,8 +204,7 @@ def _write_vcf_records(vcf_reader, file_writer, header_dict):
 
             elif key == "format_header":
                 format_columns = _parse_format_tags(record,
-                                                    header_dict[key],
-                                                    vcf_reader.column_header)
+                                                    header_dict[key])
                 row.extend(format_columns)
 
         row_string = "\t".join(row) + "\n"
@@ -223,10 +219,7 @@ def _create_complete_header(header_dict):
 
     return "\t".join(complete_header) + "\n"
 
-def _glossary(header,writer):
-    pass
-
-# pylint: disable=C0301
+# pylint: disable=line-too-long
 def add_subparser(subparser):
     parser = subparser.add_parser("expand", help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
     parser.add_argument("input", help="Path to annotated VCF file or path to directory of annotated VCF files. Other file types ignored")
@@ -235,6 +228,10 @@ def add_subparser(subparser):
     parser.add_argument("-c", "--column_specification", help="Path to text file containing column regular expressions to be included in output file")
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
+# Command signatures must be consistent and execution not appropriate to write to output file
+# In the future, execution context may be written to glossary
+#TODO: (cgates): Leave the file handling in execute and delegate the meat to
+#another method to separate concerns (and expedite testing)
 def execute(args, execution_context):
     input_path = os.path.abspath(args.input)
     output_path = os.path.abspath(args.output)

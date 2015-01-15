@@ -1,3 +1,5 @@
 *.pyc
 output/
 files/
+jacquard.log
+test/functional_tests/test_output/*

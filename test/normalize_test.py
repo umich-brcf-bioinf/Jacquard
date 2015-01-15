@@ -1,24 +1,26 @@
-# pylint: disable=C0103,C0301,R0903,R0904
+#pylint: disable=line-too-long, global-statement, unused-argument
+#pylint: disable=invalid-name, too-few-public-methods, too-many-public-methods
+from __future__ import absolute_import
 from argparse import Namespace
 import os
 from StringIO import StringIO
 import sys
 from testfixtures import TempDirectory
 import unittest
-import glob
 
-from jacquard.variant_callers import varscan, strelka, variant_caller_factory
+from jacquard.variant_callers import variant_caller_factory
 from jacquard.normalize import _partition_input_files, _determine_caller_per_directory
 from jacquard.vcf import FileReader, FileWriter
 import jacquard.utils as utils
 import jacquard.normalize as normalize
 import jacquard.logger as logger
+import test.test_case as test_case
 
-mock_log_called = False
+MOCK_LOG_CALLED = False
 
 def mock_log(msg, *args):
-    global mock_log_called
-    mock_log_called = True
+    global MOCK_LOG_CALLED
+    MOCK_LOG_CALLED = True
 
 class MockCallerFactory(object):
     def __init__(self, caller):
@@ -30,39 +32,49 @@ class MockCallerFactory(object):
         return self.caller
 
 class MockCaller(object):
-    def __init__(self, name="MockCaller", metaheaders=["##mockMetaheader1"]):
+    def __init__(self, name="MockCaller", metaheaders=None):
         self.name = name
-        self.metaheaders = metaheaders
+        if metaheaders:
+            self.metaheaders = metaheaders
+        else:
+            self.metaheaders = ["##mockMetaheader1"]
         self.file_name_search = "snps|indels"
 
-    def add_tags(self, vcfRecord):
+    @staticmethod
+    def add_tags(vcfRecord):
         return vcfRecord
 
-    def decorate_files(self, filenames, decorator):
+    @staticmethod
+    def decorate_files(filenames, decorator):
         return filenames[0]+"foo"
 
     def get_new_metaheaders(self):
         return self.metaheaders
 
 class MockFileReader(object):
-    def __init__(self, input_filepath="/foo/mockFileReader.txt", content = []):
+    def __init__(self, input_filepath="/foo/mockFileReader.txt", content=None):
         self.input_filepath = input_filepath
         self.file_name = os.path.basename(input_filepath)
-        self._content = content
+
+        if content:
+            self._content = content
+        else:
+            self._content = []
+
         self.open_was_called = False
         self.close_was_called = False
-    
+
     def open(self):
         self.open_was_called = True
-    
+
     def read_lines(self):
         for line in self._content:
             yield line
-         
+
     def close(self):
         self.close_was_called = True
-    
-class MockFileWriter():
+
+class MockFileWriter(object):
     def __init__(self):
         self._content = []
         self.opened = False
@@ -70,10 +82,10 @@ class MockFileWriter():
 
     def open (self):
         self.opened = True
-        
+
     def write(self, content):
         self._content.extend(content.splitlines())
-        
+
     def lines(self):
         return self._content
 
@@ -98,10 +110,11 @@ class NormalizeTestCase(unittest.TestCase):
         unittest.TestCase.tearDown(self)
         self._reset_mock_logger()
 
-    def _change_mock_logger(self):
-        global mock_log_called
-        mock_log_called = False
-        global mock_log
+    @staticmethod
+    def _change_mock_logger():
+        global MOCK_LOG_CALLED
+        MOCK_LOG_CALLED = False
+
         logger.info = mock_log
         logger.error = mock_log
         logger.warning = mock_log
@@ -112,6 +125,7 @@ class NormalizeTestCase(unittest.TestCase):
         logger.error = self.original_error
         logger.warning = self.original_warning
         logger.debug = self.original_debug
+
     def test_execute(self):
         vcf_content1 = ('''##source=strelka
 ##file1
@@ -179,15 +193,15 @@ chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         output_dir_path = "output_dir_path"
         caller = MockCaller()
         writer_to_readers = _partition_input_files(in_files, output_dir_path, caller)
-        
+
         writerA = FileWriter(os.path.join(output_dir_path,"A.1.normalized.vcf"))
-        readersA = [FileReader(os.path.join("A.1.snps.vcf")), 
+        readersA = [FileReader(os.path.join("A.1.snps.vcf")),
                     FileReader(os.path.join("A.1.indels.vcf"))]
-        writerB = FileWriter(os.path.join(output_dir_path,"B.normalized.vcf"))           
+        writerB = FileWriter(os.path.join(output_dir_path,"B.normalized.vcf"))
         readersB = [FileReader(os.path.join("B.snps.vcf"))]
-        self.assertEquals({writerA: readersA, writerB: readersB}, 
+        self.assertEquals({writerA: readersA, writerB: readersB},
                           writer_to_readers)
-        
+
     def test__partition_input_files(self):
         in_files = ["A.","A.","B."]
         caller = MockCaller()
@@ -195,77 +209,36 @@ chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         writer_to_readers = _partition_input_files(in_files, output_dir_path, caller)
         self.maxDiff=None
         writerA = FileWriter("A.foo")
-        readersA = [FileReader("A."), 
+        readersA = [FileReader("A."),
                     FileReader("A.")]
-        writerB = FileWriter("B.foo")           
+        writerB = FileWriter("B.foo")
         readersB = [FileReader("B.")]
-        
-        self.assertEquals({writerA: readersA, writerB: readersB}, 
+
+        self.assertEquals({writerA: readersA, writerB: readersB},
                           writer_to_readers)
-        
+
     def test__determine_caller_per_directory(self):
         with TempDirectory() as input_dir:
             A = input_dir.write("A.vcf","##source=strelka\n#colHeader")
             B = input_dir.write("B.vcf","##source=strelka\n#colHeader")
             input_files = [A, B]
-            
+
             mock_caller = MockCaller()
             mock_caller_factory = MockCallerFactory(mock_caller)
-            
+
             caller = _determine_caller_per_directory(input_files, mock_caller_factory.get_caller)
-            
+
             self.assertEquals(mock_caller,caller)
             self.assertEquals(mock_caller_factory.last_filename, "A.vcf")
 
-    def test_functional_normalize(self):
+class NormalizeFunctionalTestCase(test_case.JacquardBaseTestCase):
+    def test_normalize(self):
         with TempDirectory() as output_dir:
-            module_testdir = os.path.dirname(os.path.realpath(__file__))+"/functional_tests/01_normalize"
-            input_dir = os.path.join(module_testdir,"input")
-            args = Namespace(input=input_dir, 
-                         output=output_dir.path)
-            normalize.execute(args,[])
-            
-            output_file = glob.glob(os.path.join(output_dir.path, "*.vcf"))[0]
-            
-            actual_file = FileReader(os.path.join(output_dir.path,output_file))
-            actual_file.open()
-            actual = []
-            for line in actual_file.read_lines():
-                actual.append(line)
-            actual_file.close()
-            
-            module_outdir = os.path.join(module_testdir,"benchmark")
-            output_file = os.listdir(module_outdir)[0]
-            expected_file = FileReader(os.path.join(module_outdir,output_file))
-            expected_file.open()
-            expected = []
-            for line in expected_file.read_lines():
-                expected.append(line)
-            expected_file.close()
-            
-            self.assertEquals(len(expected), len(actual))
-            
-            self.assertEquals(124, len(actual))
-            
-            for i in xrange(len(expected)):
-                if expected[i].startswith("##jacquard.cwd="):
-                    self.assertTrue(actual[i].startswith("##jacquard.cwd="))
-                elif expected[i].startswith("##jacquard.command="):
-                    self.assertTrue(actual[i].startswith("##jacquard.command="))
-                else:
-                    self.assertEquals(expected[i].rstrip(), actual[i].rstrip()) 
-            
-        
-class MockWriter():
-    def __init__(self):
-        self._content = []
-        self.wasClosed = False
+            test_dir = os.path.dirname(os.path.realpath(__file__))
+            module_testdir = os.path.join(test_dir, "functional_tests", "01_normalize")
+            input_dir = os.path.join(module_testdir, "input")
 
-    def write(self, content):
-        self._content.extend(content.splitlines())
-        
-    def lines(self):
-        return self._content
+            command = ["normalize", input_dir, output_dir.path, "--force"]
+            expected_dir = os.path.join(module_testdir, "benchmark")
 
-    def close(self):
-        self.wasClosed = True
+            self.assertCommand(command, expected_dir)

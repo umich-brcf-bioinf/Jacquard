@@ -1,18 +1,16 @@
-# pylint: disable=C0111
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 import collections
 import glob
 import os
 import shutil
 
-from variant_callers import variant_caller_factory
-import utils
-from utils import JQException
-import vcf
-import logger
+from jacquard.variant_callers import variant_caller_factory
+import jacquard.utils as utils
+import jacquard.vcf as vcf
+import jacquard.logger as logger
 
 def add_subparser(subparser):
-    #pylint: disable=C0301
+    #pylint: disable=line-too-long
     parser = subparser.add_parser("tag", help="Accepts a directory of VCf results and creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
     parser.add_argument("input", help="Path to directory containing VCFs. Other file types ignored")
     parser.add_argument("output", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
@@ -26,9 +24,11 @@ def _comma_separated(line):
             return False
     return True
 
-def _check_records(reader, writer):
+#TODO: (cgates): This works, but would rather see this as a collection of validator methods
+def _check_records(reader):
+    #pylint: disable=line-too-long
     correct_ref = "ACGTNacgtn"
-    correct_alt = "*.ACGTNacgtn"
+    correct_alt = "*.ACGTNacgtn,"
     anomalous_set = set()
     anomalous_records = []
 
@@ -37,7 +37,6 @@ def _check_records(reader, writer):
     missing_alt = 0
 
     for vcf_record in reader.vcf_records():
-        #pylint: disable=C0301
         anomalous_flags = []
         if _comma_separated(vcf_record.ref) and not all(x in correct_ref for x in list(vcf_record.ref)):
             anomalous_flags.append("JQ_MALFORMED_REF")
@@ -78,8 +77,8 @@ def _write_records(reader, writer, anomalous_records):
 
         writer.write(reader.caller.add_tags(vcf_record))
 
-def _modify_metaheaders(reader, writer, execution_context,anomalous_set):
-    new_headers = reader.metaheaders
+def _modify_metaheaders(reader, writer, execution_context, anomalous_set):
+    new_headers = list(reader.metaheaders)
     new_headers.extend(execution_context)
     new_headers.append("##jacquard.tag.caller={0}".format(reader.caller.name))
     new_headers.extend(reader.caller.get_new_metaheaders())
@@ -113,14 +112,15 @@ def tag_files(vcf_readers_to_writers, execution_context,
     total_number_of_files = len(vcf_readers_to_writers)
     callers = collections.defaultdict(int)
     for count, item in enumerate(vcf_readers_to_writers.items()):
-        reader,writer = item
+        reader, writer = item
+        file_name = os.path.basename(reader.input_filepath)
         logger.info("Reading [{}] ({}/{})",
-                    reader.input_filepath,
+                    file_name,
                     count + 1,
                     total_number_of_files)
         reader.open()
 
-        anomalous_set, anomalous_records = _check_records(reader, writer)
+        anomalous_set, anomalous_records = _check_records(reader)
         caller = get_caller(reader.metaheaders,
                             reader.column_header,
                             reader.file_name)
@@ -157,7 +157,7 @@ def _log_caller_info(vcf_readers):
                     caller_count[caller_name], caller_name)
 
 def _build_vcf_readers(input_dir,
-                         get_caller=variant_caller_factory.get_caller):
+                       get_caller=variant_caller_factory.get_caller):
     in_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
     vcf_readers = []
     failures = 0
@@ -169,12 +169,12 @@ def _build_vcf_readers(input_dir,
                                 vcf_reader.column_header,
                                 vcf_reader.file_name)
             vcf_readers.append(vcf.RecognizedVcfReader(vcf_reader, caller))
-        except JQException:
+        except utils.JQException:
             failures += 1
     if failures:
-        raise JQException("[{}] VCF files could not be parsed."
-                          " Review logs for details, adjust input, "
-                          "and try again.".format(failures))
+        raise utils.JQException(("[{}] VCF files could not be parsed."
+                                 " Review logs for details, adjust input, "
+                                 "and try again.").format(failures))
     _log_caller_info(vcf_readers)
     return vcf_readers
 
@@ -194,14 +194,11 @@ def execute(args, execution_context):
     output_dir = os.path.abspath(args.output)
     utils.validate_directories(input_dir, output_dir)
 
-    #TODO cgates: move to jacquard.py
-#     for line in execution_context:
-#         logger.debug("{}", line)
-
     vcf_readers = _build_vcf_readers(input_dir)
     if not vcf_readers:
-        logger.error("Specified input directory [{0}] contains no VCF files."
-             "Check parameters and try again.", input_dir)
+        logger.error(("Specified input directory [{0}] contains no VCF files."
+                      "Check parameters and try again."),
+                     input_dir)
         #TODO cgates: move to jacquard.py
         shutil.rmtree(output_dir)
         exit(1)
@@ -213,4 +210,5 @@ def execute(args, execution_context):
 
     tag_files(readers_to_writers, execution_context)
     logger.info("Wrote [{}] VCF file(s) to [{}]",
-         len(readers_to_writers), output_dir)
+                len(readers_to_writers),
+                output_dir)
