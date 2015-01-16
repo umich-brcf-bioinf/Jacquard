@@ -7,10 +7,12 @@ import jacquard.vcf as vcf
 import os
 import re
 import jacquard.logger as logger
+from _csv import reader
 
-MULT_ALT_HEADER = ('##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,'
-                   'Description="dbSNP Membership",Source="Jacquard",'
-                   'Version="{}">').format(utils.__version__)
+_MULT_ALT_TAG = "JQ_MULT_ALT_LOCUS"
+_MULT_ALT_HEADER = ('##INFO=<ID={},Number=0,Type=Flag,'
+                    'Description="dbSNP Membership",Source="Jacquard",'
+                    'Version="{}">').format(_MULT_ALT_TAG, utils.__version__)
 
 
 # This class must capture the state of the incoming iterator and provide
@@ -38,46 +40,44 @@ class GenericBufferedReader(object):
         except StopIteration:
             return None
 
-def _merge_existing_metaheaders(vcf_readers, tags_to_keep):
-    all_meta_headers = utils.OrderedSet()
+def _build_format_tags(format_tag_regex, vcf_readers):
     all_tags_to_keep = []
-    visited_metaheaders = set()
-
-    all_meta_headers.add(MULT_ALT_HEADER)
 
     for vcf_reader in vcf_readers:
-        for tag_regex in tags_to_keep:
-            for tag, format_metaheader in vcf_reader.format_metaheaders.items():
-                visited_metaheaders.add(format_metaheader)
+        for tag_regex in format_tag_regex:
+            for tag in vcf_reader.format_metaheaders:
                 if re.match(tag_regex+"$", tag):
                     all_tags_to_keep.append(tag)
-                    all_meta_headers.add(format_metaheader)
+    all_tags_to_keep.sort()
+    return all_tags_to_keep
 
-#TODO: (jebene) - Only include JQ_MULT_ALT_LOCUS metaheaders if there is at least one mult-alt in the file
-        for tag, info_metaheader in vcf_reader.info_metaheaders.items():
-            visited_metaheaders.add(info_metaheader)
-            if tag == "JQ_MULT_ALT_LOCUS":
-                all_tags_to_keep.append(tag)
-                all_meta_headers.add(info_metaheader)
+def _compile_metaheaders(existing_headers,
+                         vcf_readers,
+                         all_sample_names,
+                         format_tags_to_keep,
+                         info_tags_to_keep):
+    ordered_metaheaders = list(existing_headers)
+    all_info_metaheaders = {}
+    all_format_metaheaders = {}
+    for vcf_reader in vcf_readers:
+        all_info_metaheaders.update(vcf_reader.info_metaheaders)
+        all_format_metaheaders.update(vcf_reader.format_metaheaders)
 
-#TODO: (jebene) - Since the FILTER fields will always be null, we could re-think the way we're doing this.
-        for tag, filter_metaheader in vcf_reader.filter_metaheaders.items():
-            visited_metaheaders.add(filter_metaheader)
+    all_info_metaheaders[_MULT_ALT_TAG] = _MULT_ALT_HEADER
 
-        orig_metaheaders = set(vcf_reader.metaheaders)
-        remaining_metaheaders = orig_metaheaders.difference(visited_metaheaders)
-#TODO: (jebene) - add an update() method to utils.OrderedSet() to avoid this iteration
-        for meta_header in remaining_metaheaders:
-            all_meta_headers.add(meta_header)
+    for tag in info_tags_to_keep:
+        ordered_metaheaders.append(all_info_metaheaders[tag])
+    for tag in format_tags_to_keep:
+        ordered_metaheaders.append(all_format_metaheaders[tag])
 
-    return all_meta_headers, all_tags_to_keep
+    column_header = vcf_readers[0].column_header[0:9]
+    column_header.extend(all_sample_names)
+    ordered_metaheaders.append("\t".join(column_header))
 
-def _write_metaheaders(file_writer, all_headers, execution_context):
-    column_header = all_headers.pop()
-    all_headers.extend(execution_context)
+    return ordered_metaheaders
 
+def _write_metaheaders(file_writer, all_headers):
     file_writer.write("\n".join(all_headers) + "\n")
-    file_writer.write(column_header + "\n")
 
 def _create_reader_lists(input_files):
     buffered_readers = []
@@ -133,19 +133,16 @@ def _build_coordinates(vcf_readers):
         raise utils.JQException("One or more VCF files were not sorted. "
                                 "Review inputs and try again.")
 
-#     mult_alt_in_file = 0
     for vcf_record in coordinate_set:
         alts_for_this_locus = mult_alts[vcf_record.chrom,
                                         vcf_record.pos,
                                         vcf_record.ref]
         if len(alts_for_this_locus) > 1:
-            vcf_record.add_info_field("JQ_MULT_ALT_LOCUS")
-#             mult_alt_in_file = 1
+            vcf_record.add_info_field(_MULT_ALT_TAG)
 
     coordinate_list = coordinate_set.keys()
     coordinate_list.sort()
 
-#     return coordinate_list, mult_alt_in_file
     return coordinate_list
 
 
@@ -211,12 +208,9 @@ def _merge_records(coordinates,
         writer.write(merged_record.asText())
 
 
-def _process_headers(vcf_readers, tags_to_keep):
+def _build_sample_list(vcf_readers):
     all_sample_names = set()
     patient_to_file = defaultdict(list)
-
-    (all_headers,
-     all_tags_to_keep) = _merge_existing_metaheaders(vcf_readers, tags_to_keep)
 
     for vcf_reader in vcf_readers:
         patient = vcf_reader.file_name.split(".")[0]
@@ -227,21 +221,31 @@ def _process_headers(vcf_readers, tags_to_keep):
             patient_to_file[patient_sample].append(vcf_reader.file_name)
 
         #TODO: (cgates) Could we use a constant instead of parsing inside a loop?
-        column_header = vcf_reader.column_header.split("\t")[0:9]
+#         column_header = vcf_reader.column_header.split("\t")[0:9]
 
     patient_to_file_ordered = OrderedDict(sorted(patient_to_file.items(),
                                                  key=lambda t: t[0]))
-
+    
+#     (all_headers,
+#      all_tags_to_keep) = _merge_existing_metaheaders(vcf_readers, tags_to_keep)
+#      
     merge_metaheaders = _build_merge_metaheaders(patient_to_file_ordered)
-    for metaheader in merge_metaheaders:
-        all_headers.add(metaheader)
+#     for metaheader in merge_metaheaders:
+#         all_headers.add(metaheader)
 
+    #TODO: Keep all_sample_names as set.
     sorted_all_sample_names = utils.NaturalSort(list(all_sample_names)).sorted
-    column_header.extend(sorted_all_sample_names)
-    all_headers.add("\t".join(column_header))
+#     column_header.extend(sorted_all_sample_names)
+#     all_headers.add("\t".join(column_header))
 
-    return list(all_headers), sorted_all_sample_names, all_tags_to_keep
+    return sorted_all_sample_names, merge_metaheaders
 
+def _build_info_tags(coordinates):
+    all_info_tags = set()
+    for record in coordinates:
+        all_info_tags.update(record.info_dict.keys())
+    ordered_tags = sorted(all_info_tags)
+    return ordered_tags
 
 def _build_merge_metaheaders(patient_to_file):
     metaheaders = []
@@ -251,7 +255,6 @@ def _build_merge_metaheaders(patient_to_file):
         metaheader = metaheader_fmt.format(i+1, patient, filenames_string)
         metaheaders.append(metaheader)
     return metaheaders
-
 
 def add_subparser(subparser):
     #pylint: disable=line-too-long
@@ -265,28 +268,35 @@ def add_subparser(subparser):
 def execute(args, execution_context):
     input_path = os.path.abspath(args.input)
     output_path = os.path.abspath(args.output)
-    tags_to_keep = args.tags.split(",") if args.tags else ["JQ_.*"]
+    format_tag_regex = args.tags.split(",") if args.tags else ["JQ_.*"]
 
     input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
-    file_writer = vcf.FileWriter(output_path)
-    file_writer.open()
 
-    buffered_readers, vcf_readers = _create_reader_lists(input_files)
-    headers, all_sample_names, all_tags_to_keep = _process_headers(vcf_readers,
-                                                                   tags_to_keep)
+    try:
+        file_writer = vcf.FileWriter(output_path)
+        file_writer.open()
 
-    _write_metaheaders(file_writer,
-                       headers,
-                       execution_context)
+        buffered_readers, vcf_readers = _create_reader_lists(input_files)
 
-    coordinates = _build_coordinates(vcf_readers)
-
-    _merge_records(coordinates,
-                   buffered_readers,
-                   file_writer,
-                   all_sample_names,
-                   all_tags_to_keep)
-
-    for vcf_reader in vcf_readers:
-        vcf_reader.close()
-    file_writer.close()
+        all_sample_names, merge_sample_metaheaders = _build_sample_list(vcf_readers)
+        coordinates = _build_coordinates(vcf_readers)
+        format_tags_to_keep = _build_format_tags(format_tag_regex, vcf_readers)
+        info_tags_to_keep = _build_info_tags(coordinates)
+        existing_headers = execution_context + merge_sample_metaheaders
+        headers = _compile_metaheaders(existing_headers,
+                                       vcf_readers,
+                                       all_sample_names,
+                                       format_tags_to_keep,
+                                       info_tags_to_keep)
+ 
+        _write_metaheaders(file_writer, headers)
+ 
+        _merge_records(coordinates,
+                       buffered_readers,
+                       file_writer,
+                       all_sample_names,
+                       format_tags_to_keep)
+    finally:
+        for vcf_reader in vcf_readers:
+            vcf_reader.close()
+        file_writer.close()

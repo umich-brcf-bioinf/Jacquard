@@ -196,7 +196,7 @@ class VcfRecord(object):
         self.qual = qual
         self.filter = vcf_filter
         self.info = info
-        self.info_dict = self.get_info_dict()
+        self.info_dict = self._init_info_dict()
 
         if sample_tag_values is None:
             self.sample_tag_values = {}
@@ -213,16 +213,16 @@ class VcfRecord(object):
             tags = set(self.sample_tag_values[first_sample].keys())
         return tags
 
-    def get_info_dict(self):
-        info_list = self.info.split(";")
+    def _init_info_dict(self):
         info_dict = {}
-        for key_value in info_list:
-            if "=" in key_value:
-                key, value = key_value.split("=")
-                info_dict[key] = value
-            else:
-                info_dict[key_value] = key_value
-
+        if self.info and self.info != ".":
+            info_list = self.info.split(";")
+            for key_value in info_list:
+                if "=" in key_value:
+                    key, value = key_value.split("=")
+                    info_dict[key] = value
+                else:
+                    info_dict[key_value] = key_value
         return info_dict
 
     def add_info_field(self, field):
@@ -239,18 +239,18 @@ class VcfRecord(object):
         self._join_info_fields()
 
     def _join_info_fields(self):
-        info_fields = []
-
-        if len(self.info_dict) > 1:
-            self.info_dict.pop(".", None)
-        for field, value in self.info_dict.items():
-            if field == value:
-                info_fields.append(value)
-            else:
-                info_fields.append("=".join([field, value]))
-
-        self.info = ";".join(info_fields)
-
+        if self.info_dict:
+            info_fields = []
+            if len(self.info_dict) > 1:
+                self.info_dict.pop(".", None)
+            for field, value in self.info_dict.items():
+                if field == value:
+                    info_fields.append(value)
+                else:
+                    info_fields.append("=".join([field, value]))
+            self.info = ";".join(info_fields)
+        else:
+            self.info = "."
     def get_empty_record(self):
         return VcfRecord(chrom=self.chrom,
                          pos=self.pos,

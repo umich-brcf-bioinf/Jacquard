@@ -1,5 +1,5 @@
 #pylint: disable=line-too-long,too-many-public-methods,invalid-name
-#pylint: disable=missing-docstring,protected-access
+#pylint: disable=missing-docstring,protected-access,too-few-public-methods
 from StringIO import StringIO
 from collections import OrderedDict
 from jacquard.vcf import VcfRecord, VcfReader, FileWriter, FileReader
@@ -169,10 +169,16 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         self.assertRaises(KeyError, record.add_sample_tag_value, "F1", {"SampleA":0.6, "SampleB":0.6})
 
     def test_get_info_dict(self):
-        sample_names = ["SampleA"]
-        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|k1=v1;k2=v2|F|S\n")
-        vcf_record = VcfRecord.parse_record(input_line, sample_names)
-        self.assertEquals({"k1": "v1", "k2": "v2"}, vcf_record.get_info_dict())
+        vcf_record = VcfRecord("chr1", "42", "A", "C", info = "k1=v1;k2=v2")
+        self.assertEquals({"k1": "v1", "k2": "v2"}, vcf_record.info_dict)
+
+    def test_get_info_dict_empty(self):
+        vcf_record = VcfRecord("chr1", "42", "A", "C", info = "")
+        self.assertEquals({}, vcf_record.info_dict)
+
+    def test_get_info_dict_null(self):
+        vcf_record = VcfRecord("chr1", "42", "A", "C", info = ".")
+        self.assertEquals({}, vcf_record.info_dict)
 
     def test_add_info_field_assignedField(self):
         sample_names = ["SampleA"]

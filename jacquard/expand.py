@@ -160,7 +160,7 @@ def _disambiguate_column_names(column_header, info_header):
     return ["INFO_" + i for i in info_header] if overlap else info_header
 
 def _parse_info_field(vcf_record, info_header):
-    info_dict = vcf_record.get_info_dict()
+    info_dict = vcf_record.info_dict
     info_columns = []
 
     for tag in info_header:
