@@ -13,7 +13,7 @@ _MULT_ALT_TAG = "JQ_MULT_ALT_LOCUS"
 _MULT_ALT_HEADER = ('##INFO=<ID={},Number=0,Type=Flag,'
                     'Description="dbSNP Membership",Source="Jacquard",'
                     'Version="{}">').format(_MULT_ALT_TAG, utils.__version__)
-
+_FILE_FORMAT = ["##fileformat=VCFv4.2"]
 
 # This class must capture the state of the incoming iterator and provide
 # modified behavior based on data in that iterator. A small class works ok, but
@@ -284,7 +284,7 @@ def execute(args, execution_context):
         format_tags_to_keep = _build_format_tags(format_tag_regex, vcf_readers)
         info_tags_to_keep = _build_info_tags(coordinates)
         contigs_to_keep = _build_contigs(coordinates)
-        incoming_headers = ["##fileformat=VCFv4.2"] + execution_context + merge_metaheaders
+        incoming_headers = _FILE_FORMAT + execution_context + merge_metaheaders
         headers = _compile_metaheaders(incoming_headers,
                                        vcf_readers,
                                        all_sample_names,
