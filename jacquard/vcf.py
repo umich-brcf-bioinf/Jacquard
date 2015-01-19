@@ -1,11 +1,10 @@
-# pylint: disable=W0212,C0111
-from __future__ import print_function
+# pylint: disable=too-many-instance-attributes
+from __future__ import print_function, absolute_import
 from collections import OrderedDict
-from sets import Set
 import os
 import re
 
-import utils
+import jacquard.utils as utils
 
 class RecognizedVcfReader(object):
     def __init__(self,vcf_reader,caller):
@@ -68,7 +67,8 @@ class VcfReader(object):
     def metaheaders(self):
         return list(self._metaheaders)
 
-    def _read_headers(self): #TODO: VcfReader shouldn't do open and close unless user tells it to
+#TODO: VcfReader shouldn't do open and close unless user tells it to
+    def _read_headers(self):
         metaheaders = []
         column_header = None
         try:
@@ -84,7 +84,9 @@ class VcfReader(object):
             self._file_reader.close()
 
         if not (column_header and metaheaders):
-            raise utils.JQException("ERROR: [{}] is not a valid vcf. Missing column header or metaheaders.".format(self.file_name))
+            raise utils.JQException("ERROR: [{}] is not a valid vcf. Missing "
+                                    "column header or metaheaders."\
+                                    .format(self.file_name))
 
         return column_header, metaheaders
 
@@ -150,13 +152,13 @@ class VcfRecord(object):
             raise KeyError
         self.format_set.append(fieldname)
 
-        if (field_dict.keys() != self.sample_dict.keys()):
+        if field_dict.keys() != self.sample_dict.keys():
             raise KeyError()
         for key in self.sample_dict.keys():
             self.sample_dict[key][fieldname] = str(field_dict[key])
 
 
-#TODO cgates: add context management to open/close 
+#TODO cgates: add context management to open/close
 class FileWriter(object):
     def __init__(self, output_filepath):
         self.output_filepath = output_filepath

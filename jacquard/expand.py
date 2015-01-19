@@ -1,12 +1,12 @@
-# pylint: disable=W0212,C0111
-from collections import OrderedDict
+# pylint: disable=
+from __future__ import absolute_import
 import glob
 import os
 import re
 
-import logger as logger
-import utils as utils
-import vcf as vcf
+import jacquard.logger as logger
+import jacquard.utils as utils
+import jacquard.vcf as vcf
 
 UNUSED_REGEX_WARNING_FORMAT = ("The expression [{}] in column specification " +
                                "file [{}:{}] didn't match any input columns; " +
@@ -132,8 +132,8 @@ def _create_potential_column_list(vcf_reader):
 
     return processed_column_headers + info_dict.keys() + format_dict.keys()
 
-# pylint: disable=C0301
 def add_subparser(subparser):
+    # pylint: disable=C0301
     parser = subparser.add_parser("expand", help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
     parser.add_argument("input", help="Path to annotated VCF file or path to directory of annotated VCF files. Other file types ignored")
     parser.add_argument("output", help="Path to directory of output variant-level TXT files")

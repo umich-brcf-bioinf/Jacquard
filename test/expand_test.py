@@ -366,55 +366,6 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                                     expand.execute, args,
                                     ["extra_header1", "extra_header2"])
 
-##TODO: fix this test!
-    def xtest_functional_expand(self):
-        #these meta_headers break it (among others) because of commas:
-        ##INFO=<ID=AA,Number=1,Type=String,Description="Ancestral Allele, ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/pilot_data/technical/reference/ancestral_alignments/README">
-        ##INFO=<ID=COSMIC,Number=.,Type=String,Description="Data from COSMIC. Format: COSMIC=(seqname|source|feature|start|end|score|strand|frame|attributes|comments),",Source=Epee|COSMIC>
-        ##INFO=<ID=DP4,Number=4,Type=Integer,Description="# high-quality ref-forward bases, ref-reverse, alt-forward and alt-reverse bases">
-
-        with TempDirectory() as output_dir:
-            module_testdir = os.path.dirname(os.path.realpath(__file__))+"/functional_tests/06_expand"
-            input_dir = os.path.join(module_testdir,"input")
-            args = Namespace(input=input_dir,
-                         output=output_dir.path,
-                         column_specification=None)
-
-            execution_context = ["##jacquard.version={0}".format(utils.__version__),
-                "##jacquard.command=foo",
-                "##jacquard.cwd=bar"]
-            expand.execute(args,execution_context)
-
-            output_file = glob.glob(os.path.join(output_dir.path, "consensus.txt"))[0]
-
-            actual_file = FileReader(output_file)
-            actual_file.open()
-            actual = []
-            for line in actual_file.read_lines():
-                actual.append(line)
-            actual_file.close()
-
-            module_outdir = os.path.join(module_testdir,"benchmark")
-            output_file = os.listdir(module_outdir)[0]
-            expected_file = FileReader(os.path.join(module_outdir,output_file))
-            expected_file.open()
-            expected = []
-            for line in expected_file.read_lines():
-                expected.append(line)
-            expected_file.close()
-
-            self.assertEquals(len(expected), len(actual))
-
-            self.assertEquals(11, len(actual))
-
-            for i in xrange(len(expected)):
-                if expected[i].startswith("##jacquard.cwd="):
-                    self.assertTrue(actual[i] == "##jacquard.cwd=foo")
-                elif expected[i].startswith("##jacquard.command="):
-                    self.assertTrue(actual[i] == "##jacquard.command=bar")
-                else:
-                    self.assertEquals(expected[i], actual[i])
-
 class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_expand(self):
         with TempDirectory() as output_dir:
