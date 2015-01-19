@@ -46,25 +46,35 @@ def _build_format_tags(format_tag_regex, vcf_readers):
     for vcf_reader in vcf_readers:
         for tag_regex in format_tag_regex:
             for tag in vcf_reader.format_metaheaders:
-                if re.match(tag_regex+"$", tag):
+                if re.match(tag_regex + "$", tag):
                     all_tags_to_keep.append(tag)
+
     all_tags_to_keep.sort()
+
     return all_tags_to_keep
 
 def _compile_metaheaders(incoming_headers,
                          vcf_readers,
                          all_sample_names,
+                         contigs_to_keep,
                          format_tags_to_keep,
                          info_tags_to_keep):
+
     ordered_metaheaders = list(incoming_headers)
     all_info_metaheaders = {}
     all_format_metaheaders = {}
+    all_contig_metaheaders = {}
+
     for vcf_reader in vcf_readers:
         all_info_metaheaders.update(vcf_reader.info_metaheaders)
         all_format_metaheaders.update(vcf_reader.format_metaheaders)
+        all_contig_metaheaders.update(vcf_reader.contig_metaheaders)
 
     all_info_metaheaders[_MULT_ALT_TAG] = _MULT_ALT_HEADER
 
+    if all_contig_metaheaders:
+        for contig_id in contigs_to_keep:
+            ordered_metaheaders.append(all_contig_metaheaders[contig_id])
     for tag in info_tags_to_keep:
         ordered_metaheaders.append(all_info_metaheaders[tag])
     for tag in format_tags_to_keep:
@@ -194,7 +204,6 @@ def _merge_records(coordinates,
                                              tags_to_keep)
         writer.write(merged_record.asText())
 
-
 def _build_sample_list(vcf_readers):
     all_sample_names = set()
     patient_to_file = defaultdict(list)
@@ -223,15 +232,25 @@ def _build_info_tags(coordinates):
     for record in coordinates:
         all_info_tags.update(record.info_dict.keys())
     ordered_tags = sorted(all_info_tags)
+
     return ordered_tags
+
+def _build_contigs(coordinates):
+    all_contigs = set()
+    for record in coordinates:
+        all_contigs.add(record.chrom)
+    ordered_contigs = utils.NaturalSort(list(all_contigs)).sorted
+
+    return ordered_contigs
 
 def _build_merge_metaheaders(patient_to_file):
     metaheaders = []
     metaheader_fmt = "##jacquard.merge.sample=<Column={0},Name={1},Source={2}>"
     for i, patient in enumerate(patient_to_file):
         filenames_string = "|".join(patient_to_file[patient])
-        metaheader = metaheader_fmt.format(i+1, patient, filenames_string)
+        metaheader = metaheader_fmt.format(i + 1, patient, filenames_string)
         metaheaders.append(metaheader)
+
     return metaheaders
 
 def add_subparser(subparser):
@@ -264,10 +283,12 @@ def execute(args, execution_context):
         coordinates = _build_coordinates(vcf_readers)
         format_tags_to_keep = _build_format_tags(format_tag_regex, vcf_readers)
         info_tags_to_keep = _build_info_tags(coordinates)
-        incoming_headers = execution_context + merge_metaheaders
+        contigs_to_keep = _build_contigs(coordinates)
+        incoming_headers = ["##fileformat=VCFv4.2"] + execution_context + merge_metaheaders
         headers = _compile_metaheaders(incoming_headers,
                                        vcf_readers,
                                        all_sample_names,
+                                       contigs_to_keep,
                                        format_tags_to_keep,
                                        info_tags_to_keep)
 

@@ -7,7 +7,6 @@ from collections import OrderedDict
 import os
 import re
 from testfixtures import TempDirectory
-import unittest
 from StringIO import StringIO
 import jacquard.logger as logger
 import sys
@@ -82,6 +81,10 @@ class MockVcfReader(object):
     @property
     def filter_metaheaders(self):
         return dict(self._get_tag_metaheaders("^##FILTER=.*?[<,]ID=([^,>]*)"))
+
+    @property
+    def contig_metaheaders(self):
+        return dict(self._get_tag_metaheaders("^##contig=.*?[<,]ID=([^,>]*)"))
 
     @property
     def non_format_metaheaders(self):
@@ -550,16 +553,28 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEquals(["JQ1", "JQ2"], format_tags)
 
+    def test_build_contigs(self):
+        records = [VcfRecord("1", "42", "A", "C"),
+                   VcfRecord("4", "42", "A", "C"),
+                   VcfRecord("4", "44", "A", "C"),
+                   VcfRecord("15", "42", "A", "C")]
+        actual_contigs = merge2._build_contigs(records)
+
+        expected_contigs = ["1", "4", "15"]
+        self.assertEquals(expected_contigs, actual_contigs)
+
     def test_compile_metaheaders_preservesExistingMetaheaders(self):
         reader1 = MockVcfReader(metaheaders=['##FORMAT=<ID=JQ1>'])
         vcf_readers = [reader1]
         all_sample_names = []
+        contigs_to_keep = []
         format_tags_to_keep = []
         info_tags_to_keep = []
         existing_metaheaders = ["##existing1", "##existing2"]
         actual_metaheaders = merge2._compile_metaheaders(existing_metaheaders,
                                                          vcf_readers,
                                                          all_sample_names,
+                                                         contigs_to_keep,
                                                          format_tags_to_keep,
                                                          info_tags_to_keep)
         self.assertEquals(3, len(actual_metaheaders))
@@ -574,12 +589,14 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
                                              '##FORMAT=<ID=JQ3,Description="JQC">'])
         vcf_readers = [reader1]
         all_sample_names = []
+        contigs_to_keep = []
         format_tags_to_keep = ["JQ1", "JQ3"]
         info_tags_to_keep = []
         existing_metaheaders = []
         actual_metaheaders = merge2._compile_metaheaders(existing_metaheaders,
                                                          vcf_readers,
                                                          all_sample_names,
+                                                         contigs_to_keep,
                                                          format_tags_to_keep,
                                                          info_tags_to_keep)
         self.assertEquals(3, len(actual_metaheaders))
@@ -594,12 +611,14 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
                                              '##INFO=<ID=JQ3,Description="JQC">'])
         vcf_readers = [reader1]
         all_sample_names = []
+        contigs_to_keep = []
         format_tags_to_keep = []
         info_tags_to_keep = ["JQ1", "JQ3", merge2._MULT_ALT_TAG]
         existing_metaheaders = []
         actual_metaheaders = merge2._compile_metaheaders(existing_metaheaders,
                                                          vcf_readers,
                                                          all_sample_names,
+                                                         contigs_to_keep,
                                                          format_tags_to_keep,
                                                          info_tags_to_keep)
         self.assertEquals(4, len(actual_metaheaders))
@@ -609,17 +628,62 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertRegexpMatches(metaheaders_iter.next(), merge2._MULT_ALT_HEADER)
         self.assertRegexpMatches(metaheaders_iter.next(), "^#CHROM")
 
-
-    def test_compile_metaheaders_addsSampleNamesToColumnHeader(self):
-        reader1 = MockVcfReader()
+    def test_compile_metaheaders_retainsContigMetaheaders(self):
+        reader1 = MockVcfReader(metaheaders=['##contig=<ID=chr1,Description="chromosome 1">',
+                                             '##contig=<ID=chr2,Description="chromosome 2">',
+                                             '##contig=<ID=chr4,Description="chromosome 2">',
+                                             '##contig=<ID=chr11,Description="chromosome 11">'])
         vcf_readers = [reader1]
-        all_sample_names = ["SA", "SB"]
+        all_sample_names = []
+        contigs_to_keep = ["chr1", "chr2", "chr11"]
         format_tags_to_keep = []
         info_tags_to_keep = []
         existing_metaheaders = []
         actual_metaheaders = merge2._compile_metaheaders(existing_metaheaders,
                                                          vcf_readers,
                                                          all_sample_names,
+                                                         contigs_to_keep,
+                                                         format_tags_to_keep,
+                                                         info_tags_to_keep)
+
+        self.assertEquals(4, len(actual_metaheaders))
+        metaheaders_iter = iter(actual_metaheaders)
+        self.assertRegexpMatches(metaheaders_iter.next(), "##contig.*chromosome 1")
+        self.assertRegexpMatches(metaheaders_iter.next(), "##contig.*chromosome 2")
+        self.assertRegexpMatches(metaheaders_iter.next(), "##contig.*chromosome 11")
+        self.assertRegexpMatches(metaheaders_iter.next(), "^#CHROM")
+
+    def test_compile_metaheaders_noContigMetaheaders(self):
+        reader1 = MockVcfReader(metaheaders=['##foo'])
+        vcf_readers = [reader1]
+        all_sample_names = []
+        contigs_to_keep = ["chr1", "chr2", "chr11"]
+        format_tags_to_keep = []
+        info_tags_to_keep = []
+        existing_metaheaders = []
+        actual_metaheaders = merge2._compile_metaheaders(existing_metaheaders,
+                                                         vcf_readers,
+                                                         all_sample_names,
+                                                         contigs_to_keep,
+                                                         format_tags_to_keep,
+                                                         info_tags_to_keep)
+
+        self.assertEquals(1, len(actual_metaheaders))
+        metaheaders_iter = iter(actual_metaheaders)
+        self.assertRegexpMatches(metaheaders_iter.next(), "^#CHROM")
+
+    def test_compile_metaheaders_addsSampleNamesToColumnHeader(self):
+        reader1 = MockVcfReader()
+        vcf_readers = [reader1]
+        all_sample_names = ["SA", "SB"]
+        contigs_to_keep = []
+        format_tags_to_keep = []
+        info_tags_to_keep = []
+        existing_metaheaders = []
+        actual_metaheaders = merge2._compile_metaheaders(existing_metaheaders,
+                                                         vcf_readers,
+                                                         all_sample_names,
+                                                         contigs_to_keep,
                                                          format_tags_to_keep,
                                                          info_tags_to_keep)
         self.assertEquals(1, len(actual_metaheaders))
@@ -632,12 +696,14 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
 
         vcf_readers = [reader1, reader2]
         all_sample_names = []
+        contigs_to_keep = []
         format_tags_to_keep = ["JQ1"]
         info_tags_to_keep = ["JQ2"]
         incoming_metaheaders = ["##foo"]
         actual_metaheaders = merge2._compile_metaheaders(incoming_metaheaders,
                                                          vcf_readers,
                                                          all_sample_names,
+                                                         contigs_to_keep,
                                                          format_tags_to_keep,
                                                          info_tags_to_keep)
         self.assertEquals(4, len(actual_metaheaders))
@@ -647,9 +713,10 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertRegexpMatches(metaheaders_iter.next(), "##FORMAT.*JQA")
         self.assertRegexpMatches(metaheaders_iter.next(), "#CHROM.*")
 
-
     def test_execute(self):
         vcf_content1 = ('''##source=strelka
+##contig=<ID=chr1,Number=1>
+##contig=<ID=chr2,Number=1>
 ##FORMAT=<ID=JQ_Foo1,Number=1,Type=Float,Description="foo",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_Bar1,Number=1,Type=Float,Description="bar",Source="Jacquard",Version=0.21>
 ##file1
@@ -659,6 +726,8 @@ chr1|1|.|A|T|.|.|INFO|JQ_Foo1|A_2|B_2
 chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
 ''').replace('|', "\t")
         vcf_content2 = ('''##source=strelka
+##contig=<ID=chr1,Number=1>
+##contig=<ID=chr2,Number=1>
 ##file2
 ##FORMAT=<ID=JQ_Foo2,Number=1,Type=Float,Description="foo",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_Bar2,Number=1,Type=Float,Description="bar",Source="Jacquard",Version=0.21>
@@ -680,12 +749,15 @@ chr2|10|.|A|C|.|.|INFO|JQ_Bar2|C_2|D_2
             with open(os.path.join(output_dir.path, "fileC.vcf")) as actual_output_file:
                 actual_output_lines = actual_output_file.readlines()
 
-        self.assertEquals(15, len(actual_output_lines))
+        self.assertEquals(18, len(actual_output_lines))
         actual_lines_iter = iter(actual_output_lines)
+        self.assertEquals("##fileformat=VCFv4.2\n", actual_lines_iter.next())
         self.assertEquals("##execution_header1\n", actual_lines_iter.next())
         self.assertEquals("##execution_header2\n", actual_lines_iter.next())
         self.assertRegexpMatches(actual_lines_iter.next(), "##jacquard.merge.sample=<Column=1.*>\n")
         self.assertRegexpMatches(actual_lines_iter.next(), "##jacquard.merge.sample=<Column=2.*>\n")
+        self.assertRegexpMatches(actual_lines_iter.next(), "##contig=<ID=chr1,Number=1>\n")
+        self.assertRegexpMatches(actual_lines_iter.next(), "##contig=<ID=chr2,Number=1>\n")
         self.assertRegexpMatches(actual_lines_iter.next(), '##INFO=<ID=JQ_MULT_ALT_LOCUS.*>\n')
         self.assertRegexpMatches(actual_lines_iter.next(), '##FORMAT=<ID=JQ_Bar1.*>\n')
         self.assertRegexpMatches(actual_lines_iter.next(), '##FORMAT=<ID=JQ_Bar2.*>\n')
@@ -700,6 +772,8 @@ chr2|10|.|A|C|.|.|INFO|JQ_Bar2|C_2|D_2
 
     def test_execute_includeFormatIds(self):
         vcf_content1 = ('''##source=strelka
+##contig=<ID=chr1,Number=1>
+##contig=<ID=chr2,Number=1>
 ##FORMAT=<ID=JQ_Foo,Number=1,Type=Float,Description="foo",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_Foo1,Number=1,Type=Float,Description="foo",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=Bar,Number=1,Type=Float,Description="bar",Source="Jacquard",Version=0.21>
@@ -721,10 +795,13 @@ chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
             with open(os.path.join(output_dir.path, "fileB.vcf")) as actual_output_file:
                 actual_output_lines = actual_output_file.readlines()
 
-        expected_output_headers = ["##extra_header1\n",
+        expected_output_headers = ["##fileformat=VCFv4.2\n",
+                                   "##extra_header1\n",
                                    "##extra_header2\n",
                                    "##jacquard.merge.sample=<Column=1,Name=P1|SampleA,Source=P1.fileA.vcf>\n",
                                    "##jacquard.merge.sample=<Column=2,Name=P1|SampleB,Source=P1.fileA.vcf>\n",
+                                   '##contig=<ID=chr1,Number=1>\n',
+                                   '##contig=<ID=chr2,Number=1>\n',
                                    '##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,Description="dbSNP Membership",Source="Jacquard",Version="0.21">\n',
                                    '##FORMAT=<ID=Bar,Number=1,Type=Float,Description="bar",Source="Jacquard",Version=0.21>\n',
                                    '##FORMAT=<ID=JQ_Foo,Number=1,Type=Float,Description="foo",Source="Jacquard",Version=0.21>\n',
@@ -735,10 +812,10 @@ chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
 class Merge2FunctionalTestCase(test_case.JacquardBaseTestCase):
     #TODO: (cgates): See make this test work with that file merged_new.vcf.
     ### Adjust relevant code and test such that:
-    ###     It emits the vcfFormat metaheader at the top of thie file
-    ###     Contig headers are included.
-    ###     The functional test contains more contigs that just chr1 (chr2, chr3)
-    ###     The functional test contains MULT_ALTS
+    ###     ---It emits the vcfFormat metaheader at the top of thie file
+    ###     ---Contig headers are included.
+    ###     ---The functional test contains more contigs that just chr1 (chr2, chr3)
+    ###     ---The functional test contains MULT_ALTS
     def test_merge2(self):
         with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
@@ -750,7 +827,6 @@ class Merge2FunctionalTestCase(test_case.JacquardBaseTestCase):
             expected_dir = os.path.join(module_testdir, "benchmark")
 
             self.assertCommand(command, expected_dir)
-
 
 class BufferedReaderTestCase(test_case.JacquardBaseTestCase):
     def test_get_sample_info_advancesCurrentElementWhenMatched(self):

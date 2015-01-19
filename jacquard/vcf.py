@@ -78,6 +78,10 @@ class VcfReader(object):
     def filter_metaheaders(self):
         return dict(self._get_tag_metaheaders("^##FILTER=.*?[<,]ID=([^,>]*)"))
 
+    @property
+    def contig_metaheaders(self):
+        return dict(self._get_tag_metaheaders("^##contig=.*?[<,]ID=([^,>]*)"))
+
     def _init_sample_names(self):
         sample_names = []
         column_fields = self.column_header.split("\t")
