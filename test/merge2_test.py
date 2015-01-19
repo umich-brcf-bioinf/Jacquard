@@ -810,12 +810,6 @@ chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
         self.assertEquals(expected_output_headers, actual_output_lines[0:len(expected_output_headers)])
 
 class Merge2FunctionalTestCase(test_case.JacquardBaseTestCase):
-    #TODO: (cgates): See make this test work with that file merged_new.vcf.
-    ### Adjust relevant code and test such that:
-    ###     ---It emits the vcfFormat metaheader at the top of thie file
-    ###     ---Contig headers are included.
-    ###     ---The functional test contains more contigs that just chr1 (chr2, chr3)
-    ###     ---The functional test contains MULT_ALTS
     def test_merge2(self):
         with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
