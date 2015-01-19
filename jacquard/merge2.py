@@ -7,8 +7,8 @@ import jacquard.vcf as vcf
 import os
 import re
 import jacquard.logger as logger
-from _csv import reader
 
+_DEFAULT_INCLUDED_FORMAT_TAGS = ["JQ_.*"]
 _MULT_ALT_TAG = "JQ_MULT_ALT_LOCUS"
 _MULT_ALT_HEADER = ('##INFO=<ID={},Number=0,Type=Flag,'
                     'Description="dbSNP Membership",Source="Jacquard",'
@@ -19,7 +19,7 @@ _MULT_ALT_HEADER = ('##INFO=<ID={},Number=0,Type=Flag,'
 # modified behavior based on data in that iterator. A small class works ok, but
 # suspect there may be a more pythonic way to curry iterator in a partial
 # function. (cgates)
-class GenericBufferedReader(object):
+class _BufferedReader(object):
     '''Accepts an iterator and returns element (advancing current element) if
     requested element equals next element in collection and None otherwise.
     Never returns StopIteration so cannot be used as iteration control-flow.'''
@@ -27,7 +27,7 @@ class GenericBufferedReader(object):
         self._iterator = iterator
         self._current_element = self._iterator.next()
 
-    def get_if_equals(self, requested_element):
+    def next_if_equals(self, requested_element):
         result = None
         if requested_element == self._current_element:
             result = self._current_element
@@ -51,12 +51,12 @@ def _build_format_tags(format_tag_regex, vcf_readers):
     all_tags_to_keep.sort()
     return all_tags_to_keep
 
-def _compile_metaheaders(existing_headers,
+def _compile_metaheaders(incoming_headers,
                          vcf_readers,
                          all_sample_names,
                          format_tags_to_keep,
                          info_tags_to_keep):
-    ordered_metaheaders = list(existing_headers)
+    ordered_metaheaders = list(incoming_headers)
     all_info_metaheaders = {}
     all_format_metaheaders = {}
     for vcf_reader in vcf_readers:
@@ -70,7 +70,7 @@ def _compile_metaheaders(existing_headers,
     for tag in format_tags_to_keep:
         ordered_metaheaders.append(all_format_metaheaders[tag])
 
-    column_header = vcf_readers[0].column_header[0:9]
+    column_header = vcf_readers[0].column_header.split("\t")[0:9]
     column_header.extend(all_sample_names)
     ordered_metaheaders.append("\t".join(column_header))
 
@@ -89,23 +89,10 @@ def _create_reader_lists(input_files):
         vcf_reader.open()
 
         records = vcf_reader.vcf_records(qualified=True)
-        buffered_readers.append(GenericBufferedReader(records))
+        buffered_readers.append(_BufferedReader(records))
 
     return buffered_readers, vcf_readers
 
-def _get_record_sample_data(vcf_record, format_tags):
-    all_samples = {}
-    for i in vcf_record.sample_dict:
-        all_samples[i] = OrderedDict()
-
-    for tag in format_tags:
-        for i, sample_dict in vcf_record.sample_dict.items():
-            if tag in sample_dict:
-                all_samples[i][tag] = sample_dict[tag]
-            else:
-                all_samples[i][tag] = "."
-
-    return all_samples
 
 def _build_coordinates(vcf_readers):
     coordinate_set = OrderedDict()
@@ -186,8 +173,8 @@ def _build_merged_record(coordinate,
 
 def _pull_matching_records(coordinate, buffered_readers):
     vcf_records = []
-    for reader in buffered_readers:
-        record = reader.get_if_equals(coordinate)
+    for buffered_reader in buffered_readers:
+        record = buffered_reader.next_if_equals(coordinate)
         if record:
             vcf_records.append(record)
 
@@ -213,30 +200,21 @@ def _build_sample_list(vcf_readers):
     patient_to_file = defaultdict(list)
 
     for vcf_reader in vcf_readers:
+        #TODO: (cgates): VcfReader should return patient
         patient = vcf_reader.file_name.split(".")[0]
+        #TODO: (cgates): Use a tuple instead of concating here
+        #1) Tuple is better structure
+        #2) Tuple enables better two-level sort on patient and sample names
         patient_samples = [patient + "|" +  i for i in vcf_reader.sample_names]
 
         for patient_sample in patient_samples:
             all_sample_names.add(patient_sample)
             patient_to_file[patient_sample].append(vcf_reader.file_name)
 
-        #TODO: (cgates) Could we use a constant instead of parsing inside a loop?
-#         column_header = vcf_reader.column_header.split("\t")[0:9]
-
     patient_to_file_ordered = OrderedDict(sorted(patient_to_file.items(),
                                                  key=lambda t: t[0]))
-    
-#     (all_headers,
-#      all_tags_to_keep) = _merge_existing_metaheaders(vcf_readers, tags_to_keep)
-#      
     merge_metaheaders = _build_merge_metaheaders(patient_to_file_ordered)
-#     for metaheader in merge_metaheaders:
-#         all_headers.add(metaheader)
-
-    #TODO: Keep all_sample_names as set.
     sorted_all_sample_names = utils.NaturalSort(list(all_sample_names)).sorted
-#     column_header.extend(sorted_all_sample_names)
-#     all_headers.add("\t".join(column_header))
 
     return sorted_all_sample_names, merge_metaheaders
 
@@ -265,10 +243,14 @@ def add_subparser(subparser):
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
     parser.add_argument("--include_format_tags", dest='tags', help="Comma-separated list of regexs for format tags to include in output. Defaults to all JQ tags.")
 
+
 def execute(args, execution_context):
     input_path = os.path.abspath(args.input)
     output_path = os.path.abspath(args.output)
-    format_tag_regex = args.tags.split(",") if args.tags else ["JQ_.*"]
+    if args.tags:
+        format_tag_regex = args.tags.split(",")
+    else:
+        format_tag_regex = _DEFAULT_INCLUDED_FORMAT_TAGS
 
     input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
 
@@ -278,19 +260,19 @@ def execute(args, execution_context):
 
         buffered_readers, vcf_readers = _create_reader_lists(input_files)
 
-        all_sample_names, merge_sample_metaheaders = _build_sample_list(vcf_readers)
+        all_sample_names, merge_metaheaders = _build_sample_list(vcf_readers)
         coordinates = _build_coordinates(vcf_readers)
         format_tags_to_keep = _build_format_tags(format_tag_regex, vcf_readers)
         info_tags_to_keep = _build_info_tags(coordinates)
-        existing_headers = execution_context + merge_sample_metaheaders
-        headers = _compile_metaheaders(existing_headers,
+        incoming_headers = execution_context + merge_metaheaders
+        headers = _compile_metaheaders(incoming_headers,
                                        vcf_readers,
                                        all_sample_names,
                                        format_tags_to_keep,
                                        info_tags_to_keep)
- 
+
         _write_metaheaders(file_writer, headers)
- 
+
         _merge_records(coordinates,
                        buffered_readers,
                        file_writer,

@@ -123,16 +123,35 @@ class OrderedSetTestCase(test_case.JacquardBaseTestCase):
 
 class NaturalSortTestCase(test_case.JacquardBaseTestCase):
     def test_natsort(self):
-        unsorted = ["123a","1abc","13d"]
-        expected = ["1abc","13d","123a"]
+        unsorted = ["123a", "1abc", "13d"]
+        expected = ["1abc", "13d", "123a"]
         actual = utils.NaturalSort(unsorted).sorted
         self.assertEquals(expected, actual)
 
     def test_natsort_lowerAndUpperCase(self):
-        unsorted = ["123ABC","123abc","1abc","13d"]
-        expected = ["1abc","13d","123ABC","123abc"]
+        unsorted = ["123ABC", "123abc", "1abc", "13d"]
+        expected = ["1abc", "13d", "123ABC", "123abc"]
         actual = utils.NaturalSort(unsorted).sorted
         self.assertEquals(expected, actual)
+
+    def test_natsort_baseAlphaSort(self):
+        unsorted = ["A100", "B1", "C10", "D"]
+        expected = ["A100", "B1", "C10", "D"]
+        actual = utils.NaturalSort(unsorted).sorted
+        self.assertEquals(expected, actual)
+
+    def test_natsort_numericOrder(self):
+        unsorted = ["B100", "B1", "B10", "A101"]
+        expected = ["A101", "B1", "B10", "B100"]
+        actual = utils.NaturalSort(unsorted).sorted
+        self.assertEquals(expected, actual)
+
+    def test_natsort_breaksTiesByAlpha(self):
+        unsorted = ["X100B", "X100C", "X100A", "X10"]
+        expected = ["X10", "X100A", "X100B", "X100C"]
+        actual = utils.NaturalSort(unsorted).sorted
+        self.assertEquals(expected, actual)
+
 
 class ValidateDirectoriesTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
