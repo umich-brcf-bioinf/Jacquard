@@ -1,4 +1,4 @@
-#pylint: disable=unused-argument, too-many-locals, fixme
+#pylint: disable=unused-argument, too-many-locals
 from __future__ import print_function, absolute_import
 import glob
 import os
