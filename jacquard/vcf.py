@@ -1,10 +1,11 @@
-
+# pylint: disable=too-many-instance-attributes, fixme
 from __future__ import print_function, absolute_import
-from collections import OrderedDict, defaultdict
-import jacquard.utils as utils
+from collections import defaultdict, OrderedDict
 import os
 import re
 import sys
+
+import jacquard.utils as utils
 
 class RecognizedVcfReader(object):
     '''VcfReader with recognized caller'''
@@ -45,6 +46,7 @@ class VcfReader(object):
     def __init__(self, file_reader):
         self._file_reader = file_reader
         (self.column_header, self.metaheaders) = self._init_headers()
+        self.split_column_header = self.column_header.strip("#").split("\t")
         self.sample_names = self._init_sample_names()
         self.qualified_sample_names = self._create_qualified_sample_names()
 
@@ -134,7 +136,6 @@ class VcfReader(object):
     def close(self):
         self._file_reader.close()
 
-
 # Alas, something must encapsulate the myriad VCF fields.
 class VcfRecord(object):
     #pylint: disable=too-many-instance-attributes
@@ -183,8 +184,8 @@ class VcfRecord(object):
         except ValueError:
             return sys.maxint
 
-##TODO (cgates): adjust info field to be stored as dict instead of string
-#TODO (cgates): adjust vcf names to not collide with reserved python words
+#TODO: (cgates) adjust info field to be stored as dict instead of string
+#TODO: (cgates) adjust vcf names to not collide with reserved python words
 ## pylint: disable=too-many-arguments, invalid-name
 # Alas, something must encapsulate the myriad VCF fields.
 #  Note that some VCF field names collide with reserved python names
@@ -227,6 +228,7 @@ class VcfRecord(object):
                     info_dict[key] = value
                 else:
                     info_dict[key_value] = key_value
+
         return info_dict
 
     def add_info_field(self, field):
