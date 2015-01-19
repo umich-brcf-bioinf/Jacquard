@@ -38,7 +38,6 @@ class RecognizedVcfReader(object):
     def vcf_records(self):
         return self._vcf_reader.vcf_records()
 
-
 #TODO: (cgates): add context management to open/close
 class VcfReader(object):
     '''Wraps a file reader, providing VCF metaheaders and records'''

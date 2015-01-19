@@ -212,6 +212,32 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         logger.warning = self.original_warning
         logger.debug = self.original_debug
 
+    def test_validate_arguments(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("fileA.vcf",
+                            "##source=strelka\n"
+                            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_A\tSample_B\n"
+                            "chr1\t31\t.\tA\tT\t.\t.\t.\tDP\t23\t52\n")
+            input_dir.write("fileB.vcf",
+                            "##source=strelka\n"
+                            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_C\tSample_D\n"
+                            "chr2\t32\t.\tA\tT\t.\t.\t.\tDP\t24\t53\n")
+
+            args = Namespace(input=input_dir.path,
+                             output=os.path.join(output_dir.path, "output.vcf"),
+                             tags=None)
+            actual_readers_to_writers, out_files, buffered_readers, format_tag_regex = merge2._validate_arguments(args)
+
+            for values in actual_readers_to_writers.values():
+                for vcf_reader in values:
+                    vcf_reader.close()
+
+            self.assertEquals(1, len(actual_readers_to_writers))
+            self.assertEquals(0, len(out_files))
+            self.assertEquals(2, len(buffered_readers))
+            self.assertEquals(merge2._DEFAULT_INCLUDED_FORMAT_TAGS, format_tag_regex)
+            self.assertRegexpMatches(actual_readers_to_writers.keys()[0].output_filepath, ".merged.vcf")
+
     def test_build_coordinates(self):
         fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
         fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")

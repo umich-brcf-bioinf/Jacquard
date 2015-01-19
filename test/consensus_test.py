@@ -146,6 +146,18 @@ class ConsensusTestCase(unittest.TestCase):
         logger.warning = self.original_warning
         logger.debug = self.original_debug
 
+    def test_validate_arguments(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("A.snvs.vcf","##source=strelka\n#colHeader")
+            input_dir.write("A.indels.vcf","##source=strelka\n#colHeader")
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path)
+
+            existing_files_in_output, output_file = consensus._validate_arguments(args)
+            self.assertEquals(1, len(existing_files_in_output))
+            self.assertEquals("consensus.vcf", output_file)
+            self.assertRegexpMatches(existing_files_in_output[0].output_filepath, "consensus.vcf")
+
     def test_write_metaheaders(self):
         file_writer = MockFileWriter()
         vcf_reader = MockVcfReader()

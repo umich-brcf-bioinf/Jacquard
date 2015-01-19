@@ -1,10 +1,12 @@
 from __future__ import print_function, absolute_import
+
+import glob
 import os
 
+import jacquard.logger as logger
+import jacquard.utils as utils
 from jacquard.variant_callers import consensus_helper
 import jacquard.vcf as vcf
-import jacquard.utils as utils
-import jacquard.logger as logger
 
 def _write_metaheaders(cons_helper,
                        vcf_reader,
@@ -95,6 +97,34 @@ def add_subparser(subparser):
     parser.add_argument("output", help="Path to output VCf")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+
+def _validate_arguments(args):
+    input_file = os.path.abspath(args.input)
+    output = os.path.abspath(args.output)
+
+    extension = os.path.splitext(os.path.basename(input_file))[1]
+    if not os.path.isfile(input_file) or extension != ".vcf":
+        raise utils.JQException("Input file [{}] must be a VCF file.",
+                                input_file)
+
+    extension = os.path.splitext(os.path.basename(output))[1]
+    if extension:
+        if extension != ".vcf":
+            raise utils.JQException("Output file [{}] must be a VCF file.",
+                                    output)
+        else:
+            output_dir = os.path.dirname(output)
+            utils.validate_directories(os.path.dirname(input_file),
+                                       output_dir)
+            existing_files_in_output = sorted(glob.glob(os.path.join(output_dir,
+                                                                     "*")))
+            output_file = output
+    else:
+        utils.validate_directories(os.path.dirname(input_file), output)
+        existing_files_in_output = sorted(glob.glob(os.path.join(output, "*")))
+        output_file = os.path.join(output, "consensus.vcf")
+
+    return existing_files_in_output, output_file
 
 def execute(args, execution_context):
     input_file = os.path.abspath(args.input)

@@ -1,16 +1,17 @@
 #pylint: disable=line-too-long, global-statement, redefined-outer-name, too-many-public-methods
 #pylint: disable=unused-argument, invalid-name,too-few-public-methods, star-args
+from StringIO import StringIO
 from argparse import Namespace
 import os
 from re import findall, MULTILINE
-from StringIO import StringIO
 import sys
-from testfixtures import TempDirectory
 import unittest
 
-import jacquard.utils as utils
-import jacquard.tag as tag
+from testfixtures import TempDirectory
+
 import jacquard.logger as logger
+import jacquard.tag as tag
+import jacquard.utils as utils
 import jacquard.variant_callers.strelka as strelka
 import jacquard.variant_callers.varscan as varscan
 import test.test_case as test_case
@@ -138,6 +139,19 @@ class TagTestCase(unittest.TestCase):
 
         global MOCK_LOG_MESSAGES
         MOCK_LOG_MESSAGES = []
+
+    def test_validate_arguments(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("A.normalized.vcf","##source=strelka\n#colHeader")
+            input_dir.write("B.normalized.vcf","##source=strelka\n#colHeader")
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path)
+
+            actual_readers_to_writers, out_files, vcf_readers = tag._validate_arguments(args)
+            self.assertEquals(2, len(actual_readers_to_writers))
+            self.assertEquals(0, len(out_files))
+            self.assertEquals(2, len(vcf_readers))
+            self.assertRegexpMatches(actual_readers_to_writers.values()[0].output_filepath, "jacquardTags.vcf")
 
     def test_build_vcf_readers(self):
         vcf_content = '''##source=strelka

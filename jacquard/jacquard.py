@@ -92,6 +92,16 @@ def _validate_temp(tmp_output, original_output_dir, force=0):
                                     tmp_dir_name,
                                     original_output_dir)
 
+def _validate_arguments(out_files, writers, command):
+    for out_file in out_files:
+        for out_writer in writers:
+            if out_file == out_writer.output_filepath:
+                raise utils.JQException(("ERROR: The command [{}] would "
+                                  "overwrite existing files; review "
+                                  "command/outputdir to avoid overwriting or "
+                                  " use theflag '--force'. (Type 'jacquard -h' "
+                                  "for more details").format(command))
+
 def _create_temp_directory(original_output_dir, force=0):
     extension = os.path.splitext(os.path.basename(original_output_dir))[1]
 

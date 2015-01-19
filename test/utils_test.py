@@ -1,14 +1,16 @@
 #pylint: disable=line-too-long, too-many-public-methods, invalid-name
 #pylint: disable=missing-docstring, protected-access, global-statement, too-few-public-methods
 from StringIO import StringIO
-from testfixtures import TempDirectory
-import jacquard.logger as logger
-import jacquard.utils as utils
+from argparse import Namespace
 import os
 import subprocess
 import sys
-import test.test_case as test_case
 
+from testfixtures import TempDirectory
+
+import jacquard.logger as logger
+import jacquard.utils as utils
+import test.test_case as test_case
 
 mock_log_called = False
 mock_message = ""
@@ -215,6 +217,16 @@ class ValidateDirectoriesTestCase(test_case.JacquardBaseTestCase):
             self.assertEqual(cm.exception.code, 1)
             self.assertTrue(mock_log_called)
 
+#     def test_validate_arguments_valid(self):
+#         output_files = ["foo.vcf", "bar.vcf"]
+#         writers = [MockWriter(output_filepath="baz.vcf")]
+#         self.assertTrue(utils.validate_arguments(output_files, writers))
+# 
+#     def test_validate_arguments_invalid(self):
+#         output_files = ["foo.vcf", "bar.vcf"]
+#         writers = [MockWriter(output_filepath="bar.vcf"), MockWriter(output_filepath="blah.vcf")]
+#         self.assertRaisesRegexp(utils.JQException, "This command would overwrite existing files", utils.validate_arguments, output_files, writers)
+
 def is_windows_os():
     return sys.platform.lower().startswith("win")
 
@@ -232,8 +244,9 @@ def cleanup_unwriteable_dir(unwriteable_dir):
     os.rmdir(unwriteable_dir)
 
 class MockWriter(object):
-    def __init__(self):
+    def __init__(self, output_filepath=None):
         self._content = []
+        self.output_filepath = output_filepath
         self.wasClosed = False
 
     def write(self, content):

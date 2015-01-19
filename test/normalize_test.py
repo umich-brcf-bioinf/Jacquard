@@ -1,19 +1,20 @@
 #pylint: disable=line-too-long, global-statement, unused-argument
 #pylint: disable=invalid-name, too-few-public-methods, too-many-public-methods
 from __future__ import absolute_import
+
+from StringIO import StringIO
 from argparse import Namespace
 import os
-from StringIO import StringIO
 import sys
-from testfixtures import TempDirectory
 import unittest
 
-from jacquard.variant_callers import variant_caller_factory
-from jacquard.normalize import _partition_input_files, _determine_caller_per_directory
-from jacquard.vcf import FileReader, FileWriter
-import jacquard.utils as utils
-import jacquard.normalize as normalize
+from testfixtures import TempDirectory
+
 import jacquard.logger as logger
+import jacquard.normalize as normalize
+import jacquard.utils as utils
+from jacquard.variant_callers import variant_caller_factory
+from jacquard.vcf import FileReader, FileWriter
 import test.test_case as test_case
 
 MOCK_LOG_CALLED = False
@@ -126,33 +127,18 @@ class NormalizeTestCase(unittest.TestCase):
         logger.warning = self.original_warning
         logger.debug = self.original_debug
 
-    def test_execute(self):
-        vcf_content1 = ('''##source=strelka
-##file1
-#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
-chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
-chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
-''').replace('|', "\t")
-        vcf_content2 = ('''##source=strelka
-##file2
-#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
-chr1|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
-chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
-''').replace('|', "\t")
-
+    def test_validate_arguments(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("P1.strelka.snvs.vcf", vcf_content1)
-            input_dir.write("P1.strelka.indels.vcf", vcf_content2)
+            input_dir.write("A.snvs.vcf","##source=strelka\n#colHeader")
+            input_dir.write("A.indels.vcf","##source=strelka\n#colHeader")
             args = Namespace(input=input_dir.path,
                              output=output_dir.path)
 
-            normalize.execute(args, ["extra_header1", "extra_header2"])
-
-            output_dir.check("P1.strelka.normalized.vcf")
-            with open(os.path.join(output_dir.path, "P1.strelka.normalized.vcf")) as actual_output_file:
-                actual_output_lines = actual_output_file.readlines()
-
-        self.assertEquals(8, len(actual_output_lines), "normalize output wrong number of lines")
+            actual_writer_to_readers, out_files, caller = normalize._validate_arguments(args)
+            self.assertEquals(1, len(actual_writer_to_readers))
+            self.assertEquals(0, len(out_files))
+            self.assertEquals("Strelka", caller.name)
+            self.assertRegexpMatches(actual_writer_to_readers.keys()[0].output_filepath, "normalized.vcf")
 
     def test_validate_single_caller(self):
         with TempDirectory() as input_dir:
@@ -188,25 +174,11 @@ chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                               [strelka_file, unrecognized_file],
                               variant_caller_factory.get_caller)
 
-    def Ytest__partition_input_files(self):
-        in_files = ["A.1.snps.vcf", "A.1.indels.vcf", "B.snps.vcf"]
-        output_dir_path = "output_dir_path"
-        caller = MockCaller()
-        writer_to_readers = _partition_input_files(in_files, output_dir_path, caller)
-
-        writerA = FileWriter(os.path.join(output_dir_path,"A.1.normalized.vcf"))
-        readersA = [FileReader(os.path.join("A.1.snps.vcf")),
-                    FileReader(os.path.join("A.1.indels.vcf"))]
-        writerB = FileWriter(os.path.join(output_dir_path,"B.normalized.vcf"))
-        readersB = [FileReader(os.path.join("B.snps.vcf"))]
-        self.assertEquals({writerA: readersA, writerB: readersB},
-                          writer_to_readers)
-
-    def test__partition_input_files(self):
+    def test_partition_input_files(self):
         in_files = ["A.","A.","B."]
         caller = MockCaller()
         output_dir_path = ""
-        writer_to_readers = _partition_input_files(in_files, output_dir_path, caller)
+        writer_to_readers = normalize._partition_input_files(in_files, output_dir_path, caller)
         self.maxDiff=None
         writerA = FileWriter("A.foo")
         readersA = [FileReader("A."),
@@ -217,7 +189,7 @@ chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         self.assertEquals({writerA: readersA, writerB: readersB},
                           writer_to_readers)
 
-    def test__determine_caller_per_directory(self):
+    def test_determine_caller_per_directory(self):
         with TempDirectory() as input_dir:
             A = input_dir.write("A.vcf","##source=strelka\n#colHeader")
             B = input_dir.write("B.vcf","##source=strelka\n#colHeader")
@@ -226,10 +198,38 @@ chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
             mock_caller = MockCaller()
             mock_caller_factory = MockCallerFactory(mock_caller)
 
-            caller = _determine_caller_per_directory(input_files, mock_caller_factory.get_caller)
+            caller = normalize._determine_caller_per_directory(input_files, mock_caller_factory.get_caller)
 
             self.assertEquals(mock_caller,caller)
             self.assertEquals(mock_caller_factory.last_filename, "A.vcf")
+
+    def test_execute(self):
+        vcf_content1 = ('''##source=strelka
+##file1
+#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
+chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
+chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
+''').replace('|', "\t")
+        vcf_content2 = ('''##source=strelka
+##file2
+#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
+chr1|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
+chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
+''').replace('|', "\t")
+
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("P1.strelka.snvs.vcf", vcf_content1)
+            input_dir.write("P1.strelka.indels.vcf", vcf_content2)
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path)
+
+            normalize.execute(args, ["extra_header1", "extra_header2"])
+
+            output_dir.check("P1.strelka.normalized.vcf")
+            with open(os.path.join(output_dir.path, "P1.strelka.normalized.vcf")) as actual_output_file:
+                actual_output_lines = actual_output_file.readlines()
+
+        self.assertEquals(8, len(actual_output_lines), "normalize output wrong number of lines")
 
 class NormalizeFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_normalize(self):

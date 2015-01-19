@@ -1,12 +1,13 @@
 # pylint: disable=line-too-long, invalid-name, global-statement, star-args, too-many-public-methods
 from __future__ import absolute_import
+from argparse import Namespace
 import os
 import unittest
 from StringIO import StringIO
 import sys
 
 from testfixtures import TempDirectory
-from jacquard.filter_hc_somatic import _write_somatic, _find_somatic_positions, _sort_headers, _write_output
+import jacquard.filter_hc_somatic as filter_hc_somatic
 import jacquard.logger as logger
 import test.test_case as test_case
 
@@ -54,6 +55,18 @@ class FilterSomaticTestCase(unittest.TestCase):
         global mock_log_messages
         mock_log_messages = []
 
+    def test_validate_arguments(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("A.normalized.vcf","##source=strelka\n#colHeader")
+            input_dir.write("B.normalized.vcf","##source=strelka\n#colHeader")
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path)
+
+            actual_readers_to_writers, out_files = filter_hc_somatic._validate_arguments(args)
+            self.assertEquals(2, len(actual_readers_to_writers))
+            self.assertEquals(0, len(out_files))
+            self.assertRegexpMatches(actual_readers_to_writers.values()[0].output_filepath, "_HCsomatic.vcf")
+
     def test_findSomaticPositions(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             input_dir.write("A.snp.vcf",
@@ -67,7 +80,7 @@ class FilterSomaticTestCase(unittest.TestCase):
             file1 = os.path.join(input_dir.path, "A.snp.vcf")
             file2 = os.path.join(input_dir.path, "A.indel.vcf")
 
-            somatic_positions, somatic_positions_header = _find_somatic_positions([file1, file2])
+            somatic_positions, somatic_positions_header = filter_hc_somatic._find_somatic_positions([file1, file2])
             self.assertEqual({'1^2353': 1, '1^2352': 1}, somatic_positions)
             self.assertEqual("##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=2\n", somatic_positions_header)
 
@@ -87,7 +100,7 @@ class FilterSomaticTestCase(unittest.TestCase):
             file1 = os.path.join(input_dir.path, "A.snp.vcf")
             file2 = os.path.join(input_dir.path, "A.indel.vcf")
 
-            somatic_positions, somatic_positions_header = _find_somatic_positions([file1, file2])
+            somatic_positions, somatic_positions_header = filter_hc_somatic._find_somatic_positions([file1, file2])
             self.assertEqual({'1^2353': 1}, somatic_positions)
             self.assertEqual("##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=1\n", somatic_positions_header)
 
@@ -115,7 +128,7 @@ class FilterSomaticTestCase(unittest.TestCase):
                      os.path.join(input_dir.path, "A.snvs.vcf"),
                      os.path.join(input_dir.path, "A.indels.vcf")]
 
-            _find_somatic_positions(files)
+            filter_hc_somatic._find_somatic_positions(files)
 
             self.assertIn('Removed [1] problematic VarScan variant records with filter=JQ_EXCLUDE', mock_log_messages)
             self.assertIn('Removed [1] problematic Strelka variant records with filter=JQ_EXCLUDE', mock_log_messages)
@@ -131,7 +144,7 @@ class FilterSomaticTestCase(unittest.TestCase):
             file1 = os.path.join(input_dir.path, "A.vcf")
             file2 = os.path.join(input_dir.path, "B.vcf")
 
-            _find_somatic_positions([file1, file2])
+            filter_hc_somatic._find_somatic_positions([file1, file2])
             self.assertIn('Input file [A.vcf] has no high-confidence somatic variants.', mock_log_messages)
             self.assertIn('Input file [B.vcf] has no high-confidence somatic variants.', mock_log_messages)
             self.assertIn('[2] VCF file(s) had no high-confidence somatic variants. See log for details.', mock_log_messages)
@@ -144,14 +157,14 @@ class FilterSomaticTestCase(unittest.TestCase):
             in_files = [input1, input2]
             somatic_positions = {"1^32"}
             execution_context = ["##foo", "##bar"]
-            _write_somatic(in_files, output_dir.path, somatic_positions, execution_context)
+            filter_hc_somatic._write_somatic(in_files, output_dir.path, somatic_positions, execution_context)
 
             self.assertEqual(["mutect_HCsomatic.vcf", "varscan_HCsomatic.vcf"], output_dir.actual())
             self.assertIn("Filtered to [1] calls in high-confidence loci.", mock_log_messages)
 
     def test_sort_sortHeaders(self):
         headers = ["##foo", "##bar", "#CHROM", "##baz"]
-        sorted_headers = _sort_headers(headers)
+        sorted_headers = filter_hc_somatic._sort_headers(headers)
         expected_sorted_headers = ["##foo", "##bar", "##baz", "#CHROM"]
         self.assertEqual(expected_sorted_headers, sorted_headers)
 
@@ -161,7 +174,7 @@ class FilterSomaticTestCase(unittest.TestCase):
         headers = ["#foo", "#bar"]
         actual_sorted_variants = ["123", "456"]
 
-        _write_output(mock_writer, headers, actual_sorted_variants)
+        filter_hc_somatic._write_output(mock_writer, headers, actual_sorted_variants)
         actualLines = mock_writer.lines()
 
         self.assertEqual("#foo", actualLines[0])
