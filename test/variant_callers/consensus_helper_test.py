@@ -1,6 +1,6 @@
-# pylint: disable=C0103,C0301,R0904,C0111,W0212
+#pylint: disable=too-few-public-methods, invalid-name, line-too-long
+#pylint: disable=too-many-instance-attributes, too-many-public-methods
 from __future__ import print_function, absolute_import
-
 from collections import OrderedDict
 import os
 import unittest
@@ -10,8 +10,6 @@ from jacquard.variant_callers import consensus_helper
 from jacquard.vcf import VcfRecord
 import test.test_case as test_case
 
-
-# pylint: disable=too-few-public-methods,too-many-instance-attributes
 class MockVcfRecord(object):
     def __init__(self, content):
         content = content.split("\t")
@@ -56,10 +54,13 @@ class MockWriter(object):
         self.closed = True
 
 class MockFileReader(object):
-    def __init__(self, input_filepath="/foo/mockFileReader.txt", content = []):
+    def __init__(self, input_filepath="/foo/mockFileReader.txt", content=None):
         self.input_filepath = input_filepath
         self.file_name = os.path.basename(input_filepath)
-        self._content = content
+        if content:
+            self._content = content
+        else:
+            self._content = []
         self.open_was_called = False
         self.close_was_called = False
 
@@ -296,4 +297,3 @@ class ConsensusHelperTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEquals(0.33, pop_mean_range)
         self.assertEquals(0.28, pop_std_range)
-
