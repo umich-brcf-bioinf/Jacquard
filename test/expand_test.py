@@ -4,7 +4,6 @@
 from __future__ import absolute_import
 from argparse import Namespace
 from collections import OrderedDict
-import glob
 import os
 from testfixtures import TempDirectory
 import unittest
@@ -12,7 +11,7 @@ import unittest
 import jacquard.utils as utils
 import jacquard.logger as logger
 import jacquard.expand as expand
-from jacquard.vcf import FileReader, VcfReader
+from jacquard.vcf import VcfReader
 import test.test_case as test_case
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
@@ -37,10 +36,13 @@ def _change_mock_logger():
     logger.debug = mock_log
 
 class MockFileReader(object):
-    def __init__(self, input_filepath="/foo/mockFileReader.txt", content = []):
+    def __init__(self, input_filepath="/foo/mockFileReader.txt", content=None):
         self.input_filepath = input_filepath
         self.file_name = os.path.basename(input_filepath)
-        self._content = content
+        if content:
+            self._content = content
+        else:
+            self._content = []
         self.open_was_called = False
         self.close_was_called = False
 
