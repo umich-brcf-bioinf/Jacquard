@@ -1,4 +1,5 @@
-# pylint: disable=C0103,C0301,R0903,R0904,W0603,W0613
+# pylint: disable=line-too-long, global-statement, unused-argument, invalid-name, too-many-locals, too-many-public-methods
+from __future__ import absolute_import
 import os
 from StringIO import StringIO
 import sys
@@ -6,24 +7,28 @@ from testfixtures import TempDirectory
 import unittest
 
 import jacquard.jacquard as jacquard
+import jacquard.logger as logger
+import test.test_case as test_case
+
+
 import test.mock_module as mock_module
 
-mock_create_tmp_called = False
-mock_move_tmp_contents_called = False
+MOCK_CREATE_TMP_CALLED = False
+MOCK_MOVE_TEMP_CONTENTS_CALLED = False
 
-# pylint: disable=W0603,W0613
 def mock_create_temp_directory(output_dir, force=0):
-    global mock_create_tmp_called
-    mock_create_tmp_called = True
+# pylint: disable=W0603,W0613
+    global MOCK_CREATE_TMP_CALLED
+    MOCK_CREATE_TMP_CALLED = True
 
     if len(os.listdir(output_dir)) != 0:
         if not force:
             sys.exit(1)
 
-# pylint: disable=W0603,W0613
 def mock_move_tmp_contents_to_original(tmp_output, output_dir):
-    global mock_move_tmp_contents_called
-    mock_move_tmp_contents_called = True
+# pylint: disable=W0603,W0613
+    global MOCK_MOVE_TEMP_CONTENTS_CALLED
+    MOCK_MOVE_TEMP_CONTENTS_CALLED = True
 
 def _change_mock_methods():
 #    global mock_create_temp_directory
@@ -32,6 +37,11 @@ def _change_mock_methods():
 #    global mock_move_tmp_contents_to_original
     jacquard._move_tmp_contents_to_original = mock_move_tmp_contents_to_original
 
+MOCK_LOG_CALLED = False
+
+def mock_log(msg, *args):
+    global MOCK_LOG_CALLED
+    MOCK_LOG_CALLED = True
 
 class JacquardTestCase(unittest.TestCase):
     def setUp(self):
@@ -46,7 +56,7 @@ class JacquardTestCase(unittest.TestCase):
         unittest.TestCase.tearDown(self)
 
     #TODO (cgates): Fix
-    def Xtest_gracefulErrorMessageWhenUnanticipatedProblem(self):
+    def test_gracefulErrorMessageWhenUnanticipatedProblem(self):
         with TempDirectory() as output_dir:
             mock_module.my_exception_string = "I'm feeling angry"
 
@@ -57,11 +67,11 @@ class JacquardTestCase(unittest.TestCase):
 
             actual_messages = self.output.getvalue().rstrip().split("\n")
 
-            self.assertEquals(5, len(actual_messages))
+            self.assertEquals(4, len(actual_messages))
             self.assertRegexpMatches(actual_messages[0], "Jacquard begins")
             self.assertRegexpMatches(actual_messages[1], "Saving log to")
-            self.assertRegexpMatches(actual_messages[3], "I'm feeling angry")
-            self.assertRegexpMatches(actual_messages[4], "Jacquard encountered an unanticipated problem.")
+            self.assertRegexpMatches(actual_messages[2], "I'm feeling angry")
+            self.assertRegexpMatches(actual_messages[3], "Jacquard encountered an unanticipated problem.")
 
     def test_create_temp_directory(self):
         with TempDirectory() as test_dir:
@@ -103,20 +113,16 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
         jacquard._create_temp_directory = self.original_create_temp_directory
         jacquard._move_tmp_contents_to_original = self.original_move_tmp_contents
 
-    #TODO (cgates): Fix
-    def Xtest_dispatch(self):
+    def test_dispatch(self):
         with TempDirectory() as output_dir:
             mock_module.my_exception_string = ""
             jacquard.dispatch([mock_module], ["mock_module", output_dir.path])
             self.assertTrue(mock_module.execute_called)
 
-#            global mock_create_tmp_called
-            self.assertTrue(mock_create_tmp_called)
-#            global mock_move_tmp_contents_called
-            self.assertTrue(mock_move_tmp_contents_called)
+            self.assertTrue(MOCK_CREATE_TMP_CALLED)
+            self.assertTrue(MOCK_MOVE_TEMP_CONTENTS_CALLED)
 
-    #TODO (cgates): Fix
-    def Xtest_dispatch_nonEmptyOutputDir(self):
+    def test_dispatch_nonEmptyOutputDir(self):
         with TempDirectory() as output_dir:
             output_dir.write("file1.vcf", "foo")
             mock_module.my_exception_string = ""
@@ -126,12 +132,72 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
 
             self.assertEqual(1, exit_code.exception.code)
 
-    #TODO (cgates): Fix
-    def Xtest_dispatch_forceNonEmptyOutputDir(self):
+    def test_dispatch_forceNonEmptyOutputDir(self):
         with TempDirectory() as output_dir:
             output_dir.write("file1.vcf", "foo")
             mock_module.my_exception_string = ""
 
             jacquard.dispatch([mock_module], ["mock_module", output_dir.path, "--force"])
             self.assertTrue(1 == 1, "Force does not result in premature exit.")
+
+    def test_dispatch_done(self):
+        with TempDirectory() as output_dir:
+            mock_module.my_exception_string = ""
+            jacquard.dispatch([mock_module], ["mock_module", output_dir.path])
+            actual_messages = self.output.getvalue().rstrip().split("\n")
+            self.assertRegexpMatches(actual_messages[3], "Done")
+
+    def test_dispatch_doneWithWarnings(self):
+        with TempDirectory() as output_dir:
+            mock_module.my_exception_string = ""
+            logger.SHOW_WARNING = True
+            jacquard.dispatch([mock_module], ["mock_module", output_dir.path])
+            actual_messages = self.output.getvalue().rstrip().split("\n")
+            self.assertRegexpMatches(actual_messages[3], r"Done. \(See warnings above\)")
+            logger.SHOW_WARNING = False
+
+class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
+    def test_functional_jacquard(self):
+        with TempDirectory() as output_dir:
+            file_dirname = os.path.dirname(os.path.realpath(__file__))
+            module_testdir = os.path.join(file_dirname,
+                                          "functional_tests",
+                                          "jacquard_test")
+
+            initial_input = os.path.join(module_testdir, "input")
+
+            vs_normalize_output = os.path.join(output_dir.path, "varscan")
+            sk_normalize_output = os.path.join(output_dir.path, "strelka")
+            mt_normalize_output = os.path.join(output_dir.path, "mutect")
+
+            normalize_output = os.path.join(output_dir.path, "normalize")
+            tag_output = os.path.join(output_dir.path, "tag")
+            filter_output = os.path.join(output_dir.path, "filter_hc_somatic")
+            merge_output = os.path.join(output_dir.path, "merge", "merged.vcf")
+            consensus_output = os.path.join(output_dir.path, "consensus", "consensus.vcf")
+            expanded_output = os.path.join(output_dir.path, "expand", "expanded.vcf")
+
+            commands = [["normalize", os.path.join(initial_input, "varscan"), vs_normalize_output, "--force"],
+                        ["normalize", os.path.join(initial_input, "strelka"), sk_normalize_output, "--force"],
+                        ["normalize", os.path.join(initial_input, "mutect"), mt_normalize_output, "--force"]]
+
+            for command in commands:
+                benchmark_dir = os.path.join("benchmark", os.path.basename(command[1]))
+                expected_dir = os.path.join(module_testdir, command[0], benchmark_dir)
+                self.assertCommand(command, expected_dir)
+
+            self.move_files([vs_normalize_output,
+                             sk_normalize_output,
+                             mt_normalize_output],
+                            normalize_output)
+
+            commands = [["tag", normalize_output, tag_output, "--force"],
+                        ["filter_hc_somatic", tag_output, filter_output, "--force"],
+                        ["merge", filter_output, merge_output, "--force"],
+                        ["consensus", merge_output, consensus_output, "--force"],
+                        ["expand", consensus_output, expanded_output, "--force"]]
+
+            for command in commands:
+                expected_dir = os.path.join(module_testdir, command[0], "benchmark")
+                self.assertCommand(command, expected_dir)
 

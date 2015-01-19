@@ -1,0 +1,48 @@
+##jacquard.version=0.21
+##jacquard.command=merge c:\users\jebene\appdata\local\temp\tmpiw0xhb\filter_hc_somatic c:\users\jebene\appdata\local\temp\tmpiw0xhb\merge\merged.vcf --force
+##jacquard.cwd=C:\Users\jebene\git
+##FORMAT=<ID=JQ_MT_AF,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_MT_DP,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP)",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_MT_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_VS_AF,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_VS_DP,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_VS_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)",Source="Jacquard",Version=0.21>
+##fileformat=VCFv4.2
+##jacquard.merge.file2=tiny.mutect.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf(['NORMAL', 'TUMOR'])
+##jacquard.merge.file3=tiny.strelka.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf(['NORMAL', 'TUMOR'])
+##jacquard.merge.file4=tiny.varscan.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf(['NORMAL', 'TUMOR'])
+##jacquard.merge.sample_column1=MuTect|tiny|NORMAL(tiny.mutect.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf)
+##jacquard.merge.sample_column2=MuTect|tiny|TUMOR(tiny.mutect.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf)
+##jacquard.merge.sample_column1=Strelka|tiny|NORMAL(tiny.strelka.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf)
+##jacquard.merge.sample_column2=Strelka|tiny|TUMOR(tiny.strelka.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf)
+##jacquard.merge.sample_column1=VarScan|tiny|NORMAL(tiny.varscan.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf)
+##jacquard.merge.sample_column2=VarScan|tiny|TUMOR(tiny.varscan.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf)
+##jacquard.version=0.21
+##jacquard.command=consensus c:\users\jebene\appdata\local\temp\tmpiw0xhb\merge\merged.vcf c:\users\jebene\appdata\local\temp\tmpiw0xhb\consensus\consensus.vcf --force
+##jacquard.cwd=C:\Users\jebene\git
+##FORMAT=<ID=JQ_CONS_AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].",Source="Jacquard",Version="0.21">
+##FORMAT=<ID=JQ_CONS_AF_RANGE, Number=1,Type=Float,Description="Max(allele frequency) - min (allele frequency) across recognized callers.",Source="Jacquard",Version="0.21>">
+##FORMAT=<ID=JQ_CONS_AF_ZSCORE,Number=1,Type=Float,Description="Jacquard measure of concordance of reported allele frequencies across callers. [(this AF range - mean AF range)/standard dev(all AF ranges)]. If consensus value from <2 values will be [.]",Source="Jacquard",Version="0.21>"
+##FORMAT=<ID=JQ_CONS_DP_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].",Source="Jacquard",Version="0.21">
+##FORMAT=<ID=JQ_CONS_DP_RANGE, Number=1,Type=Float,Description="Max(depth) - min (depth) across recognized callers.",Source="Jacquard",Version="0.21>">
+##FORMAT=<ID=JQ_CONS_DP_ZSCORE,Number=1,Type=Float,Description="Jacquard measure of concordance of reported depths across callers. [(this DP range - mean DP range)/standard dev(all DP ranges)]. If consensus value from <2 values will be [.]",Source="Jacquard",Version="0.21>"
+##jacquard.consensus.JQ_CONS_DP_RANGE.mean_DP_range=2.0
+##jacquard.consensus.JQ_CONS_DP_ZSCORE.std_DP_range=1.0
+##jacquard.consensus.JQ_CONS_AF_RANGE.mean_AF_range=2.0
+##jacquard.consensus.JQ_CONS_AF_ZSCORE.std_AF_range=1.0
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	tiny|TUMOR	tiny|NORMAL
+chr1	14948	.	G	A	.	.	.	JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.13:302:0:0.14:303:1:0.14:0.01:302.5:1:-1.99:-1.0	0.09:174:0:0.06:171:0:0.08:0.03:172.5:3:-1.97:1.0
+chr1	137622	.	G	A	.	.	.	JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.29:42:1:0.29:.:42:.:.:.	0.24:35:0:0.24:.:35:.:.:.
+chr1	1147545	.	A	G	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.31:35:1:0.31:.:35:.:.:.	0.0:27:0:0:.:27:.:.:.
+chr1	1169795	.	C	T	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.22:46:1:0.22:.:46:.:.:.	0.0:37:0:0:.:37:.:.:.
+chr1	1444553	.	C	T	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.35:31:1:0.35:.:31:.:.:.	0.0:29:0:0:.:29:.:.:.
+chr1	1459635	.	C	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.17:30:1:0.17:.:30:.:.:.	0.0:35:0:0:.:35:.:.:.
+chr1	1572893	.	G	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.09:81:1:0.09:.:81:.:.:.	0.02:65:0:0.02:.:65:.:.:.
+chr1	1696633	.	GA	G	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.27:45:1:0.27:.:45:.:.:.	0.0:48:0:0:.:48:.:.:.
+chr1	1910112	.	G	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.34:35:1:0.34:.:35:.:.:.	0.0:28:0:0:.:28:.:.:.
+chr1	1912090	.	G	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.31:32:1:0.31:.:32:.:.:.	0.0:27:0:0:.:27:.:.:.
+chr1	3412474	.	G	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.31:61:1:0.31:.:61:.:.:.	0.0:46:0:0:.:46:.:.:.
+chr1	3545096	.	G	T	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.25:63:1:0.25:.:63:.:.:.	0.0:37:0:0:.:37:.:.:.

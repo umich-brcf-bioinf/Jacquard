@@ -1,10 +1,11 @@
-# pylint: disable=C0103,C0301,R0903,R0904
+#pylint: disable=line-too-long, invalid-name, too-many-public-methods
 from datetime import datetime
 import os
 import sys
 from StringIO import StringIO
 import unittest
 import jacquard.logger as logger
+
 
 class LoggerTestCase(unittest.TestCase):
     def setUp(self):
@@ -22,7 +23,6 @@ class LoggerTestCase(unittest.TestCase):
     def test_initialize_logger(self):
         tool = "foo"
         logger.initialize_logger(tool)
-
         self.assertEquals(['host', 'tool', 'start_time', 'user'],
                           logger.logging_dict.keys())
 
@@ -44,7 +44,9 @@ class LoggerTestCase(unittest.TestCase):
     def test_warning(self):
         tool = "foo"
         logger.initialize_logger(tool)
+        self.assertFalse(logger.SHOW_WARNING)
         logger.warning("bar")
+        self.assertTrue(logger.SHOW_WARNING)
         root_logger = logger.logging.getLogger()
 
         current_time = datetime.now().strftime('%Y-%m-%d')

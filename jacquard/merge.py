@@ -1,6 +1,6 @@
-# pylint: disable=C0111
-# pylint: disable-msg=W0403
-
+#pylint: disable=maybe-no-member, no-member, cell-var-from-loop, redefined-builtin
+#pylint: disable=unnecessary-lambda
+from __future__ import absolute_import
 from collections import defaultdict, OrderedDict
 import glob
 import os
@@ -10,8 +10,8 @@ import pandas as pd
 from pandas import *
 import re
 
-import utils
-import logger
+import jacquard.utils as utils
+import jacquard.logger as logger
 
 class PivotError(Exception):
     """Base class for exceptions in this module."""
@@ -35,12 +35,12 @@ class VariantPivoter():
         if "#CHROM" in initial_df.columns:
             initial_df.rename(columns={"#CHROM": "CHROM"}, inplace=True)
 
-        unpivoted_df = self.is_compatible(initial_df)
+        self.is_compatible(initial_df)
         fname_df, sample_columns = append_fname_to_samples(initial_df,
                                                            file_name,
                                                            self._rows,
                                                            caller)
-        validated_df = validate_sample_caller_vcfs(fname_df)
+        validate_sample_caller_vcfs(fname_df)
 
         self._combined_df = merge_samples(fname_df, self._combined_df,
                                           self._rows)
@@ -153,14 +153,6 @@ def create_initial_df(sample_file, header_index):
 def append_fname_to_samples(df, file_name, rows, caller):
     indexed_df = df.set_index(rows + ["INFO"])
 
-#     if caller == "MuTect":
-#         for key, val in mutect_dict.items():
-#             if val in df.columns.values:
-#                 if key == "normal_sample_name":
-#                     indexed_df.rename(columns={val : "NORMAL"}, inplace=True)
-#                 elif key == "tumor_sample_name":
-#                     indexed_df.rename(columns={val : "TUMOR"}, inplace=True)
-
     basename = os.path.basename(file_name)
     fname_prefix = basename.split(".")[0]
     new_df = indexed_df.rename(columns=lambda x: "|".join([caller,
@@ -204,27 +196,28 @@ def merge_samples(incoming_df, combined_df, rows):
         combined_df = merge(combined_df, incoming_df, how="outer",
                             on=rows+["INFO"])
 
-    return combined_df    
+    return combined_df
 
 def rearrange_columns(output_df):
     index = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO"]
-    format = []
+    format_tags = []
     samples = []
     for i in list(output_df.columns.values):
         if i in index:
             continue
         elif re.search("FORMAT", i):
-            format.append(i)
+            format_tags.append(i)
         else:
             samples.append(i)
 
-    headers = index + format + samples
-    
+    headers = index + format_tags + samples
+
     ##change order of columns:
     output_df = output_df.ix[:,headers]
     return output_df
-    
+
 def create_dict(df, row, columns):
+    #pylint: disable=anomalous-backslash-in-string
     file_dict = defaultdict(list)
     all_tags = []
 
@@ -240,7 +233,7 @@ def create_dict(df, row, columns):
             sample_column += ":" + column
 
 #             format_sample = "{0}={1}".format(format_column, sample_column)
-            format_sample_dict = utils.combine_format_values(format_column,
+            format_sample_dict = _combine_format_values(format_column,
                                                              sample_column)
             tags = format_column.split(":")
 
@@ -249,9 +242,9 @@ def create_dict(df, row, columns):
             file_dict[caller].append(format_sample_dict)
 
             for tag in tags:
-                try: 
+                try:
                     float(tag)
-                except:
+                except ValueError:
                     if tag not in all_tags:
                         all_tags.append(tag)
 
@@ -279,11 +272,12 @@ def sort_format_tags(file_dict):
     return sorted_file_dict
 
 def remove_non_jq_tags(df, file_dict):
+    #pylint: disable=unused-argument
     sample_keys = []
 #     sample_names = {}
     for sample_list in file_dict.values():
         for sample in sample_list:
-            for key, val in sample.items():
+            for key in sample.keys():
 #                 sample_names[sample["sample_name"]] = 1
                 if not re.search("JQ_", key) and key != "sample_name":
                     del sample[key]
@@ -299,13 +293,13 @@ def cleanup_df(df, file_dict):
     for key in file_dict.keys():
         try:
             del df[key + "|FORMAT"]
-        except:
+        except KeyError:
             pass
     for col in df.columns:
         df = df.applymap(lambda x: str(x).replace(":" + col, ""))
         df = df.applymap(lambda x: str(x).replace(col + ":", ""))
         df = df.applymap(lambda x: str(x).replace(col, "."))
-    
+
     df = df.applymap(lambda x: str(x).replace(":sample_name", ""))
     df = df.applymap(lambda x: str(x).replace("sample_name:", ""))
     df = df.applymap(lambda x: str(x).replace("sample_name", "."))
@@ -315,6 +309,7 @@ def cleanup_df(df, file_dict):
     return df
 
 def create_merging_dict(df, row, columns):
+    #pylint: disable=anomalous-backslash-in-string
     file_dict = defaultdict(list)
     sample_names = []
     sample_columns = []
@@ -329,11 +324,9 @@ def create_merging_dict(df, row, columns):
             sample_columns.append(sample_column)
             sample_names.append(column)
 
-            format_sample_dict = utils.combine_format_values(format_column,
+            format_sample_dict = _combine_format_values(format_column,
                                                              sample_column)
-#             for key, val in format_sample_dict.items():
-#                 if val == ".":
-#                     del format_sample_dict[key]
+
             file_key = "{0}|{1}".format(fname, sample)
             if format_sample_dict != OrderedDict():
                 file_dict[file_key].append(format_sample_dict)
@@ -341,6 +334,7 @@ def create_merging_dict(df, row, columns):
     return file_dict
 
 def remove_old_columns(df):
+    #pylint: disable=anomalous-backslash-in-string
     columns_to_remove = []
     for row, col in df.T.iteritems():
         columns = col.index.values
@@ -355,6 +349,7 @@ def remove_old_columns(df):
     return df
 
 def combine_format_columns(df, all_inconsistent_sample_sets):
+    #pylint: disable=unused-argument
     row_total = len(df.index)
     logger.info("Processing merged matrix phase 1: [{} x {}] rows x columns",
                 row_total, len(df.columns))
@@ -369,15 +364,15 @@ def combine_format_columns(df, all_inconsistent_sample_sets):
 
         for key, val in file_dict.items():
             for samp_dict in val:
-                format = []
+                format_tags = []
                 sample = []
                 sorted_dict = OrderedDict(sorted(samp_dict.items()))
 
                 for sorted_key, sorted_val in sorted_dict.items():
-                    format.append(sorted_key)
+                    format_tags.append(sorted_key)
                     sample.append(sorted_val)
 
-                df.ix[row, "FORMAT"] = ":".join(format)
+                df.ix[row, "FORMAT"] = ":".join(format_tags)
                 df.ix[row, samp_dict["sample_name"]] = ":".join(sample)
 
     df = cleanup_df(df, file_dict)
@@ -389,7 +384,7 @@ def combine_format_columns(df, all_inconsistent_sample_sets):
                         int(100 * row/row_total))
         columns = col.index.values
         file_dict = create_merging_dict(df, row, columns)
-        merge_by = len(file_dict.items())
+#         merge_by = len(file_dict.items())
         for key, vals in file_dict.items():
             complete_dict = {}
 
@@ -437,14 +432,16 @@ def print_new_execution_context(execution_context, out_file):
 
 def create_new_line(alt_allele_number, fields):
     alt = fields[4].split(",")[alt_allele_number]
-    format = fields[8]
+    format_tags = fields[8]
     samples = fields[9:]
     new_samples = []
+
     for sample in samples:
-        format_sample_dict = utils.combine_format_values(format, sample)
+        format_sample_dict = _combine_format_values(format_tags, sample)
         new_dict = OrderedDict()
         for key, val in format_sample_dict.items():
-            if re.search("JQ_AF", key): #only care about splitting jacquard tags
+            #only care about splitting jacquard tags
+            if re.search("JQ_.*AF", key):
                 split_val = val.split(",")
                 if len(split_val) > 1:
                     new_dict[key] = split_val[alt_allele_number]
@@ -454,7 +451,6 @@ def create_new_line(alt_allele_number, fields):
                 new_dict[key] = val
         new_samples.append(":".join(new_dict.values()))
 
-#     new_line = fields[0:4] + [alt] + fields[5:7] + ["."] + [fields[8]] + new_samples
     new_line = fields[0:4] + [alt] + fields[5:9] + new_samples
 
     return "\t".join(new_line) + "\n"
@@ -463,7 +459,7 @@ def determine_caller_and_split_mult_alts(reader, writer, unknown_callers):
     caller = "unknown"
     for line in reader:
         if line.startswith("##jacquard.tag.caller="):
-            caller = line.split("=")[1].strip("\n")
+            caller = line.split("=")[1].rstrip()
             writer.write(line)
         elif line.startswith("#"):
             writer.write(line)
@@ -498,7 +494,7 @@ def validate_samples_for_callers(all_merge_column_context, all_inconsistent_samp
         caller = column.split("|")[0]
         sample = column.split("|")[1]
         sample_column = column.split("|")[2]
-        
+
         samples.append(sample)
         sample_dict[caller].append(sample)
     logger.info("Detected VCFs from {}", sample_dict.keys())
@@ -529,22 +525,20 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
     first_file_reader = sample_file_readers[0]
     first_file      = first_file_reader
 
-    raise_err, message = validate_parameters(input_keys, first_line, header_names)
+    raise_err, message = validate_parameters(input_keys,
+                                             first_line,
+                                             header_names)
     if raise_err == 1:
         raise PivotError(message)
 
     pivoter  = pivot_builder(first_file, input_keys, headers[0])
 
-#     utils.log("Processing [{}] VCF files from [{}]", len(sample_file_readers), input_dir)
-#     logger.log_info(message="Processing [{}] VCF files from [{}]".format(len(sample_file_readers), input_dir), logging_dict=logging_dict, tool=_TOOL)
-
-    count = 0
     all_merge_context = []
     all_merge_column_context = []
     unknown_callers = 0
 
     output_dir = os.path.dirname(output_path)
-    new_dir = os.path.join(output_dir, "splitMultAlts", ) 
+    new_dir = os.path.join(output_dir, "splitMultAlts")
     if not os.path.isdir(new_dir):
         os.mkdir(new_dir)
     logger.info("Splitting mult-alts in input files. Using [{}] as input "
@@ -557,7 +551,8 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
                     count, total_number_of_files)
         fname, extension = os.path.splitext(os.path.basename(sample_file))
 
-        new_sample_file = os.path.join(new_dir, fname + ".splitMultAlts" + extension)
+        new_sample_file = os.path.join(new_dir,
+                                       fname + ".splitMultAlts" + extension)
 
         reader = open(sample_file, "r")
         writer = open(new_sample_file, "w")
@@ -587,7 +582,6 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
 
     execution_context.extend(new_execution_context)
 #     writer = open(output_path, "w")
-    
     logger.info("Merging sample data (this may take a while)")
 
     logger.info("Merging sample data: validating sample data (1/6)")
@@ -600,7 +594,7 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
     rearranged_df = rearrange_columns(formatted_df)
     try:
         rearranged_df.ix[:, "CHROM"] = rearranged_df.ix[:, "CHROM"].apply(lambda x: int(x.strip("chr")))
-    except:
+    except ValueError:
         rearranged_df.ix[:, "CHROM"] = rearranged_df.ix[:, "CHROM"].apply(lambda x: x.strip("chr"))
     rearranged_df.ix[:, "POS"] = rearranged_df.ix[:, "POS"].apply(lambda x: int(x))
 
@@ -621,12 +615,14 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
         f.write("\n".join(execution_context)+"\n")
         sorted_df.to_csv(f, index=False, sep="\t")
 
-    logger.info("Merged [{}] VCf files to [{}]", len(sample_file_readers), output_path)
+    logger.info("Merged [{}] VCf files to [{}]",
+                len(sample_file_readers),
+                output_path)
 
 def determine_input_keys(input_dir):
-    for file in listdir(input_dir):
-        if isfile(join(input_dir, file)):
-            fname, extension = os.path.splitext(file)
+    for file_name in listdir(input_dir):
+        if isfile(join(input_dir, file_name)):
+            fname, extension = os.path.splitext(file_name)
             if extension == ".vcf":
                 return ["CHROM", "POS", "REF", "ALT"]
 
@@ -634,7 +630,7 @@ def determine_input_keys(input_dir):
                 raise PivotError("Cannot determine columns to be used as keys "
                                  "for the pivoting from file [{0}]. Please "
                                  "specify parameter [-k] or "
-                                 "[--keys]".format(os.path.abspath(file)))
+                                 "[--keys]".format(os.path.abspath(file_name)))
     
 def get_headers_and_readers(in_files):
     sample_file_readers = []
@@ -651,7 +647,7 @@ def get_headers_and_readers(in_files):
             count += 1
             if line.startswith("##"):
                 if re.search("##FORMAT=<ID=JQ_", line):
-                    meta_headers.append(line.strip("\n"))
+                    meta_headers.append(line.rstrip())
                 if re.search("##jacquard.tag.caller=", line):
                     invalid = 0
             elif line.startswith("#"):
@@ -707,10 +703,12 @@ def execute(args, execution_context):
 
     sample_file_readers, headers, header_names, first_line, meta_headers = get_headers_and_readers(in_files)
 
-#     print("\n".join(execution_context))
     execution_context.extend(meta_headers + ["##fileformat=VCFv4.2"])
 
     process_files(sample_file_readers, input_dir, output_path, input_keys,
                   headers, header_names, first_line,
                   all_inconsistent_sample_sets, execution_context)
+
+def _combine_format_values(format_field, sample):
+    return OrderedDict(zip(format_field.split(":"), sample.strip().split(":")))
 

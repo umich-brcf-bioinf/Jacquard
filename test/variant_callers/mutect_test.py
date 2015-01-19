@@ -1,35 +1,36 @@
+# pylint: disable=line-too-long,too-many-public-methods,invalid-name
 import unittest
 
 import jacquard.variant_callers.mutect as mutect
 from jacquard.utils import __version__, JQException
-from jacquard.vcf import VcfRecord 
+from jacquard.vcf import VcfRecord
 
-class MockWriter():
+class MockWriter(object):
     def __init__(self):
         self._content = []
         self.opened = False
         self.closed = False
 
-    def open (self):
+    def open(self):
         self.opened = True
 
     def write(self, content):
         self._content.extend(content.splitlines())
-        
+
     def lines(self):
         return self._content
 
     def close(self):
         self.closed = True
 
-class MockReader():
+class MockReader(object):
     def __init__(self, lines = []):
         self._lines_iter = iter(lines)
         self.opened = False
         self.closed = False
         self.input_filepath = "foo"
 
-    def open (self):
+    def open(self):
         self.opened = True
 
     def read_lines(self):
@@ -46,8 +47,8 @@ class AlleleFreqTagTestCase(unittest.TestCase):
     def test_format_missingAFTag(self):
         tag = mutect._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
-        originalVcfRecord = VcfRecord(line)
-        processedVcfRecord = VcfRecord(line)
+        originalVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
 
@@ -55,7 +56,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         tag = mutect._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3|0.567:SA.2:SA.3|0.834:SB.2:SB.3\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3:{0}AF|0.567:SA.2:SA.3:0.57|0.834:SB.2:SB.3:0.83\n".format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -63,7 +64,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         tag = mutect._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3|0.5,0.8:SA.2:SA.3|0.7,0.6:SB.2:SB.3\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3:{0}AF|0.5,0.8:SA.2:SA.3:0.5,0.8|0.7,0.6:SB.2:SB.3:0.7,0.6\n".format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -74,8 +75,8 @@ class DepthTagTestCase(unittest.TestCase):
     def test_format_missingDPTag(self):
         tag = mutect._DepthTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
-        originalVcfRecord = VcfRecord(line)
-        processedVcfRecord = VcfRecord(line)
+        originalVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
 
@@ -83,7 +84,7 @@ class DepthTagTestCase(unittest.TestCase):
         tag = mutect._DepthTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP:F2:F3|2:SA.2:SA.3|4:SB.2:SB.3\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP:F2:F3:{0}DP|2:SA.2:SA.3:2|4:SB.2:SB.3:4\n".format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -95,7 +96,7 @@ class SomaticTagTestCase(unittest.TestCase):
         tag = mutect._SomaticTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
         expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:{0}HC_SOM|SA.1:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n").format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -103,7 +104,7 @@ class SomaticTagTestCase(unittest.TestCase):
         tag = mutect._SomaticTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|SS:F2:F3|2:SA.2:SA.3|5:SB.2:SB.3\n".replace('|',"\t")
         expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|SS:F2:F3:{0}HC_SOM|2:SA.2:SA.3:1|5:SB.2:SB.3:0\n").format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord(line)
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         tag.format(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -113,8 +114,8 @@ class MockTag(object):
         self.field_value = field_value
         self.metaheader = metaheader
 
-    def format(self, vcfRecord):
-        vcfRecord.insert_format_field(self.field_name, {0:self.field_value, 1:self.field_value})
+    def format(self, vcf_record):
+        vcf_record.add_sample_tag_value(self.field_name, {"SA":self.field_value, "SB":self.field_value})
 
 class Mutect_TestCase(unittest.TestCase):
     def setUp(self):
@@ -143,16 +144,17 @@ class Mutect_TestCase(unittest.TestCase):
         self.assertFalse(self.caller.validate_input_file(metaheaders, "#column_header"))
 
     def test_addTags(self):
-        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
-        self.caller.tags=[MockTag("mockTag", 42)]
-        actual_line = self.caller.add_tags(VcfRecord(input_line))
+        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
+        self.caller.tags = [MockTag("mockTag", 42)]
+        input_record = VcfRecord.parse_record(input_line, ["SA", "SB"])
+        actual_line = self.caller.add_tags(input_record)
 
-        expected_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:mockTag|SA.1:SA.2:SA.3:42|SB.1:SB.2:SB.3:42\n".replace('|',"\t")
+        expected_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:mockTag|SA.1:SA.2:SA.3:42|SB.1:SB.2:SB.3:42\n".replace('|', "\t")
 
         self.assertEquals(expected_line, actual_line)
 
     def test_updateMetaheader(self):
-        self.caller.tags=[MockTag("mockTag", 42, "##my_metaheader\n")]
+        self.caller.tags = [MockTag("mockTag", 42, "##my_metaheader\n")]
         actual_metaheader = self.caller.get_new_metaheaders()
 
         self.assertEquals(["##my_metaheader\n"], actual_metaheader)

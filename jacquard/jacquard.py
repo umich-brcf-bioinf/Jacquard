@@ -13,10 +13,9 @@
 ##   See the License for the specific language governing permissions and
 ##   limitations under the License.
 
-# pylint: disable=C0111
-# pylint: disable-msg=W0403
+# pylint: disable=missing-docstring,global-statement
 
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 import argparse
 import os
 import signal
@@ -24,20 +23,21 @@ import shutil
 import sys
 import traceback
 
-import tag as tag
-import normalize as normalize
-import filter_hc_somatic as filter_hc_somatic
-import merge as merge
-import consensus as consensus
-import expand
-import utils as utils
-import logger as logger
-
+import jacquard.tag as tag
+import jacquard.normalize as normalize
+import jacquard.filter_hc_somatic as filter_hc_somatic
+import jacquard.merge as merge
+import jacquard.merge2 as merge2
+import jacquard.consensus as consensus
+import jacquard.expand as expand
+import jacquard.utils as utils
+import jacquard.logger as logger
 
 _SUBCOMMANDS = [normalize,
                 tag,
                 filter_hc_somatic,
                 merge,
+                merge2,
                 consensus,
                 expand]
 
@@ -45,8 +45,7 @@ TMP_DIR_NAME = "jacquard_tmp"
 TMP_OUTPUT_PATH = None
 
 def main():
-    
-    #pylint: disable=W0613
+    #pylint: disable=unused-argument
     def handler(signum, frame):
         print("WARNING: Jacquard was interrupted before completing.",
               file=sys.stderr)
@@ -66,7 +65,7 @@ def _version_text():
         format(utils.__version__, caller_version_string)
 
 
-#TODO (cgates): This cannot be the simplest thing that could possibly work
+#TODO: (cgates) This cannot be the simplest thing that could possibly work
 def _validate_temp(tmp_output, original_output_dir, force=0):
     extension = os.path.splitext(os.path.basename(tmp_output))[1]
     if extension:
@@ -104,10 +103,10 @@ def _create_temp_directory(original_output_dir, force=0):
                                   original_output_fname)
     else:
         tmp_output = os.path.join(original_output_dir, TMP_DIR_NAME)
-    
+
     try:
         os.mkdir(original_output_dir)
-    except:
+    except OSError:
         pass
 
     if len(os.listdir(original_output_dir)) != 0:
@@ -139,17 +138,15 @@ def _move_tmp_contents_to_original(tmp_dir, original_output):
 
     os.rmdir(tmp_dir)
 
-# pylint: disable=C0301
 def dispatch(modules, arguments):
-    
+    # pylint: disable=line-too-long
     parser = argparse.ArgumentParser(
         usage="jacquard",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description='''type 'Jacquard -h <subcommand>' for help on a specific subcommand''',
         epilog="authors: Jessica Bene, Ashwini Bhasi, Chris Gates, Kevin Meng, Peter Ulintz; October 2014")
 
-    parser.add_argument(\
-                        "-V",
+    parser.add_argument("-V",
                         "--version",
                         action='version',
                         version=_version_text())
@@ -178,25 +175,30 @@ def dispatch(modules, arguments):
         logger.debug("cwd|{}", os.getcwd())
         logger.debug("command|{}", " ".join(arguments))
 
-#         _validate_input_and_output(args.input, args.output)
-        
         original_output_dir = args.output
         global TMP_OUTPUT_PATH
-        
-        TMP_OUTPUT_PATH = _create_temp_directory(original_output_dir, args.force)
+
+        TMP_OUTPUT_PATH = _create_temp_directory(original_output_dir,
+                                                 args.force)
         args.output = TMP_OUTPUT_PATH
         logger.debug("Writing output to tmp directory [{}]", TMP_OUTPUT_PATH)
 
         module_dispatch[args.subparser_name].execute(args, execution_context)
 
-        logger.debug("Moving files from tmp directory {} to output directory", TMP_OUTPUT_PATH, original_output_dir)
+        logger.debug("Moving files from tmp directory {} to output directory",
+                     TMP_OUTPUT_PATH,
+                     original_output_dir)
         _move_tmp_contents_to_original(TMP_OUTPUT_PATH, original_output_dir)
         logger.debug("Removed tmp directory {}", TMP_OUTPUT_PATH)
 
+        logger.debug("Output saved to [{}]", os.path.abspath(original_output_dir))
         logger.info("Output saved to [{}]", original_output_dir)
-        logger.info("Done")
+        if logger.SHOW_WARNING:
+            logger.info("Done. (See warnings above)")
+        else:
+            logger.info("Done")
 
-    # pylint: disable=W0703
+    #pylint: disable=broad-except
     except Exception as exception:
         logger.error(str(exception))
         logger.error("Jacquard encountered an unanticipated problem. Please review log file and contact your sysadmin or Jacquard support for assistance.")

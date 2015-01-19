@@ -57,48 +57,67 @@ class MockFileReader(object):
 class MockVcfReader(object):
     def __init__(self,
                  input_filepath="vcfName",
-                 metaheaders=["##metaheaders"],
+                 metaheaders=None,
                  column_header="#header",
-                 content=["foo"]):
+                 records=None):
         self.input_filepath = input_filepath
-        self.metaheaders = metaheaders
+        if metaheaders is None:
+            self.metaheaders = ["##metaheaders"]
+        else:
+            self.metaheaders = metaheaders
         self.column_header = column_header
         self.opened = False
         self.closed = False
-        self.content = content
+        if records is None:
+            self.records = [MockVcfRecord()]
+        else:
+            self.records = records
 
     def open(self):
         self.opened = True
 
     def vcf_records(self):
-        for content in self.content:
-            yield MockVcfRecord(content)
+        for record in self.records:
+            yield record
 
     def close(self):
         self.closed = True
 
 class MockVcfRecord(object):
-    def __init__(self, content):
+    def __init__(self, header=None, content=None):
+        if content is None:
+            content = ["CHROM",
+                       "POS",
+                       "ID",
+                       "REF",
+                       "ALT",
+                       "QUAL",
+                       "FILTER",
+                       "tag1=val1;tag3=val3;tag4",
+                       "FOO:BAR",
+                       "42:1"]
         self.chrom, self.pos, self.id, self.ref, self.alt, self.qual, \
             self.filter, self.info, self.format = content[0:9]
-        self.samples = content[9:]
+        self.sample_names = header[9:] if header else []
+        self.sample_values = content[9:]
 
+        self.info_dict = self._init_info_dict()
         tags = self.format.split(":")
-        self.sample_dict = {}
-        for i, sample in enumerate(self.samples):
-            values = sample.split(":")
-            self.sample_dict[i] = OrderedDict(zip(tags, values))
+        self.sample_tag_values = {}
+        for i, sample in enumerate(self.sample_names):
+            values = self.sample_values[i].split(":")
+            self.sample_tag_values[sample] = OrderedDict(zip(tags, values))
 
-    def get_info_dict(self):
+    def _init_info_dict(self):
         info_dict = {}
-
-        for key_value in self.info.split(";"):
-            if "=" in key_value:
-                key, value = key_value.split("=")
-                info_dict[key] = value
-            else:
-                info_dict[key_value] = key_value
-
+        if self.info and self.info != ".":
+            info_list = self.info.split(";")
+            for key_value in info_list:
+                if "=" in key_value:
+                    key, value = key_value.split("=")
+                    info_dict[key] = value
+                else:
+                    info_dict[key_value] = key_value
         return info_dict
 
 class MockFileWriter(object):
@@ -130,7 +149,7 @@ class ExpandTestCase(unittest.TestCase):
                        "INFO", "FORMAT", "SAMPLE_A|NORMAL", "SAMPLE_A|TUMOR"]
         row = ["1", "42", "rs32", "A", "AT", "30", "PASS",
                "SNP;SOMATIC=1", "DP:AF", "50:0.2", "87:0.3"]
-        vcf_record = MockVcfRecord(row)
+        vcf_record = MockVcfRecord(header=column_list, content=row)
 
         actual_dict = expand._create_row_dict(column_list, vcf_record)
 
@@ -388,4 +407,3 @@ class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):
             expected_dir = os.path.join(module_testdir, "benchmark")
 
             self.assertCommand(command, expected_dir)
-

@@ -1,26 +1,159 @@
-# pylint: disable=C0103,C0301,R0903,R0904
-from collections import OrderedDict
-import os
+#pylint: disable=line-too-long, too-many-public-methods, invalid-name
+#pylint: disable=missing-docstring, protected-access, global-statement, too-few-public-methods
 from StringIO import StringIO
+from testfixtures import TempDirectory
+import jacquard.logger as logger
+import jacquard.utils as utils
+import os
 import subprocess
 import sys
-from testfixtures import TempDirectory
-import unittest
+import test.test_case as test_case
 
-from jacquard.utils import validate_directories, write_output, sort_headers, sort_data, change_pos_to_int, combine_format_values
-import jacquard.utils as utils
-import jacquard.logger as logger
 
-# logger.initialize_logger("utils")
 mock_log_called = False
 mock_message = ""
 
+#pylint: disable=unused-argument
 def mock_log(msg, *args):
     global mock_log_called
     mock_log_called = True
-#     print msg.format(*[str(i) for i in args])
-    
-class ValidateDirectoriesTestCase(unittest.TestCase):
+
+class JQExceptionTestCase(test_case.JacquardBaseTestCase):
+    def test_init(self):
+        actual = utils.JQException("msg:{}, {}", "bar", [1, 2, 3])
+        self.assertIsInstance(actual, Exception)
+        self.assertEquals(actual.message, "msg:bar, [1, 2, 3]")
+
+class OrderedSetTestCase(test_case.JacquardBaseTestCase):
+    def test_isOrderedSet(self):
+        actual = utils.OrderedSet(["B", "A", "B"])
+        self.assertEquals(2, len(actual))
+        it = iter(actual)
+        self.assertEquals("B", it.next())
+        self.assertEquals("A", it.next())
+
+    def test_contains(self):
+        actual = utils.OrderedSet(["A", "B"])
+        self.assertIn("A", actual)
+        self.assertIn("B", actual)
+        self.assertNotIn("C", actual)
+
+    def test_add(self):
+        actual = utils.OrderedSet(["B", "A"])
+        actual.add("A")
+        self.assertEquals(2, len(actual))
+        it = iter(actual)
+        self.assertEquals("B", it.next())
+        self.assertEquals("A", it.next())
+
+        actual.add("C")
+        self.assertEquals(3, len(actual))
+        it = iter(actual)
+        self.assertEquals("B", it.next())
+        self.assertEquals("A", it.next())
+        self.assertEquals("C", it.next())
+
+    def test_discard(self):
+        actual = utils.OrderedSet(["B", "A"])
+        actual.discard("B")
+        self.assertEquals(1, len(actual))
+        it = iter(actual)
+        self.assertEquals("A", it.next())
+
+        actual.add("B")
+        self.assertEquals(2, len(actual))
+        it = iter(actual)
+        self.assertEquals("A", it.next())
+        self.assertEquals("B", it.next())
+
+        actual.discard("C")
+        self.assertEquals(2, len(actual))
+
+    def test_reversed(self):
+        actual = utils.OrderedSet(["B", "A"])
+
+        self.assertEquals(2, len(actual))
+        it = reversed(actual)
+        self.assertEquals("A", it.next())
+        self.assertEquals("B", it.next())
+
+    def test_pop_right(self):
+        actual = utils.OrderedSet(["B", "A"])
+
+        self.assertEquals(2, len(actual))
+        self.assertEquals("A", actual.pop())
+        self.assertEquals(1, len(actual))
+        self.assertEquals("B", actual.pop())
+        self.assertEquals(0, len(actual))
+        self.assertRaises(KeyError, actual.pop)
+
+    def test_pop_left(self):
+        actual = utils.OrderedSet(["B", "A"])
+
+        self.assertEquals(2, len(actual))
+        self.assertEquals("B", actual.pop(last=False))
+        self.assertEquals(1, len(actual))
+        self.assertEquals("A", actual.pop(last=False))
+        self.assertEquals(0, len(actual))
+        self.assertRaises(KeyError, actual.pop)
+
+    def test_eq(self):
+        base = utils.OrderedSet(["A", "B"])
+        same = utils.OrderedSet(["A", "B"])
+        equivalentSet = set(["A", "B"])
+        equivalentList = ["A", "B"]
+        differentClass = "foo"
+        differentOrder = utils.OrderedSet(["B", "A"])
+        differentMembers = utils.OrderedSet(["A", "B", "C"])
+
+        self.assertEquals(base, same)
+        self.assertEquals(base, equivalentSet)
+        self.assertEquals(base, equivalentList)
+        self.assertNotEquals(base, differentClass)
+        self.assertNotEquals(base, differentOrder)
+        self.assertNotEquals(base, differentMembers)
+
+    def test_repr(self):
+        actual = utils.OrderedSet([])
+        self.assertRegexpMatches(actual.__repr__(), r"OrderedSet")
+        actual.add("B")
+        actual.add("A")
+        self.assertRegexpMatches(actual.__repr__(), r"['B','A']")
+
+
+class NaturalSortTestCase(test_case.JacquardBaseTestCase):
+    def test_natsort(self):
+        unsorted = ["123a", "1abc", "13d"]
+        expected = ["1abc", "13d", "123a"]
+        actual = utils.NaturalSort(unsorted).sorted
+        self.assertEquals(expected, actual)
+
+    def test_natsort_lowerAndUpperCase(self):
+        unsorted = ["123ABC", "123abc", "1abc", "13d"]
+        expected = ["1abc", "13d", "123ABC", "123abc"]
+        actual = utils.NaturalSort(unsorted).sorted
+        self.assertEquals(expected, actual)
+
+    def test_natsort_baseAlphaSort(self):
+        unsorted = ["A100", "B1", "C10", "D"]
+        expected = ["A100", "B1", "C10", "D"]
+        actual = utils.NaturalSort(unsorted).sorted
+        self.assertEquals(expected, actual)
+
+    def test_natsort_numericOrder(self):
+        unsorted = ["B100", "B1", "B10", "A101"]
+        expected = ["A101", "B1", "B10", "B100"]
+        actual = utils.NaturalSort(unsorted).sorted
+        self.assertEquals(expected, actual)
+
+    def test_natsort_breaksTiesByAlpha(self):
+        unsorted = ["X100B", "X100C", "X100A", "X10"]
+        expected = ["X10", "X100A", "X100B", "X100C"]
+        actual = utils.NaturalSort(unsorted).sorted
+        self.assertEquals(expected, actual)
+
+
+class ValidateDirectoriesTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         self.original_info = logger.info
         self.original_error = logger.error
@@ -35,32 +168,31 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
         self.output.close()
         sys.stderr = self.saved_stderr
         self._reset_mock_logger()
-        
-    def _change_mock_logger(self):
+
+    @staticmethod
+    def _change_mock_logger():
         global mock_log_called
         mock_log_called = False
-        global mock_log
         logger.info = mock_log
         logger.error = mock_log
         logger.warning = mock_log
         logger.debug = mock_log
-        
+
     def _reset_mock_logger(self):
         logger.info = self.original_info
         logger.error = self.original_error
         logger.warning = self.original_warning
         logger.debug = self.original_debug
-        
+
     def test_validateDirectories_inputDirectoryDoesntExist(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/reference_files/tag_varscan_test/foo"
-        output_dir = script_dir + "/reference_files/tag_varscan_test/output"
+        input_dir = script_dir + "/functional_tests/utils_test/tag_varscan_test/foo"
+        output_dir = script_dir + "/functional_tests/utils_test/tag_varscan_test/output"
 
         with self.assertRaises(SystemExit) as cm:
-            validate_directories(input_dir, output_dir)
+            utils.validate_directories(input_dir, output_dir)
         self.assertEqual(cm.exception.code, 1)
-        
-        global mock_log_called
+
         self.assertTrue(mock_log_called)
 #         self.assertRegexpMatches(self.output.getvalue(),
 #                                  r"Specified input directory \[.*\] does not exist.")
@@ -75,92 +207,13 @@ class ValidateDirectoriesTestCase(unittest.TestCase):
             try:
                 make_unwritable_dir(unwriteable_dir)
                 with self.assertRaises(SystemExit) as cm:
-                    validate_directories(input_dir.path, desired_dir)
+                    utils.validate_directories(input_dir.path, desired_dir)
 
             finally:
                 cleanup_unwriteable_dir(unwriteable_dir)
 
             self.assertEqual(cm.exception.code, 1)
-            global mock_log_called
             self.assertTrue(mock_log_called)
-#             self.assertRegexpMatches(self.output.getvalue(),
-#                                      r"Output directory \[.*\] could not be created. Check parameters and try again")
-
-class WriteOutputTestCase(unittest.TestCase):
-    def test_writeOutput(self):
-        mock_writer = MockWriter()
-        headers = ["#foo", "#bar"]
-        actual_sorted_variants = ["123", "456"]
-
-        write_output(mock_writer, headers, actual_sorted_variants)
-        actualLines = mock_writer.lines()
-
-        self.assertEqual("#foo", actualLines[0])
-        self.assertEqual("#bar", actualLines[1])
-        self.assertEqual("123", actualLines[2])
-        self.assertEqual("456", actualLines[3])
-
-class CombineFormatValuesTestCase(unittest.TestCase):
-    def test_combineFormatValues(self):
-        format_tags = "DP:AF:FOO"
-        sample = "23:0.32:1"
-        actual_dict = combine_format_values(format_tags, sample)
-        expected_dict = OrderedDict([("DP", "23"), ("AF", "0.32"), ("FOO", "1")])
-        self.assertEquals(expected_dict, actual_dict)
-
-
-class SortTestCase(unittest.TestCase):
-    def test_sort_sortHeaders(self):
-        headers = ["##foo", "##bar", "#CHROM", "##baz"]
-        sorted_headers = sort_headers(headers)
-        expected_sorted_headers = ["##foo", "##bar", "##baz", "#CHROM"]
-        self.assertEqual(expected_sorted_headers, sorted_headers)
-
-    def test_sort_changePosToInt(self):
-        split_line = ["1", "2352", "A", "G", "foo", "DP", "234"]
-        line = change_pos_to_int(split_line)
-        self.assertEqual([1, 2352, "A", "G", "foo", "DP", 234], line)
-
-    def test_sort_sortData(self):
-        actual_sorted_variants = ["chr1\t2352\tA\tG\tfoo\tDP\t234",
-                                  "chr1\t235234\tA\tG\tfoo\tDP\t234",
-                                  "chr2\t2352\tA\tG\tfoo\tDP\t234",
-                                  "chr1\t2700\tA\tG\tfoo\tDP\t345",
-                                  "chr10\t2352\tA\tG\tfoo\tDP\t234",
-                                  "chr1\t2\tA\tG\tfoo\tDP\t234"]
-        sorted_variants = sort_data(actual_sorted_variants)
-        expected_sorted_variants = ["chr1\t2\tA\tG\tfoo\tDP\t234",
-                                    "chr1\t2352\tA\tG\tfoo\tDP\t234",
-                                    "chr1\t2700\tA\tG\tfoo\tDP\t345",
-                                    "chr1\t235234\tA\tG\tfoo\tDP\t234",
-                                    "chr2\t2352\tA\tG\tfoo\tDP\t234",
-                                    "chr10\t2352\tA\tG\tfoo\tDP\t234"]
-
-        self.assertEqual(expected_sorted_variants, sorted_variants)
-
-    def test_sort_sortData_noCHR(self):
-        input_variants = ["1\t2352\tA\tG\tfoo\tDP\t234",
-                          "1\t235234\tA\tG\tfoo\tDP\t234",
-                          "2\t2352\tA\tG\tfoo\tDP\t234",
-                          "1\t2700\tA\tG\tfoo\tDP\t345",
-                          "10\t2352\tA\tG\tfoo\tDP\t234",
-                          "1\t2\tA\tG\tfoo\tDP\t234"]
-        actual_sorted_variants = sort_data(input_variants)
-        expected_variants = ["chr1\t2\tA\tG\tfoo\tDP\t234",
-                             "chr1\t2352\tA\tG\tfoo\tDP\t234",
-                             "chr1\t2700\tA\tG\tfoo\tDP\t345",
-                             "chr1\t235234\tA\tG\tfoo\tDP\t234",
-                             "chr2\t2352\tA\tG\tfoo\tDP\t234",
-                             "chr10\t2352\tA\tG\tfoo\tDP\t234"]
-        self.assertEqual(expected_variants, actual_sorted_variants)
-
-    def test_sort_sortDataSamePos(self):
-        all_variants = ["chr1\t2352\tA\tG\tfoo\tDP\t234", "1\t2352\tA\tGT\tfoo\tDP\t234"]
-        actual_sorted_variants = sort_data(all_variants)
-
-        expected_variants = ['chr1\t2352\tA\tG\tfoo\tDP\t234', 'chr1\t2352\tA\tGT\tfoo\tDP\t234']
-        self.assertEqual(expected_variants, actual_sorted_variants)
-
 
 def is_windows_os():
     return sys.platform.lower().startswith("win")

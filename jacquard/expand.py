@@ -1,5 +1,5 @@
-# pylint: disable=
-from __future__ import absolute_import
+#pylint: disable=unused-argument, too-many-locals, fixme
+from __future__ import print_function, absolute_import
 import glob
 import os
 import re
@@ -24,7 +24,7 @@ def _read_col_spec(col_spec):
     columns = []
 
     for line in spec_file:
-        columns.append(line.strip("\n"))
+        columns.append(line.rstrip())
 
     spec_file.close()
 
@@ -81,12 +81,12 @@ def _create_row_dict(column_list, vcf_record):
                 "QUAL" : vcf_record.qual,
                 "FILTER" : vcf_record.filter}
 
-    for i, sample_name in enumerate(column_list[9:]):
-        format_key_values = vcf_record.sample_dict[i]
+    for sample_name in column_list[9:]:
+        format_key_values = vcf_record.sample_tag_values[sample_name]
         for format_key, format_value in format_key_values.items():
             row_dict[format_key + "|" + sample_name] = format_value
 
-    row_dict = dict(row_dict.items() + vcf_record.get_info_dict().items())
+    row_dict = dict(row_dict.items() + vcf_record.info_dict.items())
 
     return row_dict
 
@@ -118,16 +118,15 @@ def _create_actual_column_list(column_spec_list,
                                 column_spec_filename)
 
 def _create_potential_column_list(vcf_reader):
-    column_headers = vcf_reader.get_col_header_list()
     info_dict = vcf_reader.info_metaheaders
     format_dict = vcf_reader.format_metaheaders
 
     format_sample_names = []
-    for sample_name in column_headers[9:]:
+    for sample_name in vcf_reader.split_column_header[9:]:
         for format_tag in format_dict.keys():
             format_sample_names.append(format_tag + "|" + sample_name)
 
-    static_column_headers = column_headers[0:10]
+    static_column_headers = vcf_reader.split_column_header[0:10]
     processed_column_headers = static_column_headers + format_sample_names
 
     return processed_column_headers + info_dict.keys() + format_dict.keys()
@@ -176,8 +175,8 @@ def execute(args, execution_context):
 
         vcf_reader.open()
         for vcf_record in vcf_reader.vcf_records():
-            original_col_header = vcf_reader.get_col_header_list()
-            row_dict = _create_row_dict(original_col_header, vcf_record)
+            row_dict = _create_row_dict(vcf_reader.split_column_header,
+                                        vcf_record)
 
             new_line = []
             for col in actual_columns:
@@ -191,4 +190,3 @@ def execute(args, execution_context):
         vcf_reader.close()
 
     logger.info("Wrote [{}] VCF files to [{}]", len(input_files), output_path)
-

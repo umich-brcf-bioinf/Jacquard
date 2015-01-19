@@ -1,15 +1,17 @@
-from __future__ import print_function
+#pylint: disable=invalid-name,too-few-public-methods
+from __future__ import absolute_import, print_function
+from os import listdir
+import collections
+import jacquard.logger as logger
+import os
+import copy
+import re
+#TODO cgates: This should be in jacquard.__init__?
 __version__ = 0.21
 
-from collections import OrderedDict
-from operator import itemgetter
-import os
-from os import listdir
-import sys
-import logger
 
+#TODO: cgates: These should be in the callers or the caller factory, but not here.
 global caller_versions
-#TODO cgates: These should be in the callers or the caller factory, but not here.
 caller_versions = {"VarScan":"v2.3", "MuTect": "v1.1.4", "Strelka": "v2.0.15"}
 
 global jq_somatic_tag
@@ -21,86 +23,111 @@ jq_dp_tag = "DP"
 
 
 class JQException(Exception):
+    """Base class for exceptions in this module."""
     def __init__(self, msg, *args):
+        #pylint: disable=star-args
         error_msg = msg.format(*[str(i) for i in args])
         super(JQException, self).__init__(error_msg)
-        
-    """Base class for exceptions in this module."""
-    pass
 
-def validate_directories(input_dir, output_dir):    
+#TODO: (cgates): Suspect this should raise exception instead of logging and exiting?
+def validate_directories(input_dir, output_dir):
     if not os.path.isdir(input_dir):
         logger.error("Specified input directory [{}] does not exist.",
                      input_dir)
         exit(1)
     try:
         listdir(input_dir)
-    except:
+    except OSError:
         logger.error("Specified input directory [{}] cannot be read. "+
-            "Check permissions and try again.",input_dir)
+                     "Check permissions and try again.", input_dir)
         exit(1)
 
     if not os.path.isdir(output_dir):
         try:
             os.makedirs(output_dir)
-        except:
+        except OSError:
             logger.error("Output directory [{}] could not be created. "+
-                "Check parameters and try again", output_dir)
+                         "Check parameters and try again", output_dir)
             exit(1)
 
-def write_output(writer, headers, actual_sorted_variants):
-    for line in headers:
-        writer.write(line)
-    for line in actual_sorted_variants:
-        writer.write(line)
+class OrderedSet(collections.MutableSet):
+    def __init__(self, iterable=None):
+        self.end = end = []
+        end += [None, end, end]         # sentinel node for doubly linked list
+        self.map = {}                   # key --> [key, prev, next]
+        if iterable is not None:
+            self |= iterable
 
-def sort_headers(headers):
-    meta_headers = []
-    field_header = ""
-    for header in headers:
-        if header.startswith("##"):
-            header = header.replace("\t", "")
-            meta_headers.append(header)
-        else:
-            field_header = header
+    def __len__(self):
+        return len(self.map)
 
-    meta_headers.append(field_header)
+    def __contains__(self, key):
+        return key in self.map
 
-    return meta_headers
+    def add(self, key):
+        if key not in self.map:
+            end = self.end
+            curr = end[1]
+            curr[2] = end[1] = self.map[key] = [key, curr, end]
 
-def sort_data(all_variants):
-    new_variants = []
-    for variant in all_variants:
-        split_variant = variant.split("\t")
-        new_line = change_pos_to_int(split_variant)
-        new_variants.append(new_line)
+    def discard(self, key):
+        if key in self.map:
+            key, prev, nxt = self.map.pop(key)
+            prev[2] = nxt
+            nxt[1] = prev
 
-    #sort by CHROM, POS, REF, ALT
-    sorted_variants = sorted(new_variants, key=itemgetter(0,1,3,4))
+    def __iter__(self):
+        end = self.end
+        curr = end[2]
+        while curr is not end:
+            yield curr[0]
+            curr = curr[2]
 
-    actual_sorted_variants = []
-    for variant in sorted_variants:
-        new_field = [str(field) for field in variant]
-        if "chr" not in new_field[0]:
-            new_field[0] = "chr" + new_field[0]
-        actual_sorted_variants.append("\t".join(new_field))
+    def __reversed__(self):
+        end = self.end
+        curr = end[1]
+        while curr is not end:
+            yield curr[0]
+            curr = curr[1]
 
-    return actual_sorted_variants
+    #pylint: disable=arguments-differ
+    def pop(self, last=True):
+        if not self:
+            raise KeyError('set is empty')
+        key = self.end[1][0] if last else self.end[2][0]
+        self.discard(key)
+        return key
 
-def change_pos_to_int(split_line):
-    new_line = []
-    split_line[0] = split_line[0].strip("chr")
-    for field in split_line:
+    def __repr__(self):
+        if not self:
+            return '%s()' % (self.__class__.__name__,)
+        return '%s(%r)' % (self.__class__.__name__, list(self))
+
+    def __eq__(self, other):
+        if isinstance(other, OrderedSet):
+            return len(self) == len(other) and list(self) == list(other)
+        return set(self) == set(other)
+
+class NaturalSort(object):
+    def __init__(self, seq):
+        self.seq = seq
+        self.temp = copy.copy(self.seq)
+        self._natsort()
+        self.sorted = self.temp
+
+    def _natsort(self):
+        self.temp.sort(self._natcmp)
+
+    def _natcmp(self, a, b):
+        return cmp(self._natsort_key(a),self._natsort_key(b))
+
+    def _natsort_key(self, s):
+        "Used internally to get a tuple by which s is sorted."
+        return map(self._try_int, re.findall(r'(\d+|\D+)', s))
+
+    @staticmethod
+    def _try_int(s):
         try:
-            new_field = int(field)
-            new_line.append(new_field)
-        except:
-            new_line.append(field)
-    return new_line
-
-def combine_format_values(format, sample):
-    return OrderedDict(zip(format.split(":"), sample.strip("\n").split(":")))
-
-def combine_format_dict(format, sample):
-    return OrderedDict(zip(format, sample))
-
+            return int(s)
+        except ValueError:
+            return s

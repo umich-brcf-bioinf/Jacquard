@@ -1,5 +1,4 @@
 #pylint: disable=too-many-public-methods, invalid-name, no-self-use
-
 import os
 import shutil
 from StringIO import StringIO
