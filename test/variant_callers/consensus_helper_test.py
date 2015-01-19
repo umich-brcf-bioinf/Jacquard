@@ -1,4 +1,6 @@
 # pylint: disable=C0103,C0301,R0904,C0111,W0212
+from __future__ import print_function, absolute_import
+
 from collections import OrderedDict
 import os
 import unittest
@@ -6,6 +8,8 @@ import unittest
 import jacquard.utils as utils
 from jacquard.variant_callers import consensus_helper
 from jacquard.vcf import VcfRecord
+import test.test_case as test_case
+
 
 # pylint: disable=too-few-public-methods,too-many-instance-attributes
 class MockVcfRecord(object):
@@ -194,8 +198,8 @@ class SomaticTagTestCase(unittest.TestCase):
     def test_metaheader(self):
         split_meta_header = consensus_helper._SomaticTag().metaheader.split("\n")
         self.assertEqual('##FORMAT=<ID={0}SOM_COUNT,Number=1,Type=Integer,' \
-                      'Description="Count of recognized variant callers,' \
-                      'which reported confident somatic call for this'\
+                      'Description="Count of recognized variant callers, ' \
+                      'which reported confident somatic call for this '\
                       'sample-position.",Source="Jacquard",Version="{1}">'\
                       .format(consensus_helper.JQ_CONSENSUS_TAG, \
                               utils.__version__), split_meta_header[0])
@@ -224,10 +228,10 @@ class SomaticTagTestCase(unittest.TestCase):
         tag.insert_consensus(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
-class ConsensusHelperTestCase(unittest.TestCase):
+class ConsensusHelperTestCase(test_case.JacquardBaseTestCase):
     def test_add_tags(self):
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|0:0.1:0.2|0.2:0.3:0.4\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE:{0}DP_AVERAGE:{0}DP_RANGE|0:0.1:0.2:0.1:0.2:.:.|0.2:0.3:0.4:0.3:0.2:.:.\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|',"\t")
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|0:0.1:0.2|0.2:0.3:0.4\n")
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE:{0}DP_AVERAGE:{0}DP_RANGE:{0}SOM_COUNT|0:0.1:0.2:0.1:0.2:.:.:.|0.2:0.3:0.4:0.3:0.2:.:.:.\n".format(consensus_helper.JQ_CONSENSUS_TAG))
         vcf_record = VcfRecord.parse_record(line, ["SA","SB"])
         cons_help = consensus_helper.ConsensusHelper()
         actual = cons_help.add_tags(vcf_record)
@@ -249,7 +253,7 @@ class ConsensusHelperTestCase(unittest.TestCase):
         first_meta_header = split_actual[0]
 
         self.assertEqual(expected, first_meta_header)
-        self.assertEqual(2, len(actual))
+        self.assertEqual(3, len(actual))
         self.assertEqual(3, len(split_actual))
 
     def test_calculate_average_float(self):
