@@ -135,24 +135,29 @@ class _AlleleFreqTag(object):
 
     @staticmethod
     def _get_metaheader():
-        af_average = '##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,' \
-                      'Description="Average allele frequency across ' \
-                      'recognized variant callers that reported ' \
-                      'frequency for this position [average(JQ_*_AF)].",' \
-                      'Source="Jacquard",Version="{1}">'\
-                      .format(JQ_CONSENSUS_TAG, utils.__version__)
-        af_range = '##FORMAT=<ID={0}AF_RANGE, Number=1,Type=Float,' \
-                   'Description="Max(allele frequency) - min (allele '\
-                   'frequency) across recognized callers.",Source="Jacquard",'\
-                   'Version="{1}>">'\
-                   .format(JQ_CONSENSUS_TAG, utils.__version__)
-        af_zscore = '##FORMAT=<ID={0}AF_ZSCORE,Number=1,Type=Float,'\
-                    'Description="Jacquard measure of concordance of reported '\
-                    'allele frequencies across callers. [(this AF range - '\
-                    'mean AF range)/standard dev(all AF ranges)]. If '\
-                    'consensus value from <2 values will be [.]",Source="'\
-                    'Jacquard",Version="{1}>"'\
-                    .format(JQ_CONSENSUS_TAG, utils.__version__)
+        af_average = ('##FORMAT=<ID={0}AF_AVERAGE,'
+                      'Number=1,'
+                      'Type=Float,'
+                      ##pylint: disable=line-too-long
+                      'Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].",'
+                      'Source="Jacquard",'
+                      'Version="{1}">').format(JQ_CONSENSUS_TAG,
+                                               utils.__version__)
+        af_range = ('##FORMAT=<ID={0}AF_RANGE,'
+                    'Number=1,'
+                    'Type=Float,'
+                    ##pylint: disable=line-too-long
+                    'Description="Max(allele frequency) - min (allele frequency) across recognized callers.",'
+                    'Source="Jacquard",'
+                    'Version="{1}>">').format(JQ_CONSENSUS_TAG,
+                                              utils.__version__)
+        af_zscore = ('##FORMAT=<ID={0}AF_ZSCORE,'
+                     'Number=1,Type=Float,'
+                     ##pylint: disable=line-too-long
+                     'Description="Jacquard measure of concordance of reported allele frequencies across callers. [(this AF range - mean AF range)/standard dev(all AF ranges)]. If consensus value from <2 values will be [.]",'
+                     'Source="Jacquard",'
+                     'Version="{1}>"').format(JQ_CONSENSUS_TAG,
+                                              utils.__version__)
         return "\n".join([af_average, af_range, af_zscore])
 
     @staticmethod
@@ -194,25 +199,30 @@ class _DepthTag(object):
 
     @staticmethod
     def _get_metaheader():
-        dp_average = '##FORMAT=<ID={0}DP_AVERAGE,Number=1,Type=Float,' \
-                      'Description="Average allele frequency across ' \
-                      'recognized variant callers that reported ' \
-                      'frequency for this position; rounded to integer ' \
-                      '[round(average(JQ_*_DP))].",' \
-                      'Source="Jacquard",Version="{1}">'\
-                      .format(JQ_CONSENSUS_TAG, utils.__version__)
-        dp_range = '##FORMAT=<ID={0}DP_RANGE, Number=1,Type=Float,' \
-                   'Description="Max(depth) - min (depth) '\
-                   'across recognized callers.",Source="Jacquard",'\
-                   'Version="{1}>">'\
-                   .format(JQ_CONSENSUS_TAG, utils.__version__)
-        dp_zscore = '##FORMAT=<ID={0}DP_ZSCORE,Number=1,Type=Float,'\
-                    'Description="Jacquard measure of concordance of reported '\
-                    'depths across callers. [(this DP range - '\
-                    'mean DP range)/standard dev(all DP ranges)]. If '\
-                    'consensus value from <2 values will be [.]",Source="'\
-                    'Jacquard",Version="{1}>"'\
-                    .format(JQ_CONSENSUS_TAG, utils.__version__)
+        dp_average = ('##FORMAT=<ID={0}DP_AVERAGE,'
+                      'Number=1,'
+                      'Type=Float,'
+                      ##pylint: disable=line-too-long
+                      'Description="Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].",'
+                      'Source="Jacquard",'
+                      'Version="{1}">').format(JQ_CONSENSUS_TAG,
+                                               utils.__version__)
+        dp_range = ('##FORMAT=<ID={0}DP_RANGE,'
+                    'Number=1,'
+                    'Type=Float,'
+                    ##pylint: disable=line-too-long
+                    'Description="Max(depth) - min (depth) across recognized callers.",'
+                    'Source="Jacquard",'
+                    'Version="{1}>">').format(JQ_CONSENSUS_TAG,
+                                              utils.__version__)
+        dp_zscore = ('##FORMAT=<ID={0}DP_ZSCORE,'
+                     'Number=1,'
+                     'Type=Float,'
+                     ##pylint: disable=line-too-long
+                     'Description="Jacquard measure of concordance of reported depths across callers. [(this DP range - mean DP range)/standard dev(all DP ranges)]. If consensus value from <2 values will be [.]",'
+                     'Source="Jacquard",'
+                     'Version="{1}>"').format(JQ_CONSENSUS_TAG,
+                                              utils.__version__)
         return "\n".join([dp_average, dp_range, dp_zscore])
 
     @staticmethod
@@ -259,10 +269,11 @@ class _SomaticTag(object):
         som_count = ('##FORMAT=<ID={0}SOM_COUNT,'
                      'Number=1,'
                      'Type=Integer,'
-                     'Description="Count of recognized variant callers, which reported confident somatic call for this sample-position.",'
+                     ##pylint: disable=line-too-long
+                     'Description="Count of recognized variant callers that reported confident somatic call for this sample-position.",'
                      'Source="Jacquard",'
-                     'Version="{1}">'
-                      ).format(JQ_CONSENSUS_TAG, utils.__version__)
+                     'Version="{1}">').format(JQ_CONSENSUS_TAG,
+                                              utils.__version__)
         return som_count
 
     @staticmethod
