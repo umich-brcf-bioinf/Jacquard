@@ -156,7 +156,7 @@ class _AlleleFreqTag(object):
                      ##pylint: disable=line-too-long
                      'Description="Jacquard measure of concordance of reported allele frequencies across callers. [(this AF range - mean AF range)/standard dev(all AF ranges)]. If consensus value from <2 values will be [.]",'
                      'Source="Jacquard",'
-                     'Version="{1}>"').format(JQ_CONSENSUS_TAG,
+                     'Version="{1}">').format(JQ_CONSENSUS_TAG,
                                               utils.__version__)
         return "\n".join([af_average, af_range, af_zscore])
 
@@ -221,7 +221,7 @@ class _DepthTag(object):
                      ##pylint: disable=line-too-long
                      'Description="Jacquard measure of concordance of reported depths across callers. [(this DP range - mean DP range)/standard dev(all DP ranges)]. If consensus value from <2 values will be [.]",'
                      'Source="Jacquard",'
-                     'Version="{1}>"').format(JQ_CONSENSUS_TAG,
+                     'Version="{1}">').format(JQ_CONSENSUS_TAG,
                                               utils.__version__)
         return "\n".join([dp_average, dp_range, dp_zscore])
 

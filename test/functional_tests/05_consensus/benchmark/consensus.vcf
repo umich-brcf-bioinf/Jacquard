@@ -13,10 +13,10 @@
 ##jacquard.cwd=C:\\Users\\jebene\\git
 ##FORMAT=<ID=JQ_CONS_AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].",Source="Jacquard",Version="0.21">
 ##FORMAT=<ID=JQ_CONS_AF_RANGE,Number=1,Type=Float,Description="Max(allele frequency) - min (allele frequency) across recognized callers.",Source="Jacquard",Version="0.21>">
-##FORMAT=<ID=JQ_CONS_AF_ZSCORE,Number=1,Type=Float,Description="Jacquard measure of concordance of reported allele frequencies across callers. [(this AF range - mean AF range)/standard dev(all AF ranges)]. If consensus value from <2 values will be [.]",Source="Jacquard",Version="0.21>"
+##FORMAT=<ID=JQ_CONS_AF_ZSCORE,Number=1,Type=Float,Description="Jacquard measure of concordance of reported allele frequencies across callers. [(this AF range - mean AF range)/standard dev(all AF ranges)]. If consensus value from <2 values will be [.]",Source="Jacquard",Version="0.21">
 ##FORMAT=<ID=JQ_CONS_DP_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].",Source="Jacquard",Version="0.21">
 ##FORMAT=<ID=JQ_CONS_DP_RANGE,Number=1,Type=Float,Description="Max(depth) - min (depth) across recognized callers.",Source="Jacquard",Version="0.21>">
-##FORMAT=<ID=JQ_CONS_DP_ZSCORE,Number=1,Type=Float,Description="Jacquard measure of concordance of reported depths across callers. [(this DP range - mean DP range)/standard dev(all DP ranges)]. If consensus value from <2 values will be [.]",Source="Jacquard",Version="0.21>"
+##FORMAT=<ID=JQ_CONS_DP_ZSCORE,Number=1,Type=Float,Description="Jacquard measure of concordance of reported depths across callers. [(this DP range - mean DP range)/standard dev(all DP ranges)]. If consensus value from <2 values will be [.]",Source="Jacquard",Version="0.21">
 ##FORMAT=<ID=JQ_CONS_SOM_COUNT,Number=1,Type=Integer,Description="Count of recognized variant callers that reported confident somatic call for this sample-position.",Source="Jacquard",Version="0.21">
 ##jacquard.consensus.JQ_CONS_SOM_RANGE.mean_SOM_range=0.0
 ##jacquard.consensus.JQ_CONS_SOM_ZSCORE.std_SOM_range=0.0
