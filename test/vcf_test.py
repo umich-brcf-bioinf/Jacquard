@@ -10,7 +10,6 @@ import sys
 import test.test_case as test_case
 import unittest
 
-
 class MockFileReader(object):
     def __init__(self, input_filepath="/foo/mockFileReader.txt", content=None):
         self.input_filepath = input_filepath
@@ -33,7 +32,7 @@ class MockFileReader(object):
     def close(self):
         self.close_was_called = True
 
-#TODO (cgates): Fix tests to that so that they do not rely on parse_record and asText.
+#TODO: (cgates) Fix tests to that so that they do not rely on parse_record and asText.
 class VcfRecordTestCase(test_case.JacquardBaseTestCase):
     def test_parse_record(self):
         sample_names = ["SampleA", "SampleB"]
@@ -167,10 +166,6 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
         record = VcfRecord.parse_record(input_line, sample_names)
         self.assertRaises(KeyError, record.add_sample_tag_value, "F1", {"SampleA":0.6, "SampleB":0.6})
-
-    def test_get_info_dict(self):
-        vcf_record = VcfRecord("chr1", "42", "A", "C", info = "k1=v1;k2=v2")
-        self.assertEquals({"k1": "v1", "k2": "v2"}, vcf_record.info_dict)
 
     def test_get_info_dict_empty(self):
         vcf_record = VcfRecord("chr1", "42", "A", "C", info = "")
@@ -467,6 +462,34 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
         mock_reader = MockFileReader("my_dir/my_file.txt", ["#columnHeader\n"])
         self.assertRaises(utils.JQException, VcfReader, mock_reader)
 
+    def test_get_format_tag_list(self):
+        file_contents = ['##FORMAT=<ID=GT,Number=1>\n',
+                         '##FORMAT=<ID=GQ,Number=1,Description="bar">\n',
+                         '#columnHeader\n',
+                         'record1\n',
+                         'record2']
+        mock_file_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+
+        vcf_reader = VcfReader(mock_file_reader)
+        actual_format_set = vcf_reader.format_metaheaders
+        expected_format_set = ["GT", "GQ"]
+
+        self.assertEquals(expected_format_set, actual_format_set.keys())
+
+    def test_get_info_field_list(self):
+        file_contents = ['##INFO=<ID=AF,Number=1>\n',
+                         '##FORMAT=<ID=GQ,Number=1,Description="bar">\n',
+                         '##INFO=<ID=AA,Number=1>\n',
+                         '#columnHeader\n',
+                         'record1\n',
+                         'record2']
+        mock_file_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+
+        vcf_reader = VcfReader(mock_file_reader)
+        actual_format_set = vcf_reader.info_metaheaders
+        expected_format_set = ["AA", "AF"]
+
+        self.assertEquals(expected_format_set, actual_format_set.keys())
 
 class VcfWriterTestCase(unittest.TestCase):
     def test_write(self):

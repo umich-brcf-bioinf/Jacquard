@@ -246,8 +246,8 @@ class _DepthTag(object):
         vcf_record.add_sample_tag_value(JQ_CONSENSUS_TAG + "DP_ZSCORE",
                                         zscore_dict)
 
-#pylint: disable=too-few-public-methods
 class _SomaticTag(object):
+    #pylint: disable=too-few-public-methods
     def __init__(self):
         self.metaheader = self._get_metaheader()
         self.all_ranges = []
@@ -255,11 +255,14 @@ class _SomaticTag(object):
 
     @staticmethod
     def _get_metaheader():
-        som_count = '##FORMAT=<ID={0}SOM_COUNT,Number=1,Type=Integer,' \
-                      'Description="Count of recognized variant callers,' \
-                      'which reported confident somatic call for this'\
-                      'sample-position.",Source="Jacquard",Version="{1}">'\
-                      .format(JQ_CONSENSUS_TAG, utils.__version__)
+        #pylint: disable=line-too-long
+        som_count = ('##FORMAT=<ID={0}SOM_COUNT,'
+                     'Number=1,'
+                     'Type=Integer,'
+                     'Description="Count of recognized variant callers, which reported confident somatic call for this sample-position.",'
+                     'Source="Jacquard",'
+                     'Version="{1}">'
+                      ).format(JQ_CONSENSUS_TAG, utils.__version__)
         return som_count
 
     @staticmethod
@@ -278,9 +281,12 @@ class _SomaticTag(object):
         vcf_record.add_sample_tag_value(JQ_CONSENSUS_TAG + "SOM_COUNT",
                                         somatic_count)
 
+    def insert_zscore(self, vcf_record, pop_mean_range, pop_std_range):
+        pass
+
 class ConsensusHelper(object):
     def __init__(self):
-        self.tags = [_AlleleFreqTag(), _DepthTag()]
+        self.tags = [_AlleleFreqTag(), _DepthTag(), _SomaticTag()]
         self.ranges = {}
 
     def add_tags(self, vcf_record):

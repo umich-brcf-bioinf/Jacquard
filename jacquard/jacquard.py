@@ -68,7 +68,7 @@ def _version_text():
         format(utils.__version__, caller_version_string)
 
 
-#TODO (cgates): This cannot be the simplest thing that could possibly work
+#TODO: (cgates) This cannot be the simplest thing that could possibly work
 def _validate_temp(tmp_output, original_output_dir, force=0):
     extension = os.path.splitext(os.path.basename(tmp_output))[1]
     if extension:
