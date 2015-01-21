@@ -7,7 +7,6 @@ from collections import OrderedDict
 import os
 from testfixtures import TempDirectory
 import unittest
-import re
 
 import jacquard.utils as utils
 import jacquard.logger as logger
@@ -56,7 +55,9 @@ class MockFileReader(object):
     def close(self):
         self.close_was_called = True
 
+
 class MockVcfReader(object):
+    #pylint: disable=too-many-branches, too-many-arguments
     def __init__(self,
                  input_filepath="vcfName",
                  metaheaders=None,
@@ -215,6 +216,17 @@ class ExpandTestCase(unittest.TestCase):
                                 "POS"]
 
         self.assertEquals(expected_column_list, actual_column_list)
+
+    def test_create_actual_column_list_regexImplictlyAnchored(self):
+        potential_col_list = ["FOO", "FOO_1", "FOO_2", "BAR", "BAR_FOO"]
+        col_spec = ["FOO"]
+        actual_column_list = expand._create_actual_column_list(col_spec,
+                                                               potential_col_list,
+                                                               "col_spec.txt")
+        expected_column_list = ["FOO"]
+
+        self.assertEquals(expected_column_list, actual_column_list)
+
 
     def test_create_actual_column_list_duplicateRegexMatchDoesNotDuplicateColumns(self):
         potential_col_list = ["CHROM",
