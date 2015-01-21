@@ -278,10 +278,12 @@ class ExpandTestCase(unittest.TestCase):
                                          "GQ":'##FORMAT=<ID=GQ,Number=1,Description="bar">'},
                                         sample_names = ["sampleA","sampleB"],
                                         split_column_header = ["chrom","pos",
-                                                               "id","ref","alt"])
+                                                               "id","ref","alt",
+                                                               "qual","filter","info",
+                                                               "format","sampleA","sampleB"])
 
         actual_col_list = expand._create_potential_column_list(mock_vcf_reader)
-        expected_col_list = ["chrom", "pos", "id", "ref", "alt",
+        expected_col_list = ["chrom", "pos", "id", "ref", "alt", "qual","filter","info",
                              "AA", "AF",
                              "GQ|sampleA", "GQ|sampleB",
                              "GT|sampleA", "GT|sampleB"]

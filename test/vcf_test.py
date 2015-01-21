@@ -32,7 +32,7 @@ class MockFileReader(object):
     def close(self):
         self.close_was_called = True
 
-#TODO (cgates): Fix tests to that so that they do not rely on parse_record and asText.
+#TODO: (cgates) Fix tests to that so that they do not rely on parse_record and asText.
 class VcfRecordTestCase(test_case.JacquardBaseTestCase):
     def test_parse_record(self):
         sample_names = ["SampleA", "SampleB"]

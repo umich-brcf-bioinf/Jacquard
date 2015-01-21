@@ -9,7 +9,6 @@ import jacquard.vcf as vcf
 import os
 import shutil
 
-
 #TODO: (cgates): this code is not referenced anywhere; it will be eliminated when normalize is rewritten
 def _validate_single_caller(filepaths, get_caller):
     callers = set()

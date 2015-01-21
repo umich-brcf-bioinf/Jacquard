@@ -544,14 +544,15 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEquals(["JQ1", "JQ2"], format_tags)
 
-    def test_build_format_tags_to_keep_multipleReaders(self):
+    def test_build_format_tags_to_keep_uniqueSetAcrossMultipleReaders(self):
         reader1 = MockVcfReader(metaheaders=['##FORMAT=<ID=JQ1>'])
-        reader2 = MockVcfReader(metaheaders=['##FORMAT=<ID=JQ2>'])
+        reader2 = MockVcfReader(metaheaders=['##FORMAT=<ID=JQ1>', '##FORMAT=<ID=JQ2>'])
         reader3 = MockVcfReader(metaheaders=['##INFO=<ID=JQ3>'])
 
         format_tags = merge2._build_format_tags(["JQ[123]"], [reader1, reader2, reader3])
 
         self.assertEquals(["JQ1", "JQ2"], format_tags)
+
 
     def test_build_contigs(self):
         records = [VcfRecord("1", "42", "A", "C"),

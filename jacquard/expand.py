@@ -1,4 +1,4 @@
-#pylint: disable=unused-argument, too-many-locals, fixme
+#pylint: disable=unused-argument, too-many-locals
 from __future__ import print_function, absolute_import
 import glob
 import os
@@ -124,7 +124,7 @@ def _create_potential_column_list(vcf_reader):
         for format_tag in vcf_reader.format_metaheaders.keys():
             format_sample_names.append(format_tag + "|" + sample_name)
 
-    static_column_headers = vcf_reader.split_column_header[0:10]
+    static_column_headers = vcf_reader.split_column_header[0:8]
 
     return static_column_headers \
            + sorted(vcf_reader.info_metaheaders.keys()) \

@@ -41,17 +41,15 @@ class _BufferedReader(object):
             return None
 
 def _build_format_tags(format_tag_regex, vcf_readers):
-    all_tags_to_keep = []
+    retained_tags = set()
 
     for vcf_reader in vcf_readers:
         for tag_regex in format_tag_regex:
             for tag in vcf_reader.format_metaheaders:
                 if re.match(tag_regex + "$", tag):
-                    all_tags_to_keep.append(tag)
+                    retained_tags.add(tag)
 
-    all_tags_to_keep.sort()
-
-    return all_tags_to_keep
+    return sorted(list(retained_tags))
 
 def _compile_metaheaders(incoming_headers,
                          vcf_readers,

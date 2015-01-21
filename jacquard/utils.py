@@ -9,7 +9,6 @@ import re
 #TODO cgates: This should be in jacquard.__init__?
 __version__ = 0.21
 
-
 #TODO: cgates: These should be in the callers or the caller factory, but not here.
 global caller_versions
 caller_versions = {"VarScan":"v2.3", "MuTect": "v1.1.4", "Strelka": "v2.0.15"}
@@ -20,7 +19,6 @@ global jq_dp_tag
 jq_somatic_tag = "HC_SOM"
 jq_af_tag = "AF"
 jq_dp_tag = "DP"
-
 
 class JQException(Exception):
     """Base class for exceptions in this module."""
@@ -122,6 +120,7 @@ class NaturalSort(object):
         return cmp(self._natsort_key(a),self._natsort_key(b))
 
     def _natsort_key(self, s):
+        #pylint: disable=bad-builtin
         "Used internally to get a tuple by which s is sorted."
         return map(self._try_int, re.findall(r'(\d+|\D+)', s))
 
