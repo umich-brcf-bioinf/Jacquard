@@ -127,18 +127,34 @@ class NormalizeTestCase(unittest.TestCase):
         logger.warning = self.original_warning
         logger.debug = self.original_debug
 
-    def test_validate_arguments(self):
+    def test_predict_output_valid(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             input_dir.write("A.snvs.vcf","##source=strelka\n#colHeader")
             input_dir.write("A.indels.vcf","##source=strelka\n#colHeader")
             args = Namespace(input=input_dir.path,
                              output=output_dir.path)
 
-            actual_writer_to_readers, out_files, caller = normalize._validate_arguments(args)
-            self.assertEquals(1, len(actual_writer_to_readers))
-            self.assertEquals(0, len(out_files))
-            self.assertEquals("Strelka", caller.name)
-            self.assertRegexpMatches(actual_writer_to_readers.keys()[0].output_filepath, "normalized.vcf")
+            existing_output_files, desired_output_files = normalize._predict_output(args)
+            expected_existing_output_files = []
+            expected_desired_output_files = set(["A.normalized.vcf"])
+
+            self.assertEquals(expected_existing_output_files, existing_output_files)
+            self.assertEquals(expected_desired_output_files, desired_output_files)
+
+    def test_predict_output_invalid(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("A.snvs.vcf","##source=strelka\n#colHeader")
+            input_dir.write("A.indels.vcf","##source=strelka\n#colHeader")
+            output_dir.write("A.normalized.vcf","##source=strelka\n#colHeader")
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path)
+
+            existing_output_files, desired_output_files = normalize._predict_output(args)
+            expected_existing_output_files = ["A.normalized.vcf"]
+            expected_desired_output_files = set(["A.normalized.vcf"])
+
+            self.assertEquals(expected_existing_output_files, existing_output_files)
+            self.assertEquals(expected_desired_output_files, desired_output_files)
 
     def test_validate_single_caller(self):
         with TempDirectory() as input_dir:
@@ -175,16 +191,16 @@ class NormalizeTestCase(unittest.TestCase):
                               variant_caller_factory.get_caller)
 
     def test_partition_input_files(self):
-        in_files = ["A.","A.","B."]
+        patient_to_files = {"A": ["baz.", "bar."], "B": ["blah."]}
         caller = MockCaller()
         output_dir_path = ""
-        writer_to_readers = normalize._partition_input_files(in_files, output_dir_path, caller)
+        writer_to_readers = normalize._partition_input_files(patient_to_files, output_dir_path, caller)
         self.maxDiff=None
-        writerA = FileWriter("A.foo")
-        readersA = [FileReader("A."),
-                    FileReader("A.")]
-        writerB = FileWriter("B.foo")
-        readersB = [FileReader("B.")]
+        writerA = FileWriter("baz.foo")
+        readersA = [FileReader("baz."),
+                    FileReader("bar.")]
+        writerB = FileWriter("blah.foo")
+        readersB = [FileReader("blah.")]
 
         self.assertEquals({writerA: readersA, writerB: readersB},
                           writer_to_readers)

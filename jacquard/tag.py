@@ -10,6 +10,8 @@ import jacquard.utils as utils
 from jacquard.variant_callers import variant_caller_factory
 import jacquard.vcf as vcf
 
+JQ_OUTPUT_SUFFIX = "tagged"
+
 def _comma_separated(line):
     split_line = line.split(",")
     for char in split_line:
@@ -172,6 +174,16 @@ def _build_vcf_readers(input_dir,
 
     return vcf_readers
 
+def _mangle_output_filenames(input_file):
+    basename, extension = os.path.splitext(os.path.basename(input_file))
+    return ".".join([basename, JQ_OUTPUT_SUFFIX, extension.strip(".")])
+
+def _get_output_filenames(input_files):
+    output_files = set()
+    for input_file in input_files:
+        output_files.add(_mangle_output_filenames(input_file))
+
+    return output_files
 
 def _build_vcf_readers_to_writers(vcf_readers, output_dir):
     vcf_providers_to_writers = {}
@@ -191,24 +203,19 @@ def add_subparser(subparser):
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
-def _validate_arguments(args):
+def _predict_output(args):
     input_dir = os.path.abspath(args.input)
     output_dir = os.path.abspath(args.output)
+
     utils.validate_directories(input_dir, output_dir)
+    input_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
 
-    out_files = sorted(glob.glob(os.path.join(output_dir, "*")))
-    vcf_readers = _build_vcf_readers(input_dir)
-    if not vcf_readers:
-        logger.error(("Specified input directory [{0}] contains no VCF files."
-                      "Check parameters and try again."),
-                     input_dir)
-        #TODO cgates: move to jacquard.py
-        shutil.rmtree(output_dir)
-        exit(1)
+    existing_output_paths = sorted(glob.glob(os.path.join(output_dir, "*.vcf")))
+    existing_output_files = [os.path.basename(i) for i in existing_output_paths]
 
-    readers_to_writers = _build_vcf_readers_to_writers(vcf_readers, output_dir)
+    desired_output_files = _get_output_filenames(input_files)
 
-    return readers_to_writers, out_files, vcf_readers
+    return existing_output_files, desired_output_files
 
 def execute(args, execution_context):
     input_dir = os.path.abspath(args.input)

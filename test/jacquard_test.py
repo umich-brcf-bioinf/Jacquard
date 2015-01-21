@@ -1,17 +1,18 @@
 # pylint: disable=line-too-long, global-statement, unused-argument, invalid-name, too-many-locals, too-many-public-methods
 from __future__ import absolute_import
-import os
+
 from StringIO import StringIO
+import os
 import sys
-from testfixtures import TempDirectory
 import unittest
+
+from testfixtures import TempDirectory
 
 import jacquard.jacquard as jacquard
 import jacquard.logger as logger
-import test.test_case as test_case
-
-
+import jacquard.utils as utils
 import test.mock_module as mock_module
+import test.test_case as test_case
 
 MOCK_CREATE_TMP_CALLED = False
 MOCK_MOVE_TEMP_CONTENTS_CALLED = False
@@ -82,7 +83,6 @@ class JacquardTestCase(unittest.TestCase):
             self.assertEquals(os.path.join(output_dir, "jacquard_tmp"),
                               actual_tmp_dir)
 
-
     def test_move_tmp_contents_to_original(self):
         with TempDirectory() as output_dir:
             tmp_dir = output_dir.makedir("tmp")
@@ -95,6 +95,23 @@ class JacquardTestCase(unittest.TestCase):
             actual_files = os.listdir(output_dir.path)
             self.assertEquals(2, len(actual_files))
             self.assertEquals(["A.txt", "B.txt"], sorted(actual_files))
+
+    def test_preflight_invalid(self):
+        #pylint: disable=anomalous-backslash-in-string
+        existing_output_files = set(["foo.vcf", "bar.vcf", "baz.vcf"])
+        desired_output_files = set(["foo.vcf", "blah.vcf"])
+        self.assertRaisesRegexp(utils.JQException,
+                                "The command \[foo_command\] would overwrite existing files \['foo.vcf'\]",
+                                jacquard._preflight,
+                                existing_output_files,
+                                desired_output_files,
+                                "foo_command")
+
+    def test_preflight_valid(self):
+        #pylint: disable=anomalous-backslash-in-string, no-self-use
+        existing_output_files = set(["bar.vcf", "baz.vcf"])
+        desired_output_files = set(["foo.vcf", "blah.vcf"])
+        jacquard._preflight(existing_output_files, desired_output_files, "foo_command")
 
 class JacquardTestCase_dispatchOnly(unittest.TestCase):
     def setUp(self):
