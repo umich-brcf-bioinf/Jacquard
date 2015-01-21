@@ -4,3 +4,4 @@ POS
 REF
 ALT
 JQ_CONS_AF_.*
+JQ_CONS_.*

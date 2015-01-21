@@ -216,6 +216,20 @@ class ExpandTestCase(unittest.TestCase):
 
         self.assertEquals(expected_column_list, actual_column_list)
 
+    def test_create_actual_column_list_duplicateRegexMatchDoesNotDuplicateColumns(self):
+        potential_col_list = ["CHROM",
+                              "JQ_DP|SAMPLE_A|NORMAL", "JQ_DP|SAMPLE_B|NORMAL",
+                              "JQ_AF|SAMPLE_A|NORMAL", "JQ_AF|SAMPLE_B|NORMAL"]
+        col_spec = ["CHROM", r"JQ_DP.*", "JQ_.*"]
+        actual_column_list = expand._create_actual_column_list(col_spec,
+                                                               potential_col_list,
+                                                               "col_spec.txt")
+        expected_column_list = ["CHROM",
+                                "JQ_DP|SAMPLE_A|NORMAL", "JQ_DP|SAMPLE_B|NORMAL",
+                                "JQ_AF|SAMPLE_A|NORMAL", "JQ_AF|SAMPLE_B|NORMAL"]
+
+        self.assertEquals(expected_column_list, actual_column_list)
+
     def test_create_actual_column_list_noColsIncluded(self):
         potential_col_list = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL"]
         col_spec = ["FOO", "BAR", "BAZ"]

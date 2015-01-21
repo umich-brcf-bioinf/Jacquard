@@ -98,7 +98,8 @@ def _create_actual_column_list(column_spec_list,
     for i, column_regex in enumerate(column_spec_list):
         no_columns_found = True
         for column_name in potential_col_list:
-            if re.match(column_regex, column_name):
+            column_exists = column_name in actual_column_list
+            if re.match(column_regex, column_name) and not column_exists:
                 actual_column_list.append(column_name)
                 no_columns_found = False
 
