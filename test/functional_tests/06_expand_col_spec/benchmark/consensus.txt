@@ -1,11 +1,11 @@
-#POPULATION_AF_CATEGORY	CHROM	POS	REF	ALT	JQ_CONS_AF_RANGE_ZSCORE|tiny_strelka|NORMAL	JQ_CONS_AF_RANGE_ZSCORE|tiny_strelka|TUMOR	JQ_CONS_AF_RANGE_ZSCORE
-Novel_locus	chr1	1147545	A	G	0.0	0.0	.
-Novel_locus	chr1	1169795	C	T	0.0	0.0	.
-Novel_locus	chr1	1444553	C	T	0.0	0.0	.
-Novel_allele	chr1	1459635	C	A	0.0	0.0	.
-Novel_locus	chr1	1572893	G	A	0.0	0.0	.
-Novel_locus	chr1	1696633	GA	G	0.0	0.0	.
-Novel_locus	chr1	1910112	G	A	0.0	0.0	.
-Novel_locus	chr1	1912090	G	A	0.0	0.0	.
-Novel_locus	chr1	3412474	G	A	0.0	0.0	.
-Novel_locus	chr1	3545096	G	T	0.0	0.0	.
+#POPULATION_AF_CATEGORY	CHROM	POS	REF	ALT	JQ_CONS_AF_RANGE_ZSCORE|tiny_strelka|NORMAL	JQ_CONS_AF_RANGE_ZSCORE|tiny_strelka|TUMOR
+Novel_locus	chr1	1147545	A	G	0.0	0.0
+Novel_locus	chr1	1169795	C	T	0.0	0.0
+Novel_locus	chr1	1444553	C	T	0.0	0.0
+Novel_allele	chr1	1459635	C	A	0.0	0.0
+Novel_locus	chr1	1572893	G	A	0.0	0.0
+Novel_locus	chr1	1696633	GA	G	0.0	0.0
+Novel_locus	chr1	1910112	G	A	0.0	0.0
+Novel_locus	chr1	1912090	G	A	0.0	0.0
+Novel_locus	chr1	3412474	G	A	0.0	0.0
+Novel_locus	chr1	3545096	G	T	0.0	0.0

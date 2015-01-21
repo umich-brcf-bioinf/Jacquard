@@ -1,13 +1,13 @@
-#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	tiny|TUMOR	JQ_MT_DP|tiny|TUMOR	JQ_SK_AF|tiny|TUMOR	JQ_CONS_DP_RANGE|tiny|TUMOR	JQ_CONS_DP_AVERAGE|tiny|TUMOR	JQ_CONS_DP_ZSCORE|tiny|TUMOR	JQ_SK_DP|tiny|TUMOR	JQ_CONS_AF_ZSCORE|tiny|TUMOR	JQ_MT_AF|tiny|TUMOR	JQ_CONS_AF_RANGE|tiny|TUMOR	JQ_CONS_AF_AVERAGE|tiny|TUMOR	JQ_VS_AF|tiny|TUMOR	JQ_VS_DP|tiny|TUMOR	JQ_VS_HC_SOM|tiny|TUMOR	JQ_MT_HC_SOM|tiny|TUMOR	JQ_SK_HC_SOM|tiny|TUMOR	JQ_MT_DP|tiny|NORMAL	JQ_SK_AF|tiny|NORMAL	JQ_CONS_DP_RANGE|tiny|NORMAL	JQ_CONS_DP_AVERAGE|tiny|NORMAL	JQ_CONS_DP_ZSCORE|tiny|NORMAL	JQ_SK_DP|tiny|NORMAL	JQ_CONS_AF_ZSCORE|tiny|NORMAL	JQ_MT_AF|tiny|NORMAL	JQ_CONS_AF_RANGE|tiny|NORMAL	JQ_CONS_AF_AVERAGE|tiny|NORMAL	JQ_VS_AF|tiny|NORMAL	JQ_VS_DP|tiny|NORMAL	JQ_VS_HC_SOM|tiny|NORMAL	JQ_MT_HC_SOM|tiny|NORMAL	JQ_SK_HC_SOM|tiny|NORMAL	JQ_MT_DP	JQ_SK_AF	JQ_CONS_DP_RANGE	JQ_CONS_DP_AVERAGE	JQ_CONS_DP_ZSCORE	JQ_SK_DP	JQ_CONS_AF_ZSCORE	JQ_MT_AF	JQ_CONS_AF_RANGE	JQ_CONS_AF_AVERAGE	JQ_VS_AF	JQ_VS_DP	JQ_VS_HC_SOM	JQ_MT_HC_SOM	JQ_SK_HC_SOM
-chr1	14948	.	G	A	.	.	.	.	.	302	.	1	302.5	-1.0	.	-1.99	0.13	0.01	0.14	0.14	303	1	0	.	174	.	3	172.5	1.0	.	-1.97	0.09	0.03	0.08	0.06	171	0	0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
-chr1	137622	.	G	A	.	.	.	.	.	42	.	.	42	.	.	.	0.29	.	0.29	.	.	.	1	.	35	.	.	35	.	.	.	0.24	.	0.24	.	.	.	0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
-chr1	1147545	.	A	G	.	.	.	.	.	.	0.31	.	35	.	35	.	.	.	0.31	.	.	.	.	1	.	0.0	.	27	.	27	.	.	.	0	.	.	.	.	0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
-chr1	1169795	.	C	T	.	.	.	.	.	.	0.22	.	46	.	46	.	.	.	0.22	.	.	.	.	1	.	0.0	.	37	.	37	.	.	.	0	.	.	.	.	0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
-chr1	1444553	.	C	T	.	.	.	.	.	.	0.35	.	31	.	31	.	.	.	0.35	.	.	.	.	1	.	0.0	.	29	.	29	.	.	.	0	.	.	.	.	0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
-chr1	1459635	.	C	A	.	.	.	.	.	.	0.17	.	30	.	30	.	.	.	0.17	.	.	.	.	1	.	0.0	.	35	.	35	.	.	.	0	.	.	.	.	0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
-chr1	1572893	.	G	A	.	.	.	.	.	.	0.09	.	81	.	81	.	.	.	0.09	.	.	.	.	1	.	0.02	.	65	.	65	.	.	.	0.02	.	.	.	.	0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
-chr1	1696633	.	GA	G	.	.	.	.	.	.	0.27	.	45	.	45	.	.	.	0.27	.	.	.	.	1	.	0.0	.	48	.	48	.	.	.	0	.	.	.	.	0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
-chr1	1910112	.	G	A	.	.	.	.	.	.	0.34	.	35	.	35	.	.	.	0.34	.	.	.	.	1	.	0.0	.	28	.	28	.	.	.	0	.	.	.	.	0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
-chr1	1912090	.	G	A	.	.	.	.	.	.	0.31	.	32	.	32	.	.	.	0.31	.	.	.	.	1	.	0.0	.	27	.	27	.	.	.	0	.	.	.	.	0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
-chr1	3412474	.	G	A	.	.	.	.	.	.	0.31	.	61	.	61	.	.	.	0.31	.	.	.	.	1	.	0.0	.	46	.	46	.	.	.	0	.	.	.	.	0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
-chr1	3545096	.	G	T	.	.	.	.	.	.	0.25	.	63	.	63	.	.	.	0.25	.	.	.	.	1	.	0.0	.	37	.	37	.	.	.	0	.	.	.	.	0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	tiny|TUMOR	JQ_CONS_AF_AVERAGE|tiny|NORMAL	JQ_CONS_AF_AVERAGE|tiny|TUMOR	JQ_CONS_AF_RANGE|tiny|NORMAL	JQ_CONS_AF_RANGE|tiny|TUMOR	JQ_CONS_AF_ZSCORE|tiny|NORMAL	JQ_CONS_AF_ZSCORE|tiny|TUMOR	JQ_CONS_DP_AVERAGE|tiny|NORMAL	JQ_CONS_DP_AVERAGE|tiny|TUMOR	JQ_CONS_DP_RANGE|tiny|NORMAL	JQ_CONS_DP_RANGE|tiny|TUMOR	JQ_CONS_DP_ZSCORE|tiny|NORMAL	JQ_CONS_DP_ZSCORE|tiny|TUMOR	JQ_MT_AF|tiny|NORMAL	JQ_MT_AF|tiny|TUMOR	JQ_MT_DP|tiny|NORMAL	JQ_MT_DP|tiny|TUMOR	JQ_MT_HC_SOM|tiny|NORMAL	JQ_MT_HC_SOM|tiny|TUMOR	JQ_SK_AF|tiny|NORMAL	JQ_SK_AF|tiny|TUMOR	JQ_SK_DP|tiny|NORMAL	JQ_SK_DP|tiny|TUMOR	JQ_SK_HC_SOM|tiny|NORMAL	JQ_SK_HC_SOM|tiny|TUMOR	JQ_VS_AF|tiny|NORMAL	JQ_VS_AF|tiny|TUMOR	JQ_VS_DP|tiny|NORMAL	JQ_VS_DP|tiny|TUMOR	JQ_VS_HC_SOM|tiny|NORMAL	JQ_VS_HC_SOM|tiny|TUMOR
+chr1	14948	.	G	A	.	.	.	.	.	0.08	0.14	0.03	0.01	-1.97	-1.99	172.5	302.5	3	1	1.0	-1.0	0.09	0.13	174	302	0	0	.	.	.	.	.	.	0.06	0.14	171	303	0	1
+chr1	137622	.	G	A	.	.	.	.	.	0.24	0.29	.	.	.	.	35	42	.	.	.	.	0.24	0.29	35	42	0	1	.	.	.	.	.	.	.	.	.	.	.	.
+chr1	1147545	.	A	G	.	.	.	.	.	0	0.31	.	.	.	.	27	35	.	.	.	.	.	.	.	.	.	.	0.0	0.31	27	35	0	1	.	.	.	.	.	.
+chr1	1169795	.	C	T	.	.	.	.	.	0	0.22	.	.	.	.	37	46	.	.	.	.	.	.	.	.	.	.	0.0	0.22	37	46	0	1	.	.	.	.	.	.
+chr1	1444553	.	C	T	.	.	.	.	.	0	0.35	.	.	.	.	29	31	.	.	.	.	.	.	.	.	.	.	0.0	0.35	29	31	0	1	.	.	.	.	.	.
+chr1	1459635	.	C	A	.	.	.	.	.	0	0.17	.	.	.	.	35	30	.	.	.	.	.	.	.	.	.	.	0.0	0.17	35	30	0	1	.	.	.	.	.	.
+chr1	1572893	.	G	A	.	.	.	.	.	0.02	0.09	.	.	.	.	65	81	.	.	.	.	.	.	.	.	.	.	0.02	0.09	65	81	0	1	.	.	.	.	.	.
+chr1	1696633	.	GA	G	.	.	.	.	.	0	0.27	.	.	.	.	48	45	.	.	.	.	.	.	.	.	.	.	0.0	0.27	48	45	0	1	.	.	.	.	.	.
+chr1	1910112	.	G	A	.	.	.	.	.	0	0.34	.	.	.	.	28	35	.	.	.	.	.	.	.	.	.	.	0.0	0.34	28	35	0	1	.	.	.	.	.	.
+chr1	1912090	.	G	A	.	.	.	.	.	0	0.31	.	.	.	.	27	32	.	.	.	.	.	.	.	.	.	.	0.0	0.31	27	32	0	1	.	.	.	.	.	.
+chr1	3412474	.	G	A	.	.	.	.	.	0	0.31	.	.	.	.	46	61	.	.	.	.	.	.	.	.	.	.	0.0	0.31	46	61	0	1	.	.	.	.	.	.
+chr1	3545096	.	G	T	.	.	.	.	.	0	0.25	.	.	.	.	37	63	.	.	.	.	.	.	.	.	.	.	0.0	0.25	37	63	0	1	.	.	.	.	.	.

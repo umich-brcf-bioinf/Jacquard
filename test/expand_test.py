@@ -7,11 +7,11 @@ from collections import OrderedDict
 import os
 from testfixtures import TempDirectory
 import unittest
+import re
 
 import jacquard.utils as utils
 import jacquard.logger as logger
 import jacquard.expand as expand
-from jacquard.vcf import VcfReader
 import test.test_case as test_case
 
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
@@ -60,20 +60,50 @@ class MockVcfReader(object):
     def __init__(self,
                  input_filepath="vcfName",
                  metaheaders=None,
-                 column_header="#header",
-                 records=None):
-        self.input_filepath = input_filepath
+                 column_header='#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR',
+                 content=None,
+                 records=None,
+                 sample_names=None,
+                 info_tags=None,
+                 format_tags=None,
+                 split_column_header=None):
+
+        if info_tags:
+            self.info_metaheaders = info_tags
+        else:
+            self.info_metaheaders = {"foo":'##INFO=<ID="foo">'}
+        if format_tags:
+            self.format_metaheaders = format_tags
+        else:
+            self.format_metaheaders = {"foo":'##FORMAT=<ID="foo">'}
+        if split_column_header:
+            self.split_column_header = split_column_header
+        else:
+            self.split_column_header = []
+        if content is None:
+            self.content = ["foo"]
+        else:
+            self.content = content
+
         if metaheaders is None:
             self.metaheaders = ["##metaheaders"]
         else:
             self.metaheaders = metaheaders
+
+        if records:
+            self.records = records
+        else:
+            self.records = []
+
+        if sample_names is None:
+            self.sample_names = []
+        else:
+            self.sample_names = sample_names
+        self.file_name = input_filepath
+        self.input_filepath = input_filepath
         self.column_header = column_header
         self.opened = False
         self.closed = False
-        if records is None:
-            self.records = [MockVcfRecord()]
-        else:
-            self.records = records
 
     def open(self):
         self.opened = True
@@ -217,20 +247,30 @@ class ExpandTestCase(unittest.TestCase):
         self.assertEquals([exp_warning_1, exp_warning_2], MOCK_WARNINGS)
 
     def test_create_potential_column_list(self):
-        file_contents = ['##INFO=<ID=AF,Number=1>\n',
-                         '##INFO=<ID=AA,Number=1>\n',
-                         '##FORMAT=<ID=GT,Number=1>\n',
-                         '##FORMAT=<ID=GQ,Number=1,Description="bar">\n',
-                         '#chrom\tpos\tid\tref\talt\n',
-                         'record1\n',
-                         'record2']
-        mock_file_reader = MockFileReader("my_dir/my_file.txt", file_contents)
-        vcf_reader = VcfReader(mock_file_reader)
+#         file_contents = ['##INFO=<ID=AF,Number=1>\n',
+#                          '##INFO=<ID=AA,Number=1>\n',
+#                          '##FORMAT=<ID=GT,Number=1>\n',
+#                          '##FORMAT=<ID=GQ,Number=1,Description="bar">\n',
+#                          '#chrom\tpos\tid\tref\talt\n',
+#                          'record1\n',
+#                          'record2']
+#         mock_file_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+#         vcf_reader = VcfReader(mock_file_reader)
+        mock_vcf_reader = MockVcfReader(info_tags =
+                                        {"AF":'##INFO=<ID=AF,Number=1>',
+                                        "AA":'##INFO=<ID=AA,Number=1>'},
+                                        format_tags =
+                                        {"GT":'##FORMAT=<ID=GT,Number=1>',
+                                         "GQ":'##FORMAT=<ID=GQ,Number=1,Description="bar">'},
+                                        sample_names = ["sampleA","sampleB"],
+                                        split_column_header = ["chrom","pos",
+                                                               "id","ref","alt"])
 
-        actual_col_list = expand._create_potential_column_list(vcf_reader)
+        actual_col_list = expand._create_potential_column_list(mock_vcf_reader)
         expected_col_list = ["chrom", "pos", "id", "ref", "alt",
                              "AA", "AF",
-                             "GT", "GQ"]
+                             "GQ|sampleA", "GQ|sampleB",
+                             "GT|sampleA", "GT|sampleB"]
         self.assertEquals(expected_col_list, actual_col_list)
 
     def test_disambiguate_column_names(self):
@@ -396,7 +436,6 @@ class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):
 
             command = ["expand", input_dir, output_dir.path, "--force"]
             expected_dir = os.path.join(module_testdir, "benchmark")
-
             self.assertCommand(command, expected_dir)
 
     def test_expand_colSpec(self):
