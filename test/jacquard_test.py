@@ -192,7 +192,7 @@ class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
             filter_output = os.path.join(output_dir.path, "filter_hc_somatic")
             merge_output = os.path.join(output_dir.path, "merge", "merged.vcf")
             consensus_output = os.path.join(output_dir.path, "consensus", "consensus.vcf")
-            expanded_output = os.path.join(output_dir.path, "expand", "expanded.vcf")
+            expanded_output = os.path.join(output_dir.path, "expand", "expanded.tsv")
 
             commands = [["normalize", os.path.join(initial_input, "varscan"), vs_normalize_output, "--force"],
                         ["normalize", os.path.join(initial_input, "strelka"), sk_normalize_output, "--force"],

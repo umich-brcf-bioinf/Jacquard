@@ -98,7 +98,8 @@ def _create_actual_column_list(column_spec_list,
     for i, column_regex in enumerate(column_spec_list):
         no_columns_found = True
         for column_name in potential_col_list:
-            if re.match(column_regex, column_name):
+            column_exists = column_name in actual_column_list
+            if re.match(column_regex, column_name) and not column_exists:
                 actual_column_list.append(column_name)
                 no_columns_found = False
 
@@ -118,18 +119,16 @@ def _create_actual_column_list(column_spec_list,
                                 column_spec_filename)
 
 def _create_potential_column_list(vcf_reader):
-    info_dict = vcf_reader.info_metaheaders
-    format_dict = vcf_reader.format_metaheaders
-
     format_sample_names = []
-    for sample_name in vcf_reader.split_column_header[9:]:
-        for format_tag in format_dict.keys():
+    for sample_name in vcf_reader.sample_names:
+        for format_tag in vcf_reader.format_metaheaders.keys():
             format_sample_names.append(format_tag + "|" + sample_name)
 
-    static_column_headers = vcf_reader.split_column_header[0:10]
-    processed_column_headers = static_column_headers + format_sample_names
+    static_column_headers = vcf_reader.split_column_header[0:8]
 
-    return processed_column_headers + info_dict.keys() + format_dict.keys()
+    return static_column_headers \
+           + sorted(vcf_reader.info_metaheaders.keys()) \
+           + sorted(format_sample_names)
 
 def add_subparser(subparser):
     # pylint: disable=C0301

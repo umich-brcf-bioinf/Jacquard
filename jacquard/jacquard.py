@@ -47,9 +47,12 @@ TMP_OUTPUT_PATH = None
 def main():
     #pylint: disable=unused-argument
     def handler(signum, frame):
-        print("WARNING: Jacquard was interrupted before completing.",
-              file=sys.stderr)
-        exit(1)
+        msg = "WARNING: Jacquard was interrupted before completing."
+        try:
+            logger.debug(msg)
+        finally:
+            print(msg, file=sys.stderr)
+            exit(1)
 
     signal.signal(signal.SIGINT, handler)
     signal.signal(signal.SIGTERM, handler)
