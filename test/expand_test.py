@@ -273,29 +273,22 @@ class ExpandTestCase(unittest.TestCase):
         self.assertEquals([exp_warning_1, exp_warning_2], MOCK_WARNINGS)
 
     def test_create_potential_column_list(self):
-#         file_contents = ['##INFO=<ID=AF,Number=1>\n',
-#                          '##INFO=<ID=AA,Number=1>\n',
-#                          '##FORMAT=<ID=GT,Number=1>\n',
-#                          '##FORMAT=<ID=GQ,Number=1,Description="bar">\n',
-#                          '#chrom\tpos\tid\tref\talt\n',
-#                          'record1\n',
-#                          'record2']
-#         mock_file_reader = MockFileReader("my_dir/my_file.txt", file_contents)
-#         vcf_reader = VcfReader(mock_file_reader)
-        mock_vcf_reader = MockVcfReader(info_tags =
-                                        {"AF":'##INFO=<ID=AF,Number=1>',
-                                        "AA":'##INFO=<ID=AA,Number=1>'},
-                                        format_tags =
-                                        {"GT":'##FORMAT=<ID=GT,Number=1>',
-                                         "GQ":'##FORMAT=<ID=GQ,Number=1,Description="bar">'},
-                                        sample_names = ["sampleA","sampleB"],
-                                        split_column_header = ["chrom","pos",
-                                                               "id","ref","alt",
-                                                               "qual","filter","info",
-                                                               "format","sampleA","sampleB"])
+        info_tags = {"AF":'##INFO=<ID=AF,Number=1>',
+                     "AA":'##INFO=<ID=AA,Number=1>'}
+        format_tags = {"GT":'##FORMAT=<ID=GT,Number=1>',
+                       "GQ":'##FORMAT=<ID=GQ,Number=1,Description="bar">'}
+        sample_names = ["sampleA", "sampleB"]
+        split_column_header = ["chrom", "pos", "id", "ref", "alt",
+                               "qual", "filter", "info", "format",
+                               "sampleA", "sampleB"]
+        mock_vcf_reader = MockVcfReader(info_tags=info_tags,
+                                        format_tags=format_tags,
+                                        sample_names=sample_names,
+                                        split_column_header=split_column_header)
 
         actual_col_list = expand._create_potential_column_list(mock_vcf_reader)
-        expected_col_list = ["chrom", "pos", "id", "ref", "alt", "qual","filter","info",
+        expected_col_list = ["chrom", "pos", "id", "ref", "alt",
+                             "qual", "filter", "info",
                              "AA", "AF",
                              "GQ|sampleA", "GQ|sampleB",
                              "GT|sampleA", "GT|sampleB"]
