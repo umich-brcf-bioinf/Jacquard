@@ -10,7 +10,7 @@ import jacquard.utils as utils
 from jacquard.variant_callers import variant_caller_factory
 import jacquard.vcf as vcf
 
-JQ_OUTPUT_SUFFIX = "tagged"
+JQ_OUTPUT_SUFFIX = "jacquardTags"
 
 def _comma_separated(line):
     split_line = line.split(",")
@@ -188,8 +188,7 @@ def _get_output_filenames(input_files):
 def _build_vcf_readers_to_writers(vcf_readers, output_dir):
     vcf_providers_to_writers = {}
     for reader in vcf_readers:
-        basename, extension = os.path.splitext(reader.file_name)
-        new_filename = basename + ".jacquardTags" + extension
+        new_filename = _mangle_output_filenames(reader.file_name)
         output_filepath = os.path.join(output_dir, new_filename)
         vcf_providers_to_writers[reader] = vcf.FileWriter(output_filepath)
 
@@ -205,17 +204,13 @@ def add_subparser(subparser):
 
 def _predict_output(args):
     input_dir = os.path.abspath(args.input)
-    output_dir = os.path.abspath(args.output)
 
-    utils.validate_directories(input_dir, output_dir)
+    utils.validate_directories(input_dir=input_dir)
     input_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
-
-    existing_output_paths = sorted(glob.glob(os.path.join(output_dir, "*.vcf")))
-    existing_output_files = [os.path.basename(i) for i in existing_output_paths]
 
     desired_output_files = _get_output_filenames(input_files)
 
-    return existing_output_files, desired_output_files
+    return desired_output_files
 
 def execute(args, execution_context):
     input_dir = os.path.abspath(args.input)

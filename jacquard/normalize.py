@@ -95,19 +95,15 @@ def add_subparser(subparser):
 
 def _predict_output(args):
     input_dir = os.path.abspath(args.input)
-    output_dir = os.path.abspath(args.output)
 
-    utils.validate_directories(input_dir, output_dir)
+    utils.validate_directories(input_dir=input_dir)
     in_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
-
-    existing_output_paths = sorted(glob.glob(os.path.join(output_dir, "*.vcf")))
-    existing_output_files = [os.path.basename(i) for i in existing_output_paths]
 
     caller = _determine_caller_per_directory(in_files)
     patient_to_files = _get_files_per_patient(in_files)
     desired_output_files = _get_output_filenames(caller, patient_to_files)
 
-    return existing_output_files, desired_output_files
+    return desired_output_files
 
 #TODO: (cgates): normalized files should contain execution context - do they?
 def execute(args, execution_context):

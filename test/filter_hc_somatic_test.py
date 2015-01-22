@@ -67,6 +67,30 @@ class FilterSomaticTestCase(unittest.TestCase):
             self.assertEquals(0, len(out_files))
             self.assertRegexpMatches(actual_readers_to_writers.values()[0].output_filepath, "_HCsomatic.vcf")
 
+    def test_predict_output_valid(self):
+        with TempDirectory() as input_dir:
+            input_dir.write("A.normalized.jacquardTags.vcf","##source=strelka\n#colHeader")
+            input_dir.write("B.normalized.jacquardTags.vcf","##source=strelka\n#colHeader")
+            args = Namespace(input=input_dir.path)
+
+            desired_output_files = filter_hc_somatic._predict_output(args)
+            expected_desired_output_files = set(["A.normalized.jacquardTags._HCsomatic.vcf",
+                                                 "B.normalized.jacquardTags._HCsomatic.vcf"])
+
+            self.assertEquals(expected_desired_output_files, desired_output_files)
+
+    def test_predict_output_invalid(self):
+        with TempDirectory() as input_dir:
+            input_dir.write("A.normalized.jacquardTags.vcf","##source=strelka\n#colHeader")
+            input_dir.write("B.normalized.jacquardTags.vcf","##source=strelka\n#colHeader")
+            args = Namespace(input=input_dir.path)
+
+            desired_output_files = filter_hc_somatic._predict_output(args)
+            expected_desired_output_files = set(["A.normalized.jacquardTags._HCsomatic.vcf",
+                                                 "B.normalized.jacquardTags._HCsomatic.vcf"])
+
+            self.assertEquals(expected_desired_output_files, desired_output_files)
+
     def test_findSomaticPositions(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             input_dir.write("A.snp.vcf",

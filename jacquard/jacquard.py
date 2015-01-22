@@ -22,6 +22,7 @@ import signal
 import shutil
 import sys
 import traceback
+import glob
 
 import jacquard.tag as tag
 import jacquard.normalize as normalize
@@ -95,7 +96,9 @@ def _validate_temp(tmp_output, original_output_dir, force=0):
                                     tmp_dir_name,
                                     original_output_dir)
 
-def _preflight(existing_output_files, desired_output_files, command):
+def _preflight(output_dir, desired_output_files, command):
+    existing_output_paths = sorted(glob.glob(os.path.join(output_dir, "*.vcf")))
+    existing_output_files = set([os.path.basename(i) for i in existing_output_paths])
     intersection = existing_output_files.intersection(desired_output_files)
     if intersection:
         raise utils.JQException(("ERROR: The command [{}] would "

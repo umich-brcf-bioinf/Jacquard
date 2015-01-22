@@ -141,34 +141,27 @@ class TagTestCase(unittest.TestCase):
         MOCK_LOG_MESSAGES = []
 
     def test_predict_output_valid(self):
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+        with TempDirectory() as input_dir:
             input_dir.write("A.normalized.vcf","##source=strelka\n#colHeader")
             input_dir.write("B.normalized.vcf","##source=strelka\n#colHeader")
-            args = Namespace(input=input_dir.path,
-                             output=output_dir.path)
+            args = Namespace(input=input_dir.path)
 
-            existing_output_files, desired_output_files = tag._predict_output(args)
-            expected_existing_output_files = []
-            expected_desired_output_files = set(["A.normalized.tagged.vcf",
-                                                 "B.normalized.tagged.vcf"])
+            desired_output_files = tag._predict_output(args)
+            expected_desired_output_files = set(["A.normalized.jacquardTags.vcf",
+                                                 "B.normalized.jacquardTags.vcf"])
 
-            self.assertEquals(expected_existing_output_files, existing_output_files)
             self.assertEquals(expected_desired_output_files, desired_output_files)
 
     def test_predict_output_invalid(self):
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+        with TempDirectory() as input_dir:
             input_dir.write("A.normalized.vcf","##source=strelka\n#colHeader")
             input_dir.write("B.normalized.vcf","##source=strelka\n#colHeader")
-            output_dir.write("B.normalized.tagged.vcf","##source=strelka\n#colHeader")
-            args = Namespace(input=input_dir.path,
-                             output=output_dir.path)
+            args = Namespace(input=input_dir.path)
 
-            existing_output_files, desired_output_files = tag._predict_output(args)
-            expected_existing_output_files = ["B.normalized.tagged.vcf"]
-            expected_desired_output_files = set(["A.normalized.tagged.vcf",
-                                                 "B.normalized.tagged.vcf"])
+            desired_output_files = tag._predict_output(args)
+            expected_desired_output_files = set(["A.normalized.jacquardTags.vcf",
+                                                 "B.normalized.jacquardTags.vcf"])
 
-            self.assertEquals(expected_existing_output_files, existing_output_files)
             self.assertEquals(expected_desired_output_files, desired_output_files)
 
     def test_build_vcf_readers(self):

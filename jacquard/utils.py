@@ -28,25 +28,26 @@ class JQException(Exception):
         super(JQException, self).__init__(error_msg)
 
 #TODO: (cgates): Suspect this should raise exception instead of logging and exiting?
-def validate_directories(input_dir, output_dir):
-    if not os.path.isdir(input_dir):
-        logger.error("Specified input directory [{}] does not exist.",
-                     input_dir)
-        exit(1)
-    try:
-        listdir(input_dir)
-    except OSError:
-        logger.error("Specified input directory [{}] cannot be read. "+
-                     "Check permissions and try again.", input_dir)
-        exit(1)
-
-    if not os.path.isdir(output_dir):
-        try:
-            os.makedirs(output_dir)
-        except OSError:
-            logger.error("Output directory [{}] could not be created. "+
-                         "Check parameters and try again", output_dir)
+def validate_directories(input_dir=None, output_dir=None):
+    if input_dir:
+        if not os.path.isdir(input_dir):
+            logger.error("Specified input directory [{}] does not exist.",
+                         input_dir)
             exit(1)
+        try:
+            listdir(input_dir)
+        except OSError:
+            logger.error("Specified input directory [{}] cannot be read. "+
+                         "Check permissions and try again.", input_dir)
+            exit(1)
+    if output_dir:
+        if not os.path.isdir(output_dir):
+            try:
+                os.makedirs(output_dir)
+            except OSError:
+                logger.error("Output directory [{}] could not be created. "+
+                             "Check parameters and try again", output_dir)
+                exit(1)
 
 # def validate_arguments(out_files, writers):
 #     invalid = 0

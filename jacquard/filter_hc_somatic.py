@@ -11,6 +11,7 @@ import jacquard.utils as utils
 import jacquard.variant_callers.variant_caller_factory as variant_caller_factory
 import jacquard.vcf as vcf
 
+JQ_OUTPUT_SUFFIX = "_HCsomatic"
 
 #TODO: (cgates): This module contains lots of file parsing/processing which should be using vcfReader structures
 #TODO: (cgates): refactor this as a stats object that collects info in the main processing loop
@@ -209,13 +210,33 @@ def _build_readers(input_files):
 def _build_writers_to_readers(vcf_readers, output_dir):
     writers_to_readers = {}
     for reader in vcf_readers:
-        basename, extension = os.path.splitext(reader.file_name)
-        new_filename = basename + "_HCsomatic" + extension
+        new_filename = _mangle_output_filenames(reader.file_name)
         output_filepath = os.path.join(output_dir, new_filename)
 
         writers_to_readers[reader] = vcf.FileWriter(output_filepath)
 
     return writers_to_readers
+
+def _mangle_output_filenames(input_file):
+    basename, extension = os.path.splitext(os.path.basename(input_file))
+    return ".".join([basename, JQ_OUTPUT_SUFFIX, extension.strip(".")])
+ 
+def _get_output_filenames(input_files):
+    output_files = set()
+    for input_file in input_files:
+        output_files.add(_mangle_output_filenames(input_file))
+ 
+    return output_files
+ 
+def _predict_output(args):
+    input_dir = os.path.abspath(args.input)
+
+    utils.validate_directories(input_dir=input_dir)
+    input_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
+
+    desired_output_files = _get_output_filenames(input_files)
+
+    return desired_output_files
 
 def add_subparser(subparser):
     # pylint: disable=line-too-long

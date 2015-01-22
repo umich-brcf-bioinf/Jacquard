@@ -96,22 +96,24 @@ class JacquardTestCase(unittest.TestCase):
             self.assertEquals(2, len(actual_files))
             self.assertEquals(["A.txt", "B.txt"], sorted(actual_files))
 
-    def test_preflight_invalid(self):
+    def test_preflight_valid(self):
         #pylint: disable=anomalous-backslash-in-string
-        existing_output_files = set(["foo.vcf", "bar.vcf", "baz.vcf"])
-        desired_output_files = set(["foo.vcf", "blah.vcf"])
-        self.assertRaisesRegexp(utils.JQException,
+        with TempDirectory() as output_dir:
+            desired_output_files = set(["foo.vcf", "bar.vcf"])
+            jacquard._preflight(output_dir.path, desired_output_files, "foo_command")
+
+    def test_preflight_invalid(self):
+        #pylint: disable=anomalous-backslash-in-string, no-self-use
+        with TempDirectory() as output_dir:
+            output_dir.write("foo.vcf","##source=strelka\n#colHeader")
+            desired_output_files = set(["foo.vcf", "bar.vcf"])
+            
+            self.assertRaisesRegexp(utils.JQException,
                                 "The command \[foo_command\] would overwrite existing files \['foo.vcf'\]",
                                 jacquard._preflight,
-                                existing_output_files,
+                                output_dir.path,
                                 desired_output_files,
                                 "foo_command")
-
-    def test_preflight_valid(self):
-        #pylint: disable=anomalous-backslash-in-string, no-self-use
-        existing_output_files = set(["bar.vcf", "baz.vcf"])
-        desired_output_files = set(["foo.vcf", "blah.vcf"])
-        jacquard._preflight(existing_output_files, desired_output_files, "foo_command")
 
 class JacquardTestCase_dispatchOnly(unittest.TestCase):
     def setUp(self):
