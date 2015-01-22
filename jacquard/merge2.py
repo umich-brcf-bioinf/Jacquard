@@ -103,7 +103,7 @@ def _create_reader_lists(input_files):
 
 
 def _build_coordinates(vcf_readers):
-    coordinate_set = OrderedDict()
+    coordinate_set = set()
     mult_alts = defaultdict(set)
     error = 0
 
@@ -118,9 +118,10 @@ def _build_coordinates(vcf_readers):
                                  .format(vcf_reader.file_name))
                     error = 1
                 previous_record = vcf_record
-                coordinate_set[(vcf_record.get_empty_record())] = 0
-                mult_alts[(vcf_record.chrom, vcf_record.pos, vcf_record.ref)]\
-                    .add(vcf_record.alt)
+                coordinate_set.add(vcf_record.get_empty_record())
+                ref_alt = vcf_record.ref, vcf_record.alt
+                locus = vcf_record.chrom, vcf_record.pos
+                mult_alts[locus].add(ref_alt)
         finally:
             vcf_reader.close()
 
@@ -129,16 +130,14 @@ def _build_coordinates(vcf_readers):
                                 "Review inputs and try again.")
 
     for vcf_record in coordinate_set:
-        alts_for_this_locus = mult_alts[vcf_record.chrom,
-                                        vcf_record.pos,
-                                        vcf_record.ref]
-        if len(alts_for_this_locus) > 1:
+        ref_alts_for_this_locus = mult_alts[vcf_record.chrom,
+                                            vcf_record.pos]
+        inferred_mult_alt = len(ref_alts_for_this_locus) > 1
+        explicit_mult_alt = "," in next(iter(ref_alts_for_this_locus))[1]
+        if inferred_mult_alt or explicit_mult_alt:
             vcf_record.add_info_field(_MULT_ALT_TAG)
 
-    coordinate_list = coordinate_set.keys()
-    coordinate_list.sort()
-
-    return coordinate_list
+    return sorted(list(coordinate_set))
 
 
 def _build_merged_record(coordinate,

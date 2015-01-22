@@ -1,7 +1,6 @@
 # pylint: disable=line-too-long, invalid-name, global-statement, star-args, too-many-public-methods
 from __future__ import absolute_import
 import os
-import unittest
 from StringIO import StringIO
 import sys
 
@@ -9,6 +8,8 @@ from testfixtures import TempDirectory
 from jacquard.filter_hc_somatic import _write_somatic, _find_somatic_positions, _sort_headers, _write_output
 import jacquard.logger as logger
 import test.test_case as test_case
+
+#TODO: (cgates): These tests should start using mocked readers/writers and stop using the file system
 
 VCF_HEADER = "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsampleA\tsampleB\n"
 
@@ -20,7 +21,7 @@ def mock_log(msg, *args):
     mock_log_called = True
     mock_log_messages.append(msg.format(*[str(i) for i in args]))
 
-class FilterSomaticTestCase(unittest.TestCase):
+class FilterSomaticTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         self.output = StringIO()
         self.saved_stderr = sys.stderr
@@ -54,8 +55,8 @@ class FilterSomaticTestCase(unittest.TestCase):
         global mock_log_messages
         mock_log_messages = []
 
-    def test_findSomaticPositions(self):
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+    def test_find_somatic_positions(self):
+        with TempDirectory() as input_dir:
             input_dir.write("A.snp.vcf",
                             ("##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\t"
                              "INFO\tFORMAT\tNORMAL\tTUMOR\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234\n1\t2352"
@@ -68,11 +69,27 @@ class FilterSomaticTestCase(unittest.TestCase):
             file2 = os.path.join(input_dir.path, "A.indel.vcf")
 
             somatic_positions, somatic_positions_header = _find_somatic_positions([file1, file2])
-            self.assertEqual({'1^2353': 1, '1^2352': 1}, somatic_positions)
+            self.assertEqual({'1^2353^A': 1, '1^2352^A': 1}, somatic_positions)
             self.assertEqual("##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=2\n", somatic_positions_header)
 
-            input_dir.cleanup()
-            output_dir.cleanup()
+    def test_find_somatic_positions_distinctRefs(self):
+        with TempDirectory() as input_dir:
+            fileA_contents = ("##source=VarScan2\n"
+                              "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR\n"
+                              "1|10|.|A|G|.|.foo|DP|234\n"
+                              "1|20|.|AT|G|.|.|foo|DP:JQ_HC_SOM_VS|234:1|52:1\n")
+            fileB_contents = ("##source=VarScan2\n"
+                              "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR\n"
+                              "1|20|.|A|GT|.|.|foo|DP:JQ_HC_SOM_VS|234:1|52:1\n")
+            input_dir.write("A.vcf", self.entab(fileA_contents))
+            input_dir.write("B.vcf", self.entab(fileB_contents))
+
+            input_fileA = os.path.join(input_dir.path, "A.vcf")
+            input_fileB = os.path.join(input_dir.path, "B.vcf")
+            somatic_positions, somatic_positions_header = _find_somatic_positions([input_fileA, input_fileB])
+
+            self.assertEqual({'1^20^AT': 1, '1^20^A': 1}, somatic_positions)
+            self.assertEqual("##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=2\n", somatic_positions_header)
 
     def test_filterJQExclude(self):
         with TempDirectory() as input_dir:
@@ -88,7 +105,7 @@ class FilterSomaticTestCase(unittest.TestCase):
             file2 = os.path.join(input_dir.path, "A.indel.vcf")
 
             somatic_positions, somatic_positions_header = _find_somatic_positions([file1, file2])
-            self.assertEqual({'1^2353': 1}, somatic_positions)
+            self.assertEqual({'1^2353^A': 1}, somatic_positions)
             self.assertEqual("##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=1\n", somatic_positions_header)
 
             input_dir.cleanup()
@@ -142,7 +159,7 @@ class FilterSomaticTestCase(unittest.TestCase):
             input2 = input_dir.write('varscan.vcf', "##source=VarScan2\n"+VCF_HEADER+"1\t35\t.\tA\tG\t.\tPASS\tFOO\tDP\t30")
 
             in_files = [input1, input2]
-            somatic_positions = {"1^32"}
+            somatic_positions = {"1^32^A"}
             execution_context = ["##foo", "##bar"]
             _write_somatic(in_files, output_dir.path, somatic_positions, execution_context)
 

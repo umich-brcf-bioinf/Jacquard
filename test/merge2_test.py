@@ -255,20 +255,52 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEquals([], actual_multalts)
 
-    def test_build_coordinates_multAlts(self):
-        fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
-        fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")
-        fileBrec1 = vcf.VcfRecord("chr2", "12", "A", "T", "id=2")
-        fileBrec2 = vcf.VcfRecord("chr42", "16", "G", "C")
+    def test_build_coordinates_flagsMultAltsFromDistinctFiles(self):
+        fileA_rec1 = vcf.VcfRecord("chr1", "1", "A", "C")
+        fileA_rec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")
+        fileB_rec1 = vcf.VcfRecord("chr2", "12", "A", "T", "id=2")
+        fileB_rec2 = vcf.VcfRecord("chr42", "16", "G", "C")
 
-        mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
-                        MockVcfReader(records=[fileBrec1, fileBrec2])]
+        mock_readers = [MockVcfReader(records=[fileA_rec1, fileA_rec2]),
+                        MockVcfReader(records=[fileB_rec1, fileB_rec2])]
 
         actual_coordinates = merge2._build_coordinates(mock_readers)
 
         actual_multalts = [record for record in actual_coordinates if record.info == "JQ_MULT_ALT_LOCUS"]
 
-        expected = [fileArec2, fileBrec1]
+        expected = [fileA_rec2, fileB_rec1]
+        self.assertEquals(expected, actual_multalts)
+
+    def test_build_coordinates_flagsMultAltsWithinFile(self):
+        fileA_rec1 = vcf.VcfRecord("chr1", "1", "A", "C")
+        fileA_rec2 = vcf.VcfRecord("chr2", "12", "A", "G,T", "id=1")
+        fileB_rec1 = vcf.VcfRecord("chr3", "12", "A", "T", "id=2")
+        fileB_rec2 = vcf.VcfRecord("chr42", "16", "G", "C")
+
+        mock_readers = [MockVcfReader(records=[fileA_rec1, fileA_rec2]),
+                        MockVcfReader(records=[fileB_rec1, fileB_rec2])]
+
+        actual_coordinates = merge2._build_coordinates(mock_readers)
+
+        actual_multalts = [record for record in actual_coordinates if record.info == "JQ_MULT_ALT_LOCUS"]
+
+        expected = [fileA_rec2]
+        self.assertEquals(expected, actual_multalts)
+
+    def test_build_coordinates_flagsMultAltsWithDistinctRefs(self):
+        fileA_rec1 = vcf.VcfRecord("chr1", "1", "A", "C")
+        fileA_rec2 = vcf.VcfRecord("chr2", "2", "A", "G", "id=1")
+        fileB_rec1 = vcf.VcfRecord("chr2", "2", "AT", "T", "id=2")
+        fileB_rec2 = vcf.VcfRecord("chr42", "16", "G", "C")
+
+        mock_readers = [MockVcfReader(records=[fileA_rec1, fileA_rec2]),
+                        MockVcfReader(records=[fileB_rec1, fileB_rec2])]
+
+        actual_coordinates = merge2._build_coordinates(mock_readers)
+
+        actual_multalts = [record for record in actual_coordinates if record.info == "JQ_MULT_ALT_LOCUS"]
+
+        expected = [fileA_rec2, fileB_rec1]
         self.assertEquals(expected, actual_multalts)
 
     def test_build_merged_record_onlyKeepJQTags(self):
