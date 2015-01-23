@@ -14,6 +14,7 @@ _MULT_ALT_HEADER = ('##INFO=<ID={},Number=0,Type=Flag,'
                     'Description="dbSNP Membership",Source="Jacquard",'
                     'Version="{}">').format(_MULT_ALT_TAG, utils.__version__)
 _FILE_FORMAT = ["##fileformat=VCFv4.2"]
+JQ_OUTPUT_SUFFIX = "merged"
 
 # This class must capture the state of the incoming iterator and provide
 # modified behavior based on data in that iterator. A small class works ok, but
@@ -286,6 +287,15 @@ def _validate_arguments(args):
     writers_to_readers = _build_writers_to_readers(vcf_readers, output_path)
 
     return writers_to_readers, out_files, buffered_readers, format_tag_regex
+
+def _predict_output(args):
+    input_dir = os.path.abspath(args.input)
+    output_dir = os.path.dirname(args.output)
+    utils.validate_directories(input_dir,output_dir)
+
+    desired_output_files = set([os.path.basename(args.output)])
+
+    return desired_output_files
 
 def execute(args, execution_context):
     input_path = os.path.abspath(args.input)

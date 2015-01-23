@@ -140,19 +140,7 @@ class TagTestCase(unittest.TestCase):
         global MOCK_LOG_MESSAGES
         MOCK_LOG_MESSAGES = []
 
-    def test_predict_output_valid(self):
-        with TempDirectory() as input_dir:
-            input_dir.write("A.normalized.vcf","##source=strelka\n#colHeader")
-            input_dir.write("B.normalized.vcf","##source=strelka\n#colHeader")
-            args = Namespace(input=input_dir.path)
-
-            desired_output_files = tag._predict_output(args)
-            expected_desired_output_files = set(["A.normalized.jacquardTags.vcf",
-                                                 "B.normalized.jacquardTags.vcf"])
-
-            self.assertEquals(expected_desired_output_files, desired_output_files)
-
-    def test_predict_output_invalid(self):
+    def test_predict_output(self):
         with TempDirectory() as input_dir:
             input_dir.write("A.normalized.vcf","##source=strelka\n#colHeader")
             input_dir.write("B.normalized.vcf","##source=strelka\n#colHeader")

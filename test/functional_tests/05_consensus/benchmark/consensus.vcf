@@ -5,9 +5,9 @@
 ##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",Source="Jacquard",Version=0.21>
 ##fileformat=VCFv4.2
-##jacquard.merge.file2=tiny_strelka.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf(['NORMAL', 'TUMOR'])
-##jacquard.merge.sample_column1=Strelka|tiny_strelka|NORMAL(tiny_strelka.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf)
-##jacquard.merge.sample_column2=Strelka|tiny_strelka|TUMOR(tiny_strelka.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf)
+##jacquard.merge.file2=tiny_strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf(['NORMAL', 'TUMOR'])
+##jacquard.merge.sample_column1=Strelka|tiny_strelka|NORMAL(tiny_strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf)
+##jacquard.merge.sample_column2=Strelka|tiny_strelka|TUMOR(tiny_strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf)
 ##jacquard.version=0.21
 ##jacquard.command=consensus C:\\Users\\jebene\\git\\Jacquard\\test\\functional_tests\\05_consensus\\input\\tiny_strelka.merged.vcf c:\\users\\jebene\\appdata\\local\\temp\\tmpv8653u\\consensus.vcf --force
 ##jacquard.cwd=C:\\Users\\jebene\\git

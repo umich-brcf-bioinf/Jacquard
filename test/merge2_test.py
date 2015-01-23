@@ -238,6 +238,19 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
             self.assertEquals(merge2._DEFAULT_INCLUDED_FORMAT_TAGS, format_tag_regex)
             self.assertRegexpMatches(actual_readers_to_writers.keys()[0].output_filepath, ".merged.vcf")
 
+    def test_predict_output(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("A.normalized.jacquardTags.HCsomatic.vcf","##source=strelka\n#colHeader")
+            input_dir.write("B.normalized.jacquardTags.HCsomatic.vcf","##source=strelka\n#colHeader")
+            output_dir.write("merged.vcf","##source=strelka\n#colHeader")
+            args = Namespace(input=input_dir.path,
+                             output=os.path.join(output_dir.path,"merged.vcf"))
+
+            desired_output_files = merge2._predict_output(args)
+            expected_desired_output_files = set(["merged.vcf"])
+
+            self.assertEquals(expected_desired_output_files, desired_output_files)
+
     def test_build_coordinates(self):
         fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
         fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")

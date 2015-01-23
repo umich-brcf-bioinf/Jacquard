@@ -65,29 +65,19 @@ class FilterSomaticTestCase(unittest.TestCase):
             actual_readers_to_writers, out_files = filter_hc_somatic._validate_arguments(args)
             self.assertEquals(2, len(actual_readers_to_writers))
             self.assertEquals(0, len(out_files))
-            self.assertRegexpMatches(actual_readers_to_writers.values()[0].output_filepath, "_HCsomatic.vcf")
+            self.assertRegexpMatches(actual_readers_to_writers.values()[0].output_filepath, "HCsomatic.vcf")
 
-    def test_predict_output_valid(self):
+    def test_predict_output(self):
         with TempDirectory() as input_dir:
             input_dir.write("A.normalized.jacquardTags.vcf","##source=strelka\n#colHeader")
             input_dir.write("B.normalized.jacquardTags.vcf","##source=strelka\n#colHeader")
             args = Namespace(input=input_dir.path)
 
             desired_output_files = filter_hc_somatic._predict_output(args)
-            expected_desired_output_files = set(["A.normalized.jacquardTags._HCsomatic.vcf",
-                                                 "B.normalized.jacquardTags._HCsomatic.vcf"])
+            expected_desired_output_files = set(["A.normalized.jacquardTags.HCsomatic.vcf",
+                                                 "B.normalized.jacquardTags.HCsomatic.vcf"])
 
             self.assertEquals(expected_desired_output_files, desired_output_files)
-
-    def test_predict_output_invalid(self):
-        with TempDirectory() as input_dir:
-            input_dir.write("A.normalized.jacquardTags.vcf","##source=strelka\n#colHeader")
-            input_dir.write("B.normalized.jacquardTags.vcf","##source=strelka\n#colHeader")
-            args = Namespace(input=input_dir.path)
-
-            desired_output_files = filter_hc_somatic._predict_output(args)
-            expected_desired_output_files = set(["A.normalized.jacquardTags._HCsomatic.vcf",
-                                                 "B.normalized.jacquardTags._HCsomatic.vcf"])
 
             self.assertEquals(expected_desired_output_files, desired_output_files)
 
@@ -183,7 +173,7 @@ class FilterSomaticTestCase(unittest.TestCase):
             execution_context = ["##foo", "##bar"]
             filter_hc_somatic._write_somatic(in_files, output_dir.path, somatic_positions, execution_context)
 
-            self.assertEqual(["mutect_HCsomatic.vcf", "varscan_HCsomatic.vcf"], output_dir.actual())
+            self.assertEqual(["mutect.HCsomatic.vcf", "varscan.HCsomatic.vcf"], output_dir.actual())
             self.assertIn("Filtered to [1] calls in high-confidence loci.", mock_log_messages)
 
     def test_sort_sortHeaders(self):

@@ -214,9 +214,9 @@
 ##jacquard.consensus.JQ_CONS_DP_RANGE_ZSCORE.mean_DP_range=0.0
 ##jacquard.consensus.JQ_CONS_DP_RANGE_ZSCORE.standard deviation_DP_range=0.0
 ##jacquard.cwd=C:\Users\kmeng
-##jacquard.merge.file2=tiny_strelka.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf(['NORMAL', 'TUMOR'])
-##jacquard.merge.sample_column1=Strelka|tiny_strelka|NORMAL(tiny_strelka.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf)
-##jacquard.merge.sample_column2=Strelka|tiny_strelka|TUMOR(tiny_strelka.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf)
+##jacquard.merge.file2=tiny_strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf(['NORMAL', 'TUMOR'])
+##jacquard.merge.sample_column1=Strelka|tiny_strelka|NORMAL(tiny_strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf)
+##jacquard.merge.sample_column2=Strelka|tiny_strelka|TUMOR(tiny_strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf)
 ##jacquard.version=0.21
 ##samtoolsVersion=0.1.17 (r973:277)
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	tiny_strelka|NORMAL	tiny_strelka|TUMOR

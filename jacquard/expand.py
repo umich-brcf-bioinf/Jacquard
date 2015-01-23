@@ -139,13 +139,16 @@ def add_subparser(subparser):
     parser.add_argument("-c", "--column_specification", help="Path to text file containing column regular expressions to be included in output file")
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
+def _predict_output(args):
+    return set([args.output])
+
 def execute(args, execution_context):
     input_path = os.path.abspath(args.input)
     output_path = os.path.abspath(args.output)
     col_spec = args.column_specification if args.column_specification else 0
 
     col_spec_columns = _read_col_spec(col_spec) if col_spec else 0
-    input_files, output_files = _validate_input_and_output(input_path,
+    input_files, output_files = _validate_input_and_output(input_path, #TODO: Just one input file and one output file from now on.
                                                            output_path)
 
     logger.info("Expanding {} VCF files in [{}] to [{}]",

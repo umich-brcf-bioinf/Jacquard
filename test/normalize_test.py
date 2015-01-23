@@ -127,18 +127,7 @@ class NormalizeTestCase(unittest.TestCase):
         logger.warning = self.original_warning
         logger.debug = self.original_debug
 
-    def test_predict_output_valid(self):
-        with TempDirectory() as input_dir:
-            input_dir.write("A.snvs.vcf","##source=strelka\n#colHeader")
-            input_dir.write("A.indels.vcf","##source=strelka\n#colHeader")
-            args = Namespace(input=input_dir.path)
-
-            desired_output_files = normalize._predict_output(args)
-            expected_desired_output_files = set(["A.normalized.vcf"])
-
-            self.assertEquals(expected_desired_output_files, desired_output_files)
-
-    def test_predict_output_invalid(self):
+    def test_predict_output(self):
         with TempDirectory() as input_dir:
             input_dir.write("A.snvs.vcf","##source=strelka\n#colHeader")
             input_dir.write("A.indels.vcf","##source=strelka\n#colHeader")

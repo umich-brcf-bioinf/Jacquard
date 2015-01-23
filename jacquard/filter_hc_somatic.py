@@ -11,7 +11,7 @@ import jacquard.utils as utils
 import jacquard.variant_callers.variant_caller_factory as variant_caller_factory
 import jacquard.vcf as vcf
 
-JQ_OUTPUT_SUFFIX = "_HCsomatic"
+JQ_OUTPUT_SUFFIX = "HCsomatic"
 
 #TODO: (cgates): This module contains lots of file parsing/processing which should be using vcfReader structures
 #TODO: (cgates): refactor this as a stats object that collects info in the main processing loop
@@ -109,8 +109,8 @@ def _write_somatic(in_files, output_dir, somatic_positions, execution_context):
         headers = []
         actual_sorted_variants = []
 
-        fname, extension = os.path.splitext(os.path.basename(input_file))
-        new_file = fname + "_HCsomatic" + extension
+        new_file = _mangle_output_filenames(input_file)
+
         in_file = open(input_file, "r")
 
         out_file = open(os.path.join(output_dir, new_file), "w")

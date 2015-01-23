@@ -11,15 +11,15 @@
 ##FORMAT=<ID=JQ_VS_DP,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_VS_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)",Source="Jacquard",Version=0.21>
 ##fileformat=VCFv4.2
-##jacquard.merge.file2=tiny.mutect.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf(['NORMAL', 'TUMOR'])
-##jacquard.merge.file3=tiny.strelka.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf(['NORMAL', 'TUMOR'])
-##jacquard.merge.file4=tiny.varscan.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf(['NORMAL', 'TUMOR'])
-##jacquard.merge.sample_column1=MuTect|tiny|NORMAL(tiny.mutect.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf)
-##jacquard.merge.sample_column2=MuTect|tiny|TUMOR(tiny.mutect.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf)
-##jacquard.merge.sample_column1=Strelka|tiny|NORMAL(tiny.strelka.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf)
-##jacquard.merge.sample_column2=Strelka|tiny|TUMOR(tiny.strelka.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf)
-##jacquard.merge.sample_column1=VarScan|tiny|NORMAL(tiny.varscan.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf)
-##jacquard.merge.sample_column2=VarScan|tiny|TUMOR(tiny.varscan.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf)
+##jacquard.merge.file2=tiny.mutect.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf(['NORMAL', 'TUMOR'])
+##jacquard.merge.file3=tiny.strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf(['NORMAL', 'TUMOR'])
+##jacquard.merge.file4=tiny.varscan.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf(['NORMAL', 'TUMOR'])
+##jacquard.merge.sample_column1=MuTect|tiny|NORMAL(tiny.mutect.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf)
+##jacquard.merge.sample_column2=MuTect|tiny|TUMOR(tiny.mutect.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf)
+##jacquard.merge.sample_column1=Strelka|tiny|NORMAL(tiny.strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf)
+##jacquard.merge.sample_column2=Strelka|tiny|TUMOR(tiny.strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf)
+##jacquard.merge.sample_column1=VarScan|tiny|NORMAL(tiny.varscan.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf)
+##jacquard.merge.sample_column2=VarScan|tiny|TUMOR(tiny.varscan.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf)
 ##jacquard.version=0.21
 ##jacquard.command=consensus c:\\users\\jebene\\appdata\\local\\temp\\tmppruioy\\merge\\merged.vcf c:\\users\\jebene\\appdata\\local\\temp\\tmppruioy\\consensus\\consensus.vcf --force
 ##jacquard.cwd=C:\\Users\\jebene\\git

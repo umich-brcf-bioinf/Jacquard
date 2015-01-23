@@ -96,14 +96,17 @@ def _validate_temp(tmp_output, original_output_dir, force=0):
                                     tmp_dir_name,
                                     original_output_dir)
 
-def _preflight(output_dir, desired_output_files, command):
-    existing_output_paths = sorted(glob.glob(os.path.join(output_dir, "*.vcf")))
+def _preflight(output, desired_output_files, command): #Must pass in args.output or something to that effect.
+    if os.path.isdir:
+        existing_output_paths = sorted(glob.glob(os.path.join(output, "*.vcf")))
+    else:
+        existing_output_paths = [output]
     existing_output_files = set([os.path.basename(i) for i in existing_output_paths])
     intersection = existing_output_files.intersection(desired_output_files)
     if intersection:
         raise utils.JQException(("ERROR: The command [{}] would "
                                 "overwrite existing files {}; review "
-                                "command/outputdir to avoid overwriting or "
+                                "command/output dir to avoid overwriting or "
                                 "use the flag '--force'. (Type 'jacquard -h' "
                                 "for more details").format(command,
                                                            list(intersection)))

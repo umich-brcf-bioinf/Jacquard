@@ -49,21 +49,6 @@ def validate_directories(input_dir=None, output_dir=None):
                              "Check parameters and try again", output_dir)
                 exit(1)
 
-# def validate_arguments(out_files, writers):
-#     invalid = 0
-#     for out_file in out_files:
-#         for out_writer in writers:
-#             if out_file == out_writer.output_filepath:
-#                 invalid = 1
-#                 raise JQException("ERROR: This command would overwrite "
-#                                   "existing files; review command/output "
-#                                   "dir to avoid overwriting or use the "
-#                                   "flag '--force'. (Type 'jacquard -h' "
-#                                   "for more details")
-# 
-#     if not invalid:
-#         return 1
-
 class OrderedSet(collections.MutableSet):
     def __init__(self, iterable=None):
         self.end = end = []

@@ -126,6 +126,9 @@ def _validate_arguments(args):
 
     return existing_files_in_output, output_file
 
+def _predict_output(args):
+    return set([args.output])
+
 def execute(args, execution_context):
     input_file = os.path.abspath(args.input)
     output = os.path.abspath(args.output)
