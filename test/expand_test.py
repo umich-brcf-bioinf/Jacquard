@@ -294,6 +294,29 @@ class ExpandTestCase(unittest.TestCase):
                              "GT|sampleA", "GT|sampleB"]
         self.assertEquals(expected_col_list, actual_col_list)
 
+    def test_create_potential_column_list_preservesSampleOrdering(self):
+        info_tags = {}
+        format_tags = {"B":'##FORMAT=<ID=B,Number=1>',
+                       "A":'##FORMAT=<ID=A,Number=1>'}
+        sample_names = ["sample1",
+                        "sample2",
+                        "sample10"]
+        split_column_header = ["chrom", "pos", "id", "ref", "alt",
+                               "qual", "filter", "info", "format"]
+        split_column_header.extend(sample_names)
+        mock_vcf_reader = MockVcfReader(info_tags=info_tags,
+                                        format_tags=format_tags,
+                                        sample_names=sample_names,
+                                        split_column_header=split_column_header)
+
+        actual_col_list = expand._create_potential_column_list(mock_vcf_reader)
+        actual_format_sample_names = actual_col_list[9:]
+
+        expected_format_sample_names = ["A|sample1", "A|sample2", "A|sample10",
+                                        "B|sample1", "B|sample2", "B|sample10"]
+        self.assertEquals(expected_format_sample_names,
+                          actual_format_sample_names)
+
     def test_disambiguate_column_names(self):
         column_header = ["CHROM", "POS", "ID", "REF"]
         info_header = ["HOM", "AA", "SOM"]

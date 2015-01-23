@@ -120,15 +120,15 @@ def _create_actual_column_list(column_spec_list,
 
 def _create_potential_column_list(vcf_reader):
     format_sample_names = []
-    for sample_name in vcf_reader.sample_names:
-        for format_tag in vcf_reader.format_metaheaders.keys():
+    for format_tag in sorted(vcf_reader.format_metaheaders.keys()):
+        for sample_name in vcf_reader.sample_names:
             format_sample_names.append(format_tag + "|" + sample_name)
 
     static_column_headers = vcf_reader.split_column_header[0:8]
 
     return static_column_headers \
            + sorted(vcf_reader.info_metaheaders.keys()) \
-           + sorted(format_sample_names)
+           + format_sample_names
 
 def add_subparser(subparser):
     # pylint: disable=C0301

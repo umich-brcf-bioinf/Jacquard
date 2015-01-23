@@ -105,28 +105,3 @@ class OrderedSet(collections.MutableSet):
         if isinstance(other, OrderedSet):
             return len(self) == len(other) and list(self) == list(other)
         return set(self) == set(other)
-
-class NaturalSort(object):
-    def __init__(self, seq):
-        self.seq = seq
-        self.temp = copy.copy(self.seq)
-        self._natsort()
-        self.sorted = self.temp
-
-    def _natsort(self):
-        self.temp.sort(self._natcmp)
-
-    def _natcmp(self, a, b):
-        return cmp(self._natsort_key(a),self._natsort_key(b))
-
-    def _natsort_key(self, s):
-        #pylint: disable=bad-builtin
-        "Used internally to get a tuple by which s is sorted."
-        return map(self._try_int, re.findall(r'(\d+|\D+)', s))
-
-    @staticmethod
-    def _try_int(s):
-        try:
-            return int(s)
-        except ValueError:
-            return s

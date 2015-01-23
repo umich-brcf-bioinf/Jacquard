@@ -4,6 +4,7 @@ from collections import defaultdict, OrderedDict
 import glob
 import jacquard.utils as utils
 import jacquard.vcf as vcf
+import natsort
 import os
 import re
 import jacquard.logger as logger
@@ -202,27 +203,28 @@ def _merge_records(coordinates,
         writer.write(merged_record.asText())
 
 def _build_sample_list(vcf_readers):
-    all_sample_names = set()
+    def _column(patient, sample):
+        return "|".join([patient, sample])
+    all_sample_patients = set()
     patient_to_file = defaultdict(list)
 
     for vcf_reader in vcf_readers:
         #TODO: (cgates): VcfReader should return patient
         patient = vcf_reader.file_name.split(".")[0]
-        #TODO: (cgates): Use a tuple instead of concating here
-        #1) Tuple is better structure
-        #2) Tuple enables better two-level sort on patient and sample names
-        patient_samples = [patient + "|" +  i for i in vcf_reader.sample_names]
-
-        for patient_sample in patient_samples:
-            all_sample_names.add(patient_sample)
+        for sample_name in vcf_reader.sample_names:
+            all_sample_patients.add((patient, sample_name))
+            patient_sample = _column(patient, sample_name)
             patient_to_file[patient_sample].append(vcf_reader.file_name)
 
-    patient_to_file_ordered = OrderedDict(sorted(patient_to_file.items(),
-                                                 key=lambda t: t[0]))
-    merge_metaheaders = _build_merge_metaheaders(patient_to_file_ordered)
-    sorted_all_sample_names = utils.NaturalSort(list(all_sample_names)).sorted
+    sorted_patient_samples = natsort.natsorted(all_sample_patients)
+    patient_sample_strings = [_column(p, s) for p, s in sorted_patient_samples]
 
-    return sorted_all_sample_names, merge_metaheaders
+    patient_to_file_sorted = OrderedDict()
+    for patient_sample in patient_sample_strings:
+        patient_to_file_sorted[patient_sample] = patient_to_file[patient_sample]
+    merge_metaheaders = _build_merge_metaheaders(patient_to_file_sorted)
+
+    return patient_sample_strings, merge_metaheaders
 
 def _build_info_tags(coordinates):
     all_info_tags = set()
@@ -236,7 +238,7 @@ def _build_contigs(coordinates):
     all_contigs = set()
     for record in coordinates:
         all_contigs.add(record.chrom)
-    ordered_contigs = utils.NaturalSort(list(all_contigs)).sorted
+    ordered_contigs = natsort.natsorted(all_contigs)
 
     return ordered_contigs
 
