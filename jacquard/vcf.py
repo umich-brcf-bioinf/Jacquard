@@ -330,6 +330,10 @@ class FileWriter(object):
         self.output_filepath = output_filepath
         self._file_writer = None
 
+    @property
+    def file_name(self):
+        return os.path.basename(self.output_filepath)
+
     def open(self):
         self._file_writer = open(self.output_filepath, "w")
 

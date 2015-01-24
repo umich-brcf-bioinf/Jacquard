@@ -1,16 +1,16 @@
 from __future__ import print_function, absolute_import
+from jacquard.variant_callers import consensus_helper
+import jacquard.logger as logger
+import jacquard.utils as utils
+import jacquard.vcf as vcf
 import os
 
-from jacquard.variant_callers import consensus_helper
-import jacquard.vcf as vcf
-import jacquard.utils as utils
-import jacquard.logger as logger
 
 def _write_metaheaders(cons_helper,
                        vcf_reader,
                        file_writer,
-                       execution_context=0,
-                       new_meta_headers=0):
+                       execution_context=None,
+                       new_meta_headers=None):
 
     new_headers = list(vcf_reader.metaheaders)
 
@@ -41,23 +41,23 @@ def _get_execution_metaheaders(pop_values):
 
     return "\n".join(new_meta_headers)
 
-def write_to_tmp_file(cons_helper, vcf_reader, tmp_writer):
+def _write_to_tmp_file(cons_helper, vcf_reader, tmp_writer):
     vcf_reader.open()
     tmp_writer.open()
 
     try:
         _write_metaheaders(cons_helper, vcf_reader, tmp_writer)
-        logger.info("Adding consensus tags for {}", vcf_reader.input_filepath)
+        logger.info("Adding consensus tags for [{}]", vcf_reader.file_name)
         _add_consensus_tags(cons_helper, vcf_reader, tmp_writer)
 
     finally:
         vcf_reader.close()
         tmp_writer.close()
 
-def write_to_output_file(cons_helper,
-                         execution_context,
-                         tmp_reader,
-                         file_writer):
+def _write_to_output_file(cons_helper,
+                          execution_context,
+                          tmp_reader,
+                          file_writer):
 
     tmp_reader.open()
     file_writer.open()
@@ -72,8 +72,8 @@ def write_to_output_file(cons_helper,
                            execution_context,
                            new_meta_headers)
 
-        logger.info("Calculating zscore and writing to {}",
-                    file_writer.output_filepath)
+        logger.info("Calculating zscore and writing to [{}]",
+                    file_writer.file_name)
         _add_zscore(cons_helper, tmp_reader, file_writer, pop_values)
 
     finally:
@@ -124,14 +124,14 @@ def execute(args, execution_context):
     tmp_output_file = output_file + ".tmp"
     tmp_writer = vcf.FileWriter(tmp_output_file)
 
-    write_to_tmp_file(cons_helper, vcf_reader, tmp_writer)
+    _write_to_tmp_file(cons_helper, vcf_reader, tmp_writer)
 
     tmp_reader = vcf.VcfReader(vcf.FileReader(tmp_output_file))
     file_writer = vcf.FileWriter(output_file)
 
-    write_to_output_file(cons_helper,
-                         execution_context,
-                         tmp_reader,
-                         file_writer)
+    _write_to_output_file(cons_helper,
+                          execution_context,
+                          tmp_reader,
+                          file_writer)
 
     os.remove(tmp_output_file)
