@@ -1,15 +1,15 @@
 #pylint: disable=line-too-long, too-many-public-methods, invalid-name
 #pylint: disable=missing-docstring, protected-access, global-statement, too-few-public-methods
+from __future__ import absolute_import, print_function
 from StringIO import StringIO
 from argparse import Namespace
+import jacquard.logger as logger
+import jacquard.utils as utils
+import natsort
 import os
 import subprocess
 import sys
-
 from testfixtures import TempDirectory
-
-import jacquard.logger as logger
-import jacquard.utils as utils
 import test.test_case as test_case
 
 mock_log_called = False
@@ -122,36 +122,35 @@ class OrderedSetTestCase(test_case.JacquardBaseTestCase):
         actual.add("A")
         self.assertRegexpMatches(actual.__repr__(), r"['B','A']")
 
-
 class NaturalSortTestCase(test_case.JacquardBaseTestCase):
     def test_natsort(self):
         unsorted = ["123a", "1abc", "13d"]
         expected = ["1abc", "13d", "123a"]
-        actual = utils.NaturalSort(unsorted).sorted
+        actual = natsort.natsorted(unsorted)
         self.assertEquals(expected, actual)
 
     def test_natsort_lowerAndUpperCase(self):
         unsorted = ["123ABC", "123abc", "1abc", "13d"]
         expected = ["1abc", "13d", "123ABC", "123abc"]
-        actual = utils.NaturalSort(unsorted).sorted
+        actual = natsort.natsorted(unsorted)
         self.assertEquals(expected, actual)
 
     def test_natsort_baseAlphaSort(self):
         unsorted = ["A100", "B1", "C10", "D"]
         expected = ["A100", "B1", "C10", "D"]
-        actual = utils.NaturalSort(unsorted).sorted
+        actual = natsort.natsorted(unsorted)
         self.assertEquals(expected, actual)
 
     def test_natsort_numericOrder(self):
         unsorted = ["B100", "B1", "B10", "A101"]
         expected = ["A101", "B1", "B10", "B100"]
-        actual = utils.NaturalSort(unsorted).sorted
+        actual = natsort.natsorted(unsorted)
         self.assertEquals(expected, actual)
 
     def test_natsort_breaksTiesByAlpha(self):
         unsorted = ["X100B", "X100C", "X100A", "X10"]
         expected = ["X10", "X100A", "X100B", "X100C"]
-        actual = utils.NaturalSort(unsorted).sorted
+        actual = natsort.natsorted(unsorted)
         self.assertEquals(expected, actual)
 
 

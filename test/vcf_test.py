@@ -534,6 +534,10 @@ class FileWriterTestCase(unittest.TestCase):
         self.assertNotEquals(FileWriter("foo"), FileWriter("bar"))
         self.assertNotEquals(FileWriter("foo"), 1)
 
+    def test_file_name(self):
+        writer = FileWriter("foo/bar/baz.tmp")
+        self.assertEquals("baz.tmp", writer.file_name)
+
     def test_hashable(self):
         s = set([FileWriter("foo")])
         s.add(FileWriter("foo"))

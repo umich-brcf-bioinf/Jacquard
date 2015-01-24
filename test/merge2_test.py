@@ -294,20 +294,52 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEquals([], actual_multalts)
 
-    def test_build_coordinates_multAlts(self):
-        fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
-        fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")
-        fileBrec1 = vcf.VcfRecord("chr2", "12", "A", "T", "id=2")
-        fileBrec2 = vcf.VcfRecord("chr42", "16", "G", "C")
+    def test_build_coordinates_flagsMultAltsFromDistinctFiles(self):
+        fileA_rec1 = vcf.VcfRecord("chr1", "1", "A", "C")
+        fileA_rec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")
+        fileB_rec1 = vcf.VcfRecord("chr2", "12", "A", "T", "id=2")
+        fileB_rec2 = vcf.VcfRecord("chr42", "16", "G", "C")
 
-        mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
-                        MockVcfReader(records=[fileBrec1, fileBrec2])]
+        mock_readers = [MockVcfReader(records=[fileA_rec1, fileA_rec2]),
+                        MockVcfReader(records=[fileB_rec1, fileB_rec2])]
 
         actual_coordinates = merge2._build_coordinates(mock_readers)
 
         actual_multalts = [record for record in actual_coordinates if record.info == "JQ_MULT_ALT_LOCUS"]
 
-        expected = [fileArec2, fileBrec1]
+        expected = [fileA_rec2, fileB_rec1]
+        self.assertEquals(expected, actual_multalts)
+
+    def test_build_coordinates_flagsMultAltsWithinFile(self):
+        fileA_rec1 = vcf.VcfRecord("chr1", "1", "A", "C")
+        fileA_rec2 = vcf.VcfRecord("chr2", "12", "A", "G,T", "id=1")
+        fileB_rec1 = vcf.VcfRecord("chr3", "12", "A", "T", "id=2")
+        fileB_rec2 = vcf.VcfRecord("chr42", "16", "G", "C")
+
+        mock_readers = [MockVcfReader(records=[fileA_rec1, fileA_rec2]),
+                        MockVcfReader(records=[fileB_rec1, fileB_rec2])]
+
+        actual_coordinates = merge2._build_coordinates(mock_readers)
+
+        actual_multalts = [record for record in actual_coordinates if record.info == "JQ_MULT_ALT_LOCUS"]
+
+        expected = [fileA_rec2]
+        self.assertEquals(expected, actual_multalts)
+
+    def test_build_coordinates_flagsMultAltsWithDistinctRefs(self):
+        fileA_rec1 = vcf.VcfRecord("chr1", "1", "A", "C")
+        fileA_rec2 = vcf.VcfRecord("chr2", "2", "A", "G", "id=1")
+        fileB_rec1 = vcf.VcfRecord("chr2", "2", "AT", "T", "id=2")
+        fileB_rec2 = vcf.VcfRecord("chr42", "16", "G", "C")
+
+        mock_readers = [MockVcfReader(records=[fileA_rec1, fileA_rec2]),
+                        MockVcfReader(records=[fileB_rec1, fileB_rec2])]
+
+        actual_coordinates = merge2._build_coordinates(mock_readers)
+
+        actual_multalts = [record for record in actual_coordinates if record.info == "JQ_MULT_ALT_LOCUS"]
+
+        expected = [fileA_rec2, fileB_rec1]
         self.assertEquals(expected, actual_multalts)
 
     def test_build_merged_record_onlyKeepJQTags(self):
@@ -484,25 +516,18 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
                                  "PB|Sample_D"]
         self.assertEquals(expected_sample_names, actual_sample_names)
 
-    def test_build_sample_list_patientNamesOrdered(self):
-        reader1 = MockVcfReader("P10.foo.vcf", sample_names=["N", "T"])
-        reader2 = MockVcfReader("P1.bar.vcf", sample_names=["N", "T"])
-        reader3 = MockVcfReader("P20.vcf", sample_names=["N", "T"])
-        reader4 = MockVcfReader("P100.vcf", sample_names=["N", "T"])
-        reader5 = MockVcfReader("P2.vcf", sample_names=["N", "T"])
-        reader6 = MockVcfReader("P100B.vcf", sample_names=["N", "T"])
-        reader7 = MockVcfReader("P100A.vcf", sample_names=["N", "T"])
-        readers = [reader1, reader2, reader3, reader4, reader5, reader6, reader7]
+    def test_build_sample_list_patientNamesNaturalOrdered(self):
+        reader1 = MockVcfReader("P10.foo.vcf", sample_names=["S10", "S2"])
+        reader2 = MockVcfReader("P1A.bar.vcf", sample_names=["S10", "S2"])
+        reader3 = MockVcfReader("P1.bar.vcf", sample_names=["S10", "S2"])
+        reader4 = MockVcfReader("P2.vcf", sample_names=["S10", "S2"])
+        readers = [reader1, reader2, reader3, reader4]
         actual_sample_names, dummy = merge2._build_sample_list(readers)
 
-        #TODO: (cgates): This order looks slightly wrong: P100 should precede P100A
-        expected_sample_names = ["P1|N", "P1|T",
-                                 "P2|N", "P2|T",
-                                 "P10|N", "P10|T",
-                                 "P20|N", "P20|T",
-                                 "P100A|N", "P100A|T",
-                                 "P100B|N", "P100B|T",
-                                 "P100|N", "P100|T"]
+        expected_sample_names = ["P1|S2", "P1|S10",
+                                 "P1A|S2", "P1A|S10",
+                                 "P2|S2", "P2|S10",
+                                 "P10|S2", "P10|S10"]
         self.assertEquals(expected_sample_names, actual_sample_names)
 
     def test_build_sample_list_sampleNamesOrdered(self):

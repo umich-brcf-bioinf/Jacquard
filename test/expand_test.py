@@ -7,7 +7,6 @@ from collections import OrderedDict
 import os
 from testfixtures import TempDirectory
 import unittest
-import re
 
 import jacquard.utils as utils
 import jacquard.logger as logger
@@ -56,7 +55,9 @@ class MockFileReader(object):
     def close(self):
         self.close_was_called = True
 
+
 class MockVcfReader(object):
+    #pylint: disable=too-many-branches, too-many-arguments
     def __init__(self,
                  input_filepath="vcfName",
                  metaheaders=None,
@@ -216,6 +217,17 @@ class ExpandTestCase(unittest.TestCase):
 
         self.assertEquals(expected_column_list, actual_column_list)
 
+    def test_create_actual_column_list_regexImplictlyAnchored(self):
+        potential_col_list = ["FOO", "FOO_1", "FOO_2", "BAR", "BAR_FOO"]
+        col_spec = ["FOO"]
+        actual_column_list = expand._create_actual_column_list(col_spec,
+                                                               potential_col_list,
+                                                               "col_spec.txt")
+        expected_column_list = ["FOO"]
+
+        self.assertEquals(expected_column_list, actual_column_list)
+
+
     def test_create_actual_column_list_duplicateRegexMatchDoesNotDuplicateColumns(self):
         potential_col_list = ["CHROM",
                               "JQ_DP|SAMPLE_A|NORMAL", "JQ_DP|SAMPLE_B|NORMAL",
@@ -261,33 +273,49 @@ class ExpandTestCase(unittest.TestCase):
         self.assertEquals([exp_warning_1, exp_warning_2], MOCK_WARNINGS)
 
     def test_create_potential_column_list(self):
-#         file_contents = ['##INFO=<ID=AF,Number=1>\n',
-#                          '##INFO=<ID=AA,Number=1>\n',
-#                          '##FORMAT=<ID=GT,Number=1>\n',
-#                          '##FORMAT=<ID=GQ,Number=1,Description="bar">\n',
-#                          '#chrom\tpos\tid\tref\talt\n',
-#                          'record1\n',
-#                          'record2']
-#         mock_file_reader = MockFileReader("my_dir/my_file.txt", file_contents)
-#         vcf_reader = VcfReader(mock_file_reader)
-        mock_vcf_reader = MockVcfReader(info_tags =
-                                        {"AF":'##INFO=<ID=AF,Number=1>',
-                                        "AA":'##INFO=<ID=AA,Number=1>'},
-                                        format_tags =
-                                        {"GT":'##FORMAT=<ID=GT,Number=1>',
-                                         "GQ":'##FORMAT=<ID=GQ,Number=1,Description="bar">'},
-                                        sample_names = ["sampleA","sampleB"],
-                                        split_column_header = ["chrom","pos",
-                                                               "id","ref","alt",
-                                                               "qual","filter","info",
-                                                               "format","sampleA","sampleB"])
+        info_tags = {"AF":'##INFO=<ID=AF,Number=1>',
+                     "AA":'##INFO=<ID=AA,Number=1>'}
+        format_tags = {"GT":'##FORMAT=<ID=GT,Number=1>',
+                       "GQ":'##FORMAT=<ID=GQ,Number=1,Description="bar">'}
+        sample_names = ["sampleA", "sampleB"]
+        split_column_header = ["chrom", "pos", "id", "ref", "alt",
+                               "qual", "filter", "info", "format",
+                               "sampleA", "sampleB"]
+        mock_vcf_reader = MockVcfReader(info_tags=info_tags,
+                                        format_tags=format_tags,
+                                        sample_names=sample_names,
+                                        split_column_header=split_column_header)
 
         actual_col_list = expand._create_potential_column_list(mock_vcf_reader)
-        expected_col_list = ["chrom", "pos", "id", "ref", "alt", "qual","filter","info",
+        expected_col_list = ["chrom", "pos", "id", "ref", "alt",
+                             "qual", "filter", "info",
                              "AA", "AF",
                              "GQ|sampleA", "GQ|sampleB",
                              "GT|sampleA", "GT|sampleB"]
         self.assertEquals(expected_col_list, actual_col_list)
+
+    def test_create_potential_column_list_preservesSampleOrdering(self):
+        info_tags = {}
+        format_tags = {"B":'##FORMAT=<ID=B,Number=1>',
+                       "A":'##FORMAT=<ID=A,Number=1>'}
+        sample_names = ["sample1",
+                        "sample2",
+                        "sample10"]
+        split_column_header = ["chrom", "pos", "id", "ref", "alt",
+                               "qual", "filter", "info", "format"]
+        split_column_header.extend(sample_names)
+        mock_vcf_reader = MockVcfReader(info_tags=info_tags,
+                                        format_tags=format_tags,
+                                        sample_names=sample_names,
+                                        split_column_header=split_column_header)
+
+        actual_col_list = expand._create_potential_column_list(mock_vcf_reader)
+        actual_format_sample_names = actual_col_list[9:]
+
+        expected_format_sample_names = ["A|sample1", "A|sample2", "A|sample10",
+                                        "B|sample1", "B|sample2", "B|sample10"]
+        self.assertEquals(expected_format_sample_names,
+                          actual_format_sample_names)
 
     def test_disambiguate_column_names(self):
         column_header = ["CHROM", "POS", "ID", "REF"]
