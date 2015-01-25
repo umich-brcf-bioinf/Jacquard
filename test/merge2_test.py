@@ -213,18 +213,18 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         logger.debug = self.original_debug
 
     def test_validate_arguments(self):
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("fileA.vcf",
+        with TempDirectory() as input_file, TempDirectory() as output_file:
+            input_file.write("fileA.vcf",
                             "##source=strelka\n"
                             "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_A\tSample_B\n"
                             "chr1\t31\t.\tA\tT\t.\t.\t.\tDP\t23\t52\n")
-            input_dir.write("fileB.vcf",
+            input_file.write("fileB.vcf",
                             "##source=strelka\n"
                             "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_C\tSample_D\n"
                             "chr2\t32\t.\tA\tT\t.\t.\t.\tDP\t24\t53\n")
 
-            args = Namespace(input=input_dir.path,
-                             output=os.path.join(output_dir.path, "output.vcf"),
+            args = Namespace(input=input_file.path,
+                             output=os.path.join(output_file.path, "output.vcf"),
                              tags=None)
             actual_readers_to_writers, out_files, buffered_readers, format_tag_regex = merge2._validate_arguments(args)
 
@@ -239,12 +239,12 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
             self.assertRegexpMatches(actual_readers_to_writers.keys()[0].output_filepath, ".merged.vcf")
 
     def test_predict_output(self):
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("A.normalized.jacquardTags.HCsomatic.vcf","##source=strelka\n#colHeader")
-            input_dir.write("B.normalized.jacquardTags.HCsomatic.vcf","##source=strelka\n#colHeader")
-            output_dir.write("merged.vcf","##source=strelka\n#colHeader")
-            args = Namespace(input=input_dir.path,
-                             output=os.path.join(output_dir.path,"merged.vcf"))
+        with TempDirectory() as input_file, TempDirectory() as output_file:
+            input_file.write("A.normalized.jacquardTags.HCsomatic.vcf","##source=strelka\n#colHeader")
+            input_file.write("B.normalized.jacquardTags.HCsomatic.vcf","##source=strelka\n#colHeader")
+            output_file.write("merged.vcf","##source=strelka\n#colHeader")
+            args = Namespace(input=input_file.path,
+                             output=os.path.join(output_file.path,"merged.vcf"))
 
             desired_output_files = merge2._predict_output(args)
             expected_desired_output_files = set(["merged.vcf"])
@@ -559,12 +559,12 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(expected_metaheaders, actual_metaheaders)
 
     def test_create_reader_lists(self):
-        with TempDirectory() as input_dir:
-            fileA = input_dir.write("fileA.vcf",
+        with TempDirectory() as input_file:
+            fileA = input_file.write("fileA.vcf",
                                     "##source=strelka\n"
                                     "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_A\tSample_B\n"
                                     "chr1\t31\t.\tA\tT\t.\t.\t.\tDP\t23\t52\n")
-            fileB = input_dir.write("fileB.vcf",
+            fileB = input_file.write("fileB.vcf",
                                     "##source=strelka\n"
                                     "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_C\tSample_D\n"
                                     "chr2\t32\t.\tA\tT\t.\t.\t.\tDP\t24\t53\n")
@@ -801,17 +801,17 @@ chr1|10|.|A|C|.|.|INFO|JQ_Foo2|C_1_1|D_1_2
 chr2|10|.|A|C|.|.|INFO|JQ_Bar2|C_2|D_2
 ''').replace('|', "\t")
 
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("P1.fileA.vcf", vcf_content1)
-            input_dir.write("P1.fileB.vcf", vcf_content2)
-            args = Namespace(input=input_dir.path,
-                             output=os.path.join(output_dir.path, "fileC.vcf"),
+        with TempDirectory() as input_file, TempDirectory() as output_file:
+            input_file.write("P1.fileA.vcf", vcf_content1)
+            input_file.write("P1.fileB.vcf", vcf_content2)
+            args = Namespace(input=input_file.path,
+                             output=os.path.join(output_file.path, "fileC.vcf"),
                              tags=None)
 
             merge2.execute(args, ["##execution_header1", "##execution_header2"])
 
-            output_dir.check("fileC.vcf")
-            with open(os.path.join(output_dir.path, "fileC.vcf")) as actual_output_file:
+            output_file.check("fileC.vcf")
+            with open(os.path.join(output_file.path, "fileC.vcf")) as actual_output_file:
                 actual_output_lines = actual_output_file.readlines()
 
         self.assertEquals(18, len(actual_output_lines))
@@ -848,16 +848,16 @@ chr1|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_1_1:A_1_2|B_1_1:B_1_2
 chr1|1|.|A|T|.|.|INFO|JQ_Foo1|A_2|B_2
 chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
 ''').replace('|', "\t")
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("P1.fileA.vcf", vcf_content1)
-            args = Namespace(input=input_dir.path,
-                             output=os.path.join(output_dir.path, "fileB.vcf"),
+        with TempDirectory() as input_file, TempDirectory() as output_file:
+            input_file.write("P1.fileA.vcf", vcf_content1)
+            args = Namespace(input=input_file.path,
+                             output=os.path.join(output_file.path, "fileB.vcf"),
                              tags="JQ_Foo,Bar")
 
             merge2.execute(args, ["##extra_header1", "##extra_header2"])
 
-            output_dir.check("fileB.vcf")
-            with open(os.path.join(output_dir.path, "fileB.vcf")) as actual_output_file:
+            output_file.check("fileB.vcf")
+            with open(os.path.join(output_file.path, "fileB.vcf")) as actual_output_file:
                 actual_output_lines = actual_output_file.readlines()
 
         expected_output_headers = ["##fileformat=VCFv4.2\n",
@@ -876,13 +876,13 @@ chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
 
 class Merge2FunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_merge2(self):
-        with TempDirectory() as output_dir:
+        with TempDirectory() as output_file:
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir, "functional_tests", "04_merge2")
-            input_dir = os.path.join(module_testdir, "input")
-            output_file = os.path.join(output_dir.path, "merged.vcf")
+            input_file = os.path.join(module_testdir, "input")
+            output_file = os.path.join(output_file.path, "merged.vcf")
 
-            command = ["merge2", input_dir, output_file, "--force"]
+            command = ["merge2", input_file, output_file, "--force"]
             expected_dir = os.path.join(module_testdir, "benchmark")
 
             self.assertCommand(command, expected_dir)

@@ -281,8 +281,8 @@ def _validate_arguments(args):
         format_tag_regex = _DEFAULT_INCLUDED_FORMAT_TAGS
 
     input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
-    output_dir = os.path.dirname(output_path)
-    out_files = sorted(glob.glob(os.path.join(output_dir, "*")))
+    output_file = os.path.dirname(output_path)
+    out_files = sorted(glob.glob(os.path.join(output_file, "*")))
     buffered_readers, vcf_readers = _create_reader_lists(input_files)
 
     writers_to_readers = _build_writers_to_readers(vcf_readers, output_path)
@@ -290,13 +290,16 @@ def _validate_arguments(args):
     return writers_to_readers, out_files, buffered_readers, format_tag_regex
 
 def _predict_output(args):
-    input_dir = os.path.abspath(args.input)
-    output_dir = os.path.dirname(args.output)
-    utils.validate_directories(input_dir,output_dir)
+    input_file = os.path.abspath(args.input)
+    output_file = os.path.dirname(args.output)
+    utils.validate_directories(input_file,output_file)
 
     desired_output_files = set([os.path.basename(args.output)])
 
     return desired_output_files
+
+def report_prediction(args):
+    return _predict_output(args)
 
 def execute(args, execution_context):
     input_path = os.path.abspath(args.input)

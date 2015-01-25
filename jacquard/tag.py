@@ -151,13 +151,13 @@ def _log_caller_info(vcf_readers):
         logger.info("Recognized [{}] {} file(s)",
                     caller_count[caller_name], caller_name)
 
-def _build_vcf_readers(input_dir,
+def _build_vcf_readers(input_file,
                        get_caller=variant_caller_factory.get_caller):
-    in_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
+    in_files = sorted(glob.glob(os.path.join(input_file, "*.vcf")))
     vcf_readers = []
     failures = 0
     for filename in in_files:
-        file_path = os.path.join(input_dir, filename)
+        file_path = os.path.join(input_file, filename)
         try:
             vcf_reader = vcf.VcfReader(vcf.FileReader(file_path))
             caller = get_caller(vcf_reader.metaheaders,
@@ -185,11 +185,11 @@ def _get_output_filenames(input_files):
 
     return output_files
 
-def _build_vcf_readers_to_writers(vcf_readers, output_dir):
+def _build_vcf_readers_to_writers(vcf_readers, output_file):
     vcf_providers_to_writers = {}
     for reader in vcf_readers:
         new_filename = _mangle_output_filenames(reader.file_name)
-        output_filepath = os.path.join(output_dir, new_filename)
+        output_filepath = os.path.join(output_file, new_filename)
         vcf_providers_to_writers[reader] = vcf.FileWriter(output_filepath)
 
     return vcf_providers_to_writers
@@ -203,35 +203,38 @@ def add_subparser(subparser):
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
 def _predict_output(args):
-    input_dir = os.path.abspath(args.input)
+    input_file = os.path.abspath(args.input)
 
-    utils.validate_directories(input_dir=input_dir)
-    input_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
+    utils.validate_directories(input_file=input_file)
+    input_files = sorted(glob.glob(os.path.join(input_file, "*.vcf")))
 
     desired_output_files = _get_output_filenames(input_files)
 
     return desired_output_files
 
-def execute(args, execution_context):
-    input_dir = os.path.abspath(args.input)
-    output_dir = os.path.abspath(args.output)
-    utils.validate_directories(input_dir, output_dir)
+def report_prediction(args):
+    return _predict_output(args)
 
-    vcf_readers = _build_vcf_readers(input_dir)
+def execute(args, execution_context):
+    input_file = os.path.abspath(args.input)
+    output_file = os.path.abspath(args.output)
+    utils.validate_directories(input_file, output_file)
+
+    vcf_readers = _build_vcf_readers(input_file)
     if not vcf_readers:
         logger.error(("Specified input directory [{0}] contains no VCF files."
                       "Check parameters and try again."),
-                     input_dir)
+                     input_file)
         #TODO cgates: move to jacquard.py
-        shutil.rmtree(output_dir)
+        shutil.rmtree(output_file)
         exit(1)
 
-    readers_to_writers = _build_vcf_readers_to_writers(vcf_readers, output_dir)
+    readers_to_writers = _build_vcf_readers_to_writers(vcf_readers, output_file)
     logger.info("Processing [{}] VCF file(s) from [{}]",
                 len(vcf_readers),
-                input_dir)
+                input_file)
 
     tag_files(readers_to_writers, execution_context)
     logger.info("Wrote [{}] VCF file(s) to [{}]",
                 len(readers_to_writers),
-                output_dir)
+                output_file)

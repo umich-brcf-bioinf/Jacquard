@@ -128,10 +128,10 @@ class NormalizeTestCase(unittest.TestCase):
         logger.debug = self.original_debug
 
     def test_predict_output(self):
-        with TempDirectory() as input_dir:
-            input_dir.write("A.snvs.vcf","##source=strelka\n#colHeader")
-            input_dir.write("A.indels.vcf","##source=strelka\n#colHeader")
-            args = Namespace(input=input_dir.path)
+        with TempDirectory() as input_file:
+            input_file.write("A.snvs.vcf","##source=strelka\n#colHeader")
+            input_file.write("A.indels.vcf","##source=strelka\n#colHeader")
+            args = Namespace(input=input_file.path)
 
             desired_output_files = normalize._predict_output(args)
             expected_desired_output_files = set(["A.normalized.vcf"])
@@ -139,10 +139,10 @@ class NormalizeTestCase(unittest.TestCase):
             self.assertEquals(expected_desired_output_files, desired_output_files)
 
     def test_validate_single_caller(self):
-        with TempDirectory() as input_dir:
-            strelka_file1 = input_dir.write("strelka1.vcf",
+        with TempDirectory() as input_file:
+            strelka_file1 = input_file.write("strelka1.vcf",
                                             "##source=strelka\n#colHeader")
-            strelka_file2 = input_dir.write("strelka2.vcf",
+            strelka_file2 = input_file.write("strelka2.vcf",
                                             "##source=strelka\n#colHeader")
             caller = normalize._validate_single_caller([strelka_file1, strelka_file2],
                                                        variant_caller_factory.get_caller)
@@ -150,10 +150,10 @@ class NormalizeTestCase(unittest.TestCase):
             self.assertEquals("Strelka", caller.name)
 
     def test_validate_single_caller_raisesWhenDistinctCallers(self):
-        with TempDirectory() as input_dir:
-            strelka_file = input_dir.write("strelka1.vcf",
+        with TempDirectory() as input_file:
+            strelka_file = input_file.write("strelka1.vcf",
                                            "##source=strelka\n#colHeader")
-            varscan_file = input_dir.write("varscan.vcf",
+            varscan_file = input_file.write("varscan.vcf",
                                            "##source=VarScan2\n" +\
                                            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR")
             self.assertRaises(utils.JQException,
@@ -162,10 +162,10 @@ class NormalizeTestCase(unittest.TestCase):
                               variant_caller_factory.get_caller)
 
     def test_validate_single_caller_raisesWhenUnrecognizedCaller(self):
-        with TempDirectory() as input_dir:
-            strelka_file = input_dir.write("strelka1.vcf",
+        with TempDirectory() as input_file:
+            strelka_file = input_file.write("strelka1.vcf",
                                            "##source=strelka\n#colHeader")
-            unrecognized_file = input_dir.write("foo.vcf",
+            unrecognized_file = input_file.write("foo.vcf",
                                                 "##source=foo\n#colHeader")
             self.assertRaises(utils.JQException,
                               normalize._validate_single_caller,
@@ -188,9 +188,9 @@ class NormalizeTestCase(unittest.TestCase):
                           writer_to_readers)
 
     def test_determine_caller_per_directory(self):
-        with TempDirectory() as input_dir:
-            A = input_dir.write("A.vcf","##source=strelka\n#colHeader")
-            B = input_dir.write("B.vcf","##source=strelka\n#colHeader")
+        with TempDirectory() as input_file:
+            A = input_file.write("A.vcf","##source=strelka\n#colHeader")
+            B = input_file.write("B.vcf","##source=strelka\n#colHeader")
             input_files = [A, B]
 
             mock_caller = MockCaller()
@@ -215,28 +215,28 @@ chr1|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 chr2|10|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 ''').replace('|', "\t")
 
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("P1.strelka.snvs.vcf", vcf_content1)
-            input_dir.write("P1.strelka.indels.vcf", vcf_content2)
-            args = Namespace(input=input_dir.path,
-                             output=output_dir.path)
+        with TempDirectory() as input_file, TempDirectory() as output_file:
+            input_file.write("P1.strelka.snvs.vcf", vcf_content1)
+            input_file.write("P1.strelka.indels.vcf", vcf_content2)
+            args = Namespace(input=input_file.path,
+                             output=output_file.path)
 
             normalize.execute(args, ["extra_header1", "extra_header2"])
 
-            output_dir.check("P1.strelka.normalized.vcf")
-            with open(os.path.join(output_dir.path, "P1.strelka.normalized.vcf")) as actual_output_file:
+            output_file.check("P1.strelka.normalized.vcf")
+            with open(os.path.join(output_file.path, "P1.strelka.normalized.vcf")) as actual_output_file:
                 actual_output_lines = actual_output_file.readlines()
 
         self.assertEquals(8, len(actual_output_lines), "normalize output wrong number of lines")
 
 class NormalizeFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_normalize(self):
-        with TempDirectory() as output_dir:
+        with TempDirectory() as output_file:
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir, "functional_tests", "01_normalize")
-            input_dir = os.path.join(module_testdir, "input")
+            input_file = os.path.join(module_testdir, "input")
 
-            command = ["normalize", input_dir, output_dir.path, "--force"]
+            command = ["normalize", input_file, output_file.path, "--force"]
             expected_dir = os.path.join(module_testdir, "benchmark")
 
             self.assertCommand(command, expected_dir)

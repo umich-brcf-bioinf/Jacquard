@@ -111,10 +111,10 @@ def _validate_arguments(args):
             raise utils.JQException("Output file [{}] must be a VCF file.",
                                     output)
         else:
-            output_dir = os.path.dirname(output)
+            output_file = os.path.dirname(output)
             utils.validate_directories(os.path.dirname(input_file),
-                                       output_dir)
-            existing_files_in_output = sorted(glob.glob(os.path.join(output_dir,
+                                       output_file)
+            existing_files_in_output = sorted(glob.glob(os.path.join(output_file,
                                                                      "*")))
             output_file = output
     else:
@@ -125,7 +125,10 @@ def _validate_arguments(args):
     return existing_files_in_output, output_file
 
 def _predict_output(args):
-    return set([args.output])
+    return set([os.path.basename(args.output)])
+
+def report_prediction(args):
+    return _predict_output(args)
 
 def execute(args, execution_context):
     input_file = os.path.abspath(args.input)

@@ -30,38 +30,38 @@ def _read_col_spec(col_spec):
 
     return columns
 
-def _path_type(path):
-    return "file" if os.path.isfile(path) else "directory"
-
-def _build_output_file_names(input_path, output_path):
-    input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
-    if len(input_files) == 0:
-        raise utils.JQException(("Specified input directory [{}] contains "
-                                 "no VCF files. Review inputs and try "
-                                 "again."),
-                                input_path)
-
-    basenames = [os.path.splitext(os.path.basename(i))[0] + ".txt" \
-                       for i in input_files]
-    output_path = [os.path.join(output_path, i) for i in basenames]
-
-    return input_files, output_path
-
-
-def _validate_input_and_output(input_path, output_path):
-    input_path_type = _path_type(input_path)
-    if os.path.exists(output_path) and \
-            input_path_type != _path_type(output_path):
-        raise utils.JQException(("Specified output [{0}] must be a {1} "
-                                 "if input [{2}] is a {1}. Review "
-                                 "arguments and try again."),
-                                output_path,
-                                input_path_type,
-                                input_path)
-    if os.path.isfile(input_path):
-        return [input_path], [output_path]
-    else:
-        return _build_output_file_names(input_path, output_path)
+# def _path_type(path):
+#     return "file" if os.path.isfile(path) else "directory"
+# 
+# def _build_output_file_names(input_path, output_path):
+#     input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
+#     if len(input_files) == 0:
+#         raise utils.JQException(("Specified input directory [{}] contains "
+#                                  "no VCF files. Review inputs and try "
+#                                  "again."),
+#                                 input_path)
+# 
+#     basenames = [os.path.splitext(os.path.basename(i))[0] + ".txt" \
+#                        for i in input_files]
+#     output_path = [os.path.join(output_path, i) for i in basenames]
+# 
+#     return input_files, output_path
+# 
+# 
+# def _validate_input_and_output(input_path, output_path):
+#     input_path_type = _path_type(input_path)
+#     if os.path.exists(output_path) and \
+#             input_path_type != _path_type(output_path):
+#         raise utils.JQException(("Specified output [{0}] must be a {1} "
+#                                  "if input [{2}] is a {1}. Review "
+#                                  "arguments and try again."),
+#                                 output_path,
+#                                 input_path_type,
+#                                 input_path)
+#     if os.path.isfile(input_path):
+#         return [input_path], [output_path]
+#     else:
+#         return _build_output_file_names(input_path, output_path)
 
 ##TODO: hook this idea up -- change method
 def _disambiguate_column_names(column_header, info_header):
@@ -140,55 +140,57 @@ def add_subparser(subparser):
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
 def _predict_output(args):
-    return set([args.output])
+    utils.validate_files(args.input, args.output)
+    return set([os.path.basename(args.output)])
+
+def report_prediction(args):
+    return _predict_output(args)
 
 def execute(args, execution_context):
-    input_path = os.path.abspath(args.input)
-    output_path = os.path.abspath(args.output)
+    input_file = os.path.abspath(args.input)
+    output_file = os.path.abspath(args.output)
+    #TODO: Allow _predict_output to handle validation from now on?
+#     utils.validate_files(input_file, output_file)
+    
     col_spec = args.column_specification if args.column_specification else 0
 
     col_spec_columns = _read_col_spec(col_spec) if col_spec else 0
-    input_files, output_files = _validate_input_and_output(input_path, #TODO: Just one input file and one output file from now on.
-                                                           output_path)
+    
+    logger.info("Expanding [{}] to [{}]",
+                input_file,
+                output_file)
 
-    logger.info("Expanding {} VCF files in [{}] to [{}]",
-                len(input_files),
-                input_path,
-                output_path)
+    file_reader = vcf.FileReader(input_file)
+    vcf_reader = vcf.VcfReader(file_reader)
 
-    for i, input_file in enumerate(input_files):
-        output_file = output_files[i]
-        file_reader = vcf.FileReader(input_file)
-        vcf_reader = vcf.VcfReader(file_reader)
+    file_writer = vcf.FileWriter(output_file)
+    file_writer.open()
 
-        file_writer = vcf.FileWriter(output_file)
-        file_writer.open()
+    potential_columns = _create_potential_column_list(vcf_reader)
 
-        potential_columns = _create_potential_column_list(vcf_reader)
+    if col_spec_columns:
+        actual_columns = _create_actual_column_list(col_spec_columns,
+                                                    potential_columns,
+                                                    col_spec)
+    else:
+        actual_columns = potential_columns
 
-        if col_spec_columns:
-            actual_columns = _create_actual_column_list(col_spec_columns,
-                                                        potential_columns,
-                                                        col_spec)
-        else:
-            actual_columns = potential_columns
+    file_writer.write("#" + "\t".join(actual_columns) + "\n")
 
-        file_writer.write("#" + "\t".join(actual_columns) + "\n")
+    vcf_reader.open()
+    for vcf_record in vcf_reader.vcf_records():
+        row_dict = _create_row_dict(vcf_reader.split_column_header,
+                                    vcf_record)
 
-        vcf_reader.open()
-        for vcf_record in vcf_reader.vcf_records():
-            row_dict = _create_row_dict(vcf_reader.split_column_header,
-                                        vcf_record)
+        new_line = []
+        for col in actual_columns:
+            if col in row_dict:
+                new_line.append(row_dict[col])
+            else:
+                new_line.append(".")
 
-            new_line = []
-            for col in actual_columns:
-                if col in row_dict:
-                    new_line.append(row_dict[col])
-                else:
-                    new_line.append(".")
+        file_writer.write("\t".join(new_line) + "\n")
+    file_writer.close()
+    vcf_reader.close()
 
-            file_writer.write("\t".join(new_line) + "\n")
-        file_writer.close()
-        vcf_reader.close()
-
-    logger.info("Wrote [{}] VCF files to [{}]", len(input_files), output_path)
+    logger.info("Wrote input [{}] to output [{}]", input_file, output_file)

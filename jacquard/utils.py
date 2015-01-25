@@ -28,17 +28,17 @@ class JQException(Exception):
         super(JQException, self).__init__(error_msg)
 
 #TODO: (cgates): Suspect this should raise exception instead of logging and exiting?
-def validate_directories(input_dir=None, output_dir=None):
-    if input_dir:
-        if not os.path.isdir(input_dir):
+def validate_directories(input_file=None, output_dir=None):
+    if input_file:
+        if not os.path.isdir(input_file):
             logger.error("Specified input directory [{}] does not exist.",
-                         input_dir)
+                         input_file)
             exit(1)
         try:
-            listdir(input_dir)
+            listdir(input_file)
         except OSError:
             logger.error("Specified input directory [{}] cannot be read. "+
-                         "Check permissions and try again.", input_dir)
+                         "Check permissions and try again.", input_file)
             exit(1)
     if output_dir:
         if not os.path.isdir(output_dir):
@@ -48,6 +48,18 @@ def validate_directories(input_dir=None, output_dir=None):
                 logger.error("Output directory [{}] could not be created. "+
                              "Check parameters and try again", output_dir)
                 exit(1)
+
+def validate_files(input_file=None, output_file=None):
+    if input_file:
+        if not os.path.isfile(input_file):
+            logger.error("Given input parameter [{}] is not a valid file path.",
+                         input_file)
+            exit(1)
+
+    if output_file:
+        if not os.path.isfile(output_file):
+            logger.error("Given output parameter [{}] is not a valid file path. "+
+                         "Check parameters and try again", output_file)
 
 class OrderedSet(collections.MutableSet):
     def __init__(self, iterable=None):

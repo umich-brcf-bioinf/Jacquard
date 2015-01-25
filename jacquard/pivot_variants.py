@@ -459,7 +459,7 @@ def insert_links(joined_output):
         
         joined_output.loc[row, "IGV"] = '=hyperlink("localhost:60151/goto?locus=chr' + joined_output.loc[row, "CHROM"] + ':' + joined_output.loc[row, "POS"] + '", "IGV")'
  
-def process_files(sample_file_readers, input_dir, output_path, input_keys, pivot_values, headers, header_names, first_line, pivot_builder=build_pivoter):
+def process_files(sample_file_readers, input_file, output_path, input_keys, pivot_values, headers, header_names, first_line, pivot_builder=build_pivoter):
     first_file_reader = sample_file_readers[0]
     first_path        = str(first_file_reader)
     first_reader      = first_file_reader
@@ -533,9 +533,9 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, pivot
    
     print "{0} - done".format(datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S'))
     
-def determine_input_keys(input_dir):
-    for file in listdir(input_dir):
-        if isfile(join(input_dir, file)):
+def determine_input_keys(input_file):
+    for file in listdir(input_file):
+        if isfile(join(input_file, file)):
             fname, extension = os.path.splitext(file)
             
             if extension == ".txt":
@@ -547,15 +547,15 @@ def determine_input_keys(input_dir):
             else:
                 raise PivotError("Cannot determine columns to be used as keys for the pivoting from file [{0}]. Please specify parameter [-k] or [--keys]".format(os.path.abspath(file)))
     
-def get_headers_and_readers(input_dir):
+def get_headers_and_readers(input_file):
     sample_file_readers = []
     headers = []
     header_names = []
     first_line = []
     
-    for item in sorted(listdir(input_dir)):
-        if isfile(join(input_dir, item)):
-            f = open(input_dir + "/" + item, 'r')
+    for item in sorted(listdir(input_file)):
+        if isfile(join(input_file, item)):
+            f = open(input_file + "/" + item, 'r')
             count = -1
             for line in f:
                 count += 1
@@ -569,7 +569,7 @@ def get_headers_and_readers(input_dir):
                     break
 
             f.close()
-            sample_file_readers.append(input_dir + "/" + item)
+            sample_file_readers.append(input_file + "/" + item)
 
     header_names = header_names[0]
     
@@ -579,7 +579,7 @@ def get_headers_and_readers(input_dir):
 
 def add_subparser(subparser):
     parser_pivot = subparser.add_parser("pivot_variants", help="Pivots input files so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
-    parser_pivot.add_argument("input_dir", help="Path to directory containing VCFs. Other file types ignored")
+    parser_pivot.add_argument("input_file", help="Path to directory containing VCFs. Other file types ignored")
     parser_pivot.add_argument("output_file", help="Path to output variant-level XLSX file")
     parser_pivot.add_argument("-k", "--keys",
         help="Columns to be used as keys for the pivoting. Default keys for VCF are CHROM,POS,REF,ALT. Default keys for Epee TXT are CHROM,POS,REF,ANNOTATED_ALLELE,GENE_SYMBOL")
@@ -587,20 +587,20 @@ def add_subparser(subparser):
         help="Format tags to be fielded out in the pivoting.")
         
 def execute(args, execution_context):
-    input_dir = os.path.abspath(args.input_dir)
+    input_file = os.path.abspath(args.input_file)
     output_path = os.path.abspath(args.output_file)
-    input_keys = args.keys.split(",") if args.keys else determine_input_keys(input_dir)
+    input_keys = args.keys.split(",") if args.keys else determine_input_keys(input_file)
     pivot_values = args.tags.split(",") if args.tags else ["GT"]
     
-    output_dir, outfile_name = os.path.split(output_path)
+    output_file, outfile_name = os.path.split(output_path)
 
-    utils.validate_directories(input_dir, output_dir)
+    utils.validate_directories(input_file, output_file)
         
     fname, extension = os.path.splitext(outfile_name)
     if extension != ".csv": 
         print "Error. Specified output {0} must have a .xlsx extension".format(output_path)
         exit(1)
     
-    sample_file_readers, headers, header_names, first_line = get_headers_and_readers(input_dir)
-    process_files(sample_file_readers, input_dir, output_path, input_keys, pivot_values, headers, header_names, first_line)
+    sample_file_readers, headers, header_names, first_line = get_headers_and_readers(input_file)
+    process_files(sample_file_readers, input_file, output_path, input_keys, pivot_values, headers, header_names, first_line)
     

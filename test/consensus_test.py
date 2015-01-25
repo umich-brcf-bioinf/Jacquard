@@ -147,11 +147,11 @@ class ConsensusTestCase(unittest.TestCase):
         logger.debug = self.original_debug
 
     def xtest_validate_arguments(self):
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("A.snvs.vcf","##source=strelka\n#colHeader")
-            input_dir.write("A.indels.vcf","##source=strelka\n#colHeader")
-            args = Namespace(input=input_dir.path,
-                             output=output_dir.path)
+        with TempDirectory() as input_file, TempDirectory() as output_file:
+            input_file.write("A.snvs.vcf","##source=strelka\n#colHeader")
+            input_file.write("A.indels.vcf","##source=strelka\n#colHeader")
+            args = Namespace(input=input_file.path,
+                             output=output_file.path)
 
             existing_files_in_output, output_file = consensus._validate_arguments(args)
             self.assertEquals(1, len(existing_files_in_output))
@@ -230,6 +230,15 @@ class ConsensusTestCase(unittest.TestCase):
         self.assertTrue(cons_helper.add_zscore_called)
         self.assertTrue(tag.format_called)
 
+    def test_predict_output(self):
+        with TempDirectory() as output_file:
+            args = Namespace(output=os.path.join(output_file.path, "consensus.vcf"))
+
+            desired_output_files = consensus._predict_output(args)
+            expected_desired_output_files = set(["consensus.vcf"])
+
+            self.assertEquals(expected_desired_output_files, desired_output_files)
+
     def test_execute_outputFile(self):
         #pylint: disable=no-self-use
         input_data = ("##blah\n#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"+
@@ -249,10 +258,10 @@ class ConsensusTestCase(unittest.TestCase):
         input_data = ("##blah\n#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"+
                     "SAMPLE\n1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF:JQ_VS_DP:JQ_MT_DP|0.2:0.4:30:45")\
                     .replace("|","\t")
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("foo.txt", input_data)
-            input_file = os.path.join(input_dir.path,"foo.txt")
-            output_file = os.path.join(output_dir.path,"baz.vcf")
+        with TempDirectory() as input_file, TempDirectory() as output_file:
+            input_file.write("foo.txt", input_data)
+            input_file = os.path.join(input_file.path,"foo.txt")
+            output_file = os.path.join(output_file.path,"baz.vcf")
             args = Namespace(input=input_file,
                              output=output_file,
                              column_specification=None)
@@ -261,10 +270,10 @@ class ConsensusTestCase(unittest.TestCase):
                                     consensus.execute, args, ["##foo"])
 
     def test_execute_badOutputFile(self):
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("foo.vcf","")
-            input_file = os.path.join(input_dir.path,"foo.vcf")
-            output_file = os.path.join(output_dir.path,"baz.txt")
+        with TempDirectory() as input_file, TempDirectory() as output_file:
+            input_file.write("foo.vcf","")
+            input_file = os.path.join(input_file.path,"foo.vcf")
+            output_file = os.path.join(output_file.path,"baz.txt")
             args = Namespace(input=input_file,
                              output=output_file,
                              column_specification=None)
@@ -277,24 +286,24 @@ class ConsensusTestCase(unittest.TestCase):
         input_data = ("##blah\n#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"+
                     "SAMPLE\n1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF:JQ_VS_DP:JQ_MT_DP|0.2:0.4:30:45")\
                     .replace("|","\t")
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("foo.vcf", input_data)
-            input_file = os.path.join(input_dir.path,"foo.vcf")
+        with TempDirectory() as input_file, TempDirectory() as output_file:
+            input_file.write("foo.vcf", input_data)
+            input_file = os.path.join(input_file.path,"foo.vcf")
             args = Namespace(input=input_file,
-                             output=output_dir.path,
+                             output=output_file.path,
                              column_specification=None)
             consensus.execute(args,["##foo"])
-            output_dir.check("consensus.vcf")
+            output_file.check("consensus.vcf")
 
 class ConsensusFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_consensus(self):
-        with TempDirectory() as output_dir:
+        with TempDirectory() as output_file:
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir, "functional_tests", "05_consensus")
-            input_dir = os.path.join(module_testdir, "input", "tiny_strelka.merged.vcf")
-            output_file = os.path.join(output_dir.path, "consensus.vcf")
+            input_file = os.path.join(module_testdir, "input", "tiny_strelka.merged.vcf")
+            output_file = os.path.join(output_file.path, "consensus.vcf")
 
-            command = ["consensus", input_dir, output_file, "--force"]
+            command = ["consensus", input_file, output_file, "--force"]
             expected_dir = os.path.join(module_testdir, "benchmark")
 
             self.assertCommand(command, expected_dir)

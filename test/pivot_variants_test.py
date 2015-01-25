@@ -515,32 +515,32 @@ class PivotTestCase(unittest.TestCase):
 
     ##determine input keys
     def test_determine_input_keys_txt(self):
-        input_dir = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_txt"
-        actual_lst = determine_input_keys(input_dir)
+        input_file = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_txt"
+        actual_lst = determine_input_keys(input_file)
 
         expected_lst = ["CHROM", "POS", "REF", "ANNOTATED_ALLELE", "GENE_SYMBOL", "SnpEff_WARNING/ERROR"]
 
         self.assertEquals(expected_lst, actual_lst)
 
     def test_determine_input_keys_vcf(self):
-        input_dir = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_vcf"
-        actual_lst = determine_input_keys(input_dir)
+        input_file = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_vcf"
+        actual_lst = determine_input_keys(input_file)
 
         expected_lst = ["CHROM", "POS", "REF", "ALT"]
 
         self.assertEquals(expected_lst, actual_lst)
 
     def test_determine_input_keys_invalid(self):
-        input_dir = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_invalid"
+        input_file = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_invalid"
 
-        self.assertRaises(PivotError, determine_input_keys, input_dir)
+        self.assertRaises(PivotError, determine_input_keys, input_file)
 
     ##get headers, readers
     def test_get_headers_and_readers(self):
-        input_dir = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_txt"
-        sample_file_readers, headers, header_names, first_line = get_headers_and_readers(input_dir)
+        input_file = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_txt"
+        sample_file_readers, headers, header_names, first_line = get_headers_and_readers(input_file)
 
-        self.assertEquals([input_dir + "/foo1.txt", input_dir + "/foo2.txt"], sample_file_readers)
+        self.assertEquals([input_file + "/foo1.txt", input_file + "/foo2.txt"], sample_file_readers)
         self.assertEquals([3,2], headers)
         self.assertEquals("CHROM	POS	REF	ALT	GENE_SYMBOL	FORMAT	Sample_2384	Sample_2385", header_names.rstrip())
         self.assertEquals("1	2342	A	T	EGFR	GT:DP	1/1:241	0/1:70", first_line[0].rstrip())

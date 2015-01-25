@@ -103,7 +103,7 @@ def _find_somatic_positions(in_files):
 
     return somatic_positions, somatic_positions_header
 
-def _write_somatic(in_files, output_dir, somatic_positions, execution_context):
+def _write_somatic(in_files, output_file, somatic_positions, execution_context):
     total_number_of_calls = 0
 
     for input_file in in_files:
@@ -115,7 +115,7 @@ def _write_somatic(in_files, output_dir, somatic_positions, execution_context):
 
         in_file = open(input_file, "r")
 
-        out_file = open(os.path.join(output_dir, new_file), "w")
+        out_file = open(os.path.join(output_file, new_file), "w")
 
         for line in in_file:
             if line.startswith("#"):
@@ -151,27 +151,27 @@ def _write_somatic(in_files, output_dir, somatic_positions, execution_context):
 
     logger.info("Jacquard wrote [{}] VCF files to [{}]",
                 len(in_files),
-                output_dir)
+                output_file)
 
-def filter_somatic_positions(input_dir, output_dir, execution_context=None):
+def filter_somatic_positions(input_file, output_file, execution_context=None):
     if not execution_context:
         execution_context = []
 
-    in_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
+    in_files = sorted(glob.glob(os.path.join(input_file, "*.vcf")))
     if len(in_files) < 1:
         logger.error("Specified input directory [{}] contains no VCF files. "
-                     "Check parameters and try again.", input_dir)
+                     "Check parameters and try again.", input_file)
         exit(1)
 
     logger.info("Processing [{}] VCF file(s) from [{}]",
                 len(in_files),
-                input_dir)
+                input_file)
 
     (somatic_positions,
      somatic_positions_header) = _find_somatic_positions(in_files)
     execution_context.append(somatic_positions_header)
 
-    _write_somatic(in_files, output_dir, somatic_positions, execution_context)
+    _write_somatic(in_files, output_file, somatic_positions, execution_context)
 
 def _write_output(writer, headers, actual_sorted_variants):
     for line in headers:
@@ -209,11 +209,11 @@ def _build_readers(input_files):
 
     return vcf_readers
 
-def _build_writers_to_readers(vcf_readers, output_dir):
+def _build_writers_to_readers(vcf_readers, output_file):
     writers_to_readers = {}
     for reader in vcf_readers:
         new_filename = _mangle_output_filenames(reader.file_name)
-        output_filepath = os.path.join(output_dir, new_filename)
+        output_filepath = os.path.join(output_file, new_filename)
 
         writers_to_readers[reader] = vcf.FileWriter(output_filepath)
 
@@ -231,14 +231,17 @@ def _get_output_filenames(input_files):
     return output_files
  
 def _predict_output(args):
-    input_dir = os.path.abspath(args.input)
+    input_file = os.path.abspath(args.input)
 
-    utils.validate_directories(input_dir=input_dir)
-    input_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
+    utils.validate_directories(input_file=input_file)
+    input_files = sorted(glob.glob(os.path.join(input_file, "*.vcf")))
 
     desired_output_files = _get_output_filenames(input_files)
 
     return desired_output_files
+
+def report_prediction(args):
+    return _predict_output(args)
 
 def add_subparser(subparser):
     # pylint: disable=line-too-long
@@ -249,33 +252,33 @@ def add_subparser(subparser):
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
 def _validate_arguments(args):
-    input_dir = os.path.abspath(args.input)
-    output_dir = os.path.abspath(args.output)
+    input_file = os.path.abspath(args.input)
+    output_file = os.path.abspath(args.output)
 
-    utils.validate_directories(input_dir, output_dir)
+    utils.validate_directories(input_file, output_file)
 
-    input_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
-    out_files = sorted(glob.glob(os.path.join(output_dir, "*")))
+    input_files = sorted(glob.glob(os.path.join(input_file, "*.vcf")))
+    out_files = sorted(glob.glob(os.path.join(output_file, "*")))
 
     if len(input_files) < 1:
         logger.error("Specified input directory [{}] contains no VCF files. "
-                     "Check parameters and try again.", input_dir)
+                     "Check parameters and try again.", input_file)
         exit(1)
 
-    full_path_input_files = [os.path.join(input_dir, i) for i in input_files]
+    full_path_input_files = [os.path.join(input_file, i) for i in input_files]
     vcf_readers = _build_readers(full_path_input_files)
-    writers_to_readers = _build_writers_to_readers(vcf_readers, output_dir)
+    writers_to_readers = _build_writers_to_readers(vcf_readers, output_file)
 
     logger.info("Processing [{}] VCF file(s) from [{}]",
                 len(input_files),
-                input_dir)
+                input_file)
 
     return writers_to_readers, out_files
 
 def execute(args, execution_context):
-    input_dir = os.path.abspath(args.input)
-    output_dir = os.path.abspath(args.output)
+    input_file = os.path.abspath(args.input)
+    output_file = os.path.abspath(args.output)
 
-    utils.validate_directories(input_dir, output_dir)
+    utils.validate_directories(input_file, output_file)
 
-    filter_somatic_positions(input_dir, output_dir, execution_context)
+    filter_somatic_positions(input_file, output_file, execution_context)

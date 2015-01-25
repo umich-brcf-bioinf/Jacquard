@@ -112,18 +112,18 @@ class MergeTestCase(unittest.TestCase):
             "chr1|42|.|{}|{}|.|.|{}|JQ_AF_{}|0.1|0.2\n"
         vcfRecordFormat = vcfRecordFormat.replace("|", "\t")
 
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("A.mutect.vcf", vcfRecordFormat.format("MuTect","T","A,C","INFO_Mutect","MT"))
-            input_dir.write("A.strelka.vcf", vcfRecordFormat.format("Strelka","T","A,C","INFO_Strelka","SK"))
-            input_dir.write("A.varscan.vcf", vcfRecordFormat.format("VarScan","T","A,C","INFO_VarScan","VS"))
+        with TempDirectory() as input_file, TempDirectory() as output_file:
+            input_file.write("A.mutect.vcf", vcfRecordFormat.format("MuTect","T","A,C","INFO_Mutect","MT"))
+            input_file.write("A.strelka.vcf", vcfRecordFormat.format("Strelka","T","A,C","INFO_Strelka","SK"))
+            input_file.write("A.varscan.vcf", vcfRecordFormat.format("VarScan","T","A,C","INFO_VarScan","VS"))
 
-            args = Namespace(input=input_dir.path,
-                         output=os.path.join(output_dir.path,"tmp.vcf"),
+            args = Namespace(input=input_file.path,
+                         output=os.path.join(output_file.path,"tmp.vcf"),
                          allow_inconsistent_sample_sets=False,
                          keys=None)
             merge.execute(args, [])
 
-            actual_merged = output_dir.read('tmp.vcf').split("\n")
+            actual_merged = output_file.read('tmp.vcf').split("\n")
 
             print actual_merged
             self.assertEquals(14, len(actual_merged))
@@ -273,33 +273,33 @@ class MergeTestCase(unittest.TestCase):
 
     #TODO: move out of reference files
     def test_determineInputKeysVcf(self):
-        input_dir = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_vcf"
-        actual_lst = determine_input_keys(input_dir)
+        input_file = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_vcf"
+        actual_lst = determine_input_keys(input_file)
 
         expected_lst = ["CHROM", "POS", "REF", "ALT"]
 
         self.assertEquals(expected_lst, actual_lst)
 
     def test_determineInputKeysInvalid(self):
-        input_dir = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_invalid"
+        input_file = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_invalid"
 
-        self.assertRaises(PivotError, determine_input_keys, input_dir)
+        self.assertRaises(PivotError, determine_input_keys, input_file)
 
     ##get headers, readers
     def test_getHeadersAndReaders(self):
-        input_dir = TEST_DIRECTORY + "/functional_tests/test_input/test_input_valid"
-        in_files = sorted(glob.glob(os.path.join(input_dir,"*")))
+        input_file = TEST_DIRECTORY + "/functional_tests/test_input/test_input_valid"
+        in_files = sorted(glob.glob(os.path.join(input_file,"*")))
         sample_file_readers, headers, header_names, first_line, meta_headers = get_headers_and_readers(in_files)
 
-        self.assertEquals([os.path.join(input_dir, "foo1.txt")], sample_file_readers)
+        self.assertEquals([os.path.join(input_file, "foo1.txt")], sample_file_readers)
         self.assertEquals([3], headers)
         self.assertEquals("CHROM\tPOS\tREF\tALT\tGENE_SYMBOL\tFORMAT\tSample_2384\tSample_2385", header_names.rstrip())
         self.assertEquals("1\t2342\tA\tT\tEGFR\tGT:DP\t1/1:241\t0/1:70", first_line[0].rstrip())
         self.assertEquals(['##FORMAT=<ID=JQ_FOO'], meta_headers)
 
     def test_getHeadersAndReaders_invalid(self):
-        input_dir = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_txt"
-        in_files = sorted(glob.glob(os.path.join(input_dir,"*")))
+        input_file = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_txt"
+        in_files = sorted(glob.glob(os.path.join(input_file,"*")))
 
         self.assertRaisesRegexp(JQException,
                                 r"VCF file\(s\) .* have no Jacquard tags. Run \[jacquard tag\] on these files and try again.",
@@ -900,13 +900,13 @@ class MergeTestCase(unittest.TestCase):
 
 class MergeFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_merge(self):
-        with TempDirectory() as output_dir:
+        with TempDirectory() as output_file:
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir, "functional_tests", "04_merge")
-            input_dir = os.path.join(module_testdir, "input")
-            output_file = os.path.join(output_dir.path, "tiny_strelka.merged.vcf")
+            input_file = os.path.join(module_testdir, "input")
+            output_file = os.path.join(output_file.path, "tiny_strelka.merged.vcf")
 
-            command = ["merge", input_dir, output_file, "--force"]
+            command = ["merge", input_file, output_file, "--force"]
             expected_dir = os.path.join(module_testdir, "benchmark")
 
             self.assertCommand(command, expected_dir)

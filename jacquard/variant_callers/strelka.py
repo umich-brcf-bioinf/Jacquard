@@ -249,10 +249,10 @@ class Strelka(object):
         return True
 
     @staticmethod
-    def final_steps(hc_candidates, merge_candidates, output_dir):
+    def final_steps(hc_candidates, merge_candidates, output_file):
         output_file_count = len(merge_candidates.keys())
         print ("Wrote [{0}] VCF files to [{1}]").format(output_file_count,
-                                                        output_dir)
+                                                        output_file)
         return merge_candidates
 
     @staticmethod

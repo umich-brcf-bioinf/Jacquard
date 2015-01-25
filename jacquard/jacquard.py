@@ -96,7 +96,7 @@ def _validate_temp(tmp_output, original_output_dir, force=0):
                                     tmp_dir_name,
                                     original_output_dir)
 
-def _preflight(output, desired_output_files, command): #Must pass in args.output or something to that effect.
+def _preflight(output, desired_output_files, command): #Must pass in args.output or something to that effect as "output".
     if os.path.isdir:
         existing_output_paths = sorted(glob.glob(os.path.join(output, "*.vcf")))
     else:
@@ -152,8 +152,8 @@ def _move_tmp_contents_to_original(tmp_dir, original_output):
             shutil.move(full_fname, original_output)
         else:
             if not os.path.isdir(original_output):
-                output_dir = os.path.dirname(original_output)
-                shutil.move(full_fname, output_dir)
+                output_file = os.path.dirname(original_output)
+                shutil.move(full_fname, output_file)
 
     os.rmdir(tmp_dir)
 
@@ -200,6 +200,10 @@ def dispatch(modules, arguments):
         TMP_OUTPUT_PATH = _create_temp_directory(original_output_dir,
                                                  args.force)
         args.output = TMP_OUTPUT_PATH
+        
+#         desired_outputs = module_dispatch[args.subparser_name].report_prediction(args)
+#         _preflight(args.output, desired_outputs, " ".join(arguments))
+        
         logger.debug("Writing output to tmp directory [{}]", TMP_OUTPUT_PATH)
 
         module_dispatch[args.subparser_name].execute(args, execution_context)
