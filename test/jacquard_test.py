@@ -16,6 +16,11 @@ import test.test_case as test_case
 
 MOCK_CREATE_TMP_CALLED = False
 MOCK_MOVE_TEMP_CONTENTS_CALLED = False
+MOCK_PREFLIGHT_CALLED = False
+
+def mock_preflight(output, desired_output_files, command):
+    global MOCK_PREFLIGHT_CALLED
+    MOCK_PREFLIGHT_CALLED = True
 
 def mock_create_temp_directory(output_dir, force=0):
 # pylint: disable=W0603,W0613
@@ -37,6 +42,9 @@ def _change_mock_methods():
 
 #    global mock_move_tmp_contents_to_original
     jacquard._move_tmp_contents_to_original = mock_move_tmp_contents_to_original
+    
+#    global mock_preflight
+    jacquard._preflight = mock_preflight
 
 MOCK_LOG_CALLED = False
 
@@ -135,7 +143,8 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
             mock_module.my_exception_string = ""
             jacquard.dispatch([mock_module], ["mock_module", output_dir.path])
             self.assertTrue(mock_module.execute_called)
-
+            self.assertTrue(mock_module.report_called)
+            
             self.assertTrue(MOCK_CREATE_TMP_CALLED)
             self.assertTrue(MOCK_MOVE_TEMP_CONTENTS_CALLED)
 

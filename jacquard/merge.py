@@ -682,6 +682,9 @@ def add_subparser(subparser):
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
+def report_prediction(args):
+    return "foo"
+
 def execute(args, execution_context):
     input_file = os.path.abspath(args.input)
     output_path = os.path.abspath(args.output)

@@ -448,8 +448,11 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
     def test_execute_colSpecInvalid(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir, TempDirectory() as col_spec_dir:
             col_spec_dir.write("col_spec.txt", "foo\nbar")
-            args = Namespace(input=input_dir.path,
-                             output=output_dir.path,
+            input_dir.write("consensus.vcf", "##source=strelka\n#foo")
+            input_file = os.path.join(input_dir.path, "consensus.vcf")
+            output_file = os.path.join(output_dir.path, "consensus.txt")
+            args = Namespace(input=input_file,
+                             output=output_file,
                              column_specification=col_spec_dir.path)
 
             self.assertRaisesRegexp(utils.JQException, "The column "

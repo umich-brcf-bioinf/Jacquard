@@ -150,8 +150,8 @@ def execute(args, execution_context):
     input_file = os.path.abspath(args.input)
     output_file = os.path.abspath(args.output)
     #TODO: Allow _predict_output to handle validation from now on?
-#     utils.validate_files(input_file, output_file)
-    
+    utils.validate_files(input_file, output_file)
+
     col_spec = args.column_specification if args.column_specification else 0
 
     col_spec_columns = _read_col_spec(col_spec) if col_spec else 0

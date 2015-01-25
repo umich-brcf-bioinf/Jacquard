@@ -900,13 +900,13 @@ class MergeTestCase(unittest.TestCase):
 
 class MergeFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_merge(self):
-        with TempDirectory() as output_file:
+        with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir, "functional_tests", "04_merge")
-            input_file = os.path.join(module_testdir, "input")
-            output_file = os.path.join(output_file.path, "tiny_strelka.merged.vcf")
+            input_dir = os.path.join(module_testdir, "input")
+            output_dir = os.path.join(output_dir.path, "tiny_strelka.merged.vcf")
 
-            command = ["merge", input_file, output_file, "--force"]
+            command = ["merge", input_dir, output_dir, "--force"]
             expected_dir = os.path.join(module_testdir, "benchmark")
 
             self.assertCommand(command, expected_dir)
