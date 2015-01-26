@@ -96,7 +96,7 @@ def add_subparser(subparser):
 def _predict_output(args):
     input_file = os.path.abspath(args.input)
 
-    utils.validate_directories(input_file=input_file)
+    utils.validate_directories(input_dir=input_file)
     in_files = sorted(glob.glob(os.path.join(input_file, "*.vcf")))
 
     caller = _determine_caller_per_directory(in_files)

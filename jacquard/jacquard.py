@@ -107,7 +107,7 @@ def _preflight(output, desired_output_files, command):
         raise utils.JQException(("ERROR: The command [{}] would "
                                 "overwrite existing files {}; review "
                                 "command/output dir to avoid overwriting or "
-                                "use the flag '--force'. (Type 'jacquard -h' "
+                                "use the flag '--force'. Type 'jacquard -h' "
                                 "for more details").format(command,
                                                            list(intersection)))
 
@@ -195,7 +195,7 @@ def dispatch(modules, arguments):
         logger.debug("command|{}", " ".join(arguments))
 
         original_output_dir = args.output
-        
+
         desired_outputs = module_dispatch[args.subparser_name].report_prediction(args)
 
         _preflight(original_output_dir, desired_outputs, " ".join(arguments))
@@ -205,7 +205,7 @@ def dispatch(modules, arguments):
         TMP_OUTPUT_PATH = _create_temp_directory(original_output_dir,
                                                  args.force)
         args.output = TMP_OUTPUT_PATH
-        
+
         logger.debug("Writing output to tmp directory [{}]", TMP_OUTPUT_PATH)
 
         module_dispatch[args.subparser_name].execute(args, execution_context)

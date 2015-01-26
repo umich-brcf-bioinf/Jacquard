@@ -1,15 +1,17 @@
 #pylint: disable=line-too-long, too-many-public-methods, invalid-name
 #pylint: disable=missing-docstring, protected-access, global-statement, too-few-public-methods
 from __future__ import absolute_import, print_function
+
 from StringIO import StringIO
-from argparse import Namespace
-import jacquard.logger as logger
-import jacquard.utils as utils
-import natsort
 import os
 import subprocess
 import sys
+
+import natsort
 from testfixtures import TempDirectory
+
+import jacquard.logger as logger
+import jacquard.utils as utils
 import test.test_case as test_case
 
 mock_log_called = False

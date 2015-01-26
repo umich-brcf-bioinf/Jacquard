@@ -222,18 +222,18 @@ def _build_writers_to_readers(vcf_readers, output_file):
 def _mangle_output_filenames(input_file):
     basename, extension = os.path.splitext(os.path.basename(input_file))
     return ".".join([basename, JQ_OUTPUT_SUFFIX, extension.strip(".")])
- 
+
 def _get_output_filenames(input_files):
     output_files = set()
     for input_file in input_files:
         output_files.add(_mangle_output_filenames(input_file))
- 
+
     return output_files
- 
+
 def _predict_output(args):
     input_file = os.path.abspath(args.input)
 
-    utils.validate_directories(input_file=input_file)
+    utils.validate_directories(input_dir=input_file)
     input_files = sorted(glob.glob(os.path.join(input_file, "*.vcf")))
 
     desired_output_files = _get_output_filenames(input_files)
