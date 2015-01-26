@@ -222,7 +222,7 @@ class ValidateDirectoriesTestCase(test_case.JacquardBaseTestCase):
 #         output_files = ["foo.vcf", "bar.vcf"]
 #         writers = [MockWriter(output_filepath="baz.vcf")]
 #         self.assertTrue(utils.validate_arguments(output_files, writers))
-# 
+
 #     def test_validate_arguments_invalid(self):
 #         output_files = ["foo.vcf", "bar.vcf"]
 #         writers = [MockWriter(output_filepath="bar.vcf"), MockWriter(output_filepath="blah.vcf")]

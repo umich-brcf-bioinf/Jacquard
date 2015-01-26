@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 
 from StringIO import StringIO
+from argparse import Namespace
 import os
 import sys
 import unittest
@@ -13,6 +14,7 @@ import jacquard.logger as logger
 import jacquard.utils as utils
 import test.mock_module as mock_module
 import test.test_case as test_case
+
 
 MOCK_CREATE_TMP_CALLED = False
 MOCK_MOVE_TEMP_CONTENTS_CALLED = False
@@ -106,7 +108,7 @@ class JacquardTestCase(unittest.TestCase):
     def test_preflight_valid(self):
         with TempDirectory() as output_dir:
             desired_output_files = set(["foo.vcf", "bar.vcf"])
-            jacquard._preflight(output_dir.path, desired_output_files, "foo_command")
+            jacquard._preflight_old(output_dir.path, desired_output_files, "foo_command")
             self.assertTrue(1==1)
 
     def test_preflight_invalid(self):
@@ -116,10 +118,23 @@ class JacquardTestCase(unittest.TestCase):
 
             self.assertRaisesRegexp(utils.JQException,
                                 r"The command \[foo_command\] would overwrite existing files \['foo.vcf'\]",
-                                jacquard._preflight,
+                                jacquard._preflight_old,
                                 output_dir.path,
                                 desired_output_files,
                                 "foo_command")
+
+    def xtest_preflight_ok(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path)
+            jacquard._preflight(args)
+            self.assertTrue(1==1)
+
+    def xtest_preflight_notOk(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path)
+            self.assertRaises(utils.JQException, jacquard._preflight, args)
 
 class JacquardTestCase_dispatchOnly(unittest.TestCase):
     def setUp(self):

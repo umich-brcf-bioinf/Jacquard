@@ -96,7 +96,12 @@ def _validate_temp(tmp_output, original_output_dir, force=0):
                                     tmp_dir_name,
                                     original_output_dir)
 
-def _preflight(output, desired_output_files, command):
+# def _preflight(args):
+#     input_path = args.input
+#     output_path = args.output
+#     
+
+def _preflight_old(output, desired_output_files, command):
     if os.path.isdir:
         existing_output_paths = sorted(glob.glob(os.path.join(output, "*.vcf")))
     else:
@@ -198,7 +203,7 @@ def dispatch(modules, arguments):
 
         desired_outputs = module_dispatch[args.subparser_name].report_prediction(args)
 
-        _preflight(original_output_dir, desired_outputs, " ".join(arguments))
+        _preflight_old(original_output_dir, desired_outputs, " ".join(arguments))
 
         global TMP_OUTPUT_PATH
 
