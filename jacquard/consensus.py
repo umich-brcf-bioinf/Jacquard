@@ -2,6 +2,7 @@ from __future__ import print_function, absolute_import
 from jacquard.variant_callers import consensus_helper
 import jacquard.logger as logger
 import jacquard.utils as utils
+import jacquard.variant_callers.jacquard_zscore_caller as jacquard_zscore_caller
 import jacquard.vcf as vcf
 import os
 
@@ -80,6 +81,27 @@ def _write_to_output_file(cons_helper,
         tmp_reader.close()
         file_writer.close()
 
+def _write_zscores(caller,
+                   metaheaders,
+                   vcf_reader,
+                   file_writer):
+
+    try:
+        file_writer.open()
+        headers = list(metaheaders)
+        headers.extend(vcf_reader.metaheaders)
+        headers.extend(caller.metaheaders)
+        headers.append(vcf_reader.column_header)
+        file_writer.write("\n".join(headers) +"\n")
+
+        vcf_reader.open()
+        for vcf_record in vcf_reader.vcf_records():
+            line = caller.add_tags(vcf_record)
+            file_writer.write(line)
+    finally:
+        vcf_reader.close()
+        file_writer.close()
+
 def _add_consensus_tags(cons_helper, vcf_reader, file_writer):
     for vcf_record in vcf_reader.vcf_records():
         file_writer.write(cons_helper.add_tags(vcf_record))
@@ -129,9 +151,13 @@ def execute(args, execution_context):
     tmp_reader = vcf.VcfReader(vcf.FileReader(tmp_output_file))
     file_writer = vcf.FileWriter(output_file)
 
-    _write_to_output_file(cons_helper,
-                          execution_context,
-                          tmp_reader,
-                          file_writer)
+#     _write_to_output_file(cons_helper,
+#                           execution_context,
+#                           tmp_reader,
+#                           file_writer)
+    logger.info("Calculating zscores")
+    caller = jacquard_zscore_caller.ZScoreCaller(tmp_reader)
+    metaheaders = execution_context + cons_helper.get_consensus_metaheaders()
+    _write_zscores(caller, metaheaders, tmp_reader, file_writer)
 
     os.remove(tmp_output_file)

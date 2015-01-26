@@ -1,6 +1,14 @@
+##jacquard.version=0.21
+##jacquard.command=consensus test/functional_tests/jacquard_test/merge2/benchmark/merged.vcf test/functional_tests/jacquard_test/consensus/benchmark/consensus.vcf --force
+##jacquard.cwd=/Users/cgates/workspace
+##FORMAT=<ID=JQ_CONS_AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].",Source="Jacquard",Version="0.21">
+##FORMAT=<ID=JQ_CONS_AF_RANGE,Number=1,Type=Float,Description="Max(allele frequency) - min (allele frequency) across recognized callers.",Source="Jacquard",Version="0.21>">
+##FORMAT=<ID=JQ_CONS_DP_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].",Source="Jacquard",Version="0.21">
+##FORMAT=<ID=JQ_CONS_DP_RANGE,Number=1,Type=Float,Description="Max(depth) - min (depth) across recognized callers.",Source="Jacquard",Version="0.21>">
+##FORMAT=<ID=JQ_CONS_SOM_COUNT,Number=1,Type=Integer,Description="Count of recognized variant callers that reported confident somatic call for this sample-position.",Source="Jacquard",Version="0.21">
 ##fileformat=VCFv4.2
 ##jacquard.version=0.21
-##jacquard.command=merge2 /var/folders/9k/4rq56x0x7qs4__x67rr_nqf00000gn/T/tmp7LZPrU/filter_hc_somatic /var/folders/9k/4rq56x0x7qs4__x67rr_nqf00000gn/T/tmp7LZPrU/merge2/merged.vcf --force
+##jacquard.command=merge2 test/functional_tests/jacquard_test/filter_hc_somatic/benchmark test/functional_tests/jacquard_test/merge/benchmark/merge-actual.tmp --force
 ##jacquard.cwd=/Users/cgates/workspace
 ##jacquard.merge.sample=<Column=1,Name=tiny|NORMAL,Source=tiny.mutect.normalized.jacquardTags_HCsomatic.vcf|tiny.strelka.normalized.jacquardTags_HCsomatic.vcf|tiny.varscan.normalized.jacquardTags_HCsomatic.vcf>
 ##jacquard.merge.sample=<Column=2,Name=tiny|TUMOR,Source=tiny.mutect.normalized.jacquardTags_HCsomatic.vcf|tiny.strelka.normalized.jacquardTags_HCsomatic.vcf|tiny.varscan.normalized.jacquardTags_HCsomatic.vcf>
@@ -14,24 +22,14 @@
 ##FORMAT=<ID=JQ_VS_AF,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_VS_DP,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_VS_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)",Source="Jacquard",Version=0.21>
-##jacquard.version=0.21
-##jacquard.command=consensus /var/folders/9k/4rq56x0x7qs4__x67rr_nqf00000gn/T/tmp7LZPrU/merge2/merged.vcf test/functional_tests/jacquard_test/consensus/benchmark/consensus-actual.vcf --force
-##jacquard.cwd=/Users/cgates/workspace
-##FORMAT=<ID=JQ_CONS_AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].",Source="Jacquard",Version="0.21">
-##FORMAT=<ID=JQ_CONS_AF_RANGE,Number=1,Type=Float,Description="Max(allele frequency) - min (allele frequency) across recognized callers.",Source="Jacquard",Version="0.21>">
-##FORMAT=<ID=JQ_CONS_AF_ZSCORE,Number=1,Type=Float,Description="Jacquard measure of concordance of reported allele frequencies across callers. [(this AF range - mean AF range)/standard dev(all AF ranges)]. If consensus value from <2 values will be [.]",Source="Jacquard",Version="0.21">
-##FORMAT=<ID=JQ_CONS_DP_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].",Source="Jacquard",Version="0.21">
-##FORMAT=<ID=JQ_CONS_DP_RANGE,Number=1,Type=Float,Description="Max(depth) - min (depth) across recognized callers.",Source="Jacquard",Version="0.21>">
-##FORMAT=<ID=JQ_CONS_DP_ZSCORE,Number=1,Type=Float,Description="Jacquard measure of concordance of reported depths across callers. [(this DP range - mean DP range)/standard dev(all DP ranges)]. If consensus value from <2 values will be [.]",Source="Jacquard",Version="0.21">
-##FORMAT=<ID=JQ_CONS_SOM_COUNT,Number=1,Type=Integer,Description="Count of recognized variant callers that reported confident somatic call for this sample-position.",Source="Jacquard",Version="0.21">
-##jacquard.consensus.JQ_CONS_SOM_RANGE.mean_SOM_range=0.0
-##jacquard.consensus.JQ_CONS_SOM_ZSCORE.std_SOM_range=0.0
-##jacquard.consensus.JQ_CONS_DP_RANGE.mean_DP_range=0.0
-##jacquard.consensus.JQ_CONS_DP_ZSCORE.std_DP_range=0.0
-##jacquard.consensus.JQ_CONS_AF_RANGE.mean_AF_range=0.0
-##jacquard.consensus.JQ_CONS_AF_ZSCORE.std_AF_range=0.0
+##jacquard.consensus.JQ_CONS_AF_ZSCORE.JQ_CONS_AF_RANGE_mean=0.02
+##jacquard.consensus.JQ_CONS_AF_ZSCORE.JQ_CONS_AF_RANGE_stdev=0.01
+##FORMAT=<ID=JQ_CONS_AF_ZSCORE,Number=1,Type=Float,Description="Concordance of reported allele frequencies across callers: [(this AF range - mean AF range)/standard dev(all AF ranges)]. Values with null or missing AF range will be assigned zscore of '.'; for multi-valued ranges, zscore is of largest range.",Source="Jacquard",Version="0.21">
+##jacquard.consensus.JQ_CONS_DP_ZSCORE.JQ_CONS_DP_RANGE_mean=2.0
+##jacquard.consensus.JQ_CONS_DP_ZSCORE.JQ_CONS_DP_RANGE_stdev=1.0
+##FORMAT=<ID=JQ_CONS_DP_ZSCORE,Number=1,Type=Float,Description="Concordance of reported depth across callers: [(this DP range - mean DP range)/standard dev(all DP ranges)]. Values with null or missing DP range will be assigned zscore of '.'.",Source="Jacquard",Version="0.21">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	tiny|NORMAL	tiny|TUMOR
-chr1	14948	.	G	A	.	.	.	JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_SOM_COUNT:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.09:174:0:0.06:171:0:0.08:0.03:172.5:3:0:.:.	0.13:302:0:0.14:303:1:0.14:0.01:302.5:1:1:.:.
+chr1	14948	.	G	A	.	.	.	JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_SOM_COUNT:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.09:174:0:0.06:171:0:0.08:0.03:172.5:3:0:1.00:1.00	0.13:302:0:0.14:303:1:0.14:0.01:302.5:1:1:-1.00:-1.00
 chr1	137622	.	G	A	.	.	.	JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_SOM_COUNT:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.24:35:0:0.24:.:35:.:0:.:.	0.29:42:1:0.29:.:42:.:1:.:.
 chr1	1147545	.	A	G	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_SOM_COUNT:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.0:27:0:0:.:27:.:0:.:.	0.31:35:1:0.31:.:35:.:1:.:.
 chr1	1169795	.	C	T	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_SOM_COUNT:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.0:37:0:0:.:37:.:0:.:.	0.22:46:1:0.22:.:46:.:1:.:.

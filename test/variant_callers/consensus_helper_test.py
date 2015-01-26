@@ -255,7 +255,7 @@ class ConsensusHelperTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEqual(expected, first_meta_header)
         self.assertEqual(3, len(actual))
-        self.assertEqual(3, len(split_actual))
+        self.assertEqual(2, len(split_actual))
 
     def test_calculate_average_float(self):
         new_tags = [[0.2], [0.3], [0.5]]

@@ -158,7 +158,8 @@ class _AlleleFreqTag(object):
                      'Source="Jacquard",'
                      'Version="{1}">').format(JQ_CONSENSUS_TAG,
                                               utils.__version__)
-        return "\n".join([af_average, af_range, af_zscore])
+#        return "\n".join([af_average, af_range, af_zscore])
+        return "\n".join([af_average, af_range])
 
     @staticmethod
     def _get_allele_freq_tags(vcf_record):
@@ -223,7 +224,8 @@ class _DepthTag(object):
                      'Source="Jacquard",'
                      'Version="{1}">').format(JQ_CONSENSUS_TAG,
                                               utils.__version__)
-        return "\n".join([dp_average, dp_range, dp_zscore])
+#        return "\n".join([dp_average, dp_range, dp_zscore])
+        return "\n".join([dp_average, dp_range])
 
     @staticmethod
     def _get_depth_tags(vcf_record):
