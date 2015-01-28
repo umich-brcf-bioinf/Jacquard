@@ -301,6 +301,9 @@ def _predict_output(args):
 def report_prediction(args):
     return _predict_output(args)
 
+def get_required_input_output_types():
+    return ("directory", "file")
+
 def execute(args, execution_context):
     input_path = os.path.abspath(args.input)
     output_path = os.path.abspath(args.output)

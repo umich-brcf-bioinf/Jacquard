@@ -108,6 +108,9 @@ def _predict_output(args):
 def report_prediction(args):
     return _predict_output(args)
 
+def get_required_input_output_types():
+    return ("directory", "directory")
+
 #TODO: (cgates): normalized files should contain execution context - do they?
 def execute(args, execution_context):
     input_dir = os.path.abspath(args.input)

@@ -876,11 +876,11 @@ chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
 
 class Merge2FunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_merge2(self):
-        with TempDirectory() as output_file:
+        with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir, "functional_tests", "04_merge2")
             input_file = os.path.join(module_testdir, "input")
-            output_file = os.path.join(output_file.path, "merged.vcf")
+            output_file = os.path.join(output_dir.path, "merged.vcf")
 
             command = ["merge2", input_file, output_file, "--force"]
             expected_dir = os.path.join(module_testdir, "benchmark")

@@ -16,23 +16,26 @@
 # pylint: disable=missing-docstring,global-statement
 
 from __future__ import absolute_import, print_function
+
 import argparse
+import glob
 import os
-import signal
 import shutil
+import signal
 import sys
 import traceback
-import glob
 
-import jacquard.tag as tag
-import jacquard.normalize as normalize
-import jacquard.filter_hc_somatic as filter_hc_somatic
-import jacquard.merge as merge
-import jacquard.merge2 as merge2
+import jacquard.command_validator as command_validator
 import jacquard.consensus as consensus
 import jacquard.expand as expand
-import jacquard.utils as utils
+import jacquard.filter_hc_somatic as filter_hc_somatic
 import jacquard.logger as logger
+import jacquard.merge as merge
+import jacquard.merge2 as merge2
+import jacquard.normalize as normalize
+import jacquard.tag as tag
+import jacquard.utils as utils
+
 
 _SUBCOMMANDS = [normalize,
                 tag,
@@ -96,16 +99,12 @@ def _validate_temp(tmp_output, original_output_dir, force=0):
                                     tmp_dir_name,
                                     original_output_dir)
 
-# def _preflight(args):
-#     input_path = args.input
-#     output_path = args.output
-#     
-
 def _preflight_old(output, desired_output_files, command):
     if os.path.isdir:
         existing_output_paths = sorted(glob.glob(os.path.join(output, "*.vcf")))
     else:
         existing_output_paths = [output]
+
     existing_output_files = set([os.path.basename(i) for i in existing_output_paths])
     intersection = existing_output_files.intersection(desired_output_files)
     if intersection:
@@ -202,6 +201,13 @@ def dispatch(modules, arguments):
         original_output_dir = args.output
 
         desired_outputs = module_dispatch[args.subparser_name].report_prediction(args)
+#         required_input_type, required_output_type = module_dispatch[args.subparser_name].get_required_input_output_types()
+#         command_validator.preflight(args, required_input_type, required_output_type)
+#         predicted_output = module_dispatch[args.subparser_name].report_prediction(args)
+#         command_validator._check_overwrite_existing_files(args.output,
+#                                                           predicted_output,
+#                                                           args.subparser_name,
+#                                                           args.force)
 
         _preflight_old(original_output_dir, desired_outputs, " ".join(arguments))
 

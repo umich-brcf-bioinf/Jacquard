@@ -243,6 +243,9 @@ def _predict_output(args):
 def report_prediction(args):
     return _predict_output(args)
 
+def get_required_input_output_types():
+    return ("directory", "directory")
+
 def add_subparser(subparser):
     # pylint: disable=line-too-long
     parser = subparser.add_parser("filter_hc_somatic", help="Accepts a directory of Jacquard-tagged VCF results from one or more callers and creates a new directory of VCFs, where rows have been filtered to contain only positions that were called high-confidence somatic in any VCF.")

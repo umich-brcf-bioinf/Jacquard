@@ -123,19 +123,6 @@ class JacquardTestCase(unittest.TestCase):
                                 desired_output_files,
                                 "foo_command")
 
-    def xtest_preflight_ok(self):
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            args = Namespace(input=input_dir.path,
-                             output=output_dir.path)
-            jacquard._preflight(args)
-            self.assertTrue(1==1)
-
-    def xtest_preflight_notOk(self):
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            args = Namespace(input=input_dir.path,
-                             output=output_dir.path)
-            self.assertRaises(utils.JQException, jacquard._preflight, args)
-
 class JacquardTestCase_dispatchOnly(unittest.TestCase):
     def setUp(self):
         unittest.TestCase.setUp(self)
@@ -159,7 +146,7 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
             jacquard.dispatch([mock_module], ["mock_module", output_dir.path])
             self.assertTrue(mock_module.execute_called)
             self.assertTrue(mock_module.report_called)
-            
+
             self.assertTrue(MOCK_CREATE_TMP_CALLED)
             self.assertTrue(MOCK_MOVE_TEMP_CONTENTS_CALLED)
 
@@ -174,11 +161,16 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
             self.assertEqual(1, exit_code.exception.code)
 
     def test_dispatch_forceNonEmptyOutputDir(self):
-        with TempDirectory() as output_dir:
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
             output_dir.write("file1.vcf", "foo")
             mock_module.my_exception_string = ""
 
+            args = Namespace(subparser_name = "mock_module",
+                             input = input_dir.path,
+                             output = output_dir.path,
+                             force = 1)
             jacquard.dispatch([mock_module], ["mock_module", output_dir.path, "--force"])
+#             jacquard.dispatch([mock_module], args)
             self.assertTrue(1 == 1, "Force does not result in premature exit.")
 
     def test_dispatch_done(self):

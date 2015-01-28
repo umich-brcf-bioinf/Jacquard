@@ -1,6 +1,5 @@
 #pylint: disable=unused-argument, too-many-locals
 from __future__ import print_function, absolute_import
-import glob
 import os
 import re
 
@@ -146,6 +145,9 @@ def _predict_output(args):
 def report_prediction(args):
     return _predict_output(args)
 
+def get_required_input_output_types():
+    return ("file", "file")
+
 def execute(args, execution_context):
     input_file = os.path.abspath(args.input)
     output_file = os.path.abspath(args.output)
@@ -155,7 +157,7 @@ def execute(args, execution_context):
     col_spec = args.column_specification if args.column_specification else 0
 
     col_spec_columns = _read_col_spec(col_spec) if col_spec else 0
-    
+
     logger.info("Expanding [{}] to [{}]",
                 input_file,
                 output_file)

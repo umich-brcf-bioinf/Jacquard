@@ -20,3 +20,6 @@ def report_prediction(args):
     if my_exception_string:
         raise Exception(my_exception_string)
     return "foo"
+
+def get_required_input_output_types():
+    return (1, 1)
