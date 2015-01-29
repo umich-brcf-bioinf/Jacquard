@@ -13,6 +13,7 @@ from testfixtures import TempDirectory
 
 import jacquard.command_validator as command_validator
 import jacquard.utils as utils
+import test.mock_module as mock_module
 import test.test_case as test_case
 
 CHECK_INPUT_EXISTS_CALLED = False
@@ -23,6 +24,38 @@ CHECK_CAN_CREATE_OUTPUT_CALLED = False
 CHECK_OUTPUT_CORRECT_TYPE_CALLED = False
 CHECK_TMPDIR_EXISTS_CALLED = False
 CHECK_OVERWRITE_EXISTING_FILES_CALLED = False
+
+
+class MakeDirTestCase(test_case.JacquardBaseTestCase):
+    def test_makepath_singleLeaf(self):
+        with TempDirectory() as output_dir:
+            dest = os.path.join(output_dir.path, "foo_bar")
+            command_validator._makepath(dest)
+            self.assertTrue(os.path.isdir(dest))
+
+    def test_makepath_okIfExists(self):
+        with TempDirectory() as output_dir:
+            dest = output_dir.path
+            command_validator._makepath(dest)
+            self.assertTrue(os.path.isdir(dest))
+
+    def test_makepath_createsParents(self):
+        with TempDirectory() as output_dir:
+            dest = os.path.join(output_dir.path, "foo/bar")
+            command_validator._makepath(dest)
+            self.assertTrue(os.path.isdir(dest))
+
+    def test_makepath_raisesOnWrongType(self):
+        with TempDirectory() as output_dir:
+            output_dir.write('foo', b'some text')
+            dest = os.path.join(output_dir.path, "foo")
+            self.assertRaises(OSError, command_validator._makepath, dest)
+
+    def test_makepath_raisesIfExistingParentWrongType(self):
+        with TempDirectory() as output_dir:
+            output_dir.write('foo', b'some text')
+            dest = os.path.join(output_dir.path, "foo/bar")
+            self.assertRaises(OSError, command_validator._makepath, dest)
 
 class CommandValidatorCheckOutputTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
@@ -164,41 +197,41 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
         with TempDirectory() as output_dir:
             output_file = os.path.join(output_dir.path,"parent_dir/output_file.txt")
 
-            command_validator._check_can_create_output(output_file, "file")
+            command_validator._check_can_create_output(output_file)
             self.assertIn("parent_dir", os.listdir(output_dir.path))
 
     def test_check_can_create_output_canCreateOutputDirectory(self):
         with TempDirectory() as output_dir:
-            nested_dir = os.path.join(output_dir.path,"nested_dir")
+            target_dir = os.path.join(output_dir.path,"nested_dir/target_dir")
 
-            command_validator._check_can_create_output(nested_dir, "directory")
+            command_validator._check_can_create_output(target_dir)
             self.assertIn("nested_dir", os.listdir(output_dir.path))
 
     def test_check_can_create_output_cannotCreateOutputFile(self):
         with TempDirectory() as output_dir:
             unwriteable_dir = os.path.join(output_dir.path, "unwriteable_dir")
-            output_file = os.path.join(unwriteable_dir, "output_file.vcf")
+            output_file = os.path.join(unwriteable_dir, "nested_dir/output_file.vcf")
 
             try:
                 make_unwriteable_dir(unwriteable_dir)
                 self.assertRaisesRegexp(utils.JQException,
                                         "Specified output .* does not exist and cannot be created",
                                         command_validator._check_can_create_output,
-                                        output_file, "file")
+                                        output_file)
             finally:
                 cleanup_unwriteable_dir(unwriteable_dir)
 
     def test_check_can_create_output_cannotCreateOutputDirectory(self):
         with TempDirectory() as output_dir:
             unwriteable_dir = os.path.join(output_dir.path, "unwriteable_dir")
-            output_file = os.path.join(unwriteable_dir,"output_dir")
+            target_dir = os.path.join(unwriteable_dir,"nested_dir/target_dir")
 
             try:
                 make_unwriteable_dir(unwriteable_dir)
                 self.assertRaisesRegexp(utils.JQException,
                                         "Specified output .* does not exist and cannot be created",
                                         command_validator._check_can_create_output,
-                                        output_file, "directory")
+                                        target_dir)
             finally:
                 cleanup_unwriteable_dir(unwriteable_dir)
 
@@ -353,9 +386,11 @@ class CommandValidatorPreflightTestCase(test_case.JacquardBaseTestCase):
             input_dir.write("input.txt","foo")
 
             args = Namespace(input=input_file,
-                             output=output_file)
+                             output=output_file,
+                             subparser_name="foo",
+                             force=0)
 
-            command_validator.preflight(args, "file", "file")
+            command_validator.preflight(args, mock_module)
 
             self.assertTrue(CHECK_INPUT_EXISTS_CALLED)
             self.assertTrue(CHECK_INPUT_READABLE_CALLED)
@@ -379,7 +414,7 @@ def mock_check_output_exists(foo, bar):
     global CHECK_OUTPUT_EXISTS_CALLED
     CHECK_OUTPUT_EXISTS_CALLED = True
 
-def mock_check_can_create_output(foo, bar):
+def mock_check_can_create_output(foo):
     global CHECK_CAN_CREATE_OUTPUT_CALLED
     CHECK_CAN_CREATE_OUTPUT_CALLED = True
 
@@ -391,7 +426,7 @@ def mock_check_tmpdir_exists(foo):
     global CHECK_TMPDIR_EXISTS_CALLED
     CHECK_TMPDIR_EXISTS_CALLED = True
 
-def mock_check_overwrite_existing_files(foo, bar):
+def mock_check_overwrite_existing_files(foo, bar, baz, qux):
     global CHECK_OVERWRITE_EXISTING_FILES_CALLED
     CHECK_OVERWRITE_EXISTING_FILES_CALLED = True
 

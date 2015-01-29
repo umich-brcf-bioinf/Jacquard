@@ -2,20 +2,41 @@ from __future__ import absolute_import
 
 import glob
 import os
+import errno
 
 import jacquard.utils as utils
 
 TMP_DIR_NAME = "jacquard_tmp"
 
-def preflight(args, required_input_type, required_output_type):
+
+def preflight(args, module):
     input_path = args.input
     output_path = args.output
+    module_name = args.subparser_name
+    force_flag = args.force
+
+    required_input_type, required_output_type =\
+                                    module.get_required_input_output_types()
 
     _check_input_exists(input_path)
     _check_input_readable(input_path)
     _check_input_correct_type(input_path, required_input_type)
     _check_output_exists(output_path, required_output_type)
     _check_tmpdir_exists(output_path)
+
+    predicted_output = module.report_prediction(args)
+    _check_overwrite_existing_files(output_path,
+                                    predicted_output,
+                                    module_name,
+                                    force_flag)
+
+def _makepath(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else: raise
 
 def _check_input_exists(input_path):
     if not os.path.exists(input_path):
@@ -42,16 +63,14 @@ def _check_input_correct_type(input_path, required_type):
 
 def _check_output_exists(output_path, required_type):
     if not os.path.exists(output_path):
-        _check_can_create_output(output_path, required_type)
+        _check_can_create_output(output_path)
     else:
         _check_output_correct_type(output_path, required_type)
 
-def _check_can_create_output(output_path, required_type):
-    if required_type == "file":
-        output_path = os.path.dirname(output_path)
-
+def _check_can_create_output(output_path):
+    output_path = os.path.dirname(output_path)
     try:
-        os.makedirs(output_path)
+        _makepath(output_path)
     except OSError:
         raise utils.JQException(("Specified output [{}] does not exist "
                                  "and cannot be created. Review inputs "

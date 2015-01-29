@@ -16,7 +16,7 @@ import test.mock_module as mock_module
 import test.test_case as test_case
 
 
-MOCK_CREATE_TMP_CALLED = False
+MOCK_NOMINATE_TMP_CALLED = False
 MOCK_MOVE_TEMP_CONTENTS_CALLED = False
 MOCK_PREFLIGHT_CALLED = False
 
@@ -24,14 +24,10 @@ def mock_preflight(output, desired_output_files, command):
     global MOCK_PREFLIGHT_CALLED
     MOCK_PREFLIGHT_CALLED = True
 
-def mock_create_temp_directory(output_dir, force=0):
+def mock_nominate_temp_directory(output_dir):
 # pylint: disable=W0603,W0613
-    global MOCK_CREATE_TMP_CALLED
-    MOCK_CREATE_TMP_CALLED = True
-
-    if len(os.listdir(output_dir)) != 0:
-        if not force:
-            sys.exit(1)
+    global MOCK_NOMINATE_TMP_CALLED
+    MOCK_NOMINATE_TMP_CALLED = True
 
 def mock_move_tmp_contents_to_original(tmp_output, output_dir):
 # pylint: disable=W0603,W0613
@@ -40,7 +36,7 @@ def mock_move_tmp_contents_to_original(tmp_output, output_dir):
 
 def _change_mock_methods():
 #    global mock_create_temp_directory
-    jacquard._create_temp_directory = mock_create_temp_directory
+    jacquard._nominate_temp_directory = mock_nominate_temp_directory
 
 #    global mock_move_tmp_contents_to_original
     jacquard._move_tmp_contents_to_original = mock_move_tmp_contents_to_original
@@ -67,16 +63,18 @@ class JacquardTestCase(unittest.TestCase):
         unittest.TestCase.tearDown(self)
 
     def test_gracefulErrorMessageWhenUnanticipatedProblem(self):
-        with TempDirectory() as output_dir:
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
             mock_module.my_exception_string = "I'm feeling angry"
 
             with self.assertRaises(SystemExit) as exit_code:
-                jacquard.dispatch([mock_module], ["mock_module", output_dir.path])
-
+                jacquard.dispatch([mock_module], ["mock_module",
+                                                  input_dir.path,
+                                                  output_dir.path])
             self.assertEqual(1, exit_code.exception.code)
 
             actual_messages = self.output.getvalue().rstrip().split("\n")
 
+            print actual_messages
             self.assertEquals(4, len(actual_messages))
             self.assertRegexpMatches(actual_messages[0], "Jacquard begins")
             self.assertRegexpMatches(actual_messages[1], "Saving log to")
@@ -141,22 +139,27 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
         jacquard._move_tmp_contents_to_original = self.original_move_tmp_contents
 
     def test_dispatch(self):
-        with TempDirectory() as output_dir:
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
             mock_module.my_exception_string = ""
-            jacquard.dispatch([mock_module], ["mock_module", output_dir.path])
+            jacquard.dispatch([mock_module], ["mock_module",
+                                              input_dir.path,
+                                              output_dir.path])
             self.assertTrue(mock_module.execute_called)
             self.assertTrue(mock_module.report_called)
 
-            self.assertTrue(MOCK_CREATE_TMP_CALLED)
+            self.assertTrue(MOCK_NOMINATE_TMP_CALLED)
             self.assertTrue(MOCK_MOVE_TEMP_CONTENTS_CALLED)
 
-    def test_dispatch_nonEmptyOutputDir(self):
-        with TempDirectory() as output_dir:
+    def xtest_dispatch_nonEmptyOutputDir(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
             output_dir.write("file1.vcf", "foo")
+            output_file = os.path.join(output_dir.path,"file1.vcf")
             mock_module.my_exception_string = ""
 
             with self.assertRaises(SystemExit) as exit_code:
-                jacquard.dispatch([mock_module], ["mock_module", output_dir.path])
+                jacquard.dispatch([mock_module], ["mock_module",
+                                                  input_dir.path,
+                                                  output_file])
 
             self.assertEqual(1, exit_code.exception.code)
 
@@ -169,22 +172,30 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
                              input = input_dir.path,
                              output = output_dir.path,
                              force = 1)
-            jacquard.dispatch([mock_module], ["mock_module", output_dir.path, "--force"])
+            jacquard.dispatch([mock_module], ["mock_module",
+                                              input_dir.path,
+                                              output_dir.path,
+                                              "--force"])
+
 #             jacquard.dispatch([mock_module], args)
             self.assertTrue(1 == 1, "Force does not result in premature exit.")
 
     def test_dispatch_done(self):
-        with TempDirectory() as output_dir:
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
             mock_module.my_exception_string = ""
-            jacquard.dispatch([mock_module], ["mock_module", output_dir.path])
+            jacquard.dispatch([mock_module], ["mock_module",
+                                              input_dir.path,
+                                              output_dir.path])
             actual_messages = self.output.getvalue().rstrip().split("\n")
             self.assertRegexpMatches(actual_messages[3], "Done")
 
     def test_dispatch_doneWithWarnings(self):
-        with TempDirectory() as output_dir:
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
             mock_module.my_exception_string = ""
             logger.SHOW_WARNING = True
-            jacquard.dispatch([mock_module], ["mock_module", output_dir.path])
+            jacquard.dispatch([mock_module], ["mock_module",
+                                              input_dir.path,
+                                              output_dir.path])
             actual_messages = self.output.getvalue().rstrip().split("\n")
             self.assertRegexpMatches(actual_messages[3], r"Done. \(See warnings above\)")
             logger.SHOW_WARNING = False

@@ -115,6 +115,20 @@ def _preflight_old(output, desired_output_files, command):
                                 "for more details").format(command,
                                                            list(intersection)))
 
+def _nominate_temp_directory(original_output):
+    extension = os.path.splitext(os.path.basename(original_output))[1]
+
+    if extension:
+        original_output_fname = os.path.basename(original_output)
+        original_output = os.path.dirname(original_output)
+        tmp_output = os.path.join(original_output,
+                                  TMP_DIR_NAME,
+                                  original_output_fname)
+    else:
+        tmp_output = os.path.join(original_output, TMP_DIR_NAME)
+
+    return tmp_output
+
 def _create_temp_directory(original_output_dir, force=0):
     extension = os.path.splitext(os.path.basename(original_output_dir))[1]
 
@@ -144,13 +158,13 @@ def _create_temp_directory(original_output_dir, force=0):
 
     return tmp_output
 
-def _move_tmp_contents_to_original(tmp_dir, original_output):
-    if os.path.isfile(tmp_dir):
-        tmp_dir = os.path.dirname(tmp_dir)
+def _move_tmp_contents_to_original(tmp_path, original_output):
+    if os.path.isfile(tmp_path):
+        tmp_path = os.path.dirname(tmp_path)
 
-    tmp_contents = os.listdir(tmp_dir)
+    tmp_contents = os.listdir(tmp_path)
     for fname in tmp_contents:
-        full_fname = os.path.join(tmp_dir, fname)
+        full_fname = os.path.join(tmp_path, fname)
 
         if os.path.isfile(full_fname):
             shutil.move(full_fname, original_output)
@@ -159,7 +173,7 @@ def _move_tmp_contents_to_original(tmp_dir, original_output):
                 output_file = os.path.dirname(original_output)
                 shutil.move(full_fname, output_file)
 
-    os.rmdir(tmp_dir)
+    os.rmdir(tmp_path)
 
 def dispatch(modules, arguments):
     # pylint: disable=line-too-long
@@ -198,37 +212,24 @@ def dispatch(modules, arguments):
         logger.debug("cwd|{}", os.getcwd())
         logger.debug("command|{}", " ".join(arguments))
 
-        original_output_dir = args.output
+        original_output = args.output
 
-        desired_outputs = module_dispatch[args.subparser_name].report_prediction(args)
-#         required_input_type, required_output_type = module_dispatch[args.subparser_name].get_required_input_output_types()
-#         command_validator.preflight(args, required_input_type, required_output_type)
-#         predicted_output = module_dispatch[args.subparser_name].report_prediction(args)
-#         command_validator._check_overwrite_existing_files(args.output,
-#                                                           predicted_output,
-#                                                           args.subparser_name,
-#                                                           args.force)
+        command_validator.preflight(args, module_dispatch[args.subparser_name])
 
-        _preflight_old(original_output_dir, desired_outputs, " ".join(arguments))
-
-        global TMP_OUTPUT_PATH
-
-        TMP_OUTPUT_PATH = _create_temp_directory(original_output_dir,
-                                                 args.force)
+        TMP_OUTPUT_PATH = _nominate_temp_directory(original_output)
         args.output = TMP_OUTPUT_PATH
-
         logger.debug("Writing output to tmp directory [{}]", TMP_OUTPUT_PATH)
 
         module_dispatch[args.subparser_name].execute(args, execution_context)
 
         logger.debug("Moving files from tmp directory {} to output directory",
                      TMP_OUTPUT_PATH,
-                     original_output_dir)
-        _move_tmp_contents_to_original(TMP_OUTPUT_PATH, original_output_dir)
+                     original_output)
+        _move_tmp_contents_to_original(TMP_OUTPUT_PATH, original_output)
         logger.debug("Removed tmp directory {}", TMP_OUTPUT_PATH)
 
-        logger.debug("Output saved to [{}]", os.path.abspath(original_output_dir))
-        logger.info("Output saved to [{}]", original_output_dir)
+        logger.debug("Output saved to [{}]", os.path.abspath(original_output))
+        logger.info("Output saved to [{}]", original_output)
         if logger.SHOW_WARNING:
             logger.info("Done. (See warnings above)")
         else:
