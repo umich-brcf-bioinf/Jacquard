@@ -1,8 +1,8 @@
 from __future__ import print_function, absolute_import
-from jacquard.variant_callers import consensus_helper
+import jacquard.variant_callers.jacquard_consensus_caller as consensus_caller
 import jacquard.logger as logger
 import jacquard.utils as utils
-import jacquard.variant_callers.jacquard_zscore_caller as jacquard_zscore_caller
+import jacquard.variant_callers.jacquard_zscore_caller as zscore_caller
 import jacquard.vcf as vcf
 import os
 
@@ -93,7 +93,7 @@ def execute(args, execution_context):
         utils.validate_directories(os.path.dirname(input_file), output)
         output_file = os.path.join(output, "consensus.vcf")
 
-    cons_helper = consensus_helper.ConsensusHelper()
+    cons_helper = consensus_caller.ConsensusCaller()
 
     vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
     tmp_output_file = output_file + ".tmp"
@@ -105,7 +105,7 @@ def execute(args, execution_context):
     file_writer = vcf.FileWriter(output_file)
 
     logger.info("Calculating zscores")
-    caller = jacquard_zscore_caller.ZScoreCaller(tmp_reader)
+    caller = zscore_caller.ZScoreCaller(tmp_reader)
     metaheaders = execution_context + cons_helper.get_consensus_metaheaders()
     _write_zscores(caller, metaheaders, tmp_reader, file_writer)
 

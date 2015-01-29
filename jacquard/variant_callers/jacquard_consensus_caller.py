@@ -231,7 +231,7 @@ class _SomaticTag(object):
                                         somatic_count)
 
 
-class ConsensusHelper(object):
+class ConsensusCaller(object):
     def __init__(self):
         self.tags = [_AlleleFreqTag(), _DepthTag(), _SomaticTag()]
         self.ranges = {}

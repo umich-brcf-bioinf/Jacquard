@@ -6,7 +6,7 @@ import os
 import unittest
 
 import jacquard.utils as utils
-from jacquard.variant_callers import consensus_helper
+import jacquard.variant_callers.jacquard_consensus_caller as consensus_caller
 from jacquard.vcf import VcfRecord
 import test.test_case as test_case
 
@@ -76,37 +76,37 @@ class MockFileReader(object):
 
 class AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
-        split_meta_header = consensus_helper._AlleleFreqTag().metaheader.split("\n")
-        self.assertEqual('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].",Source="Jacquard",Version="{1}">'.format(consensus_helper.JQ_CONSENSUS_TAG, utils.__version__), split_meta_header[0])
+        split_meta_header = consensus_caller._AlleleFreqTag().metaheader.split("\n")
+        self.assertEqual('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].",Source="Jacquard",Version="{1}">'.format(consensus_caller.JQ_CONSENSUS_TAG, utils.__version__), split_meta_header[0])
 
     def test_insert_consensus(self):
-        tag = consensus_helper._AlleleFreqTag()
+        tag = consensus_caller._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|X:0:0.1:0.2|Y:0.2:0.3:0.4\n".replace('|', "\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE|X:0:0.1:0.2:0.1:0.2|Y:0.2:0.3:0.4:0.3:0.2\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|', "\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE|X:0:0.1:0.2:0.1:0.2|Y:0.2:0.3:0.4:0.3:0.2\n".format(consensus_caller.JQ_CONSENSUS_TAG).replace('|', "\t")
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_insert_consensus_multAlts(self):
-        tag = consensus_helper._AlleleFreqTag()
+        tag = consensus_caller._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF|0,0:0.2,0.4|0,0:0.1,0.3\n".replace('|', "\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:{0}AF_AVERAGE:{0}AF_RANGE|0,0:0.2,0.4:0.1,0.2:0.2,0.4|0,0:0.1,0.3:0.05,0.15:0.1,0.3\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|', "\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:{0}AF_AVERAGE:{0}AF_RANGE|0,0:0.2,0.4:0.1,0.2:0.2,0.4|0,0:0.1,0.3:0.05,0.15:0.1,0.3\n".format(consensus_caller.JQ_CONSENSUS_TAG).replace('|', "\t")
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_insert_consensus_noJQ_AFTags(self):
-        tag = consensus_helper._AlleleFreqTag()
+        tag = consensus_caller._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP|X|Y\n".replace('|', "\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{0}AF_AVERAGE:{0}AF_RANGE|X:.:.|Y:.:.\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|', "\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{0}AF_AVERAGE:{0}AF_RANGE|X:.:.|Y:.:.\n".format(consensus_caller.JQ_CONSENSUS_TAG).replace('|', "\t")
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_insert_consensus_noNullValuesInAvgCalculation(self):
-        tag = consensus_helper._AlleleFreqTag()
+        tag = consensus_caller._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|X:0:0.1:.|Y:0.2:0.3:.\n".replace('|', "\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE|X:0:0.1:.:0.05:0.1|Y:0.2:0.3:.:0.25:0.1\n".format(consensus_helper.JQ_CONSENSUS_TAG).replace('|', "\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE|X:0:0.1:.:0.05:0.1|Y:0.2:0.3:.:0.25:0.1\n".format(consensus_caller.JQ_CONSENSUS_TAG).replace('|', "\t")
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
@@ -114,36 +114,36 @@ class AlleleFreqTagTestCase(unittest.TestCase):
 
 class DepthTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
-        split_meta_header = consensus_helper._DepthTag().metaheader.split("\n")
+        split_meta_header = consensus_caller._DepthTag().metaheader.split("\n")
         self.assertEqual('##FORMAT=<ID={0}DP_AVERAGE,Number=1,Type=Float,' \
                       'Description="Average allele frequency across ' \
                       'recognized variant callers that reported ' \
                       'frequency for this position; rounded to integer '\
                       '[round(average(JQ_*_DP))].",' \
                       'Source="Jacquard",Version="{1}">'\
-                      .format(consensus_helper.JQ_CONSENSUS_TAG, \
+                      .format(consensus_caller.JQ_CONSENSUS_TAG, \
                               utils.__version__), split_meta_header[0])
 
     def test_insert_consensus(self):
-        tag = consensus_helper._DepthTag()
+        tag = consensus_caller._DepthTag()
         line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF:JQ_foo_DP:JQ_bar_DP:JQ_baz_DP|X:1:2:3|Y:4:5:6\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF:JQ_foo_DP:JQ_bar_DP:JQ_baz_DP:{0}DP_AVERAGE:{0}DP_RANGE|X:1:2:3:2:2|Y:4:5:6:5:2\n").format(consensus_helper.JQ_CONSENSUS_TAG)
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF:JQ_foo_DP:JQ_bar_DP:JQ_baz_DP:{0}DP_AVERAGE:{0}DP_RANGE|X:1:2:3:2:2|Y:4:5:6:5:2\n").format(consensus_caller.JQ_CONSENSUS_TAG)
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_insert_consensus_multAlts(self):
-        tag = consensus_helper._DepthTag()
+        tag = consensus_caller._DepthTag()
         line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_DP:JQ_bar_DP|0,0:1,2|0,0:3,4\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_DP:JQ_bar_DP:{0}DP_AVERAGE:{0}DP_RANGE|0,0:1,2:0.5,1:1,2|0,0:3,4:1.5,2:3,4\n").format(consensus_helper.JQ_CONSENSUS_TAG)
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_DP:JQ_bar_DP:{0}DP_AVERAGE:{0}DP_RANGE|0,0:1,2:0.5,1:1,2|0,0:3,4:1.5,2:3,4\n").format(consensus_caller.JQ_CONSENSUS_TAG)
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_insert_consensus_noJQ_DPTags(self):
-        tag = consensus_helper._DepthTag()
+        tag = consensus_caller._DepthTag()
         line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF|X|Y\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF:{0}DP_AVERAGE:{0}DP_RANGE|X:.:.|Y:.:.\n").format(consensus_helper.JQ_CONSENSUS_TAG)
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF:{0}DP_AVERAGE:{0}DP_RANGE|X:.:.|Y:.:.\n").format(consensus_caller.JQ_CONSENSUS_TAG)
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
@@ -151,34 +151,34 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
 
 class SomaticTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
-        split_meta_header = consensus_helper._SomaticTag().metaheader.split("\n")
+        split_meta_header = consensus_caller._SomaticTag().metaheader.split("\n")
         self.assertEqual('##FORMAT=<ID={0}SOM_COUNT,Number=1,Type=Integer,' \
                       'Description="Count of recognized variant callers ' \
                       'that reported confident somatic call for this '\
                       'sample-position.",Source="Jacquard",Version="{1}">'\
-                      .format(consensus_helper.JQ_CONSENSUS_TAG, \
+                      .format(consensus_caller.JQ_CONSENSUS_TAG, \
                               utils.__version__), split_meta_header[0])
 
     def test_insert_consensus(self):
-        tag = consensus_helper._SomaticTag()
+        tag = consensus_caller._SomaticTag()
         line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:JQ_bar_HC_SOM:JQ_baz_HC_SOM|X:2:0:1|Y:4:1:1\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:JQ_bar_HC_SOM:JQ_baz_HC_SOM:{0}SOM_COUNT|X:2:0:1:1|Y:4:1:1:2\n").format(consensus_helper.JQ_CONSENSUS_TAG)
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:JQ_bar_HC_SOM:JQ_baz_HC_SOM:{0}SOM_COUNT|X:2:0:1:1|Y:4:1:1:2\n").format(consensus_caller.JQ_CONSENSUS_TAG)
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_insert_consensus_allZero(self):
-        tag = consensus_helper._SomaticTag()
+        tag = consensus_caller._SomaticTag()
         line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:JQ_bar_HC_SOM:JQ_baz_HC_SOM|X:2:0:0|Y:4:0:0\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:JQ_bar_HC_SOM:JQ_baz_HC_SOM:{0}SOM_COUNT|X:2:0:0:0|Y:4:0:0:0\n").format(consensus_helper.JQ_CONSENSUS_TAG)
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:JQ_bar_HC_SOM:JQ_baz_HC_SOM:{0}SOM_COUNT|X:2:0:0:0|Y:4:0:0:0\n").format(consensus_caller.JQ_CONSENSUS_TAG)
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_insert_consensus_noJQ_HC_SOMTags(self):
-        tag = consensus_helper._SomaticTag()
+        tag = consensus_caller._SomaticTag()
         line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP|X:2|Y:4\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:{0}SOM_COUNT|X:2:.|Y:4:.\n").format(consensus_helper.JQ_CONSENSUS_TAG)
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:{0}SOM_COUNT|X:2:.|Y:4:.\n").format(consensus_caller.JQ_CONSENSUS_TAG)
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
@@ -186,10 +186,10 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
 class ConsensusHelperTestCase(test_case.JacquardBaseTestCase):
     def test_add_tags(self):
         line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|0:0.1:0.2|0.2:0.3:0.4\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE:{0}DP_AVERAGE:{0}DP_RANGE:{0}SOM_COUNT|0:0.1:0.2:0.1:0.2:.:.:.|0.2:0.3:0.4:0.3:0.2:.:.:.\n".format(consensus_helper.JQ_CONSENSUS_TAG))
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE:{0}DP_AVERAGE:{0}DP_RANGE:{0}SOM_COUNT|0:0.1:0.2:0.1:0.2:.:.:.|0.2:0.3:0.4:0.3:0.2:.:.:.\n".format(consensus_caller.JQ_CONSENSUS_TAG))
         vcf_record = VcfRecord.parse_record(line, ["SA", "SB"])
-        cons_help = consensus_helper.ConsensusHelper()
-        actual = cons_help.add_tags(vcf_record)
+        caller = consensus_caller.ConsensusCaller()
+        actual = caller.add_tags(vcf_record)
 
         self.assertEqual(expected, actual)
 
@@ -198,11 +198,11 @@ class ConsensusHelperTestCase(test_case.JacquardBaseTestCase):
                     'Description="Average allele frequency across recognized variant '
                     'callers that reported frequency for this position '
                     '[average(JQ_*_AF)].",Source="Jacquard",'
-                    'Version="{1}">').format(consensus_helper.JQ_CONSENSUS_TAG,
+                    'Version="{1}">').format(consensus_caller.JQ_CONSENSUS_TAG,
                                              utils.__version__)
 
-        cons_help = consensus_helper.ConsensusHelper()
-        actual = cons_help.get_consensus_metaheaders()
+        caller = consensus_caller.ConsensusCaller()
+        actual = caller.get_consensus_metaheaders()
 
         split_actual = actual[0].split("\n")
         first_meta_header = split_actual[0]
@@ -213,34 +213,34 @@ class ConsensusHelperTestCase(test_case.JacquardBaseTestCase):
 
     def test_calculate_average_float(self):
         new_tags = [[0.2], [0.3], [0.5]]
-        actual_tags = consensus_helper._calculate_average(new_tags)
+        actual_tags = consensus_caller._calculate_average(new_tags)
         self.assertEquals("0.33", actual_tags)
 
     def test_calculate_average_int(self):
         new_tags = [[2], [3], [5]]
-        actual_tags = consensus_helper._calculate_average(new_tags)
+        actual_tags = consensus_caller._calculate_average(new_tags)
         self.assertEquals("3.33", actual_tags)
 
     def test_calculate_range(self):
-        tag = consensus_helper._AlleleFreqTag()
+        tag = consensus_caller._AlleleFreqTag()
         cons_freq = [[0.2], [0.4], [0.5]]
-        actual_af_range = consensus_helper._calculate_range(cons_freq, tag.all_ranges)
+        actual_af_range = consensus_caller._calculate_range(cons_freq, tag.all_ranges)
 
         self.assertEquals("0.3", actual_af_range)
         self.assertEquals([0.3], tag.all_ranges)
 
     def test_calculate_range_oneCaller(self):
-        tag = consensus_helper._AlleleFreqTag()
+        tag = consensus_caller._AlleleFreqTag()
         cons_freq = [[0.2]]
-        actual_af_range = consensus_helper._calculate_range(cons_freq, tag.all_ranges)
+        actual_af_range = consensus_caller._calculate_range(cons_freq, tag.all_ranges)
 
         self.assertEquals(".", actual_af_range)
         self.assertEquals([], tag.all_ranges)
 
     def test_calculate_range_multAlts(self):
-        tag = consensus_helper._AlleleFreqTag()
+        tag = consensus_caller._AlleleFreqTag()
         cons_freq = [[0.2, 0.3], [0.5, 0.7], [0.2, 0.4]]
-        actual_af_range = consensus_helper._calculate_range(cons_freq, tag.all_ranges)
+        actual_af_range = consensus_caller._calculate_range(cons_freq, tag.all_ranges)
 
         self.assertEquals("0.3,0.4", actual_af_range)
         self.assertEquals([0.3, 0.4], tag.all_ranges)
