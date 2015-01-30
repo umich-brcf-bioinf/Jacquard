@@ -67,6 +67,7 @@ class CommandValidatorCheckOutputTestCase(test_case.JacquardBaseTestCase):
     def tearDown(self):
         command_validator._check_can_create_output = self.original_check_can_create_output
         command_validator._check_output_correct_type = self.original_check_output_correct_type
+        reset_called_methods()
 
     def test_check_output_exists_fileExistant(self):
         with TempDirectory() as output_dir:
@@ -378,6 +379,7 @@ class CommandValidatorPreflightTestCase(test_case.JacquardBaseTestCase):
         command_validator._check_output_correct_type = self.original_check_output_correct_type
         command_validator._check_tmpdir_exists = self.original_check_tmpdir_exists
         command_validator._check_overwrite_existing_files = self.original_check_overwrite_existing_files
+        reset_called_methods()
 
     def test_preflight_inputFile(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
@@ -396,7 +398,31 @@ class CommandValidatorPreflightTestCase(test_case.JacquardBaseTestCase):
             self.assertTrue(CHECK_INPUT_READABLE_CALLED)
             self.assertTrue(CHECK_INPUT_CORRECT_TYPE_CALLED)
             self.assertTrue(CHECK_OUTPUT_EXISTS_CALLED)
+            self.assertTrue(CHECK_CAN_CREATE_OUTPUT_CALLED)
+            self.assertTrue(not CHECK_OUTPUT_CORRECT_TYPE_CALLED)
             self.assertTrue(CHECK_TMPDIR_EXISTS_CALLED)
+
+    def test_preflight_outputFileExists(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_file = os.path.join(input_dir.path, "input.txt")
+            input_dir.write("input.txt","foo")
+            output_dir.write("output.txt", "foo")
+            output_file = os.path.join(output_dir.path, "output.txt")
+
+            args = Namespace(input=input_file,
+                             output=output_file,
+                             subparser_name="foo",
+                             force=0)
+
+            command_validator.preflight(args, mock_module)
+
+            self.assertTrue(CHECK_INPUT_EXISTS_CALLED)
+            self.assertTrue(CHECK_INPUT_READABLE_CALLED)
+            self.assertTrue(CHECK_INPUT_CORRECT_TYPE_CALLED)
+            self.assertTrue(CHECK_OUTPUT_EXISTS_CALLED)
+            self.assertTrue(CHECK_OUTPUT_CORRECT_TYPE_CALLED)
+            self.assertTrue(not CHECK_CAN_CREATE_OUTPUT_CALLED)
+            self.assertTrue(CHECK_OVERWRITE_EXISTING_FILES_CALLED)
 
 def mock_check_input_exists(foo):
     global CHECK_INPUT_EXISTS_CALLED
@@ -413,6 +439,10 @@ def mock_check_input_correct_type(foo, bar):
 def mock_check_output_exists(foo, bar):
     global CHECK_OUTPUT_EXISTS_CALLED
     CHECK_OUTPUT_EXISTS_CALLED = True
+    if not os.path.exists(foo):
+        mock_check_can_create_output(foo)
+    else:
+        mock_check_output_correct_type(foo, bar)
 
 def mock_check_can_create_output(foo):
     global CHECK_CAN_CREATE_OUTPUT_CALLED
@@ -430,6 +460,24 @@ def mock_check_overwrite_existing_files(foo, bar, baz, qux):
     global CHECK_OVERWRITE_EXISTING_FILES_CALLED
     CHECK_OVERWRITE_EXISTING_FILES_CALLED = True
 
+def reset_called_methods():
+    global CHECK_INPUT_EXISTS_CALLED
+    global CHECK_INPUT_READABLE_CALLED
+    global CHECK_INPUT_CORRECT_TYPE_CALLED
+    global CHECK_OUTPUT_EXISTS_CALLED
+    global CHECK_CAN_CREATE_OUTPUT_CALLED
+    global CHECK_OUTPUT_CORRECT_TYPE_CALLED
+    global CHECK_TMPDIR_EXISTS_CALLED
+    global CHECK_OVERWRITE_EXISTING_FILES_CALLED
+
+    CHECK_INPUT_EXISTS_CALLED = False
+    CHECK_INPUT_READABLE_CALLED = False
+    CHECK_INPUT_CORRECT_TYPE_CALLED = False
+    CHECK_OUTPUT_EXISTS_CALLED = False
+    CHECK_CAN_CREATE_OUTPUT_CALLED = False
+    CHECK_OUTPUT_CORRECT_TYPE_CALLED = False
+    CHECK_TMPDIR_EXISTS_CALLED = False
+    CHECK_OVERWRITE_EXISTING_FILES_CALLED = False
 
 def is_windows_os():
     return sys.platform.lower().startswith("win")

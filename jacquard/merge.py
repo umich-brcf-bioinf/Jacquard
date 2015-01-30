@@ -682,6 +682,9 @@ def add_subparser(subparser):
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
+def get_required_input_output_types():
+    return ("foo","bar")
+
 def report_prediction(args):
     return "foo"
 

@@ -2,6 +2,7 @@
 execute_called = False
 report_called = False
 my_exception_string = None
+predicted_output = "foo"
 
 def add_subparser(subparser):
     parser = subparser.add_parser("mock_module", help="foo")
@@ -20,7 +21,7 @@ def report_prediction(args):
     report_called = True
     if my_exception_string:
         raise Exception(my_exception_string)
-    return "foo"
+    return predicted_output
 
 def get_required_input_output_types():
     return (1, 1)

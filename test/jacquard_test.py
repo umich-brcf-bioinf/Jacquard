@@ -127,7 +127,7 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
         self.output = StringIO()
         self.saved_stderr = sys.stderr
         sys.stderr = self.output
-        self.original_create_temp_directory = jacquard._create_temp_directory
+        self.original_nominate_temp_directory = jacquard._nominate_temp_directory
         self.original_move_tmp_contents = jacquard._move_tmp_contents_to_original
         _change_mock_methods()
 
@@ -135,7 +135,7 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
         self.output.close()
         sys.stderr = self.saved_stderr
         unittest.TestCase.tearDown(self)
-        jacquard._create_temp_directory = self.original_create_temp_directory
+        jacquard._nominate_temp_directory = self.original_nominate_temp_directory
         jacquard._move_tmp_contents_to_original = self.original_move_tmp_contents
 
     def test_dispatch(self):
@@ -150,12 +150,12 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
             self.assertTrue(MOCK_NOMINATE_TMP_CALLED)
             self.assertTrue(MOCK_MOVE_TEMP_CONTENTS_CALLED)
 
-    def xtest_dispatch_nonEmptyOutputDir(self):
+    def test_dispatch_nonEmptyOutputDir(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             output_dir.write("file1.vcf", "foo")
             output_file = os.path.join(output_dir.path,"file1.vcf")
             mock_module.my_exception_string = ""
-
+            mock_module.predicted_output = set(["file1.vcf"])
             with self.assertRaises(SystemExit) as exit_code:
                 jacquard.dispatch([mock_module], ["mock_module",
                                                   input_dir.path,
@@ -168,16 +168,11 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
             output_dir.write("file1.vcf", "foo")
             mock_module.my_exception_string = ""
 
-            args = Namespace(subparser_name = "mock_module",
-                             input = input_dir.path,
-                             output = output_dir.path,
-                             force = 1)
             jacquard.dispatch([mock_module], ["mock_module",
                                               input_dir.path,
                                               output_dir.path,
                                               "--force"])
 
-#             jacquard.dispatch([mock_module], args)
             self.assertTrue(1 == 1, "Force does not result in premature exit.")
 
     def test_dispatch_done(self):
