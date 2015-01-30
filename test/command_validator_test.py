@@ -194,14 +194,24 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
                                     command_validator._check_input_correct_type,
                                     input_dir.path, correct_type)
 
-    def test_check_can_create_output_canCreateOutputFile(self):
+    def test_check_can_create_output_canCreateOutputParentAndFile(self):
         with TempDirectory() as output_dir:
             output_file = os.path.join(output_dir.path,"parent_dir/output_file.txt")
 
             command_validator._check_can_create_output(output_file)
             self.assertIn("parent_dir", os.listdir(output_dir.path))
 
-    def test_check_can_create_output_canCreateOutputDirectory(self):
+    def test_check_can_create_output_relativeDirectory(self):
+        current_working_dir = os.getcwd()
+        with TempDirectory() as output_dir:
+            try:
+                os.chdir(output_dir.path)
+                command_validator._check_can_create_output("target_dir")
+                self.assertEquals([], os.listdir(output_dir.path))
+            finally: 
+                os.chdir(current_working_dir)
+
+    def test_check_can_create_output_canCreateParentOutputDirectory(self):
         with TempDirectory() as output_dir:
             target_dir = os.path.join(output_dir.path,"nested_dir/target_dir")
 
@@ -298,7 +308,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
             command_validator._check_tmpdir_exists(output_dir.path)
             self.assertTrue(1==1)
 
-    def test_check_overwrite_existing_files_willOverwriteFile(self):
+    def test_check_overwrite_existing_files_raiseIfFileWouldBeOverwritten(self):
         with TempDirectory() as output_dir:
             output_file = os.path.join(output_dir.path, "output_file.vcf")
             output_dir.write("output_file.vcf","foo")
@@ -312,11 +322,13 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
                                     output_file, set([os.path.basename(output_file)]),
                                     "foo")
 
-    def test_check_overwrite_existing_files_willNotOverwriteFile(self):
-        command_validator._check_overwrite_existing_files("foo.vcf",
-                            set(["output_file1.vcf"]),
-                            "foo")
-        self.assertTrue(1==1)
+    def test_check_overwrite_existing_files_willNotRaiseIfNoOverwrite(self):
+        with TempDirectory() as output_dir:
+            output = os.path.join(output_dir.path, "foo.vcf")
+            command_validator._check_overwrite_existing_files(output,
+                                                              set(["foo.vcf"]),
+                                                              "foo")
+            self.assertTrue(1==1)
 
     def test_check_overwrite_existing_files_willOverwriteDirectory(self):
         with TempDirectory() as output_dir:

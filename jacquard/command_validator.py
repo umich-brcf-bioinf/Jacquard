@@ -11,7 +11,7 @@ TMP_DIR_NAME = "jacquard_tmp"
 
 def preflight(args, module):
     input_path = args.input
-    output_path = args.output
+    output_path = os.path.abspath(args.output)
     module_name = args.subparser_name
     force_flag = args.force
 
@@ -68,9 +68,11 @@ def _check_output_exists(output_path, required_type):
         _check_output_correct_type(output_path, required_type)
 
 def _check_can_create_output(output_path):
-    output_path = os.path.dirname(output_path)
+    output_path = os.path.abspath(output_path)
+
+    parent_path = os.path.dirname(output_path)
     try:
-        _makepath(output_path)
+        _makepath(parent_path)
     except OSError:
         raise utils.JQException(("Specified output [{}] does not exist "
                                  "and cannot be created. Review inputs "
@@ -108,10 +110,10 @@ def _check_tmpdir_exists(output_path):
                                      .format(output_path))
 
 def _check_overwrite_existing_files(output, predicted_output, command, force=0):
-    if os.path.isdir(output):
-        existing_output_paths = sorted(glob.glob(os.path.join(output, "*.vcf")))
-    else:
-        existing_output_paths = [output]
+    if not os.path.isdir(output):
+        output = os.path.dirname(output)
+    existing_output_paths = sorted(glob.glob(os.path.join(output, "*.vcf")))
+
     existing_output = set([os.path.basename(i) for i in existing_output_paths])
 
     intersection = existing_output.intersection(predicted_output)
