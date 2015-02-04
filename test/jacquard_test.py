@@ -9,6 +9,7 @@ import os
 import sys
 import test.mock_module as mock_module
 import test.test_case as test_case
+import time
 import unittest
 
 
@@ -26,7 +27,10 @@ def mock_get_temp_working_dir(output_dir):
     global MOCK_GET_TEMP_WORKING_DIR_CALLED
     MOCK_GET_TEMP_WORKING_DIR_CALLED = True
 
-def mock_move_tmp_contents_to_original(tmp_output, output_dir):
+    tmp_output = os.path.join(os.path.dirname(output_dir), "tmp_output")
+    return tmp_output, output_dir
+
+def mock_move_tmp_contents_to_original(args):
     global MOCK_MOVE_TEMP_CONTENTS_CALLED
     MOCK_MOVE_TEMP_CONTENTS_CALLED = True
 
@@ -54,17 +58,18 @@ class JacquardTestCase(unittest.TestCase):
         unittest.TestCase.tearDown(self)
 
     def test_get_temp_working_dir(self):
-        actual_dir = jacquard._get_temp_working_dir("/foo/bar")
+        actual_dir, dummy = jacquard._get_temp_working_dir(os.path.join("foo", "bar"))
         self.assertRegexpMatches(actual_dir,
-                                 r"/foo/jacquard\.\d+\.\d+\.tmp")
+                                 r"foo.*jacquard\.\d+\.\d+\.tmp")
 
-        actual_dir2 = jacquard._get_temp_working_dir("/foo/bar")
+        time.sleep(0.01)
+        actual_dir2 = jacquard._get_temp_working_dir(os.path.join("foo", "bar"))
         self.assertNotEqual(actual_dir, actual_dir2)
 
     def test_get_temp_working_dir_complexPathOk(self):
-        actual_dir = jacquard._get_temp_working_dir("/foo.bar/baz.hoopy/frood")
+        actual_dir, dummy = jacquard._get_temp_working_dir("/foo.bar/baz.hoopy/frood")
         self.assertRegexpMatches(actual_dir,
-                                 r"/foo.bar/baz.hoopy/jacquard\.\d+\.\d+\.tmp")
+                                 r"foo.bar.*baz.hoopy.*jacquard\.\d+\.\d+\.tmp")
 
     def test_get_temp_working_dir_relativePathMadeAbsolute(self):
         original_cwd = os.getcwd()
@@ -72,7 +77,8 @@ class JacquardTestCase(unittest.TestCase):
             with TempDirectory() as cwd:
                 cwd_absolute_path = os.path.abspath(cwd.path)
                 os.chdir(cwd_absolute_path)
-                actual_dir = jacquard._get_temp_working_dir("./foo/bar")
+                actual_dir, dummy = jacquard._get_temp_working_dir(os.path.join(".", "foo", "bar"))
+                os.chdir(original_cwd)
                 self.assertIn(cwd_absolute_path, actual_dir)
         finally:
             os.chdir(original_cwd)

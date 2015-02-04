@@ -54,8 +54,7 @@ def _check_input_readable(input_path):
                                  "inputs and try again.").format(input_path))
 
 def _check_input_correct_type(input_path, required_type):
-    if (required_type == "file" and not os.path.isfile(input_path)) or\
-    (required_type == "directory" and not os.path.isdir(input_path)):
+    if required_type != _actual_type(input_path):
         raise utils.JQException(("Specified input [{}] does not match "\
                                  "command's required file type. "\
                                  "Review inputs and try again.")\

@@ -75,7 +75,10 @@ def _get_temp_working_dir(original_output):
     dir_name = _TEMP_WORKING_DIR_FORMAT.format(str(pid),
                                                str(microseconds_since_epoch))
     temp_working_dir = os.path.join(base_dir, dir_name)
-    return temp_working_dir
+    new_output = os.path.join(temp_working_dir,
+                              os.path.basename(original_output))
+
+    return temp_working_dir, new_output
 
 def _move_tmp_contents_to_original(args):
     temp_dir = args.temp_working_dir
@@ -125,12 +128,12 @@ def dispatch(modules, arguments):
         logger.debug("command|{}", " ".join(arguments))
 
         args.original_output = args.output
-        args.temp_working_dir = _get_temp_working_dir(args.original_output)
-        args.output = os.path.join(args.temp_working_dir,
-                                   os.path.basename(args.original_output))
+        (args.temp_working_dir,
+            args.output) = _get_temp_working_dir(args.original_output)
+
         command_validator.preflight(args, module_dispatch[args.subparser_name])
 
-        logger.debug("Writing output to tmp directory [{}]", 
+        logger.debug("Writing output to tmp directory [{}]",
                      args.temp_working_dir)
 
         module_dispatch[args.subparser_name].execute(args, execution_context)

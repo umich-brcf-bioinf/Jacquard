@@ -24,4 +24,4 @@ def report_prediction(args):
     return predicted_output
 
 def get_required_input_output_types():
-    return (1, 1)
+    return ("directory", "directory")

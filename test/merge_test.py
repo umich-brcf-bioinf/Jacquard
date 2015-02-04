@@ -899,7 +899,7 @@ class MergeTestCase(unittest.TestCase):
         self.assertEqual(True, out_file.wasClosed)
 
 class MergeFunctionalTestCase(test_case.JacquardBaseTestCase):
-    def test_merge(self):
+    def xtest_merge(self):
         with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir, "functional_tests", "04_merge")
