@@ -1,22 +1,20 @@
 # pylint: disable=line-too-long, global-statement, unused-argument, invalid-name, too-many-locals, too-many-public-methods
 from __future__ import absolute_import
-
 from StringIO import StringIO
 from argparse import Namespace
-import os
-import sys
-import unittest
-
 from testfixtures import TempDirectory
-
 import jacquard.jacquard as jacquard
 import jacquard.logger as logger
-import jacquard.utils as utils
+import os
+import sys
 import test.mock_module as mock_module
 import test.test_case as test_case
+import unittest
 
 
-MOCK_NOMINATE_TMP_CALLED = False
+
+
+MOCK_GET_TEMP_WORKING_DIR_CALLED = False
 MOCK_MOVE_TEMP_CONTENTS_CALLED = False
 MOCK_PREFLIGHT_CALLED = False
 
@@ -24,24 +22,17 @@ def mock_preflight(output, desired_output_files, command):
     global MOCK_PREFLIGHT_CALLED
     MOCK_PREFLIGHT_CALLED = True
 
-def mock_nominate_temp_directory(output_dir):
-# pylint: disable=W0603,W0613
-    global MOCK_NOMINATE_TMP_CALLED
-    MOCK_NOMINATE_TMP_CALLED = True
+def mock_get_temp_working_dir(output_dir):
+    global MOCK_GET_TEMP_WORKING_DIR_CALLED
+    MOCK_GET_TEMP_WORKING_DIR_CALLED = True
 
 def mock_move_tmp_contents_to_original(tmp_output, output_dir):
-# pylint: disable=W0603,W0613
     global MOCK_MOVE_TEMP_CONTENTS_CALLED
     MOCK_MOVE_TEMP_CONTENTS_CALLED = True
 
 def _change_mock_methods():
-#    global mock_create_temp_directory
-    jacquard._nominate_temp_directory = mock_nominate_temp_directory
-
-#    global mock_move_tmp_contents_to_original
+    jacquard._get_temp_working_dir = mock_get_temp_working_dir
     jacquard._move_tmp_contents_to_original = mock_move_tmp_contents_to_original
-    
-#    global mock_preflight
     jacquard._preflight = mock_preflight
 
 MOCK_LOG_CALLED = False
@@ -62,6 +53,31 @@ class JacquardTestCase(unittest.TestCase):
         sys.stderr = self.saved_stderr
         unittest.TestCase.tearDown(self)
 
+    def test_get_temp_working_dir(self):
+        actual_dir = jacquard._get_temp_working_dir("/foo/bar")
+        self.assertRegexpMatches(actual_dir,
+                                 r"/foo/jacquard\.\d+\.\d+\.tmp")
+
+        actual_dir2 = jacquard._get_temp_working_dir("/foo/bar")
+        self.assertNotEqual(actual_dir, actual_dir2)
+
+    def test_get_temp_working_dir_complexPathOk(self):
+        actual_dir = jacquard._get_temp_working_dir("/foo.bar/baz.hoopy/frood")
+        self.assertRegexpMatches(actual_dir,
+                                 r"/foo.bar/baz.hoopy/jacquard\.\d+\.\d+\.tmp")
+
+    def test_get_temp_working_dir_relativePathMadeAbsolute(self):
+        original_cwd = os.getcwd()
+        try:
+            with TempDirectory() as cwd:
+                cwd_absolute_path = os.path.abspath(cwd.path)
+                os.chdir(cwd_absolute_path)
+                actual_dir = jacquard._get_temp_working_dir("./foo/bar")
+                self.assertIn(cwd_absolute_path, actual_dir)
+        finally:
+            os.chdir(original_cwd)
+
+
     def test_gracefulErrorMessageWhenUnanticipatedProblem(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             mock_module.my_exception_string = "I'm feeling angry"
@@ -81,45 +97,52 @@ class JacquardTestCase(unittest.TestCase):
             self.assertRegexpMatches(actual_messages[2], "I'm feeling angry")
             self.assertRegexpMatches(actual_messages[3], "Jacquard encountered an unanticipated problem.")
 
-    def test_create_temp_directory(self):
-        with TempDirectory() as test_dir:
-            output_dir = test_dir.makedir("output")
-            actual_tmp_dir = jacquard._create_temp_directory(output_dir)
-
-            self.assertTrue(os.path.exists(actual_tmp_dir), "temp dir created")
-            self.assertEquals(os.path.join(output_dir, "jacquard_tmp"),
-                              actual_tmp_dir)
-
     def test_move_tmp_contents_to_original(self):
-        with TempDirectory() as output_dir:
-            tmp_dir = output_dir.makedir("tmp")
-            with open(os.path.join(tmp_dir, "A.txt"), "w") as file_a, \
-                    open(os.path.join(tmp_dir, "B.txt"), "w") as file_b:
+        with TempDirectory() as parent_dir:
+            output_dir = os.path.join(parent_dir.path, "my_data")
+            tmp_dir = os.path.join(parent_dir.path, "tmp")
+            args = Namespace(original_output=output_dir,
+                             temp_working_dir=tmp_dir)
+
+            os.mkdir(tmp_dir)
+            os.mkdir(os.path.join(tmp_dir, "my_data"))
+            with open(os.path.join(tmp_dir, "my_data", "A.txt"), "w") as file_a, \
+                    open(os.path.join(tmp_dir, "my_data", "B.txt"), "w") as file_b:
                 file_a.write("A")
                 file_b.write("B")
 
-            jacquard._move_tmp_contents_to_original(tmp_dir, output_dir.path)
-            actual_files = os.listdir(output_dir.path)
+            jacquard._move_tmp_contents_to_original(args)
+
+            actual_files = os.listdir(output_dir)
             self.assertEquals(2, len(actual_files))
             self.assertEquals(["A.txt", "B.txt"], sorted(actual_files))
+            self.assertFalse(os.path.isdir(tmp_dir))
 
-    def test_preflight_valid(self):
-        with TempDirectory() as output_dir:
-            desired_output_files = set(["foo.vcf", "bar.vcf"])
-            jacquard._preflight_old(output_dir.path, desired_output_files, "foo_command")
-            self.assertTrue(1==1)
+    def test_move_tmp_contents_to_original_mergesToExistingDir(self):
+        with TempDirectory() as parent_dir:
+            dest_dir = os.path.join(parent_dir.path, "my_data")
+            tmp_dir = os.path.join(parent_dir.path, "tmp")
+            args = Namespace(original_output=dest_dir,
+                             temp_working_dir=tmp_dir)
 
-    def test_preflight_invalid(self):
-        with TempDirectory() as output_dir:
-            output_dir.write("foo.vcf","##source=strelka\n#colHeader")
-            desired_output_files = set(["foo.vcf", "bar.vcf"])
+            os.mkdir(tmp_dir)
+            os.mkdir(dest_dir)
 
-            self.assertRaisesRegexp(utils.JQException,
-                                r"The command \[foo_command\] would overwrite existing files \['foo.vcf'\]",
-                                jacquard._preflight_old,
-                                output_dir.path,
-                                desired_output_files,
-                                "foo_command")
+            os.mkdir(os.path.join(tmp_dir, "my_data"))
+            with open(os.path.join(tmp_dir, "my_data", "A.txt"), "w") as file_a, \
+                    open(os.path.join(tmp_dir, "my_data", "B.txt"), "w") as file_b, \
+                    open(os.path.join(dest_dir, "C.txt"), "w") as file_c:
+                file_a.write("A")
+                file_b.write("B")
+                file_c.write("C")
+
+            jacquard._move_tmp_contents_to_original(args)
+
+            actual_files = os.listdir(dest_dir)
+            self.assertEquals(3, len(actual_files))
+            self.assertEquals(["A.txt", "B.txt", "C.txt"], sorted(actual_files))
+            self.assertFalse(os.path.isdir(tmp_dir))
+
 
 class JacquardTestCase_dispatchOnly(unittest.TestCase):
     def setUp(self):
@@ -127,7 +150,7 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
         self.output = StringIO()
         self.saved_stderr = sys.stderr
         sys.stderr = self.output
-        self.original_nominate_temp_directory = jacquard._nominate_temp_directory
+        self.original_get_temp_working_dir = jacquard._get_temp_working_dir
         self.original_move_tmp_contents = jacquard._move_tmp_contents_to_original
         _change_mock_methods()
 
@@ -135,7 +158,7 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
         self.output.close()
         sys.stderr = self.saved_stderr
         unittest.TestCase.tearDown(self)
-        jacquard._nominate_temp_directory = self.original_nominate_temp_directory
+        jacquard._get_temp_working_dir = self.original_get_temp_working_dir
         jacquard._move_tmp_contents_to_original = self.original_move_tmp_contents
 
     def test_dispatch(self):
@@ -146,14 +169,13 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
                                               output_dir.path])
             self.assertTrue(mock_module.execute_called)
             self.assertTrue(mock_module.report_called)
-
-            self.assertTrue(MOCK_NOMINATE_TMP_CALLED)
+            self.assertTrue(MOCK_GET_TEMP_WORKING_DIR_CALLED)
             self.assertTrue(MOCK_MOVE_TEMP_CONTENTS_CALLED)
 
     def test_dispatch_nonEmptyOutputDir(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             output_dir.write("file1.vcf", "foo")
-            output_file = os.path.join(output_dir.path,"file1.vcf")
+            output_file = os.path.join(output_dir.path, "file1.vcf")
             mock_module.my_exception_string = ""
             mock_module.predicted_output = set(["file1.vcf"])
             with self.assertRaises(SystemExit) as exit_code:
