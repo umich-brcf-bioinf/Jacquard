@@ -1,21 +1,16 @@
 from __future__ import print_function, absolute_import
+
 import collections
 import glob
 import os
 import shutil
 
-from jacquard.variant_callers import variant_caller_factory
-import jacquard.utils as utils
-import jacquard.vcf as vcf
 import jacquard.logger as logger
+import jacquard.utils as utils
+from jacquard.variant_callers import variant_caller_factory
+import jacquard.vcf as vcf
 
-def add_subparser(subparser):
-    #pylint: disable=line-too-long
-    parser = subparser.add_parser("tag", help="Accepts a directory of VCf results and creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
-    parser.add_argument("input", help="Path to directory containing VCFs. Other file types ignored")
-    parser.add_argument("output", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
-    parser.add_argument("-v", "--verbose", action='store_true')
-    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+JQ_OUTPUT_SUFFIX = "jacquardTags"
 
 def _comma_separated(line):
     split_line = line.split(",")
@@ -156,13 +151,13 @@ def _log_caller_info(vcf_readers):
         logger.info("Recognized [{}] {} file(s)",
                     caller_count[caller_name], caller_name)
 
-def _build_vcf_readers(input_dir,
+def _build_vcf_readers(input_file,
                        get_caller=variant_caller_factory.get_caller):
-    in_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
+    in_files = sorted(glob.glob(os.path.join(input_file, "*.vcf")))
     vcf_readers = []
     failures = 0
     for filename in in_files:
-        file_path = os.path.join(input_dir, filename)
+        file_path = os.path.join(input_file, filename)
         try:
             vcf_reader = vcf.VcfReader(vcf.FileReader(file_path))
             caller = get_caller(vcf_reader.metaheaders,
@@ -176,18 +171,52 @@ def _build_vcf_readers(input_dir,
                                  " Review logs for details, adjust input, "
                                  "and try again.").format(failures))
     _log_caller_info(vcf_readers)
+
     return vcf_readers
 
+def _mangle_output_filenames(input_file):
+    basename, extension = os.path.splitext(os.path.basename(input_file))
+    return ".".join([basename, JQ_OUTPUT_SUFFIX, extension.strip(".")])
 
-def _build_vcf_readers_to_writers(vcf_readers, output_dir):
+def _get_output_filenames(input_files):
+    output_files = set()
+    for input_file in input_files:
+        output_files.add(_mangle_output_filenames(input_file))
+
+    return output_files
+
+def _build_vcf_readers_to_writers(vcf_readers, output_file):
     vcf_providers_to_writers = {}
     for reader in vcf_readers:
-        basename, extension = os.path.splitext(reader.file_name)
-        new_filename = basename + ".jacquardTags" + extension
-        output_filepath = os.path.join(output_dir, new_filename)
+        new_filename = _mangle_output_filenames(reader.file_name)
+        output_filepath = os.path.join(output_file, new_filename)
         vcf_providers_to_writers[reader] = vcf.FileWriter(output_filepath)
 
     return vcf_providers_to_writers
+
+def add_subparser(subparser):
+    #pylint: disable=line-too-long
+    parser = subparser.add_parser("tag", help="Accepts a directory of VCf results and creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
+    parser.add_argument("input", help="Path to directory containing VCFs. Other file types ignored")
+    parser.add_argument("output", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
+    parser.add_argument("-v", "--verbose", action='store_true')
+    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+
+def _predict_output(args):
+    input_file = os.path.abspath(args.input)
+
+    utils.validate_directories(input_dir=input_file)
+    input_files = sorted(glob.glob(os.path.join(input_file, "*.vcf")))
+
+    desired_output_files = _get_output_filenames(input_files)
+
+    return desired_output_files
+
+def report_prediction(args):
+    return _predict_output(args)
+
+def get_required_input_output_types():
+    return ("directory", "directory")
 
 def execute(args, execution_context):
     input_dir = os.path.abspath(args.input)

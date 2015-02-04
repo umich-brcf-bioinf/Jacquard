@@ -1,14 +1,17 @@
 #pylint: disable=line-too-long, too-many-public-methods, invalid-name
 #pylint: disable=missing-docstring, protected-access, global-statement, too-few-public-methods
 from __future__ import absolute_import, print_function
+
 from StringIO import StringIO
-from testfixtures import TempDirectory
-import jacquard.logger as logger
-import jacquard.utils as utils
-import natsort
 import os
 import subprocess
 import sys
+
+import natsort
+from testfixtures import TempDirectory
+
+import jacquard.logger as logger
+import jacquard.utils as utils
 import test.test_case as test_case
 
 mock_log_called = False
@@ -186,11 +189,11 @@ class ValidateDirectoriesTestCase(test_case.JacquardBaseTestCase):
 
     def test_validateDirectories_inputDirectoryDoesntExist(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_dir = script_dir + "/functional_tests/utils_test/tag_varscan_test/foo"
-        output_dir = script_dir + "/functional_tests/utils_test/tag_varscan_test/output"
+        input_file = script_dir + "/functional_tests/utils_test/tag_varscan_test/foo"
+        output_file = script_dir + "/functional_tests/utils_test/tag_varscan_test/output"
 
         with self.assertRaises(SystemExit) as cm:
-            utils.validate_directories(input_dir, output_dir)
+            utils.validate_directories(input_file, output_file)
         self.assertEqual(cm.exception.code, 1)
 
         self.assertTrue(mock_log_called)
@@ -198,22 +201,32 @@ class ValidateDirectoriesTestCase(test_case.JacquardBaseTestCase):
 #                                  r"Specified input directory \[.*\] does not exist.")
 
     def test_validateDirectories_outputDirectoryNotCreated(self):
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("A.txt",
+        with TempDirectory() as input_file, TempDirectory() as output_file:
+            input_file.write("A.txt",
                             "##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
-            unwriteable_dir = os.path.join(output_dir.path, "unwriteable")
+            unwriteable_dir = os.path.join(output_file.path, "unwriteable")
             desired_dir = os.path.join(unwriteable_dir, "bar")
 
             try:
                 make_unwritable_dir(unwriteable_dir)
                 with self.assertRaises(SystemExit) as cm:
-                    utils.validate_directories(input_dir.path, desired_dir)
+                    utils.validate_directories(input_file.path, desired_dir)
 
             finally:
                 cleanup_unwriteable_dir(unwriteable_dir)
 
             self.assertEqual(cm.exception.code, 1)
             self.assertTrue(mock_log_called)
+
+#     def test_validate_arguments_valid(self):
+#         output_files = ["foo.vcf", "bar.vcf"]
+#         writers = [MockWriter(output_filepath="baz.vcf")]
+#         self.assertTrue(utils.validate_arguments(output_files, writers))
+
+#     def test_validate_arguments_invalid(self):
+#         output_files = ["foo.vcf", "bar.vcf"]
+#         writers = [MockWriter(output_filepath="bar.vcf"), MockWriter(output_filepath="blah.vcf")]
+#         self.assertRaisesRegexp(utils.JQException, "This command would overwrite existing files", utils.validate_arguments, output_files, writers)
 
 def is_windows_os():
     return sys.platform.lower().startswith("win")
@@ -232,8 +245,9 @@ def cleanup_unwriteable_dir(unwriteable_dir):
     os.rmdir(unwriteable_dir)
 
 class MockWriter(object):
-    def __init__(self):
+    def __init__(self, output_filepath=None):
         self._content = []
+        self.output_filepath = output_filepath
         self.wasClosed = False
 
     def write(self, content):

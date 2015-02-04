@@ -13,9 +13,9 @@
 ##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",Source="Jacquard",Version=0.21>
 ##fileformat=VCFv4.2
-##jacquard.merge.file2=tiny_strelka.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf(['NORMAL', 'TUMOR'])
-##jacquard.merge.sample_column1=Strelka|tiny_strelka|NORMAL(tiny_strelka.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf)
-##jacquard.merge.sample_column2=Strelka|tiny_strelka|TUMOR(tiny_strelka.normalized.jacquardTags_HCsomatic.splitMultAlts.vcf)
+##jacquard.merge.file2=tiny_strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf(['NORMAL', 'TUMOR'])
+##jacquard.merge.sample_column1=Strelka|tiny_strelka|NORMAL(tiny_strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf)
+##jacquard.merge.sample_column2=Strelka|tiny_strelka|TUMOR(tiny_strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf)
 ##jacquard.consensus.JQ_CONS_AF_ZSCORE.JQ_CONS_AF_RANGE_mean=None
 ##jacquard.consensus.JQ_CONS_AF_ZSCORE.JQ_CONS_AF_RANGE_stdev=None
 ##FORMAT=<ID=JQ_CONS_AF_ZSCORE,Number=1,Type=Float,Description="Concordance of reported allele frequencies across callers: [(this AF range - mean AF range)/standard dev(all AF ranges)]. Values with null or missing AF range will be assigned zscore of '.'; for multi-valued ranges, zscore is of largest range.",Source="Jacquard",Version="0.21">

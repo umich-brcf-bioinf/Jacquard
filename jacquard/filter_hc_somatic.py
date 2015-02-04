@@ -1,14 +1,17 @@
 #pylint: disable=too-many-locals
 from __future__ import print_function, absolute_import
+
 from collections import defaultdict
 import glob
+import os
+import re
+
 import jacquard.logger as logger
 import jacquard.utils as utils
 import jacquard.variant_callers.variant_caller_factory as variant_caller_factory
 import jacquard.vcf as vcf
-import os
-import re
 
+JQ_OUTPUT_SUFFIX = "HCsomatic"
 #TODO: (cgates): This module contains lots of file parsing/processing which should be using vcfReader structures
 #TODO: (cgates): Use tuples instead of concatenated strings
 
@@ -100,7 +103,7 @@ def _find_somatic_positions(in_files):
 
     return somatic_positions, somatic_positions_header
 
-def _write_somatic(in_files, output_dir, somatic_positions, execution_context):
+def _write_somatic(in_files, output_file, somatic_positions, execution_context):
     total_number_of_calls = 0
 
     for input_file in in_files:
@@ -108,11 +111,11 @@ def _write_somatic(in_files, output_dir, somatic_positions, execution_context):
         headers = []
         actual_sorted_variants = []
 
-        fname, extension = os.path.splitext(os.path.basename(input_file))
-        new_file = fname + "_HCsomatic" + extension
+        new_file = _mangle_output_filenames(input_file)
+
         in_file = open(input_file, "r")
 
-        out_file = open(os.path.join(output_dir, new_file), "w")
+        out_file = open(os.path.join(output_file, new_file), "w")
 
         for line in in_file:
             if line.startswith("#"):
@@ -148,44 +151,33 @@ def _write_somatic(in_files, output_dir, somatic_positions, execution_context):
 
     logger.info("Jacquard wrote [{}] VCF files to [{}]",
                 len(in_files),
-                output_dir)
+                output_file)
 
-def filter_somatic_positions(input_dir, output_dir, execution_context=None):
+def filter_somatic_positions(input_file, output_file, execution_context=None):
     if not execution_context:
         execution_context = []
 
-    in_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
+    in_files = sorted(glob.glob(os.path.join(input_file, "*.vcf")))
     if len(in_files) < 1:
         logger.error("Specified input directory [{}] contains no VCF files. "
-                     "Check parameters and try again.", input_dir)
+                     "Check parameters and try again.", input_file)
         exit(1)
 
     logger.info("Processing [{}] VCF file(s) from [{}]",
                 len(in_files),
-                input_dir)
+                input_file)
 
     (somatic_positions,
      somatic_positions_header) = _find_somatic_positions(in_files)
     execution_context.append(somatic_positions_header)
 
-    _write_somatic(in_files, output_dir, somatic_positions, execution_context)
-
-
-def add_subparser(subparser):
-    # pylint: disable=line-too-long
-    parser = subparser.add_parser("filter_hc_somatic", help="Accepts a directory of Jacquard-tagged VCF results from one or more callers and creates a new directory of VCFs, where rows have been filtered to contain only positions that were called high-confidence somatic in any VCF.")
-    parser.add_argument("input", help="Path to directory containing VCFs. All VCFs in this directory must have Jacquard-specific tags (see jacquard.py tag for more info")
-    parser.add_argument("output", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
-    parser.add_argument("-v", "--verbose", action='store_true')
-    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
-
+    _write_somatic(in_files, output_file, somatic_positions, execution_context)
 
 def _write_output(writer, headers, actual_sorted_variants):
     for line in headers:
         writer.write(line)
     for line in actual_sorted_variants:
         writer.write(line)
-
 
 def _sort_headers(headers):
     meta_headers = []
@@ -201,11 +193,95 @@ def _sort_headers(headers):
 
     return meta_headers
 
+def _build_readers(input_files):
+    vcf_readers = []
+    failures = 0
+    for file_name in input_files:
+        try:
+            vcf_readers.append(vcf.VcfReader(vcf.FileReader(file_name)))
+        except utils.JQException:
+            failures += 1
+
+    if failures:
+        raise utils.JQException(("[{}] VCF files could not be parsed."
+                                 " Review logs for details, adjust input, "
+                                 "and try again.").format(failures))
+
+    return vcf_readers
+
+def _build_writers_to_readers(vcf_readers, output_file):
+    writers_to_readers = {}
+    for reader in vcf_readers:
+        new_filename = _mangle_output_filenames(reader.file_name)
+        output_filepath = os.path.join(output_file, new_filename)
+
+        writers_to_readers[reader] = vcf.FileWriter(output_filepath)
+
+    return writers_to_readers
+
+def _mangle_output_filenames(input_file):
+    basename, extension = os.path.splitext(os.path.basename(input_file))
+    return ".".join([basename, JQ_OUTPUT_SUFFIX, extension.strip(".")])
+
+def _get_output_filenames(input_files):
+    output_files = set()
+    for input_file in input_files:
+        output_files.add(_mangle_output_filenames(input_file))
+
+    return output_files
+
+def _predict_output(args):
+    input_file = os.path.abspath(args.input)
+
+    utils.validate_directories(input_dir=input_file)
+    input_files = sorted(glob.glob(os.path.join(input_file, "*.vcf")))
+
+    desired_output_files = _get_output_filenames(input_files)
+
+    return desired_output_files
+
+def report_prediction(args):
+    return _predict_output(args)
+
+def get_required_input_output_types():
+    return ("directory", "directory")
+
+def add_subparser(subparser):
+    # pylint: disable=line-too-long
+    parser = subparser.add_parser("filter_hc_somatic", help="Accepts a directory of Jacquard-tagged VCF results from one or more callers and creates a new directory of VCFs, where rows have been filtered to contain only positions that were called high-confidence somatic in any VCF.")
+    parser.add_argument("input", help="Path to directory containing VCFs. All VCFs in this directory must have Jacquard-specific tags (see jacquard.py tag for more info")
+    parser.add_argument("output", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
+    parser.add_argument("-v", "--verbose", action='store_true')
+    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+
+def _validate_arguments(args):
+    input_file = os.path.abspath(args.input)
+    output_file = os.path.abspath(args.output)
+
+    utils.validate_directories(input_file, output_file)
+
+    input_files = sorted(glob.glob(os.path.join(input_file, "*.vcf")))
+    out_files = sorted(glob.glob(os.path.join(output_file, "*")))
+
+    if len(input_files) < 1:
+        logger.error("Specified input directory [{}] contains no VCF files. "
+                     "Check parameters and try again.", input_file)
+        exit(1)
+
+    full_path_input_files = [os.path.join(input_file, i) for i in input_files]
+    vcf_readers = _build_readers(full_path_input_files)
+    writers_to_readers = _build_writers_to_readers(vcf_readers, output_file)
+
+    logger.info("Processing [{}] VCF file(s) from [{}]",
+                len(input_files),
+                input_file)
+
+    return writers_to_readers, out_files
 
 def execute(args, execution_context):
-    input_dir = os.path.abspath(args.input)
-    output_dir = os.path.abspath(args.output)
+    input_file = os.path.abspath(args.input)
+    output_file = os.path.abspath(args.output)
 
-    utils.validate_directories(input_dir, output_dir)
+    utils.validate_directories(input_file, output_file)
 
-    filter_somatic_positions(input_dir, output_dir, execution_context)
+    filter_somatic_positions(input_file, output_file, execution_context)

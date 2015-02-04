@@ -1,16 +1,17 @@
 #pylint: disable=line-too-long, global-statement, redefined-outer-name, too-many-public-methods
 #pylint: disable=unused-argument, invalid-name,too-few-public-methods, star-args
+from StringIO import StringIO
 from argparse import Namespace
 import os
 from re import findall, MULTILINE
-from StringIO import StringIO
 import sys
-from testfixtures import TempDirectory
 import unittest
 
-import jacquard.utils as utils
-import jacquard.tag as tag
+from testfixtures import TempDirectory
+
 import jacquard.logger as logger
+import jacquard.tag as tag
+import jacquard.utils as utils
 import jacquard.variant_callers.strelka as strelka
 import jacquard.variant_callers.varscan as varscan
 import test.test_case as test_case
@@ -139,6 +140,18 @@ class TagTestCase(unittest.TestCase):
         global MOCK_LOG_MESSAGES
         MOCK_LOG_MESSAGES = []
 
+    def test_predict_output(self):
+        with TempDirectory() as input_file:
+            input_file.write("A.normalized.vcf","##source=strelka\n#colHeader")
+            input_file.write("B.normalized.vcf","##source=strelka\n#colHeader")
+            args = Namespace(input=input_file.path)
+
+            desired_output_files = tag._predict_output(args)
+            expected_desired_output_files = set(["A.normalized.jacquardTags.vcf",
+                                                 "B.normalized.jacquardTags.vcf"])
+
+            self.assertEquals(expected_desired_output_files, desired_output_files)
+
     def test_build_vcf_readers(self):
         vcf_content = '''##source=strelka
 #CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
@@ -147,11 +160,11 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 '''
         vcf_content = vcf_content.replace('|', "\t")
 
-        with TempDirectory() as input_dir:
-            input_dir.write("A.vcf", vcf_content)
-            input_dir.write("B.vcf", vcf_content)
+        with TempDirectory() as input_file:
+            input_file.write("A.vcf", vcf_content)
+            input_file.write("B.vcf", vcf_content)
 
-            vcf_readers = tag._build_vcf_readers(input_dir.path)
+            vcf_readers = tag._build_vcf_readers(input_file.path)
 
             self.assertEqual("A.vcf", vcf_readers[0].file_name)
             self.assertEqual(("##source=strelka",), vcf_readers[0].metaheaders)
@@ -171,20 +184,20 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 '''
         vcf_content = vcf_content.replace('|', "\t")
 
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+        with TempDirectory() as input_file, TempDirectory() as output_file:
 
-            input_dir.write("A.vcf", vcf_content)
-            input_dir.write("B.vcf", vcf_content)
+            input_file.write("A.vcf", vcf_content)
+            input_file.write("B.vcf", vcf_content)
 
-            vcf_readers = tag._build_vcf_readers(input_dir.path)
-            actual_dict = tag._build_vcf_readers_to_writers(vcf_readers, output_dir.path)
+            vcf_readers = tag._build_vcf_readers(input_file.path)
+            actual_dict = tag._build_vcf_readers_to_writers(vcf_readers, output_file.path)
 
             actual_readers = sorted([reader.file_name for reader in actual_dict])
             expected_readers = ["A.vcf", "B.vcf"]
             self.assertEquals(actual_readers, expected_readers)
 
             actual_writers = sorted([writer.output_filepath for writer in actual_dict.values()])
-            expected_writers = [os.path.join(output_dir.path, base_filename) for base_filename in ["A.jacquardTags.vcf", "B.jacquardTags.vcf"]]
+            expected_writers = [os.path.join(output_file.path, base_filename) for base_filename in ["A.jacquardTags.vcf", "B.jacquardTags.vcf"]]
             self.assertEquals(actual_writers, expected_writers)
 
     def test_build_vcf_to_caller_multipleVcfLogs(self):
@@ -195,12 +208,12 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 '''
         vcf_content = vcf_content.replace('|', "\t")
 
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("A.vcf", vcf_content)
-            input_dir.write("B.vcf", vcf_content)
+        with TempDirectory() as input_file, TempDirectory() as output_file:
+            input_file.write("A.vcf", vcf_content)
+            input_file.write("B.vcf", vcf_content)
 
-            vcf_readers = tag._build_vcf_readers(input_dir.path)
-            tag._build_vcf_readers_to_writers(vcf_readers, output_dir.path)
+            vcf_readers = tag._build_vcf_readers(input_file.path)
+            tag._build_vcf_readers_to_writers(vcf_readers, output_file.path)
 
             output_lines = self.output.getvalue().rstrip().split("\n")
             self.assertEquals(1, len(output_lines))
@@ -216,14 +229,14 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 '''
         vcf_content = vcf_content.replace('|', "\t")
 
-        with TempDirectory() as input_dir:
-            input_dir.write("A.vcf", vcf_content)
-            input_dir.write("B.vcf", vcf_content)
+        with TempDirectory() as input_file:
+            input_file.write("A.vcf", vcf_content)
+            input_file.write("B.vcf", vcf_content)
 
             self.assertRaisesRegexp(utils.JQException,
                                     "VCF files could not be parsed",
                                     tag._build_vcf_readers,
-                                    input_dir.path)
+                                    input_file.path)
 
     def test_tag_files(self):
         reader = MockVcfReader(metaheaders=["##originalMeta1", "##originalMeta2"], column_header="#columnHeader")
@@ -578,18 +591,18 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         vcf_content1 = vcf_content1.replace('|', "\t")
         vcf_content2 = vcf_content2.replace('|', "\t")
 
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("A.vcf", vcf_content1)
-            input_dir.write("B.vcf", vcf_content2)
+        with TempDirectory() as input_file, TempDirectory() as output_file:
+            input_file.write("A.vcf", vcf_content1)
+            input_file.write("B.vcf", vcf_content2)
 
-            args = Namespace(input=input_dir.path,
-                             output=output_dir.path)
+            args = Namespace(input=input_file.path,
+                             output=output_file.path)
 
             tag.execute(args, [])
 
-            output_dir.check("A.jacquardTags.vcf", "B.jacquardTags.vcf")
-            file_content1 = output_dir.read("A.jacquardTags.vcf")
-            file_content2 = output_dir.read("B.jacquardTags.vcf")
+            output_file.check("A.jacquardTags.vcf", "B.jacquardTags.vcf")
+            file_content1 = output_file.read("A.jacquardTags.vcf")
+            file_content2 = output_file.read("B.jacquardTags.vcf")
 
             self.assertTrue('##FORMAT=<ID={0}HC_SOM'.format(strelka.JQ_STRELKA_TAG) in file_content1)
             self.assertEquals(2,
@@ -600,12 +613,12 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
 class TagFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_tag(self):
-        with TempDirectory() as output_dir:
+        with TempDirectory() as output_file:
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir, "functional_tests", "02_tag")
-            input_dir = os.path.join(module_testdir, "input")
+            input_file = os.path.join(module_testdir, "input")
 
-            command = ["tag", input_dir, output_dir.path, "--force"]
+            command = ["tag", input_file, output_file.path, "--force"]
             expected_dir = os.path.join(module_testdir, "benchmark")
 
             self.assertCommand(command, expected_dir)

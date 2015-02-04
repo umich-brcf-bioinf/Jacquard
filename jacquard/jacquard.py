@@ -13,25 +13,27 @@
 ##   See the License for the specific language governing permissions and
 ##   limitations under the License.
 
-# pylint: disable=missing-docstring,global-statement
 
 from __future__ import absolute_import, print_function
 import argparse
-import os
-import signal
-import shutil
-import sys
-import traceback
-
-import jacquard.tag as tag
-import jacquard.normalize as normalize
-import jacquard.filter_hc_somatic as filter_hc_somatic
-import jacquard.merge as merge
-import jacquard.merge2 as merge2
+import distutils.dir_util
+import jacquard.command_validator as command_validator
 import jacquard.consensus as consensus
 import jacquard.expand as expand
-import jacquard.utils as utils
+import jacquard.filter_hc_somatic as filter_hc_somatic
 import jacquard.logger as logger
+import jacquard.merge as merge
+import jacquard.merge2 as merge2
+import jacquard.normalize as normalize
+import jacquard.tag as tag
+import jacquard.utils as utils
+import os
+import shutil
+import signal
+import sys
+import time
+import traceback
+
 
 _SUBCOMMANDS = [normalize,
                 tag,
@@ -42,11 +44,10 @@ _SUBCOMMANDS = [normalize,
                 expand]
 
 TMP_DIR_NAME = "jacquard_tmp"
-TMP_OUTPUT_PATH = None
+_TEMP_WORKING_DIR_FORMAT = "jacquard.{}.{}.tmp"
 
 def main():
-    #pylint: disable=unused-argument
-    def handler(signum, frame):
+    def handler(signum, frame): #pylint: disable=unused-argument
         msg = "WARNING: Jacquard was interrupted before completing."
         try:
             logger.debug(msg)
@@ -67,79 +68,27 @@ def _version_text():
     return "Jacquard v{0}\nSupported variant callers:\n\t{1}".\
         format(utils.__version__, caller_version_string)
 
+def _get_temp_working_dir(original_output):
+    base_dir = os.path.dirname(os.path.abspath(original_output))
+    pid = os.getpid()
+    microseconds_since_epoch = int(time.time() * 1000 * 1000)
+    dir_name = _TEMP_WORKING_DIR_FORMAT.format(str(pid),
+                                               str(microseconds_since_epoch))
+    temp_working_dir = os.path.join(base_dir, dir_name)
+    new_output = os.path.join(temp_working_dir,
+                              os.path.basename(original_output))
 
-#TODO: (cgates) This cannot be the simplest thing that could possibly work
-def _validate_temp(tmp_output, original_output_dir, force=0):
-    extension = os.path.splitext(os.path.basename(tmp_output))[1]
-    if extension:
-        tmp_dir = os.path.dirname(tmp_output)
-    else:
-        tmp_dir = tmp_output
+    return temp_working_dir, new_output
 
-    tmp_dir_name = os.path.basename(tmp_dir)
-    if os.path.exists(tmp_dir) and not force:
-        raise utils.JQException(("A temp directory [{}] already exists in "
-                                 "output directory [{}]; move or remove the "
-                                 "temp dir or adjust output argument."),
-                                tmp_dir_name,
-                                original_output_dir)
+def _move_tmp_contents_to_original(args):
+    temp_dir = args.temp_working_dir
+    dest_dir = os.path.dirname(args.temp_working_dir)
 
-    if not os.path.exists(tmp_dir):
-        try:
-            os.mkdir(tmp_dir)
-        except:
-            message = ("The temp directory [{}] cannot be created in "
-                       "output directory [{}]; review permissions "
-                       "and output arguments and try again.")
-            raise utils.JQException(message,
-                                    tmp_dir_name,
-                                    original_output_dir)
-
-def _create_temp_directory(original_output_dir, force=0):
-    extension = os.path.splitext(os.path.basename(original_output_dir))[1]
-
-    if extension:
-        original_output_fname = os.path.basename(original_output_dir)
-        original_output_dir = os.path.dirname(original_output_dir)
-        tmp_output = os.path.join(original_output_dir,
-                                  TMP_DIR_NAME,
-                                  original_output_fname)
-    else:
-        tmp_output = os.path.join(original_output_dir, TMP_DIR_NAME)
-
-    try:
-        os.mkdir(original_output_dir)
-    except OSError:
-        pass
-
-    if len(os.listdir(original_output_dir)) != 0:
-        if not force:
-            raise utils.JQException("Specified output {} is not empty. "
-                                    "Please specify an empty directory or "
-                                    "use the flag '--force'. Type "
-                                    "'jacquard -h' for more details.",
-                                    original_output_dir)
-
-    _validate_temp(tmp_output, original_output_dir, force)
-
-    return tmp_output
-
-def _move_tmp_contents_to_original(tmp_dir, original_output):
-    if os.path.isfile(tmp_dir):
-        tmp_dir = os.path.dirname(tmp_dir)
-
-    tmp_contents = os.listdir(tmp_dir)
-    for fname in tmp_contents:
-        full_fname = os.path.join(tmp_dir, fname)
-
-        if os.path.isfile(full_fname):
-            shutil.move(full_fname, original_output)
-        else:
-            if not os.path.isdir(original_output):
-                output_dir = os.path.dirname(original_output)
-                shutil.move(full_fname, output_dir)
-
-    os.rmdir(tmp_dir)
+    logger.debug("Moving files from tmp directory {} to output directory",
+                 temp_dir,
+                 dest_dir)
+    distutils.dir_util.copy_tree(temp_dir, dest_dir)
+    _cleanup(temp_dir)
 
 def dispatch(modules, arguments):
     # pylint: disable=line-too-long
@@ -178,24 +127,23 @@ def dispatch(modules, arguments):
         logger.debug("cwd|{}", os.getcwd())
         logger.debug("command|{}", " ".join(arguments))
 
-        original_output_dir = args.output
-        global TMP_OUTPUT_PATH
+        args.original_output = args.output
+        (args.temp_working_dir,
+            args.output) = _get_temp_working_dir(args.original_output)
 
-        TMP_OUTPUT_PATH = _create_temp_directory(original_output_dir,
-                                                 args.force)
-        args.output = TMP_OUTPUT_PATH
-        logger.debug("Writing output to tmp directory [{}]", TMP_OUTPUT_PATH)
+        command_validator.preflight(args, module_dispatch[args.subparser_name])
+
+        logger.debug("Writing output to tmp directory [{}]",
+                     args.temp_working_dir)
 
         module_dispatch[args.subparser_name].execute(args, execution_context)
 
-        logger.debug("Moving files from tmp directory {} to output directory",
-                     TMP_OUTPUT_PATH,
-                     original_output_dir)
-        _move_tmp_contents_to_original(TMP_OUTPUT_PATH, original_output_dir)
-        logger.debug("Removed tmp directory {}", TMP_OUTPUT_PATH)
+        _move_tmp_contents_to_original(args)
 
-        logger.debug("Output saved to [{}]", os.path.abspath(original_output_dir))
-        logger.info("Output saved to [{}]", original_output_dir)
+        logger.debug("Output saved to [{}]",
+                     os.path.abspath(args.original_output))
+        logger.info("Output saved to [{}]",
+                    args.original_output)
         if logger.SHOW_WARNING:
             logger.info("Done. (See warnings above)")
         else:
@@ -204,17 +152,20 @@ def dispatch(modules, arguments):
     #pylint: disable=broad-except
     except Exception as exception:
         logger.error(str(exception))
-        logger.error("Jacquard encountered an unanticipated problem. Please review log file and contact your sysadmin or Jacquard support for assistance.")
+        logger.error("Jacquard encountered an unanticipated problem. "
+                     "Please review log file and contact your sysadmin "
+                     "or Jacquard support for assistance.")
         logger.debug(traceback.format_exc())
         sys.exit(1)
     finally:
-        _cleanup()
+        if args.temp_working_dir:
+            _cleanup(args.temp_working_dir)
 
 
-def _cleanup():
-    if TMP_OUTPUT_PATH and os.path.exists(TMP_OUTPUT_PATH):
+def _cleanup(temp_working_dir):
+    if temp_working_dir and os.path.exists(temp_working_dir):
         logger.debug("Cleaning up tmp directory")
-        shutil.rmtree(TMP_OUTPUT_PATH)
+        shutil.rmtree(temp_working_dir)
 
 if __name__ == '__main__':
     main()

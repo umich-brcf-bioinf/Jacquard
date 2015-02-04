@@ -1,13 +1,16 @@
 from __future__ import absolute_import
+
 from collections import defaultdict
-import collections
 import glob
-import jacquard.logger as logger
-import jacquard.utils as utils
-import jacquard.variant_callers as variant_callers
-import jacquard.vcf as vcf
 import os
 import shutil
+
+import jacquard.logger as logger
+import jacquard.utils as utils
+import jacquard.variant_callers.variant_caller_factory as variant_caller_factory
+import jacquard.vcf as vcf
+
+JQ_OUTPUT_SUFFIX = "normalized"
 
 #TODO: (cgates): this code is not referenced anywhere; it will be eliminated when normalize is rewritten
 def _validate_single_caller(filepaths, get_caller):
@@ -31,25 +34,26 @@ def _validate_single_caller(filepaths, get_caller):
     else:
         return iter(callers).next()
 
-def add_subparser(subparser):
-    # pylint: disable=line-too-long
-    parser = subparser.add_parser("normalize", help="Accepts a directory containing VarScan VCF snp/indel results or Strelka VCF snvs/indels results and creates a new directory of merged, sorted VCFs with added high confidence tags")
-    parser.add_argument("input", help="Path to directory containing VCFs. Each sample must have exactly two files matching these patterns: <sample>.indel.vcf, <sample>.snp.vcf, <sample>.indel.Germline.hc, <sample>.snp.Germline.hc, <sample>.indel.LOH.hc, <sample>.snp.LOH.hc, <sample>.indel.Somatic.hc, <sample>.snp.somatic.hc, <sample>.indel.*.hc, <sample>.snp.*.hc ")
-    parser.add_argument("output", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
-    parser.add_argument("-v", "--verbose", action='store_true')
-    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
-
-def _partition_input_files(in_files, output_dir, caller):
+def _get_files_per_patient(in_files):
     patient_to_files = defaultdict(list)
-
     for file_path in in_files:
         basename = os.path.basename(file_path)
         patient = basename.split(".")[0]
         patient_to_files[patient].append(file_path)
 
+    return patient_to_files
+
+def _get_output_filenames(caller, patient_to_files):
+    output_files = set()
+    for in_files in patient_to_files.values():
+        output_files.add(caller.decorate_files(in_files, JQ_OUTPUT_SUFFIX))
+
+    return output_files
+
+def _partition_input_files(patient_to_files, output_dir, caller):
     writer_to_readers = {}
     for patient, in_files in patient_to_files.items():
-        output_file = caller.decorate_files(in_files, "normalized")
+        output_file = caller.decorate_files(in_files, JQ_OUTPUT_SUFFIX)
         file_writer = vcf.FileWriter(os.path.join(output_dir, output_file))
         file_readers = []
 
@@ -61,7 +65,7 @@ def _partition_input_files(in_files, output_dir, caller):
     return writer_to_readers
 
 #pylint: disable=line-too-long
-def _determine_caller_per_directory(in_files, get_caller=variant_callers.variant_caller_factory.get_caller):
+def _determine_caller_per_directory(in_files, get_caller=variant_caller_factory.get_caller):
     for in_file in in_files:
         extension = os.path.splitext(os.path.basename(in_file))[1]
         if extension == ".vcf":
@@ -73,13 +77,39 @@ def _determine_caller_per_directory(in_files, get_caller=variant_callers.variant
                               vcf_reader.file_name)
 
 def _log_caller_info(vcf_readers):
-    caller_count = collections.defaultdict(int)
+    caller_count = defaultdict(int)
 
     for vcf_reader in vcf_readers:
         caller_count[vcf_reader.caller.name] += 1
     for caller_name in sorted(caller_count):
         logger.info("Recognized [{0}] {1} file(s)",
                     caller_count[caller_name], caller_name)
+
+def add_subparser(subparser):
+    # pylint: disable=line-too-long
+    parser = subparser.add_parser("normalize", help="Accepts a directory containing VarScan VCF snp/indel results or Strelka VCF snvs/indels results and creates a new directory of merged, sorted VCFs with added high confidence tags")
+    parser.add_argument("input", help="Path to directory containing VCFs. Each sample must have exactly two files matching these patterns: <sample>.indel.vcf, <sample>.snp.vcf, <sample>.indel.Germline.hc, <sample>.snp.Germline.hc, <sample>.indel.LOH.hc, <sample>.snp.LOH.hc, <sample>.indel.Somatic.hc, <sample>.snp.somatic.hc, <sample>.indel.*.hc, <sample>.snp.*.hc ")
+    parser.add_argument("output", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
+    parser.add_argument("-v", "--verbose", action='store_true')
+    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+
+def _predict_output(args):
+    input_file = os.path.abspath(args.input)
+
+    utils.validate_directories(input_dir=input_file)
+    in_files = sorted(glob.glob(os.path.join(input_file, "*.vcf")))
+
+    caller = _determine_caller_per_directory(in_files)
+    patient_to_files = _get_files_per_patient(in_files)
+    desired_output_files = _get_output_filenames(caller, patient_to_files)
+
+    return desired_output_files
+
+def report_prediction(args):
+    return _predict_output(args)
+
+def get_required_input_output_types():
+    return ("directory", "directory")
 
 #TODO: (cgates): normalized files should contain execution context - do they?
 def execute(args, execution_context):
@@ -94,7 +124,8 @@ def execute(args, execution_context):
 
     caller.validate_vcfs_in_directory(in_files)
 
-    writer_to_readers = _partition_input_files(in_files, output_dir, caller)
+    patient_to_files = _get_files_per_patient(in_files)
+    writer_to_readers = _partition_input_files(patient_to_files, output_dir, caller)
 
     if not writer_to_readers:
         logger.error("Specified input directory [{0}] contains no files."

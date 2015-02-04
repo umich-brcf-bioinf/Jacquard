@@ -15,6 +15,7 @@ _MULT_ALT_HEADER = ('##INFO=<ID={},Number=0,Type=Flag,'
                     'Description="dbSNP Membership",Source="Jacquard",'
                     'Version="{}">').format(_MULT_ALT_TAG, utils.__version__)
 _FILE_FORMAT = ["##fileformat=VCFv4.2"]
+JQ_OUTPUT_SUFFIX = "merged"
 
 # This class must capture the state of the incoming iterator and provide
 # modified behavior based on data in that iterator. A small class works ok, but
@@ -252,6 +253,16 @@ def _build_merge_metaheaders(patient_to_file):
 
     return metaheaders
 
+def _build_writers_to_readers(vcf_readers, output_path):
+    writers_to_readers = {}
+    basename, extension = os.path.splitext(output_path)
+    new_filename = basename + ".merged" + extension
+
+    file_writer = vcf.FileWriter(new_filename)
+    writers_to_readers[file_writer] = vcf_readers
+
+    return writers_to_readers
+
 def add_subparser(subparser):
     #pylint: disable=line-too-long
     parser = subparser.add_parser("merge2", help="Accepts a directory of VCFs and returns a single merged VCF file.")
@@ -261,6 +272,37 @@ def add_subparser(subparser):
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
     parser.add_argument("--include_format_tags", dest='tags', help="Comma-separated list of regexs for format tags to include in output. Defaults to all JQ tags.")
 
+def _validate_arguments(args):
+    input_path = os.path.abspath(args.input)
+    output_path = os.path.abspath(args.output)
+    if args.tags:
+        format_tag_regex = args.tags.split(",")
+    else:
+        format_tag_regex = _DEFAULT_INCLUDED_FORMAT_TAGS
+
+    input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
+    output_file = os.path.dirname(output_path)
+    out_files = sorted(glob.glob(os.path.join(output_file, "*")))
+    buffered_readers, vcf_readers = _create_reader_lists(input_files)
+
+    writers_to_readers = _build_writers_to_readers(vcf_readers, output_path)
+
+    return writers_to_readers, out_files, buffered_readers, format_tag_regex
+
+def _predict_output(args):
+    input_file = os.path.abspath(args.input)
+    output_file = os.path.dirname(args.output)
+    utils.validate_directories(input_file,output_file)
+
+    desired_output_files = set([os.path.basename(args.output)])
+
+    return desired_output_files
+
+def report_prediction(args):
+    return _predict_output(args)
+
+def get_required_input_output_types():
+    return ("directory", "file")
 
 def execute(args, execution_context):
     input_path = os.path.abspath(args.input)

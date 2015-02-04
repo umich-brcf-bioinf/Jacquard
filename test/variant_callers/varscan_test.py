@@ -222,8 +222,8 @@ class VarscanTestCase(unittest.TestCase):
 
     def test_process_hc_files(self):
         hc_readers = []
-        with TempDirectory() as input_dir:
-            input_dir.write("A",
+        with TempDirectory() as input_file:
+            input_file.write("A",
                             ("chrom|position|ref|var|normal_reads1|"+\
                             "normal_reads2|normal_var_freq|normal_gt|"+\
                             "tumor_reads1|tumor_reads2|tumor_var_freq|"+\
@@ -235,7 +235,7 @@ class VarscanTestCase(unittest.TestCase):
                             "chr2|161332557|G|A|25|1|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n"+\
                             "chr3|99463179|G|A|22|0|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n"+
                             "").replace("|","\t"))
-            hc_readers.append(FileReader(os.path.join(input_dir.path,"A")))
+            hc_readers.append(FileReader(os.path.join(input_file.path,"A")))
 
             actual = self.caller._process_hc_files(hc_readers)
 

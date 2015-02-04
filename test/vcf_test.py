@@ -493,8 +493,8 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
 
 class VcfWriterTestCase(unittest.TestCase):
     def test_write(self):
-        with TempDirectory() as output_dir:
-            file_path = os.path.join(output_dir.path, "test.tmp")
+        with TempDirectory() as output_file:
+            file_path = os.path.join(output_file.path, "test.tmp")
 
             writer = FileWriter(file_path)
             writer.open()
@@ -503,7 +503,7 @@ class VcfWriterTestCase(unittest.TestCase):
             writer.write("CD\n")
             writer.close()
 
-            actual_output = output_dir.read('test.tmp')
+            actual_output = output_file.read('test.tmp')
             expected_output = "AB|CD|".replace('|', os.linesep)
             self.assertEquals(expected_output, actual_output)
 
@@ -519,9 +519,9 @@ class FileReaderTestCase(unittest.TestCase):
         self.assertEquals(1, len(s))
 
     def test_read_lines(self):
-        with TempDirectory() as input_dir:
-            input_dir.write("A.tmp", "1\n2\n3")
-            reader = FileReader(os.path.join(input_dir.path, "A.tmp"))
+        with TempDirectory() as input_file:
+            input_file.write("A.tmp", "1\n2\n3")
+            reader = FileReader(os.path.join(input_file.path, "A.tmp"))
             reader.open()
             actual_lines = [line for line in reader.read_lines()]
             reader.close()
@@ -544,14 +544,14 @@ class FileWriterTestCase(unittest.TestCase):
         self.assertEquals(1, len(s))
 
     def test_write_lines(self):
-        with TempDirectory() as output_dir:
-            writer = FileWriter(os.path.join(output_dir.path, "A.tmp"))
+        with TempDirectory() as output_file:
+            writer = FileWriter(os.path.join(output_file.path, "A.tmp"))
             writer.open()
             writer.write("1\n2\n")
             writer.write("3")
             writer.close()
 
-            actual_file = open(os.path.join(output_dir.path, "A.tmp"))
+            actual_file = open(os.path.join(output_file.path, "A.tmp"))
             actual_output = actual_file.readlines()
             actual_file.close()
 

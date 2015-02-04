@@ -521,7 +521,7 @@ def validate_samples_for_callers(all_merge_column_context, all_inconsistent_samp
 def _add_mult_alt_flags(df):
     return df.groupby(by=["CHROM", "POS", "REF"]).apply(find_mult_alts)
 
-def process_files(sample_file_readers, input_dir, output_path, input_keys, headers, header_names, first_line, all_inconsistent_sample_sets, execution_context, pivot_builder=build_pivoter):
+def process_files(sample_file_readers, input_file, output_path, input_keys, headers, header_names, first_line, all_inconsistent_sample_sets, execution_context, pivot_builder=build_pivoter):
     first_file_reader = sample_file_readers[0]
     first_file      = first_file_reader
 
@@ -537,8 +537,8 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
     all_merge_column_context = []
     unknown_callers = 0
 
-    output_dir = os.path.dirname(output_path)
-    new_dir = os.path.join(output_dir, "splitMultAlts")
+    output_file = os.path.dirname(output_path)
+    new_dir = os.path.join(output_file, "splitMultAlts")
     if not os.path.isdir(new_dir):
         os.mkdir(new_dir)
     logger.info("Splitting mult-alts in input files. Using [{}] as input "
@@ -619,9 +619,9 @@ def process_files(sample_file_readers, input_dir, output_path, input_keys, heade
                 len(sample_file_readers),
                 output_path)
 
-def determine_input_keys(input_dir):
-    for file_name in listdir(input_dir):
-        if isfile(join(input_dir, file_name)):
+def determine_input_keys(input_file):
+    for file_name in listdir(input_file):
+        if isfile(join(input_file, file_name)):
             fname, extension = os.path.splitext(file_name)
             if extension == ".vcf":
                 return ["CHROM", "POS", "REF", "ALT"]
@@ -682,20 +682,26 @@ def add_subparser(subparser):
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
+def get_required_input_output_types():
+    return ("foo","bar")
+
+def report_prediction(args):
+    return "foo"
+
 def execute(args, execution_context):
-    input_dir = os.path.abspath(args.input)
+    input_file = os.path.abspath(args.input)
     output_path = os.path.abspath(args.output)
 
-    output_dir, outfile_name = os.path.split(output_path)
-    utils.validate_directories(input_dir, output_dir)
-    input_keys = args.keys.split(",") if args.keys else determine_input_keys(input_dir)
+    output_file, outfile_name = os.path.split(output_path)
+    utils.validate_directories(input_file, output_file)
+    input_keys = args.keys.split(",") if args.keys else determine_input_keys(input_file)
     all_inconsistent_sample_sets = args.allow_inconsistent_sample_sets
 
     fname, extension = os.path.splitext(outfile_name)
 #     if extension != ".vcf": 
 #         raise utils.JQException("Error. Specified output {} must have a .vcf extension", output_path)
 
-    in_files = sorted(glob.glob(os.path.join(input_dir,"*.vcf")))
+    in_files = sorted(glob.glob(os.path.join(input_file,"*.vcf")))
     if len(in_files) < 1:
         raise utils.JQException("Error: Specified input directory [{}] "
                                 "contains no VCF files. Check parameters and "
@@ -705,7 +711,7 @@ def execute(args, execution_context):
 
     execution_context.extend(meta_headers + ["##fileformat=VCFv4.2"])
 
-    process_files(sample_file_readers, input_dir, output_path, input_keys,
+    process_files(sample_file_readers, input_file, output_path, input_keys,
                   headers, header_names, first_line,
                   all_inconsistent_sample_sets, execution_context)
 
