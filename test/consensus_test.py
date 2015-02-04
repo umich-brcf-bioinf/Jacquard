@@ -6,7 +6,6 @@ import os
 from StringIO import StringIO
 import sys
 from testfixtures import TempDirectory
-import unittest
 
 import jacquard.utils as utils
 import jacquard.consensus as consensus
@@ -19,7 +18,7 @@ class MockFileWriter(object):
         self.opened = False
         self.closed = False
 
-    def open (self):
+    def open(self):
         self.opened = True
 
     def write(self, content):
@@ -58,7 +57,9 @@ class MockVcfReader(object):
         self.closed = True
 
 class MockConsensusTag(object):
-    def __init__(self, metaheader = "##consensus_metaheader", all_ranges = None):
+    def __init__(self,
+                 metaheader="##consensus_metaheader",
+                 all_ranges=None):
         self.metaheader = metaheader
         self.format_called = False
 
@@ -85,7 +86,7 @@ class MockConsensusTag(object):
             return str(round(100 * float(value))/100)
 
 class MockConsensusHelper(object):
-    def __init__(self, tag, ranges = None):
+    def __init__(self, tag, ranges=None):
         self.tags = [tag]
         self.add_tags_called = False
         self.add_zscore_called = False
@@ -114,7 +115,7 @@ def mock_log(msg, *args):
     global MOCK_LOG_CALLED
     MOCK_LOG_CALLED = True
 
-class ConsensusTestCase(unittest.TestCase):
+class ConsensusTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         self.output = StringIO()
         self.saved_stderr = sys.stderr
@@ -146,39 +147,19 @@ class ConsensusTestCase(unittest.TestCase):
         logger.warning = self.original_warning
         logger.debug = self.original_debug
 
-    def xtest_validate_arguments(self):
-        with TempDirectory() as input_file, TempDirectory() as output_file:
-            input_file.write("A.snvs.vcf","##source=strelka\n#colHeader")
-            input_file.write("A.indels.vcf","##source=strelka\n#colHeader")
-            args = Namespace(input=input_file.path,
-                             output=output_file.path)
-
-            existing_files_in_output, output_file = consensus._validate_arguments(args)
-            self.assertEquals(1, len(existing_files_in_output))
-            self.assertEquals("consensus.vcf", output_file)
-            self.assertRegexpMatches(existing_files_in_output[0].output_filepath, "consensus.vcf")
-
     def test_write_metaheaders(self):
         file_writer = MockFileWriter()
         vcf_reader = MockVcfReader()
         cons_helper = MockConsensusHelper(MockConsensusTag())
         consensus._write_metaheaders(cons_helper,
-                           vcf_reader,
-                           file_writer,
-                           ["execution_context"])
-        expected = ["##metaheaders", "execution_context",
-                    "##consensus_metaheader", "#header"]
-        self.assertEquals(expected,file_writer._content)
-
-    def test_write_execution_metaheaders(self):
-        pop_values = {"AF": [0.3, 0.1], "DP": [5, 18]}
-        actual = consensus._get_execution_metaheaders(pop_values)
-        expected = ["##jacquard.consensus.JQ_CONS_DP_RANGE.mean_DP_range=5",
-                    "##jacquard.consensus.JQ_CONS_DP_ZSCORE.std_DP_range=18",
-                    "##jacquard.consensus.JQ_CONS_AF_RANGE.mean_AF_range=0.3",
-                    "##jacquard.consensus.JQ_CONS_AF_ZSCORE.std_AF_range=0.1"]
-
-        self.assertEquals("\n".join(expected), actual)
+                                     vcf_reader,
+                                     file_writer,
+                                     ["execution_context"])
+        expected = ["##metaheaders",
+                    "execution_context",
+                    "##consensus_metaheader",
+                    "#header"]
+        self.assertEquals(expected, file_writer._content)
 
     def test_add_consensus_tags(self):
         file_writer = MockFileWriter()
@@ -191,89 +172,41 @@ class ConsensusTestCase(unittest.TestCase):
         self.assertTrue(cons_helper.add_tags_called)
         self.assertTrue(tag.format_called)
 
-    def test_add_zscore(self):
-        file_writer = MockFileWriter()
-        vcf_reader = MockVcfReader()
-        tag = MockConsensusTag(all_ranges=[])
-        ranges = [0.2, 0.3, 0.4]
-        cons_helper = MockConsensusHelper(tag, ranges)
-        pop_values = {"allele_freq_tag": [0.3, 0.1]}
-
-        consensus._add_zscore(cons_helper, vcf_reader, file_writer, pop_values)
-
-        self.assertTrue(cons_helper.add_zscore_called)
-        self.assertTrue(tag.format_called)
-
-    def test_add_zscore_rangesAreZero(self):
-        file_writer = MockFileWriter()
-        vcf_reader = MockVcfReader()
-        tag = MockConsensusTag(all_ranges=[])
-        ranges = [0.0, 0.0, 0.0]
-        cons_helper = MockConsensusHelper(tag, ranges)
-        pop_values = {"allele_freq_tag": [0.0, 0.0]}
-
-        consensus._add_zscore(cons_helper, vcf_reader, file_writer, pop_values)
-
-        self.assertTrue(cons_helper.add_zscore_called)
-        self.assertTrue(tag.format_called)
-
-    def test_add_zscore_oneCaller_NoRange(self):
-        file_writer = MockFileWriter()
-        vcf_reader = MockVcfReader()
-        tag = MockConsensusTag(all_ranges=[])
-        ranges = []
-        cons_helper = MockConsensusHelper(tag, ranges)
-        pop_values = {"allele_freq_tag": [0.0, 0.0]}
-
-        consensus._add_zscore(cons_helper, vcf_reader, file_writer, pop_values)
-
-        self.assertTrue(cons_helper.add_zscore_called)
-        self.assertTrue(tag.format_called)
-
-    def test_predict_output(self):
-        with TempDirectory() as output_file:
-            args = Namespace(output=os.path.join(output_file.path, "consensus.vcf"))
-
-            desired_output_files = consensus._predict_output(args)
-            expected_desired_output_files = set(["consensus.vcf"])
-
-            self.assertEquals(expected_desired_output_files, desired_output_files)
-
     def test_execute_outputFile(self):
-        #pylint: disable=no-self-use
-        input_data = ("##blah\n#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"+
-                    "SAMPLE\n1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF:JQ_VS_DP:JQ_MT_DP|0.2:0.4:30:45")\
-                    .replace("|","\t")
+        input_data = self.entab(\
+"""##blah\n#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SAMPLE
+1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF:JQ_VS_DP:JQ_MT_DP|0.2:0.4:30:45""")
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             input_dir.write("foo.vcf", input_data)
-            input_file = os.path.join(input_dir.path,"foo.vcf")
-            output_file = os.path.join(output_dir.path,"baz.vcf")
+            input_file = os.path.join(input_dir.path, "foo.vcf")
+            output_file = os.path.join(output_dir.path, "baz.vcf")
             args = Namespace(input=input_file,
                              output=output_file,
                              column_specification=None)
-            consensus.execute(args,["##foo"])
+            consensus.execute(args, ["##foo"])
             output_dir.check("baz.vcf")
 
     def test_execute_badInputFile(self):
-        input_data = ("##blah\n#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"+
-                    "SAMPLE\n1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF:JQ_VS_DP:JQ_MT_DP|0.2:0.4:30:45")\
-                    .replace("|","\t")
-        with TempDirectory() as input_file, TempDirectory() as output_file:
-            input_file.write("foo.txt", input_data)
-            input_file = os.path.join(input_file.path,"foo.txt")
-            output_file = os.path.join(output_file.path,"baz.vcf")
+        input_data = self.entab(\
+"""##blah
+#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SAMPLE
+1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF:JQ_VS_DP:JQ_MT_DP|0.2:0.4:30:45""")
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("foo.txt", input_data)
+            input_file = os.path.join(input_dir.path, "foo.txt")
+            output_file = os.path.join(output_dir.path, "baz.vcf")
             args = Namespace(input=input_file,
                              output=output_file,
                              column_specification=None)
-            self.assertRaisesRegexp(utils.JQException, "Input file "+
-                                    r"\[.*foo.txt\] must be a VCF file.",
+            self.assertRaisesRegexp(utils.JQException,
+                                    r"Input file \[.*foo.txt\] must be a VCF file.",
                                     consensus.execute, args, ["##foo"])
 
     def test_execute_badOutputFile(self):
-        with TempDirectory() as input_file, TempDirectory() as output_file:
-            input_file.write("foo.vcf","")
-            input_file = os.path.join(input_file.path,"foo.vcf")
-            output_file = os.path.join(output_file.path,"baz.txt")
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("foo.vcf", "")
+            input_file = os.path.join(input_dir.path, "foo.vcf")
+            output_file = os.path.join(output_dir.path, "baz.txt")
             args = Namespace(input=input_file,
                              output=output_file,
                              column_specification=None)
@@ -282,28 +215,28 @@ class ConsensusTestCase(unittest.TestCase):
                                     consensus.execute, args, ["##foo"])
 
     def test_execute_outputDirectory(self):
-        #pylint: disable=no-self-use
-        input_data = ("##blah\n#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"+
-                    "SAMPLE\n1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF:JQ_VS_DP:JQ_MT_DP|0.2:0.4:30:45")\
-                    .replace("|","\t")
-        with TempDirectory() as input_file, TempDirectory() as output_file:
-            input_file.write("foo.vcf", input_data)
-            input_file = os.path.join(input_file.path,"foo.vcf")
+        input_data = self.entab(\
+"""##blah
+#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SAMPLE
+1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF:JQ_VS_DP:JQ_MT_DP|0.2:0.4:30:45""")
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("foo.vcf", input_data)
+            input_file = os.path.join(input_dir.path, "foo.vcf")
             args = Namespace(input=input_file,
-                             output=output_file.path,
+                             output=output_dir.path,
                              column_specification=None)
-            consensus.execute(args,["##foo"])
-            output_file.check("consensus.vcf")
+            consensus.execute(args, ["##foo"])
+            output_dir.check("consensus.vcf")
 
 class ConsensusFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_consensus(self):
-        with TempDirectory() as output_file:
+        with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir, "functional_tests", "05_consensus")
-            input_file = os.path.join(module_testdir, "input", "tiny_strelka.merged.vcf")
-            output_file = os.path.join(output_file.path, "consensus.vcf")
+            input_dir = os.path.join(module_testdir, "input", "tiny_strelka.merged.vcf")
+            output_file = os.path.join(output_dir.path, "consensus.vcf")
 
-            command = ["consensus", input_file, output_file, "--force"]
+            command = ["consensus", input_dir, output_file, "--force"]
             expected_dir = os.path.join(module_testdir, "benchmark")
 
             self.assertCommand(command, expected_dir)

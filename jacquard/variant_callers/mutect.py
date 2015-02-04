@@ -8,10 +8,10 @@ JQ_MUTECT_TAG = "JQ_MT_"
 
 class _AlleleFreqTag(object):
     def __init__(self):
-        #pylint: disable=line-too-long
         self.metaheader = ('##FORMAT=<ID={0}AF,'
                            'Number=A,'
                            'Type=Float,'
+                           #pylint: disable=line-too-long
                            'Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)",'
                            'Source="Jacquard",'
                            'Version={1}>').format(JQ_MUTECT_TAG,
@@ -36,11 +36,11 @@ class _AlleleFreqTag(object):
         return ",".join(new_values)
 
 class _DepthTag(object):
-    #pylint: disable=line-too-long
     def __init__(self):
         self.metaheader = ('##FORMAT=<ID={0}DP,'
                            'Number=1,'
                            'Type=Float,'
+                           #pylint: disable=line-too-long
                            'Description="Jacquard depth for MuTect (based on DP)",'
                            'Source="Jacquard",'
                            'Version={1}>').format(JQ_MUTECT_TAG,
@@ -50,16 +50,16 @@ class _DepthTag(object):
     def format(vcf_record):
         if "DP" in vcf_record.format_tags:
             sample_values = {}
-            for sample in vcf_record.sample_tag_values:
-                sample_values[sample] = vcf_record.sample_tag_values[sample]["DP"]
+            for samp in vcf_record.sample_tag_values:
+                sample_values[samp] = vcf_record.sample_tag_values[samp]["DP"]
             vcf_record.add_sample_tag_value(JQ_MUTECT_TAG + "DP", sample_values)
 
 class _SomaticTag(object):
-    #pylint: disable=line-too-long
     def __init__(self):
         self.metaheader = ('##FORMAT=<ID={0}HC_SOM,'
                            'Number=1,'
                            'Type=Integer,'
+                           #pylint: disable=line-too-long
                            'Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)",'
                            'Source="Jacquard",'
                            'Version={1}>').format(JQ_MUTECT_TAG,
@@ -154,6 +154,7 @@ class Mutect(object):
     def get_new_metaheaders(self):
         return [tag.metaheader for tag in self.tags]
 
+    #TODO: (cgates): Why using ints instead of boolean for this method?
     @staticmethod
     def validate_input_file(meta_headers, column_header):
         valid = 0

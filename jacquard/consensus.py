@@ -1,10 +1,11 @@
 from __future__ import print_function, absolute_import
-import glob
-from jacquard.variant_callers import consensus_helper
+import jacquard.variant_callers.jacquard_consensus_caller as consensus_caller
 import jacquard.logger as logger
 import jacquard.utils as utils
+import jacquard.variant_callers.jacquard_zscore_caller as zscore_caller
 import jacquard.vcf as vcf
 import os
+
 
 def _write_metaheaders(cons_helper,
                        vcf_reader,
@@ -23,24 +24,6 @@ def _write_metaheaders(cons_helper,
     new_headers.append(vcf_reader.column_header)
     file_writer.write("\n".join(new_headers) +"\n")
 
-def _get_execution_metaheaders(pop_values):
-    new_meta_headers = []
-    for tag, value_list in pop_values.items():
-        pop_mean_range, pop_std_range = value_list
-        pop_mean_header = "##jacquard.consensus.{0}{1}_RANGE."\
-                          "mean_{1}_range={2}"\
-                          .format(consensus_helper.JQ_CONSENSUS_TAG, tag,
-                                  str(pop_mean_range))
-        new_meta_headers.append(pop_mean_header)
-
-        pop_std_header = "##jacquard.consensus.{0}{1}_ZSCORE."\
-                         "std_{1}_range={2}"\
-                         .format(consensus_helper.JQ_CONSENSUS_TAG, tag,
-                                 str(pop_std_range))
-        new_meta_headers.append(pop_std_header)
-
-    return "\n".join(new_meta_headers)
-
 def _write_to_tmp_file(cons_helper, vcf_reader, tmp_writer):
     vcf_reader.open()
     tmp_writer.open()
@@ -54,39 +37,31 @@ def _write_to_tmp_file(cons_helper, vcf_reader, tmp_writer):
         vcf_reader.close()
         tmp_writer.close()
 
-def _write_to_output_file(cons_helper,
-                          execution_context,
-                          tmp_reader,
-                          file_writer):
 
-    tmp_reader.open()
-    file_writer.open()
+def _write_zscores(caller,
+                   metaheaders,
+                   vcf_reader,
+                   file_writer):
 
     try:
-        pop_values = cons_helper.get_population_values()
+        file_writer.open()
+        headers = list(metaheaders)
+        headers.extend(vcf_reader.metaheaders)
+        headers.extend(caller.metaheaders)
+        headers.append(vcf_reader.column_header)
+        file_writer.write("\n".join(headers) +"\n")
 
-        new_meta_headers = _get_execution_metaheaders(pop_values)
-        _write_metaheaders(cons_helper,
-                           tmp_reader,
-                           file_writer,
-                           execution_context,
-                           new_meta_headers)
-
-        logger.info("Calculating zscore and writing to [{}]",
-                    file_writer.file_name)
-        _add_zscore(cons_helper, tmp_reader, file_writer, pop_values)
-
+        vcf_reader.open()
+        for vcf_record in vcf_reader.vcf_records():
+            line = caller.add_tags(vcf_record)
+            file_writer.write(line)
     finally:
-        tmp_reader.close()
+        vcf_reader.close()
         file_writer.close()
 
 def _add_consensus_tags(cons_helper, vcf_reader, file_writer):
     for vcf_record in vcf_reader.vcf_records():
         file_writer.write(cons_helper.add_tags(vcf_record))
-
-def _add_zscore(cons_helper, vcf_reader, file_writer, pop_values):
-    for vcf_record in vcf_reader.vcf_records():
-        file_writer.write(cons_helper.add_zscore(vcf_record, pop_values))
 
 def add_subparser(subparser):
     # pylint: disable=line-too-long
@@ -95,34 +70,6 @@ def add_subparser(subparser):
     parser.add_argument("output", help="Path to output VCf")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
-
-def _validate_arguments(args):
-    input_file = os.path.abspath(args.input)
-    output = os.path.abspath(args.output)
-
-    extension = os.path.splitext(os.path.basename(input_file))[1]
-    if not os.path.isfile(input_file) or extension != ".vcf":
-        raise utils.JQException("Input file [{}] must be a VCF file.",
-                                input_file)
-
-    extension = os.path.splitext(os.path.basename(output))[1]
-    if extension:
-        if extension != ".vcf":
-            raise utils.JQException("Output file [{}] must be a VCF file.",
-                                    output)
-        else:
-            output_file = os.path.dirname(output)
-            utils.validate_directories(os.path.dirname(input_file),
-                                       output_file)
-            existing_files_in_output = sorted(glob.glob(os.path.join(output_file,
-                                                                     "*")))
-            output_file = output
-    else:
-        utils.validate_directories(os.path.dirname(input_file), output)
-        existing_files_in_output = sorted(glob.glob(os.path.join(output, "*")))
-        output_file = os.path.join(output, "consensus.vcf")
-
-    return existing_files_in_output, output_file
 
 def _predict_output(args):
     return set([os.path.basename(args.output)])
@@ -155,7 +102,7 @@ def execute(args, execution_context):
         utils.validate_directories(os.path.dirname(input_file), output)
         output_file = os.path.join(output, "consensus.vcf")
 
-    cons_helper = consensus_helper.ConsensusHelper()
+    cons_helper = consensus_caller.ConsensusCaller()
 
     vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
     tmp_output_file = output_file + ".tmp"
@@ -166,9 +113,9 @@ def execute(args, execution_context):
     tmp_reader = vcf.VcfReader(vcf.FileReader(tmp_output_file))
     file_writer = vcf.FileWriter(output_file)
 
-    _write_to_output_file(cons_helper,
-                          execution_context,
-                          tmp_reader,
-                          file_writer)
+    logger.info("Calculating zscores")
+    caller = zscore_caller.ZScoreCaller(tmp_reader)
+    metaheaders = execution_context + cons_helper.get_consensus_metaheaders()
+    _write_zscores(caller, metaheaders, tmp_reader, file_writer)
 
     os.remove(tmp_output_file)
