@@ -1,6 +1,7 @@
 #pylint: disable=too-few-public-methods, unused-argument
 from __future__ import print_function, absolute_import
 from jacquard.vcf import VcfReader
+import jacquard.variant_callers.common_tags as common_tags
 import jacquard.utils as utils
 import os
 import re
@@ -148,7 +149,9 @@ class _SomaticTag(object):
 class Strelka(object):
     def __init__(self):
         self.name = "Strelka"
-        self.tags = [_AlleleFreqTag(), _DepthTag(), _SomaticTag()]
+        self.tags = [common_tags.ReportedTag(JQ_STRELKA_TAG),
+                     common_tags.PassedTag(JQ_STRELKA_TAG),
+                     _AlleleFreqTag(), _DepthTag(), _SomaticTag()]
         self.meta_header = "##jacquard.normalize_strelka.sources={0},{1}\n"
 
     @staticmethod

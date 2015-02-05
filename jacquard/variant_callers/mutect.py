@@ -1,5 +1,6 @@
 #pylint: disable=too-few-public-methods, unused-argument
 from __future__ import print_function, absolute_import
+import jacquard.variant_callers.common_tags as common_tags
 import jacquard.utils as utils
 import re
 import os
@@ -87,7 +88,9 @@ class _SomaticTag(object):
 class Mutect(object):
     def __init__(self):
         self.name = "MuTect"
-        self.tags = [_AlleleFreqTag(), _DepthTag(), _SomaticTag()]
+        self.tags = [common_tags.ReportedTag(JQ_MUTECT_TAG),
+                     common_tags.PassedTag(JQ_MUTECT_TAG),
+                     _AlleleFreqTag(), _DepthTag(), _SomaticTag()]
         self.file_name_search = ""
 
     @staticmethod

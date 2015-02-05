@@ -1,5 +1,6 @@
 from __future__ import print_function, absolute_import
 from jacquard.vcf import VcfReader, VcfRecord
+import jacquard.variant_callers.common_tags as common_tags
 import jacquard.utils as utils
 import os
 import re
@@ -100,7 +101,9 @@ class _SomaticTag(object):
 class Varscan(object):
     def __init__(self):
         self.name = "VarScan"
-        self.tags = [_AlleleFreqTag(), _DepthTag(), _SomaticTag()]
+        self.tags = [common_tags.ReportedTag(JQ_VARSCAN_TAG),
+                     common_tags.PassedTag(JQ_VARSCAN_TAG),
+                     _AlleleFreqTag(), _DepthTag(), _SomaticTag()]
         self.meta_header = "##jacquard.normalize_varscan.sources={0},{1}\n"
 
     @staticmethod
