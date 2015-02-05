@@ -12,6 +12,7 @@ import jacquard.vcf as vcf
 
 class JacquardBaseTestCase(unittest.TestCase):
     def setUp(self):
+        unittest.TestCase.setUp(self)
         self.output = StringIO()
         self.saved_stderr = sys.stderr
         sys.stderr = self.output
@@ -19,6 +20,7 @@ class JacquardBaseTestCase(unittest.TestCase):
     def tearDown(self):
         self.output.close()
         sys.stderr = self.saved_stderr
+        unittest.TestCase.tearDown(self)
 
     def assertStartsWith(self, full_text, search_text):
         self.assertTrue(full_text.startswith(search_text))

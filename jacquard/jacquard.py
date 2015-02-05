@@ -47,6 +47,11 @@ TMP_DIR_NAME = "jacquard_tmp"
 _TEMP_WORKING_DIR_FORMAT = "jacquard.{}.{}.tmp"
 
 def main():
+    _set_interrupt_handler()
+    dispatch(_SUBCOMMANDS, sys.argv[1:])
+
+
+def _set_interrupt_handler(target=signal.signal):
     def handler(signum, frame): #pylint: disable=unused-argument
         msg = "WARNING: Jacquard was interrupted before completing."
         try:
@@ -55,10 +60,9 @@ def main():
             print(msg, file=sys.stderr)
             exit(1)
 
-    signal.signal(signal.SIGINT, handler)
-    signal.signal(signal.SIGTERM, handler)
+    target(signal.SIGINT, handler)
+    target(signal.SIGTERM, handler)
 
-    dispatch(_SUBCOMMANDS, sys.argv[1:])
 
 def _version_text():
     callers = utils.caller_versions.items()
