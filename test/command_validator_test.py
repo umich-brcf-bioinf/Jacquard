@@ -104,7 +104,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
     def test_check_input_exists_fileNonExists(self):
         with TempDirectory() as input_dir:
             input_file = os.path.join(input_dir.path, "nonexistant_file.vcf")
-            self.assertRaisesRegexp(utils.JQException,
+            self.assertRaisesRegexp(utils.UsageError,
                                     "Specified input .* does not exist",
                                     command_validator._check_input_exists, input_file)
 
@@ -118,7 +118,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
     def test_check_input_exists_directoryNonExists(self):
         with TempDirectory() as input_dir:
             input_file = os.path.join(input_dir.path, "nonexistant_dir")
-            self.assertRaisesRegexp(utils.JQException,
+            self.assertRaisesRegexp(utils.UsageError,
                                     "Specified input .* does not exist",
                                     command_validator._check_input_exists,
                                     input_file)
@@ -138,7 +138,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
 
             try:
                 make_unreadable(input_file)
-                self.assertRaisesRegexp(utils.JQException,
+                self.assertRaisesRegexp(utils.UsageError,
                                         "Specified input .* cannot be read",
                                         command_validator._check_input_readable, input_file)
 
@@ -160,7 +160,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
 
             try:
                 make_unreadable(unreadable_dir)
-                self.assertRaisesRegexp(utils.JQException,
+                self.assertRaisesRegexp(utils.UsageError,
                                         "Specified input .* cannot be read",
                                         command_validator._check_input_readable, unreadable_dir)
 
@@ -184,13 +184,13 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
             input_dir.write("input_file.vcf", "foo")
             input_file = os.path.join(input_dir.path, "input_file.vcf")
             correct_type = "directory"
-            self.assertRaisesRegexp(utils.JQException,
+            self.assertRaisesRegexp(utils.UsageError,
                                     "Specified input .* does not match command\'s required file type",
                                     command_validator._check_input_correct_type,
                                     input_file, correct_type)
 
             correct_type = "file"
-            self.assertRaisesRegexp(utils.JQException,
+            self.assertRaisesRegexp(utils.UsageError,
                                     "Specified input .* does not match command\'s required file type",
                                     command_validator._check_input_correct_type,
                                     input_dir.path, correct_type)
@@ -226,7 +226,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
 
             try:
                 make_unwriteable_dir(unwriteable_dir)
-                self.assertRaisesRegexp(utils.JQException,
+                self.assertRaisesRegexp(utils.UsageError,
                                         "Specified output .* does not exist and cannot be created",
                                         command_validator._create_parent_dirs,
                                         output_file)
@@ -240,7 +240,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
 
             try:
                 make_unwriteable_dir(unwriteable_dir)
-                self.assertRaisesRegexp(utils.JQException,
+                self.assertRaisesRegexp(utils.UsageError,
                                         "Specified output .* does not exist and cannot be created",
                                         command_validator._create_parent_dirs,
                                         target_dir)
@@ -265,13 +265,13 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
             output_dir.write("output_file.vcf", "foo")
             output_file = os.path.join(output_dir.path, "output_file.vcf")
             correct_type = "directory"
-            self.assertRaisesRegexp(utils.JQException,
+            self.assertRaisesRegexp(utils.UsageError,
                                     "Specified output .* does not match command\'s required file type",
                                     command_validator._check_output_correct_type,
                                     output_file, correct_type)
 
             correct_type = "file"
-            self.assertRaisesRegexp(utils.JQException,
+            self.assertRaisesRegexp(utils.UsageError,
                                     "Specified output .* does not match command\'s required file type",
                                     command_validator._check_output_correct_type,
                                     output_dir.path, correct_type)
@@ -296,7 +296,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
 
             try:
                 make_unwriteable_dir(unwriteable_dir)
-                self.assertRaisesRegexp(utils.JQException,
+                self.assertRaisesRegexp(utils.UsageError,
                                         "Output directory .* cannot be read.",
                                         command_validator._create_temp_working_dir,
                                         output_file)
@@ -313,7 +313,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
         with TempDirectory() as output_dir:
             output_file = os.path.join(output_dir.path, "output_file.vcf")
             output_dir.write("output_file.vcf", "foo")
-            self.assertRaisesRegexp(utils.JQException,
+            self.assertRaisesRegexp(utils.UsageError,
                                     "ERROR: The command .* would "
                                     "overwrite existing files .*; review "
                                     "command/output dir to avoid overwriting or "
@@ -335,7 +335,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
         with TempDirectory() as output_dir:
             output_dir.write("output_file1.vcf", "foo")
             output_dir.write("output_file2.vcf", "foo")
-            self.assertRaisesRegexp(utils.JQException,
+            self.assertRaisesRegexp(utils.UsageError,
                                     "ERROR: The command .* would "
                                     "overwrite existing files .*; review "
                                     "command/output dir to avoid overwriting or "
@@ -402,7 +402,7 @@ class CommandValidatorPreflightTestCase(test_case.JacquardBaseTestCase):
             tmp_dir = os.path.join(input_dir.path, "temp")
 
             args = Namespace(input=input_file,
-                             output=output_file,
+                             original_output=output_file,
                              subparser_name="foo",
                              force=0,
                              temp_working_dir=tmp_dir)
@@ -426,7 +426,7 @@ class CommandValidatorPreflightTestCase(test_case.JacquardBaseTestCase):
             tmp_dir = os.path.join(input_dir.path, "temp")
 
             args = Namespace(input=input_file,
-                             output=output_file,
+                             original_output=output_file,
                              subparser_name="foo",
                              force=0,
                              temp_working_dir=tmp_dir)
@@ -441,39 +441,39 @@ class CommandValidatorPreflightTestCase(test_case.JacquardBaseTestCase):
             self.assertTrue(not CREATE_PARENT_DIRS_CALLED)
             self.assertTrue(CHECK_OVERWRITE_EXISTING_FILES_CALLED)
 
-def mock_check_input_exists(foo):
+def mock_check_input_exists(unused):
     global CHECK_INPUT_EXISTS_CALLED
     CHECK_INPUT_EXISTS_CALLED = True
 
-def mock_check_input_readable(foo):
+def mock_check_input_readable(unused):
     global CHECK_INPUT_READABLE_CALLED
     CHECK_INPUT_READABLE_CALLED = True
 
-def mock_check_input_correct_type(foo, bar):
+def mock_check_input_correct_type(unused1, unused2):
     global CHECK_INPUT_CORRECT_TYPE_CALLED
     CHECK_INPUT_CORRECT_TYPE_CALLED = True
 
-def mock_check_output_exists(foo, bar):
+def mock_check_output_exists(output, required_type):
     global CHECK_OUTPUT_EXISTS_CALLED
     CHECK_OUTPUT_EXISTS_CALLED = True
-    if not os.path.exists(foo):
-        mock_create_parent_dirs(foo)
+    if not os.path.exists(output):
+        mock_create_parent_dirs(output)
     else:
-        mock_check_output_correct_type(foo, bar)
+        mock_check_output_correct_type(output, required_type)
 
-def mock_create_parent_dirs(foo):
+def mock_create_parent_dirs(unused):
     global CREATE_PARENT_DIRS_CALLED
     CREATE_PARENT_DIRS_CALLED = True
 
-def mock_check_output_correct_type(foo, bar):
+def mock_check_output_correct_type(unused1, unused2):
     global CHECK_OUTPUT_CORRECT_TYPE_CALLED
     CHECK_OUTPUT_CORRECT_TYPE_CALLED = True
 
-def mock_create_temp_working_dir(foo):
+def mock_create_temp_working_dir(unused):
     global CREATE_TEMP_WORKING_DIR_CALLED
     CREATE_TEMP_WORKING_DIR_CALLED = True
 
-def mock_check_overwrite_existing_files(foo, bar, baz, qux):
+def mock_check_overwrite_existing_files(unused1, unused2, unused3, unused4):
     global CHECK_OVERWRITE_EXISTING_FILES_CALLED
     CHECK_OVERWRITE_EXISTING_FILES_CALLED = True
 

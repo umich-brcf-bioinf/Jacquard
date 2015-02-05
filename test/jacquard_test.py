@@ -6,12 +6,12 @@ from argparse import Namespace
 from testfixtures import TempDirectory
 import jacquard.jacquard as jacquard
 import jacquard.logger as logger
+import jacquard.utils as utils
 import os
 import signal
 import test.mock_module as mock_module
 import test.test_case as test_case
 import time
-
 
 MOCK_GET_TEMP_WORKING_DIR_CALLED = False
 MOCK_MOVE_TEMP_CONTENTS_CALLED = False
@@ -44,6 +44,21 @@ class MockSignalDispatcher(object):
 
     def signal(self, signal_num, handler):
         self.calls.append((signal_num, handler))
+
+class JacquardArgumentParserTestCase(test_case.JacquardBaseTestCase):
+    def test_error_raisesMessage(self):
+        message = "foo"
+        parser = jacquard._JacquardArgumentParser()
+        self.assertRaisesRegexp(utils.UsageError, "^foo$", parser.error, message)
+
+    def test_error_raisesTransformedMessage(self):
+        message = "argument subparser_name: invalid choice: 'foo' (choose from 'bar', 'baz')"
+        parser = jacquard._JacquardArgumentParser()
+        self.assertRaisesRegexp(utils.UsageError,
+                                "^'foo' is not a Jacquard command; choose from 'bar', 'baz'.$",
+                                parser.error,
+                                message)
+
 
 class JacquardTestCase(test_case.JacquardBaseTestCase):
     def test_set_interrupt_handler(self):
@@ -103,11 +118,9 @@ class JacquardTestCase(test_case.JacquardBaseTestCase):
             actual_messages = self.output.getvalue().rstrip().split("\n")
 
             print actual_messages
-            self.assertEquals(4, len(actual_messages))
-            self.assertRegexpMatches(actual_messages[0], "Jacquard begins")
-            self.assertRegexpMatches(actual_messages[1], "Saving log to")
-            self.assertRegexpMatches(actual_messages[2], "I'm feeling angry")
-            self.assertRegexpMatches(actual_messages[3], "Jacquard encountered an unanticipated problem.")
+            self.assertEquals(2, len(actual_messages))
+            self.assertRegexpMatches(actual_messages[0], "I'm feeling angry")
+            self.assertRegexpMatches(actual_messages[1], "Jacquard encountered an unanticipated problem.")
 
     def test_move_tmp_contents_to_original(self):
         with TempDirectory() as parent_dir:
@@ -178,6 +191,18 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
             self.assertTrue(mock_module.report_called)
             self.assertTrue(MOCK_GET_TEMP_WORKING_DIR_CALLED)
             self.assertTrue(MOCK_MOVE_TEMP_CONTENTS_CALLED)
+
+    def test_dispatch_unknownCommand(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            mock_module.my_exception_string = ""
+            with self.assertRaises(SystemExit) as exit_code:
+                jacquard.dispatch([mock_module], ["foo_command",
+                                                  input_dir.path,
+                                                  output_dir.path])
+            self.assertEquals(1, exit_code.exception.code)
+            self.assertRegexpMatches(self.output.getvalue(),
+                                     r"'foo_command' is not a Jacquard command; choose from 'mock_module'")
+
 
     def test_dispatch_nonEmptyOutputDir(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:

@@ -11,7 +11,7 @@ TMP_DIR_NAME = "jacquard_tmp"
 
 def preflight(args, module):
     input_path = args.input
-    output_path = os.path.abspath(args.output)
+    output_path = os.path.abspath(args.original_output)
     module_name = args.subparser_name
     force_flag = args.force
     temp_working_dir = args.temp_working_dir
@@ -40,7 +40,7 @@ def _makepath(path):
 
 def _check_input_exists(input_path):
     if not os.path.exists(input_path):
-        raise utils.JQException(("Specified input [{}] does not exist. Review "\
+        raise utils.UsageError(("Specified input [{}] does not exist. Review "\
                                  "inputs and try again.").format(input_path))
 
 def _check_input_readable(input_path):
@@ -50,14 +50,14 @@ def _check_input_readable(input_path):
         else:
             open(input_path, "r").close()
     except (OSError, IOError):
-        raise utils.JQException(("Specified input [{}] cannot be read. Review "\
-                                 "inputs and try again.").format(input_path))
+        raise utils.UsageError(("Specified input [{}] cannot be read. Review "
+                                "inputs and try again.").format(input_path))
 
 def _check_input_correct_type(input_path, required_type):
     if required_type != _actual_type(input_path):
-        raise utils.JQException(("Specified input [{}] does not match "\
-                                 "command's required file type. "\
-                                 "Review inputs and try again.")\
+        raise utils.UsageError(("Specified input [{}] does not match "
+                                "command's required file type. "
+                                "Review inputs and try again.") \
                                  .format(input_path))
 
 def _check_output_exists(output_path, required_type):
@@ -72,15 +72,15 @@ def _create_parent_dirs(output_path):
     try:
         _makepath(parent_path)
     except OSError:
-        raise utils.JQException(("Specified output [{}] does not exist "
-                                 "and cannot be created. Review inputs "
-                                 "and try again.").format(output_path))
+        raise utils.UsageError(("Specified output [{}] does not exist "
+                                "and cannot be created. Review inputs "
+                                "and try again.").format(output_path))
 
 def _check_output_correct_type(output_path, required_type):
     if required_type != _actual_type(output_path):
-        raise utils.JQException(("Specified output [{}] does not match "
-                                 "command's required file type. "
-                                 "Review inputs and try again.")\
+        raise utils.UsageError(("Specified output [{}] does not match "
+                                "command's required file type. "
+                                "Review inputs and try again.")\
                                  .format(output_path))
 
 def _actual_type(path):
@@ -94,9 +94,9 @@ def _create_temp_working_dir(temp_working_dir):
         _makepath(temp_working_dir)
     except OSError:
         parent_dir = os.path.dirname(temp_working_dir)
-        raise utils.JQException(("A temp directory does not exist in "
-                                 "[{}] and cannot be created. Review "
-                                 "inputs and try again.")
+        raise utils.UsageError(("A temp directory does not exist in "
+                                "[{}] and cannot be created. Review "
+                                "inputs and try again.")\
                                 .format(parent_dir))
 
 def _check_overwrite_existing_files(output, predicted_output, command, force=0):
@@ -108,9 +108,9 @@ def _check_overwrite_existing_files(output, predicted_output, command, force=0):
 
     intersection = existing_output.intersection(predicted_output)
     if intersection and not force:
-        raise utils.JQException(("ERROR: The command [{}] would "
-                                 "overwrite existing files {}; review "
-                                 "command/output dir to avoid overwriting or "
-                                 "use the flag '--force'. Type 'jacquard -h' "
-                                 "for more details").format(command,
-                                                            list(intersection)))
+        raise utils.UsageError(("ERROR: The command [{}] would "
+                                "overwrite existing files {}; review "
+                                "command/output dir to avoid overwriting or "
+                                "use the flag '--force'. Type 'jacquard -h' "
+                                "for more details").format(command,
+                                                           list(intersection)))
