@@ -1,10 +1,12 @@
 from __future__ import print_function, absolute_import
-import jacquard.variant_callers.jacquard_consensus_caller as consensus_caller
+
+import os
+
 import jacquard.logger as logger
 import jacquard.utils as utils
+import jacquard.variant_callers.jacquard_consensus_caller as consensus_caller
 import jacquard.variant_callers.jacquard_zscore_caller as zscore_caller
 import jacquard.vcf as vcf
-import os
 
 
 def _write_metaheaders(cons_helper,

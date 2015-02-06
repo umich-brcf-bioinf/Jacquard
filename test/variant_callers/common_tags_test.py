@@ -9,9 +9,9 @@ class ReportedTagTestCase(unittest.TestCase):
     def test_reported_tag_metaheader(self):
         reported_tag = common_tags.ReportedTag("foo_")
         self.assertEquals(('##FORMAT=<ID={}{},'
-                          'Number=1,Type=Integer,'
-                          'Description="0 = variant absent from original VCF; '
-                          '1 = variant present in original VCF",'
+                          'Number=1,'
+                          'Type=Integer,'
+                          'Description="1 = variant present in original VCF",'
                           'Source="Jacquard",'
                           'Version="{}">').format("foo_",
                                                   common_tags.CALLER_REPORTED_TAG,
@@ -33,9 +33,8 @@ class ReportedTagTestCase(unittest.TestCase):
         passed_tag = common_tags.PassedTag("foo_")
         self.assertEquals(('##FORMAT=<ID={}{},'
                            'Number=1,Type=Integer,'
-                           'Description="0 = variant FILTER is not PASS in '
-                           'original VCF; '
-                           '1 = variant FILTER is PASS in original VCF",'
+                           'Description="1 = variant FILTER is PASS in '
+                           'original VCF",'
                            'Version="{}">').format("foo_",
                                                   common_tags.CALLER_PASSED_TAG,
                                                   utils.__version__),

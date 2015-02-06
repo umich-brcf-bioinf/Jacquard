@@ -78,6 +78,21 @@ class MockFileReader(object):
     def close(self):
         self.close_was_called = True
 
+class CallersReportedListTagTestCase(test_case.JacquardBaseTestCase):
+    def test_metaheader(self):
+        split_metaheader = consensus_caller._CallersReportedListTag().metaheader.split("\n")
+        self.assertEquals('##FORMAT=<ID={}{},Number=.,Type=String,Description="Comma-separated list variant callers which listed this variant in the Jacquard tagged VCF",Source="Jacquard",Version="{}">'.format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_REPORTED_LIST, utils.__version__),
+                          split_metaheader[0])
+
+    def test_add_tag_values(self):
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}|X:1:1|Y:1:1\n".format(mutect.JQ_MUTECT_TAG, consensus_caller.JQ_REPORTED, varscan.JQ_VARSCAN_TAG, consensus_caller.JQ_REPORTED))
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        tag = consensus_caller._CallersReportedListTag()
+        tag.add_tag_values(processedVcfRecord)
+
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:MT,VS|Y:1:1:MT,VS\n".format(mutect.JQ_MUTECT_TAG, consensus_caller.JQ_REPORTED, varscan.JQ_VARSCAN_TAG, consensus_caller.JQ_REPORTED, consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_REPORTED_LIST))
+        self.assertEquals(expected, processedVcfRecord.asText())
+
 class CallersReportedTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         split_metaheader = consensus_caller._CallersReportedTag().metaheader.split("\n")
@@ -91,6 +106,21 @@ class CallersReportedTagTestCase(test_case.JacquardBaseTestCase):
         tag.add_tag_values(processedVcfRecord)
 
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:2|Y:1:1:2\n".format(mutect.JQ_MUTECT_TAG, consensus_caller.JQ_REPORTED, varscan.JQ_VARSCAN_TAG, consensus_caller.JQ_REPORTED, consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_REPORTED))
+        self.assertEquals(expected, processedVcfRecord.asText())
+
+class CallersPassedListTagTestCase(test_case.JacquardBaseTestCase):
+    def test_metaheader(self):
+        split_metaheader = consensus_caller._CallersPassedListTag().metaheader.split("\n")
+        self.assertEquals('##FORMAT=<ID={}{},Number=.,Type=String,Description="Comma-separated list of variant caller short-names where FILTER = PASS for this variant in the Jacquard tagged VCF",Source="Jacquard",Version="{}">'.format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_PASSED_LIST, utils.__version__),
+                          split_metaheader[0])
+
+    def test_add_tag_values(self):
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}|X:1:1|Y:1:0\n".format(mutect.JQ_MUTECT_TAG, consensus_caller.JQ_PASSED, varscan.JQ_VARSCAN_TAG, consensus_caller.JQ_PASSED))
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        tag = consensus_caller._CallersPassedListTag()
+        tag.add_tag_values(processedVcfRecord)
+
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:MT,VS|Y:1:0:MT\n".format(mutect.JQ_MUTECT_TAG, consensus_caller.JQ_PASSED, varscan.JQ_VARSCAN_TAG, consensus_caller.JQ_PASSED, consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_PASSED_LIST))
         self.assertEquals(expected, processedVcfRecord.asText())
 
 class CallersPassedTagTestCase(test_case.JacquardBaseTestCase):

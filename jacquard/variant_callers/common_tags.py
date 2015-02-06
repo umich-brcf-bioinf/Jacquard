@@ -9,9 +9,9 @@ class ReportedTag(object):
     def __init__(self, tag_name):
         self.tag_name = tag_name
         self.metaheader = ('##FORMAT=<ID={}{},'
-                           'Number=1,Type=Integer,'
-                           'Description="0 = variant absent from original VCF; '
-                           '1 = variant present in original VCF",'
+                           'Number=1,'
+                           'Type=Integer,'
+                           'Description="1 = variant present in original VCF",'
                            'Source="Jacquard",'
                            'Version="{}">').format(self.tag_name,
                                                    CALLER_REPORTED_TAG,
@@ -29,9 +29,8 @@ class PassedTag(object):
         self.tag_name = tag_name
         self.metaheader = ('##FORMAT=<ID={}{},'
                            'Number=1,Type=Integer,'
-                           'Description="0 = variant FILTER is not PASS in '
-                           'original VCF; '
-                           '1 = variant FILTER is PASS in original VCF",'
+                           'Description="1 = variant FILTER is PASS in '
+                           'original VCF",'
                            'Version="{}">').format(self.tag_name,
                                                    CALLER_PASSED_TAG,
                                                    utils.__version__)

@@ -88,6 +88,7 @@ class _SomaticTag(object):
 class Mutect(object):
     def __init__(self):
         self.name = "MuTect"
+        self.abbr = "MT"
         self.tags = [common_tags.ReportedTag(JQ_MUTECT_TAG),
                      common_tags.PassedTag(JQ_MUTECT_TAG),
                      _AlleleFreqTag(), _DepthTag(), _SomaticTag()]

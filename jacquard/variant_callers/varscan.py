@@ -101,6 +101,7 @@ class _SomaticTag(object):
 class Varscan(object):
     def __init__(self):
         self.name = "VarScan"
+        self.abbr = "VS"
         self.tags = [common_tags.ReportedTag(JQ_VARSCAN_TAG),
                      common_tags.PassedTag(JQ_VARSCAN_TAG),
                      _AlleleFreqTag(), _DepthTag(), _SomaticTag()]

@@ -149,6 +149,7 @@ class _SomaticTag(object):
 class Strelka(object):
     def __init__(self):
         self.name = "Strelka"
+        self.abbr = "SK"
         self.tags = [common_tags.ReportedTag(JQ_STRELKA_TAG),
                      common_tags.PassedTag(JQ_STRELKA_TAG),
                      _AlleleFreqTag(), _DepthTag(), _SomaticTag()]
