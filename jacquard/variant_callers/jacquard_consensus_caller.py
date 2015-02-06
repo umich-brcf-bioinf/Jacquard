@@ -134,7 +134,7 @@ class _CallersReportedListTag(object):
         self.metaheader = self._get_metaheader()
         self.all_ranges = []
         self.name = ""
-        self.pattern = re.compile(r"JQ_(.*)_{}".format(JQ_REPORTED))
+        self.pattern = re.compile(r"JQ_(.*?)_{}".format(JQ_REPORTED))
 
     @staticmethod
     def _get_metaheader():
@@ -158,7 +158,7 @@ class _CallersReportedTag(object):
         self.metaheader = self._get_metaheader()
         self.all_ranges = []
         self.name = ""
-        self.pattern = re.compile(r"JQ_(.*)_{}".format(JQ_REPORTED))
+        self.pattern = re.compile(r"JQ_(.*?)_{}".format(JQ_REPORTED))
 
     @staticmethod
     def _get_metaheader():
@@ -182,7 +182,7 @@ class _CallersPassedListTag(object):
         self.metaheader = self._get_metaheader()
         self.all_ranges = []
         self.name = ""
-        self.pattern = re.compile(r"JQ_(.*)_{}".format(JQ_PASSED))
+        self.pattern = re.compile(r"JQ_(.*?)_{}".format(JQ_PASSED))
 
     @staticmethod
     def _get_metaheader():
@@ -207,7 +207,7 @@ class _CallersPassedTag(object):
         self.metaheader = self._get_metaheader()
         self.all_ranges = []
         self.name = ""
-        self.pattern = re.compile(r"JQ_(.*)_{}".format(JQ_PASSED))
+        self.pattern = re.compile(r"JQ_(.*?)_{}".format(JQ_PASSED))
 
     @staticmethod
     def _get_metaheader():
