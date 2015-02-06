@@ -1,19 +1,17 @@
-# pylint: disable=line-too-long, global-statement, unused-argument, invalid-name, too-many-locals, too-many-public-methods
+# pylint: disable=line-too-long, global-statement, unused-argument
+# pylint: disable=invalid-name, too-many-locals, too-many-public-methods
+# pylint: disable=too-few-public-methods
 from __future__ import absolute_import
-from StringIO import StringIO
 from argparse import Namespace
 from testfixtures import TempDirectory
 import jacquard.jacquard as jacquard
 import jacquard.logger as logger
+import jacquard.utils as utils
 import os
-import sys
+import signal
 import test.mock_module as mock_module
 import test.test_case as test_case
 import time
-import unittest
-
-
-
 
 MOCK_GET_TEMP_WORKING_DIR_CALLED = False
 MOCK_MOVE_TEMP_CONTENTS_CALLED = False
@@ -39,23 +37,46 @@ def _change_mock_methods():
     jacquard._move_tmp_contents_to_original = mock_move_tmp_contents_to_original
     jacquard._preflight = mock_preflight
 
-MOCK_LOG_CALLED = False
 
-def mock_log(msg, *args):
-    global MOCK_LOG_CALLED
-    MOCK_LOG_CALLED = True
+class MockSignalDispatcher(object):
+    def __init__(self):
+        self.calls = []
 
-class JacquardTestCase(unittest.TestCase):
-    def setUp(self):
-        unittest.TestCase.setUp(self)
-        self.output = StringIO()
-        self.saved_stderr = sys.stderr
-        sys.stderr = self.output
+    def signal(self, signal_num, handler):
+        self.calls.append((signal_num, handler))
 
-    def tearDown(self):
-        self.output.close()
-        sys.stderr = self.saved_stderr
-        unittest.TestCase.tearDown(self)
+class JacquardArgumentParserTestCase(test_case.JacquardBaseTestCase):
+    def test_error_raisesMessage(self):
+        message = "foo"
+        parser = jacquard._JacquardArgumentParser()
+        self.assertRaisesRegexp(utils.UsageError, "^foo$", parser.error, message)
+
+    def test_error_raisesTransformedMessage(self):
+        message = "argument subparser_name: invalid choice: 'foo' (choose from 'bar', 'baz')"
+        parser = jacquard._JacquardArgumentParser()
+        self.assertRaisesRegexp(utils.UsageError,
+                                "^'foo' is not a Jacquard command; choose from 'bar', 'baz'.$",
+                                parser.error,
+                                message)
+
+
+class JacquardTestCase(test_case.JacquardBaseTestCase):
+    def test_set_interrupt_handler(self):
+        mock_signal_dispatcher = MockSignalDispatcher()
+
+        jacquard._set_interrupt_handler(mock_signal_dispatcher.signal)
+
+        self.assertEquals(2, len(mock_signal_dispatcher.calls))
+        signal_type1, handler1 = mock_signal_dispatcher.calls[0]
+        signal_type2, handler2 = mock_signal_dispatcher.calls[1]
+        self.assertEquals(set([signal.SIGINT, signal.SIGTERM]),
+                          set([signal_type1, signal_type2]))
+        self.assertEquals(handler1, handler2)
+        with self.assertRaises(SystemExit) as exit_code:
+            handler1(None, None)
+        self.assertEquals(exit_code.exception.code, 1)
+        self.assertRegexpMatches(self.output.getvalue(), "WARNING: Jacquard was interrupted")
+
 
     def test_get_temp_working_dir(self):
         actual_dir, dummy = jacquard._get_temp_working_dir(os.path.join("foo", "bar"))
@@ -97,11 +118,9 @@ class JacquardTestCase(unittest.TestCase):
             actual_messages = self.output.getvalue().rstrip().split("\n")
 
             print actual_messages
-            self.assertEquals(4, len(actual_messages))
-            self.assertRegexpMatches(actual_messages[0], "Jacquard begins")
-            self.assertRegexpMatches(actual_messages[1], "Saving log to")
-            self.assertRegexpMatches(actual_messages[2], "I'm feeling angry")
-            self.assertRegexpMatches(actual_messages[3], "Jacquard encountered an unanticipated problem.")
+            self.assertEquals(2, len(actual_messages))
+            self.assertRegexpMatches(actual_messages[0], "I'm feeling angry")
+            self.assertRegexpMatches(actual_messages[1], "Jacquard encountered an unanticipated problem.")
 
     def test_move_tmp_contents_to_original(self):
         with TempDirectory() as parent_dir:
@@ -150,22 +169,17 @@ class JacquardTestCase(unittest.TestCase):
             self.assertFalse(os.path.isdir(tmp_dir))
 
 
-class JacquardTestCase_dispatchOnly(unittest.TestCase):
+class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
     def setUp(self):
-        unittest.TestCase.setUp(self)
-        self.output = StringIO()
-        self.saved_stderr = sys.stderr
-        sys.stderr = self.output
+        test_case.JacquardBaseTestCase.setUp(self)
         self.original_get_temp_working_dir = jacquard._get_temp_working_dir
         self.original_move_tmp_contents = jacquard._move_tmp_contents_to_original
         _change_mock_methods()
 
     def tearDown(self):
-        self.output.close()
-        sys.stderr = self.saved_stderr
-        unittest.TestCase.tearDown(self)
         jacquard._get_temp_working_dir = self.original_get_temp_working_dir
         jacquard._move_tmp_contents_to_original = self.original_move_tmp_contents
+        test_case.JacquardBaseTestCase.tearDown(self)
 
     def test_dispatch(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
@@ -177,6 +191,18 @@ class JacquardTestCase_dispatchOnly(unittest.TestCase):
             self.assertTrue(mock_module.report_called)
             self.assertTrue(MOCK_GET_TEMP_WORKING_DIR_CALLED)
             self.assertTrue(MOCK_MOVE_TEMP_CONTENTS_CALLED)
+
+    def test_dispatch_unknownCommand(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            mock_module.my_exception_string = ""
+            with self.assertRaises(SystemExit) as exit_code:
+                jacquard.dispatch([mock_module], ["foo_command",
+                                                  input_dir.path,
+                                                  output_dir.path])
+            self.assertEquals(1, exit_code.exception.code)
+            self.assertRegexpMatches(self.output.getvalue(),
+                                     r"'foo_command' is not a Jacquard command; choose from 'mock_module'")
+
 
     def test_dispatch_nonEmptyOutputDir(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:

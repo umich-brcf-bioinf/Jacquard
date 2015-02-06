@@ -26,6 +26,13 @@ class JQException(Exception):
         error_msg = msg.format(*[str(i) for i in args])
         super(JQException, self).__init__(error_msg)
 
+
+class UsageError(JQException):
+    """Raised for malformed command or invalid arguments"""
+    def __init__(self, msg, *args):
+        super(UsageError, self).__init__(msg, *args)
+
+
 #TODO: (cgates): Suspect this should raise exception instead of logging and exiting?
 def validate_directories(input_dir=None, output_dir=None):
     if input_dir:

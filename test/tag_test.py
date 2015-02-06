@@ -16,7 +16,6 @@ import jacquard.variant_callers.strelka as strelka
 import jacquard.variant_callers.varscan as varscan
 import test.test_case as test_case
 
-#TODO: (cgates): One MockVcfRecords should be sufficient for all callers.
 MOCK_LOG_CALLED = False
 MOCK_LOG_MESSAGES = []
 
@@ -142,8 +141,8 @@ class TagTestCase(unittest.TestCase):
 
     def test_predict_output(self):
         with TempDirectory() as input_file:
-            input_file.write("A.normalized.vcf","##source=strelka\n#colHeader")
-            input_file.write("B.normalized.vcf","##source=strelka\n#colHeader")
+            input_file.write("A.normalized.vcf", "##source=strelka\n#colHeader")
+            input_file.write("B.normalized.vcf", "##source=strelka\n#colHeader")
             args = Namespace(input=input_file.path)
 
             desired_output_files = tag._predict_output(args)
