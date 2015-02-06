@@ -1,14 +1,18 @@
 #pylint: disable=too-few-public-methods, invalid-name, line-too-long
 #pylint: disable=too-many-instance-attributes, too-many-public-methods
 from __future__ import print_function, absolute_import
+
 from collections import OrderedDict
 import os
 import unittest
 
 import jacquard.utils as utils
 import jacquard.variant_callers.jacquard_consensus_caller as consensus_caller
+import jacquard.variant_callers.mutect as mutect
+import jacquard.variant_callers.varscan as varscan
 from jacquard.vcf import VcfRecord
 import test.test_case as test_case
+
 
 class MockVcfRecord(object):
     def __init__(self, content):
@@ -74,10 +78,41 @@ class MockFileReader(object):
     def close(self):
         self.close_was_called = True
 
+class CallersReportedTagTestCase(test_case.JacquardBaseTestCase):
+    def test_metaheader(self):
+        split_metaheader = consensus_caller._CallersReportedTag().metaheader.split("\n")
+        self.assertEquals('##FORMAT=<ID={}{},Number=1,Type=Integer,Description="Count of variant callers which listed this variant in the Jacquard tagged VCF",Source="Jacquard",Version="{}">'.format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_REPORTED, utils.__version__),
+                          split_metaheader[0])
+
+    def test_add_tag_values(self):
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}|X:1:1|Y:1:1\n".format(mutect.JQ_MUTECT_TAG, consensus_caller.JQ_REPORTED, varscan.JQ_VARSCAN_TAG, consensus_caller.JQ_REPORTED))
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        tag = consensus_caller._CallersReportedTag()
+        tag.add_tag_values(processedVcfRecord)
+
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:2|Y:1:1:2\n".format(mutect.JQ_MUTECT_TAG, consensus_caller.JQ_REPORTED, varscan.JQ_VARSCAN_TAG, consensus_caller.JQ_REPORTED, consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_REPORTED))
+        self.assertEquals(expected, processedVcfRecord.asText())
+
+class CallersPassedTagTestCase(test_case.JacquardBaseTestCase):
+    def test_metaheader(self):
+        split_metaheader = consensus_caller._CallersPassedTag().metaheader.split("\n")
+        self.assertEquals('##FORMAT=<ID={}{},Number=1,Type=Integer,Description="Count of variant callers where FILTER = PASS for this variant in the Jacquard tagged VCF",Source="Jacquard",Version="{}">'.format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_PASSED, utils.__version__),
+                          split_metaheader[0])
+
+    def test_add_tag_values(self):
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}|X:1:1|Y:1:0\n".format(mutect.JQ_MUTECT_TAG, consensus_caller.JQ_PASSED, varscan.JQ_VARSCAN_TAG, consensus_caller.JQ_PASSED))
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        tag = consensus_caller._CallersPassedTag()
+        tag.add_tag_values(processedVcfRecord)
+
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:2|Y:1:0:1\n".format(mutect.JQ_MUTECT_TAG, consensus_caller.JQ_PASSED, varscan.JQ_VARSCAN_TAG, consensus_caller.JQ_PASSED, consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_PASSED))
+        self.assertEquals(expected, processedVcfRecord.asText())
+
 class AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
         split_meta_header = consensus_caller._AlleleFreqTag().metaheader.split("\n")
-        self.assertEqual('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].",Source="Jacquard",Version="{1}">'.format(consensus_caller.JQ_CONSENSUS_TAG, utils.__version__), split_meta_header[0])
+        self.assertEqual('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].",Source="Jacquard",Version="{1}">'.format(consensus_caller.JQ_CONSENSUS_TAG, utils.__version__),
+                         split_meta_header[0])
 
     def test_insert_consensus(self):
         tag = consensus_caller._AlleleFreqTag()
@@ -186,7 +221,7 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
 class ConsensusHelperTestCase(test_case.JacquardBaseTestCase):
     def test_add_tags(self):
         line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|0:0.1:0.2|0.2:0.3:0.4\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE:{0}DP_AVERAGE:{0}DP_RANGE:{0}SOM_COUNT|0:0.1:0.2:0.1:0.2:.:.:.|0.2:0.3:0.4:0.3:0.2:.:.:.\n".format(consensus_caller.JQ_CONSENSUS_TAG))
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:JQ_CONS_CALLERS_REPORTED_COUNT:JQ_CONS_CALLERS_PASSED_COUNT:{0}AF_AVERAGE:{0}AF_RANGE:{0}DP_AVERAGE:{0}DP_RANGE:{0}SOM_COUNT|0:0.1:0.2:0:0:0.1:0.2:.:.:.|0.2:0.3:0.4:0:0:0.3:0.2:.:.:.\n".format(consensus_caller.JQ_CONSENSUS_TAG))
         vcf_record = VcfRecord.parse_record(line, ["SA", "SB"])
         caller = consensus_caller.ConsensusCaller()
         actual = caller.add_tags(vcf_record)
@@ -194,12 +229,14 @@ class ConsensusHelperTestCase(test_case.JacquardBaseTestCase):
         self.assertEqual(expected, actual)
 
     def test_get_new_metaheaders(self):
-        expected = ('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,'
-                    'Description="Average allele frequency across recognized variant '
-                    'callers that reported frequency for this position '
-                    '[average(JQ_*_AF)].",Source="Jacquard",'
-                    'Version="{1}">').format(consensus_caller.JQ_CONSENSUS_TAG,
-                                             utils.__version__)
+        expected = ('##FORMAT=<ID={}{},'
+                    'Number=1,'
+                    'Type=Integer,'
+                    'Description="Count of variant callers which listed this variant in the Jacquard tagged VCF",'
+                    'Source="Jacquard",'
+                    'Version="{}">').format(consensus_caller.JQ_CONSENSUS_TAG,
+                                            consensus_caller.JQ_REPORTED,
+                                            utils.__version__)
 
         caller = consensus_caller.ConsensusCaller()
         actual = caller.get_consensus_metaheaders()
@@ -208,7 +245,7 @@ class ConsensusHelperTestCase(test_case.JacquardBaseTestCase):
         first_meta_header = split_actual[0]
 
         self.assertEqual(expected, first_meta_header)
-        self.assertEqual(3, len(actual))
+        self.assertEqual(5, len(actual))
         self.assertEqual(2, len(split_actual))
 
     def test_calculate_average_float(self):

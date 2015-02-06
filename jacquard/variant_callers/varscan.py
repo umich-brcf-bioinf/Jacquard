@@ -190,6 +190,7 @@ class Varscan(object):
             metaheader_list.extend(vcf_reader.metaheaders)
             vcf_reader.open()
 
+#TODO: utilize the info_column dictionary in vcf
             for record in vcf_reader.vcf_records():
                 if record in hc_keys:
                     record.info = record.info + ";" + JQ_VARSCAN_TAG + "HC"
