@@ -33,7 +33,7 @@ class _AlleleFreqTag(object):
                                                   utils.__version__)
 
     @staticmethod
-    def format(vcf_record):
+    def add_tag_values(vcf_record):
         sample_values = {}
         if "FREQ" in vcf_record.format_tags:
             for sample in vcf_record.sample_tag_values:
@@ -55,7 +55,7 @@ class _DepthTag(object):
                                                   utils.__version__)
 
     @staticmethod
-    def format(vcf_record):
+    def add_tag_values(vcf_record):
         if "DP" in vcf_record.format_tags:
             sample_values = {}
             for sample in vcf_record.sample_tag_values:
@@ -84,7 +84,7 @@ class _SomaticTag(object):
                                                   utils.__version__)
 
     @staticmethod
-    def format(vcf_record):
+    def add_tag_values(vcf_record):
         info_array = vcf_record.info.split(";")
         varscan_tag = JQ_VARSCAN_TAG + "HC_SOM"
         sample_values = {}
@@ -276,7 +276,7 @@ class Varscan(object):
 
     def add_tags(self, vcf_record):
         for tag in self.tags:
-            tag.format(vcf_record)
+            tag.add_tag_values(vcf_record)
         return vcf_record.asText()
 
     def get_new_metaheaders(self):

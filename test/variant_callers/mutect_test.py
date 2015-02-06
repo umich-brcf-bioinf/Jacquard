@@ -1,9 +1,18 @@
-# pylint: disable=line-too-long,too-many-public-methods,invalid-name
+# pylint: disable=line-too-long,too-many-public-methods,too-few-public-methods
+# pylint: disable=invalid-name,global-statement
 import unittest
 
 import jacquard.variant_callers.mutect as mutect
 from jacquard.utils import __version__, JQException
 from jacquard.vcf import VcfRecord
+import jacquard.variant_callers.common_tags as common_tags
+
+ORIGINAL_REPORTED_TAG = None
+ORIGINAL_PASSED_TAG = None
+
+class MockCommonTag(object):
+    def __init__(self, input_caller_name):
+        self.input_caller_name = input_caller_name
 
 class MockWriter(object):
     def __init__(self):
@@ -24,7 +33,9 @@ class MockWriter(object):
         self.closed = True
 
 class MockReader(object):
-    def __init__(self, lines = []):
+    def __init__(self, lines = None):
+        if not lines:
+            lines = []
         self._lines_iter = iter(lines)
         self.opened = False
         self.closed = False
@@ -39,6 +50,25 @@ class MockReader(object):
     def close(self):
         self.closed = True
 
+class CommonTagTestCase(unittest.TestCase):
+    def setUp(self):
+        global ORIGINAL_REPORTED_TAG
+        global ORIGINAL_PASSED_TAG
+        ORIGINAL_REPORTED_TAG = common_tags.ReportedTag
+        ORIGINAL_PASSED_TAG = common_tags.PassedTag
+        common_tags.ReportedTag = MockCommonTag
+        common_tags.PassedTag = MockCommonTag
+
+    def tearDown(self):
+        common_tags.ReportedTag = ORIGINAL_REPORTED_TAG
+        common_tags.PassedTag = ORIGINAL_PASSED_TAG
+
+    def test_reported_tag(self):
+        mutect_instance = mutect.Mutect()
+        reported_tag = mutect_instance.tags[0]
+        passed_tag = mutect_instance.tags[1]
+        self.assertEquals("JQ_MT_", reported_tag.input_caller_name)
+        self.assertEquals("JQ_MT_", passed_tag.input_caller_name)
 
 class AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
@@ -49,7 +79,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
         originalVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
-        tag.format(processedVcfRecord)
+        tag.add_tag_values(processedVcfRecord)
         self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
 
     def test_format_presentAFTag(self):
@@ -57,7 +87,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3|0.567:SA.2:SA.3|0.834:SB.2:SB.3\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3:{0}AF|0.567:SA.2:SA.3:0.57|0.834:SB.2:SB.3:0.83\n".format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
         processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
-        tag.format(processedVcfRecord)
+        tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_format_multAlt(self):
@@ -65,7 +95,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3|0.5,0.8:SA.2:SA.3|0.7,0.6:SB.2:SB.3\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3:{0}AF|0.5,0.8:SA.2:SA.3:0.5,0.8|0.7,0.6:SB.2:SB.3:0.7,0.6\n".format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
         processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
-        tag.format(processedVcfRecord)
+        tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
 class DepthTagTestCase(unittest.TestCase):
@@ -77,7 +107,7 @@ class DepthTagTestCase(unittest.TestCase):
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
         originalVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
         processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
-        tag.format(processedVcfRecord)
+        tag.add_tag_values(processedVcfRecord)
         self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
 
     def test_format_presentDPTag(self):
@@ -85,7 +115,7 @@ class DepthTagTestCase(unittest.TestCase):
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP:F2:F3|2:SA.2:SA.3|4:SB.2:SB.3\n".replace('|',"\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP:F2:F3:{0}DP|2:SA.2:SA.3:2|4:SB.2:SB.3:4\n".format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
         processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
-        tag.format(processedVcfRecord)
+        tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
 class SomaticTagTestCase(unittest.TestCase):
@@ -97,7 +127,7 @@ class SomaticTagTestCase(unittest.TestCase):
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
         expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:{0}HC_SOM|SA.1:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n").format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
         processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
-        tag.format(processedVcfRecord)
+        tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_format_presentSSTag(self):
@@ -105,7 +135,7 @@ class SomaticTagTestCase(unittest.TestCase):
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|SS:F2:F3|2:SA.2:SA.3|5:SB.2:SB.3\n".replace('|',"\t")
         expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|SS:F2:F3:{0}HC_SOM|2:SA.2:SA.3:1|5:SB.2:SB.3:0\n").format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
         processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
-        tag.format(processedVcfRecord)
+        tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
 class MockTag(object):
@@ -114,7 +144,7 @@ class MockTag(object):
         self.field_value = field_value
         self.metaheader = metaheader
 
-    def format(self, vcf_record):
+    def add_tag_values(self, vcf_record):
         vcf_record.add_sample_tag_value(self.field_name, {"SA":self.field_value, "SB":self.field_value})
 
 class Mutect_TestCase(unittest.TestCase):
@@ -189,34 +219,3 @@ class Mutect_TestCase(unittest.TestCase):
         reader = MockReader(content)
 
         self.assertRaises(JQException, self.caller.normalize, writer, [reader])
-
-
-#     #TODO: (cgates/kmeng) Remove when switched to new VcfRecord
-#     def test_format_rounds(self):
-#         tag = mutect.AlleleFreqTag()
-#         format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.2".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.2'), ('JQ_AF_MT', '0.2')]), tag.format("alt", "filter", "", format_dict, 0))
-#         
-#         format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.20".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.20'), ('JQ_AF_MT', '0.20')]), tag.format("alt", "filter", "", format_dict, 0))
-#         
-#         format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.204".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.204'), ('JQ_AF_MT', '0.2')]), tag.format("alt", "filter", "", format_dict, 0))
-#         
-#         format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.205".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.205'), ('JQ_AF_MT', '0.21')]), tag.format("alt", "filter", "", format_dict, 0))
-#         
-#         format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.206".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.206'), ('JQ_AF_MT', '0.21')]), tag.format("alt", "filter", "", format_dict, 0))
-#         
-#         format_dict = OrderedDict(zip("A:FA".split(":"), "1:1.0".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('FA', '1.0'), ('JQ_AF_MT', '1.0')]), tag.format("alt", "filter", "", format_dict, 0))
-#         
-#         format_dict = OrderedDict(zip("A:FA".split(":"), "1:1.00".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('FA', '1.00'), ('JQ_AF_MT', '1.00')]), tag.format("alt", "filter", "", format_dict, 0))
-# 
-#         format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.204,0.3807".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.204,0.3807'), ('JQ_AF_MT', '0.2,0.38')]), tag.format("alt", "filter", "", format_dict, 0))
-#  
-#         format_dict = OrderedDict(zip("A:FA".split(":"), "1:0.204,0.3807,0.2784".split(":")))
-#         self.assertEqual(OrderedDict([('A', '1'), ('FA', '0.204,0.3807,0.2784'), ('JQ_AF_MT', '0.2,0.38,0.28')]), tag.format("alt", "filter", "", format_dict, 0))

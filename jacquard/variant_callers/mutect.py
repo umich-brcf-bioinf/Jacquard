@@ -18,7 +18,7 @@ class _AlleleFreqTag(object):
                            'Version={1}>').format(JQ_MUTECT_TAG,
                                                   utils.__version__)
 
-    def format(self, vcf_record):
+    def add_tag_values(self, vcf_record):
         if "FA" in vcf_record.format_tags:
             sample_values = {}
             for sample in vcf_record.sample_tag_values:
@@ -48,7 +48,7 @@ class _DepthTag(object):
                                                   utils.__version__)
 
     @staticmethod
-    def format(vcf_record):
+    def add_tag_values(vcf_record):
         if "DP" in vcf_record.format_tags:
             sample_values = {}
             for samp in vcf_record.sample_tag_values:
@@ -66,7 +66,7 @@ class _SomaticTag(object):
                            'Version={1}>').format(JQ_MUTECT_TAG,
                                                   utils.__version__)
 
-    def format(self, vcf_record):
+    def add_tag_values(self, vcf_record):
         mutect_tag = JQ_MUTECT_TAG + "HC_SOM"
         sample_values = {}
         if "SS" in vcf_record.format_tags:
@@ -169,5 +169,5 @@ class Mutect(object):
 
     def add_tags(self, vcf_record):
         for tag in self.tags:
-            tag.format(vcf_record)
+            tag.add_tag_values(vcf_record)
         return vcf_record.asText()

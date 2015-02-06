@@ -262,6 +262,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         self.assertTrue(writer.closed)
 
     def test_tag_files_proper(self):
+        #pylint: disable=no-self-use
         class MockVcfRecord(object):
             def __init__(self):
                 self.ref = "A"
@@ -612,7 +613,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                               len(findall(r'^chr.*{0}HC_SOM'.format(varscan.JQ_VARSCAN_TAG), file_content2, MULTILINE)))
 
 class TagFunctionalTestCase(test_case.JacquardBaseTestCase):
-    def xtest_tag(self):
+    def test_tag(self):
         with TempDirectory() as output_file:
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir, "functional_tests", "02_tag")

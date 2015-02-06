@@ -17,7 +17,7 @@ class ReportedTag(object):
                                                    CALLER_REPORTED_TAG,
                                                    utils.__version__)
 
-    def format(self, vcf_record):
+    def add_tag_values(self, vcf_record):
         sample_values = {}
         for sample in vcf_record.sample_tag_values:
             sample_values[sample] = 1
@@ -36,7 +36,7 @@ class PassedTag(object):
                                                    CALLER_PASSED_TAG,
                                                    utils.__version__)
 
-    def format(self, vcf_record):
+    def add_tag_values(self, vcf_record):
         sample_values = {}
         for sample in vcf_record.sample_tag_values:
             if vcf_record.filter == "PASS":

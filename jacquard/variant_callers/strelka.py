@@ -58,7 +58,7 @@ class _AlleleFreqTag(object):
 
         return afs
 
-    def format(self, vcf_record):
+    def add_tag_values(self, vcf_record):
         sample_values = {}
         if vcf_record.alt == ".":
             for sample in vcf_record.sample_tag_values:
@@ -112,7 +112,7 @@ class _DepthTag(object):
                                                   utils.__version__)
 
     @staticmethod
-    def format(vcf_record):
+    def add_tag_values(vcf_record):
         if vcf_record.format_tags.isdisjoint(_DepthTag.REQUIRED_TAGS):
             return
         sample_values = {}
@@ -132,7 +132,7 @@ class _SomaticTag(object):
                                                   utils.__version__)
 
     @staticmethod
-    def format(vcf_record):
+    def add_tag_values(vcf_record):
         sample_values = {}
         for i, sample in enumerate(vcf_record.sample_tag_values):
             sample_values[sample] = _SomaticTag._somatic_status(i, vcf_record)
@@ -267,5 +267,5 @@ class Strelka(object):
 
     def add_tags(self, vcf_record):
         for tag in self.tags:
-            tag.format(vcf_record)
+            tag.add_tag_values(vcf_record)
         return vcf_record.asText()
