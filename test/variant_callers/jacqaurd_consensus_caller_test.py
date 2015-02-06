@@ -7,6 +7,7 @@ import os
 import unittest
 
 import jacquard.utils as utils
+import jacquard.variant_callers.common_tags as common_tags
 import jacquard.variant_callers.jacquard_consensus_caller as consensus_caller
 import jacquard.variant_callers.mutect as mutect
 import jacquard.variant_callers.varscan as varscan
@@ -85,12 +86,12 @@ class CallersReportedListTagTestCase(test_case.JacquardBaseTestCase):
                           split_metaheader[0])
 
     def test_add_tag_values(self):
-        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}|X:1:1|Y:1:1\n".format(mutect.JQ_MUTECT_TAG, consensus_caller.JQ_REPORTED, varscan.JQ_VARSCAN_TAG, consensus_caller.JQ_REPORTED))
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}|X:1:1|Y:1:1\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_REPORTED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_REPORTED_TAG))
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag = consensus_caller._CallersReportedListTag()
         tag.add_tag_values(processedVcfRecord)
 
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:MT,VS|Y:1:1:MT,VS\n".format(mutect.JQ_MUTECT_TAG, consensus_caller.JQ_REPORTED, varscan.JQ_VARSCAN_TAG, consensus_caller.JQ_REPORTED, consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_REPORTED_LIST))
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:MT,VS|Y:1:1:MT,VS\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_REPORTED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_REPORTED_TAG, consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_REPORTED_LIST))
         self.assertEquals(expected, processedVcfRecord.asText())
 
 class CallersReportedTagTestCase(test_case.JacquardBaseTestCase):
@@ -100,12 +101,12 @@ class CallersReportedTagTestCase(test_case.JacquardBaseTestCase):
                           split_metaheader[0])
 
     def test_add_tag_values(self):
-        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}|X:1:1|Y:1:1\n".format(mutect.JQ_MUTECT_TAG, consensus_caller.JQ_REPORTED, varscan.JQ_VARSCAN_TAG, consensus_caller.JQ_REPORTED))
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}|X:1:1|Y:1:1\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_REPORTED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_REPORTED_TAG))
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag = consensus_caller._CallersReportedTag()
         tag.add_tag_values(processedVcfRecord)
 
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:2|Y:1:1:2\n".format(mutect.JQ_MUTECT_TAG, consensus_caller.JQ_REPORTED, varscan.JQ_VARSCAN_TAG, consensus_caller.JQ_REPORTED, consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_REPORTED))
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:2|Y:1:1:2\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_REPORTED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_REPORTED_TAG, consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_REPORTED))
         self.assertEquals(expected, processedVcfRecord.asText())
 
 class CallersPassedListTagTestCase(test_case.JacquardBaseTestCase):
@@ -115,12 +116,12 @@ class CallersPassedListTagTestCase(test_case.JacquardBaseTestCase):
                           split_metaheader[0])
 
     def test_add_tag_values(self):
-        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}|X:1:1|Y:1:0\n".format(mutect.JQ_MUTECT_TAG, consensus_caller.JQ_PASSED, varscan.JQ_VARSCAN_TAG, consensus_caller.JQ_PASSED))
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}|X:1:1|Y:1:0\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_PASSED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_PASSED_TAG))
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag = consensus_caller._CallersPassedListTag()
         tag.add_tag_values(processedVcfRecord)
 
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:MT,VS|Y:1:0:MT\n".format(mutect.JQ_MUTECT_TAG, consensus_caller.JQ_PASSED, varscan.JQ_VARSCAN_TAG, consensus_caller.JQ_PASSED, consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_PASSED_LIST))
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:MT,VS|Y:1:0:MT\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_PASSED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_PASSED_TAG, consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_PASSED_LIST))
         self.assertEquals(expected, processedVcfRecord.asText())
 
 class CallersPassedTagTestCase(test_case.JacquardBaseTestCase):
@@ -130,12 +131,42 @@ class CallersPassedTagTestCase(test_case.JacquardBaseTestCase):
                           split_metaheader[0])
 
     def test_add_tag_values(self):
-        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}|X:1:1|Y:1:0\n".format(mutect.JQ_MUTECT_TAG, consensus_caller.JQ_PASSED, varscan.JQ_VARSCAN_TAG, consensus_caller.JQ_PASSED))
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}|X:1:1|Y:1:0\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_PASSED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_PASSED_TAG))
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag = consensus_caller._CallersPassedTag()
         tag.add_tag_values(processedVcfRecord)
 
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:2|Y:1:0:1\n".format(mutect.JQ_MUTECT_TAG, consensus_caller.JQ_PASSED, varscan.JQ_VARSCAN_TAG, consensus_caller.JQ_PASSED, consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_PASSED))
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:2|Y:1:0:1\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_PASSED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_PASSED_TAG, consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_PASSED))
+        self.assertEquals(expected, processedVcfRecord.asText())
+
+class SamplesReportedTestCase(test_case.JacquardBaseTestCase):
+    def test_metaheader(self):
+        split_metaheader = consensus_caller._SamplesReported().metaheader.split("\n")
+        self.assertEquals('##INFO=<ID={}{},Number=1,Type=Integer,Description="Count of samples where this variant appeared in any of the Jacquard tagged VCFs (regardless of quality/filtering)",Source="Jacquard",Version="{}">'.format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_SAMPLES_REPORTED, utils.__version__),
+                          split_metaheader[0])
+
+    def test_add_tag_values(self):
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}|X:2|Y:1\n".format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_REPORTED))
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        tag = consensus_caller._SamplesReported()
+        tag.add_tag_values(processedVcfRecord)
+
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO;{}{}=2|JQ_DP:{}{}|X:2|Y:1\n".format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_SAMPLES_REPORTED, consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_REPORTED))
+        self.assertEquals(expected, processedVcfRecord.asText())
+
+class SamplesPassedTestCase(test_case.JacquardBaseTestCase):
+    def test_metaheader(self):
+        split_metaheader = consensus_caller._SamplesPassed().metaheader.split("\n")
+        self.assertEquals('##INFO=<ID={}{},Number=1,Type=Integer,Description="Count of samples where a variant caller passed the filter in any of the Jacquard tagged VCFs",Source="Jacquard",Version="{}">'.format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_SAMPLES_PASSED, utils.__version__),
+                          split_metaheader[0])
+
+    def test_add_tag_values(self):
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}|X:2|Y:0\n".format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_PASSED))
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        tag = consensus_caller._SamplesPassed()
+        tag.add_tag_values(processedVcfRecord)
+
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO;{}{}=1|JQ_DP:{}{}|X:2|Y:0\n".format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_SAMPLES_PASSED, consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_PASSED))
         self.assertEquals(expected, processedVcfRecord.asText())
 
 class AlleleFreqTagTestCase(unittest.TestCase):
@@ -250,8 +281,8 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
 
 class ConsensusHelperTestCase(test_case.JacquardBaseTestCase):
     def test_add_tags(self):
-        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|0:0.1:0.2|0.2:0.3:0.4\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:JQ_CONS_CALLERS_REPORTED_COUNT:JQ_CONS_CALLERS_PASSED_COUNT:{0}AF_AVERAGE:{0}AF_RANGE:{0}DP_AVERAGE:{0}DP_RANGE:{0}SOM_COUNT|0:0.1:0.2:0:0:0.1:0.2:.:.:.|0.2:0.3:0.4:0:0:0.3:0.2:.:.:.\n".format(consensus_caller.JQ_CONSENSUS_TAG))
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_VS_CALLER_REPORTED:JQ_MT_CALLER_REPORTED|0:1:1|0.2:1:1\n")
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO;JQ_CONS_SAMPLES_PASSED_COUNT=0;JQ_CONS_SAMPLES_REPORTED_COUNT=2|JQ_foo_AF:JQ_VS_CALLER_REPORTED:JQ_MT_CALLER_REPORTED:JQ_CONS_CALLERS_REPORTED_COUNT:JQ_CONS_CALLERS_PASSED_COUNT:{0}AF_AVERAGE:{0}AF_RANGE:{0}DP_AVERAGE:{0}DP_RANGE:{0}SOM_COUNT|0:1:1:2:0:0:.:.:.:.|0.2:1:1:2:0:0.2:.:.:.:.\n".format(consensus_caller.JQ_CONSENSUS_TAG))
         vcf_record = VcfRecord.parse_record(line, ["SA", "SB"])
         caller = consensus_caller.ConsensusCaller()
         actual = caller.add_tags(vcf_record)
@@ -275,8 +306,8 @@ class ConsensusHelperTestCase(test_case.JacquardBaseTestCase):
         first_meta_header = split_actual[0]
 
         self.assertEqual(expected, first_meta_header)
-        self.assertEqual(5, len(actual))
-        self.assertEqual(2, len(split_actual))
+        self.assertEqual(7, len(actual))
+        self.assertEqual(1, len(split_actual))
 
     def test_calculate_average_float(self):
         new_tags = [[0.2], [0.3], [0.5]]

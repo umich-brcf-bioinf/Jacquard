@@ -280,8 +280,8 @@ class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
                 self.assertCommand(command, expected_dir)
 
             self.move_files([vs_normalize_output,
-                             sk_normalize_output,
-                             mt_normalize_output],
+                            sk_normalize_output,
+                            mt_normalize_output],
                             normalize_output)
 
             commands = [["tag", normalize_output, tag_output, "--force"],

@@ -1,14 +1,20 @@
 from __future__ import print_function, absolute_import
-import jacquard.utils as utils
-import numpy as np
-import re
+
 from collections import defaultdict
+import re
+
+import jacquard.utils as utils
+import jacquard.variant_callers.common_tags as common_tags
+import numpy as np
+
 
 JQ_CONSENSUS_TAG = "JQ_CONS_"
 JQ_REPORTED = "CALLERS_REPORTED_COUNT"
 JQ_REPORTED_LIST = "CALLERS_REPORTED_LIST"
+JQ_SAMPLES_REPORTED = "SAMPLES_REPORTED_COUNT"
 JQ_PASSED = "CALLERS_PASSED_COUNT"
 JQ_PASSED_LIST = "CALLERS_PASSED_LIST"
+JQ_SAMPLES_PASSED = "SAMPLES_PASSED_COUNT"
 
 def _round_two_digits(value):
     split_value = value.split(".")
@@ -123,10 +129,22 @@ def _add_caller_count_values(pattern, vcf_record, jq_global_variable):
     for sample, tags in vcf_record.sample_tag_values.items():
         sample_tag[sample] = 0
         for tag in tags:
-            if pattern.match(tag):
+            if pattern.match(tag) and tags[tag] != '0':
                 sample_tag[sample] += int(tags[tag])
     vcf_record.add_sample_tag_value(JQ_CONSENSUS_TAG + jq_global_variable,
                                     sample_tag)
+
+def _add_sample_count_values(vcf_record,
+                             jq_callers_global_variable,
+                             jq_samples_global_variable):
+    count = 0
+    for tags in vcf_record.sample_tag_values.values():
+        tag_key = JQ_CONSENSUS_TAG + jq_callers_global_variable
+        if tag_key in tags and tags[tag_key] != "0":
+            count += 1
+
+    info_key = JQ_CONSENSUS_TAG + jq_samples_global_variable
+    vcf_record.add_info_field("=".join([info_key, str(count)]))
 
 class _CallersReportedListTag(object):
     #pylint: disable=too-few-public-methods
@@ -134,7 +152,8 @@ class _CallersReportedListTag(object):
         self.metaheader = self._get_metaheader()
         self.all_ranges = []
         self.name = ""
-        self.pattern = re.compile(r"JQ_(.*?)_{}".format(JQ_REPORTED))
+        self.pattern = re.compile(r"JQ_(.*?)_{}"\
+                                  .format(common_tags.CALLER_REPORTED_TAG))
 
     @staticmethod
     def _get_metaheader():
@@ -158,7 +177,8 @@ class _CallersReportedTag(object):
         self.metaheader = self._get_metaheader()
         self.all_ranges = []
         self.name = ""
-        self.pattern = re.compile(r"JQ_(.*?)_{}".format(JQ_REPORTED))
+        self.pattern = re.compile(r"JQ_(.*?)_{}"\
+                                  .format(common_tags.CALLER_REPORTED_TAG))
 
     @staticmethod
     def _get_metaheader():
@@ -168,7 +188,7 @@ class _CallersReportedTag(object):
                 'Description="Count of variant callers which listed '\
                 'this variant in the Jacquard tagged VCF",'\
                 'Source="Jacquard",'\
-                'Version="{}">\n')\
+                'Version="{}">')\
                 .format(JQ_CONSENSUS_TAG,
                         JQ_REPORTED,
                         utils.__version__)
@@ -182,7 +202,8 @@ class _CallersPassedListTag(object):
         self.metaheader = self._get_metaheader()
         self.all_ranges = []
         self.name = ""
-        self.pattern = re.compile(r"JQ_(.*?)_{}".format(JQ_PASSED))
+        self.pattern = re.compile(r"JQ_(.*?)_{}"\
+                                  .format(common_tags.CALLER_PASSED_TAG))
 
     @staticmethod
     def _get_metaheader():
@@ -207,7 +228,8 @@ class _CallersPassedTag(object):
         self.metaheader = self._get_metaheader()
         self.all_ranges = []
         self.name = ""
-        self.pattern = re.compile(r"JQ_(.*?)_{}".format(JQ_PASSED))
+        self.pattern = re.compile(r"JQ_(.*?)_{}"\
+                                  .format(common_tags.CALLER_PASSED_TAG))
 
     @staticmethod
     def _get_metaheader():
@@ -216,13 +238,60 @@ class _CallersPassedTag(object):
                 'Description="Count of variant callers where FILTER = PASS '\
                 'for this variant in the Jacquard tagged VCF",'\
                 'Source="Jacquard",'\
-                'Version="{}">\n')\
+                'Version="{}">')\
                 .format(JQ_CONSENSUS_TAG,
                         JQ_PASSED,
                         utils.__version__)
 
     def add_tag_values(self, vcf_record):
         _add_caller_count_values(self.pattern, vcf_record, JQ_PASSED)
+
+class _SamplesReported(object):
+    #pylint: disable=too-few-public-methods
+    def __init__(self):
+        self.metaheader = self._get_metaheader()
+        self.all_ranges = []
+        self.name = ""
+
+    @staticmethod
+    def _get_metaheader():
+        return ('##INFO=<ID={}{},'\
+                'Number=1,Type=Integer,' \
+                'Description="Count of samples where this variant appeared '\
+                'in any of the Jacquard tagged VCFs (regardless of '\
+                'quality/filtering)",'\
+                'Source="Jacquard",'\
+                'Version="{}">')\
+                .format(JQ_CONSENSUS_TAG,
+                        JQ_SAMPLES_REPORTED,
+                        utils.__version__)
+
+    @staticmethod
+    def add_tag_values(vcf_record):
+        _add_sample_count_values(vcf_record, JQ_REPORTED, JQ_SAMPLES_REPORTED)
+
+class _SamplesPassed(object):
+    #pylint: disable=too-few-public-methods
+    def __init__(self):
+        self.metaheader = self._get_metaheader()
+        self.all_ranges = []
+        self.name = ""
+
+    @staticmethod
+    def _get_metaheader():
+        return ('##INFO=<ID={}{},'\
+                'Number=1,Type=Integer,' \
+                'Description="Count of samples where a variant caller passed '\
+                'the filter in any of the Jacquard tagged VCFs",'\
+                'Source="Jacquard",'\
+                'Version="{}">')\
+                .format(JQ_CONSENSUS_TAG,
+                        JQ_SAMPLES_PASSED,
+                        utils.__version__)
+
+    @staticmethod
+    def add_tag_values(vcf_record):
+        _add_sample_count_values(vcf_record, JQ_PASSED, JQ_SAMPLES_PASSED)
 
 class _AlleleFreqTag(object):
     #pylint: disable=too-few-public-methods
@@ -271,7 +340,6 @@ class _AlleleFreqTag(object):
         vcf_record.add_sample_tag_value(JQ_CONSENSUS_TAG + "AF_RANGE",
                                         tag_range)
 
-
 class _DepthTag(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
@@ -319,7 +387,6 @@ class _DepthTag(object):
         vcf_record.add_sample_tag_value(JQ_CONSENSUS_TAG + "DP_RANGE",
                                         tag_range)
 
-
 class _SomaticTag(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
@@ -355,11 +422,12 @@ class _SomaticTag(object):
         vcf_record.add_sample_tag_value(JQ_CONSENSUS_TAG + "SOM_COUNT",
                                         somatic_count)
 
-
 class ConsensusCaller(object):
     def __init__(self):
         self.tags = [_CallersReportedTag(),
                      _CallersPassedTag(),
+                     _SamplesReported(),
+                     _SamplesPassed(),
                      _AlleleFreqTag(),
                      _DepthTag(),
                      _SomaticTag()]

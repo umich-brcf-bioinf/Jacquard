@@ -109,17 +109,19 @@
 ##contig=<ID=chrUn_gl000249,length=38502,assembly=hg19>
 ##reference=file:///ccmb/BioinfCore/Common/SOFTWARES/hg19bundle/ucsc.hg19.fasta
 ##jacquard.version=0.21
-##jacquard.command=tag c:\\users\\jebene\\appdata\\local\\temp\\tmptivahf\\normalize c:\\users\\jebene\\appdata\\local\\temp\\tmptivahf\\tag --force
-##jacquard.cwd=C:\\Users\\jebene\\git
+##jacquard.command=tag c:\\users\\jebene\\appdata\\local\\temp\\tmpg6mjiy\\normalize c:\\users\\jebene\\appdata\\local\\temp\\tmpg6mjiy\\tag --force
+##jacquard.cwd=C:\\Users\\jebene\\git\\Jacquard
 ##jacquard.tag.caller=MuTect
+##FORMAT=<ID=JQ_MT_CALLER_REPORTED,Number=1,Type=Integer,Description="1 = variant present in original VCF",Source="Jacquard",Version="0.21">
+##FORMAT=<ID=JQ_MT_CALLER_PASSED,Number=1,Type=Integer,Description="1 = variant FILTER is PASS in original VCF",Version="0.21">
 ##FORMAT=<ID=JQ_MT_AF,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_MT_DP,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP)",Source="Jacquard",Version=0.21>
 ##FORMAT=<ID=JQ_MT_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)",Source="Jacquard",Version=0.21>
 ##jacquard.filterHCSomatic.excluded_variants=37
 ##jacquard.version=0.21
-##jacquard.command=filter_hc_somatic c:\\users\\jebene\\appdata\\local\\temp\\tmptivahf\\tag c:\\users\\jebene\\appdata\\local\\temp\\tmptivahf\\filter_hc_somatic --force
-##jacquard.cwd=C:\\Users\\jebene\\git
+##jacquard.command=filter_hc_somatic c:\\users\\jebene\\appdata\\local\\temp\\tmpg6mjiy\\tag c:\\users\\jebene\\appdata\\local\\temp\\tmpg6mjiy\\filter_hc_somatic --force
+##jacquard.cwd=C:\\Users\\jebene\\git\\Jacquard
 ##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=12
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NORMAL	TUMOR
-chr1	14948	rs201855936	G	A	.	REJECT	DB	GT:AD:BQ:DP:FA:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:179,17:.:174:0.087:0.09:174:0	0/1:264,38:33:302:0.126:0.13:302:0
-chr1	137622	rs376555721	G	A	.	PASS	DB	GT:AD:BQ:DP:FA:SS:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:63,20:.:35:0.241:1:0.24:35:0	0/1:30,12:32:42:0.286:2:0.29:42:1
+chr1	14948	rs201855936	G	A	.	REJECT	DB	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:179,17:.:174:0.087:1:0:0.09:174:0	0/1:264,38:33:302:0.126:1:0:0.13:302:0
+chr1	137622	rs376555721	G	A	.	PASS	DB	GT:AD:BQ:DP:FA:SS:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:63,20:.:35:0.241:1:1:1:0.24:35:0	0/1:30,12:32:42:0.286:2:1:1:0.29:42:1
