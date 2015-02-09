@@ -6,12 +6,12 @@ from collections import OrderedDict
 import os
 import unittest
 
-import jacquard.utils as utils
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.variant_callers.jacquard_consensus_caller as consensus_caller
 import jacquard.variant_callers.mutect as mutect
 import jacquard.variant_callers.varscan as varscan
 from jacquard.vcf import VcfRecord
+from jacquard import __version__
 import test.test_case as test_case
 
 
@@ -82,7 +82,7 @@ class MockFileReader(object):
 class CallersReportedListTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         split_metaheader = consensus_caller._CallersReportedListTag().metaheader.split("\n")
-        self.assertEquals('##FORMAT=<ID={}{},Number=.,Type=String,Description="Comma-separated list variant callers which listed this variant in the Jacquard tagged VCF",Source="Jacquard",Version="{}">'.format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_REPORTED_LIST, utils.__version__),
+        self.assertEquals('##FORMAT=<ID={}{},Number=.,Type=String,Description="Comma-separated list variant callers which listed this variant in the Jacquard tagged VCF",Source="Jacquard",Version="{}">'.format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_REPORTED_LIST, __version__),
                           split_metaheader[0])
 
     def test_add_tag_values(self):
@@ -97,7 +97,7 @@ class CallersReportedListTagTestCase(test_case.JacquardBaseTestCase):
 class CallersReportedTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         split_metaheader = consensus_caller._CallersReportedTag().metaheader.split("\n")
-        self.assertEquals('##FORMAT=<ID={}{},Number=1,Type=Integer,Description="Count of variant callers which listed this variant in the Jacquard tagged VCF",Source="Jacquard",Version="{}">'.format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_REPORTED, utils.__version__),
+        self.assertEquals('##FORMAT=<ID={}{},Number=1,Type=Integer,Description="Count of variant callers which listed this variant in the Jacquard tagged VCF",Source="Jacquard",Version="{}">'.format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_REPORTED, __version__),
                           split_metaheader[0])
 
     def test_add_tag_values(self):
@@ -112,7 +112,7 @@ class CallersReportedTagTestCase(test_case.JacquardBaseTestCase):
 class CallersPassedListTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         split_metaheader = consensus_caller._CallersPassedListTag().metaheader.split("\n")
-        self.assertEquals('##FORMAT=<ID={}{},Number=.,Type=String,Description="Comma-separated list of variant caller short-names where FILTER = PASS for this variant in the Jacquard tagged VCF",Source="Jacquard",Version="{}">'.format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_PASSED_LIST, utils.__version__),
+        self.assertEquals('##FORMAT=<ID={}{},Number=.,Type=String,Description="Comma-separated list of variant caller short-names where FILTER = PASS for this variant in the Jacquard tagged VCF",Source="Jacquard",Version="{}">'.format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_PASSED_LIST, __version__),
                           split_metaheader[0])
 
     def test_add_tag_values(self):
@@ -127,7 +127,7 @@ class CallersPassedListTagTestCase(test_case.JacquardBaseTestCase):
 class CallersPassedTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         split_metaheader = consensus_caller._CallersPassedTag().metaheader.split("\n")
-        self.assertEquals('##FORMAT=<ID={}{},Number=1,Type=Integer,Description="Count of variant callers where FILTER = PASS for this variant in the Jacquard tagged VCF",Source="Jacquard",Version="{}">'.format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_PASSED, utils.__version__),
+        self.assertEquals('##FORMAT=<ID={}{},Number=1,Type=Integer,Description="Count of variant callers where FILTER = PASS for this variant in the Jacquard tagged VCF",Source="Jacquard",Version="{}">'.format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_PASSED, __version__),
                           split_metaheader[0])
 
     def test_add_tag_values(self):
@@ -142,7 +142,7 @@ class CallersPassedTagTestCase(test_case.JacquardBaseTestCase):
 class SamplesReportedTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         split_metaheader = consensus_caller._SamplesReported().metaheader.split("\n")
-        self.assertEquals('##INFO=<ID={}{},Number=1,Type=Integer,Description="Count of samples where this variant appeared in any of the Jacquard tagged VCFs (regardless of quality/filtering)",Source="Jacquard",Version="{}">'.format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_SAMPLES_REPORTED, utils.__version__),
+        self.assertEquals('##INFO=<ID={}{},Number=1,Type=Integer,Description="Count of samples where this variant appeared in any of the Jacquard tagged VCFs (regardless of quality/filtering)",Source="Jacquard",Version="{}">'.format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_SAMPLES_REPORTED, __version__),
                           split_metaheader[0])
 
     def test_add_tag_values(self):
@@ -157,7 +157,7 @@ class SamplesReportedTestCase(test_case.JacquardBaseTestCase):
 class SamplesPassedTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         split_metaheader = consensus_caller._SamplesPassed().metaheader.split("\n")
-        self.assertEquals('##INFO=<ID={}{},Number=1,Type=Integer,Description="Count of samples where a variant caller passed the filter in any of the Jacquard tagged VCFs",Source="Jacquard",Version="{}">'.format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_SAMPLES_PASSED, utils.__version__),
+        self.assertEquals('##INFO=<ID={}{},Number=1,Type=Integer,Description="Count of samples where a variant caller passed the filter in any of the Jacquard tagged VCFs",Source="Jacquard",Version="{}">'.format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_SAMPLES_PASSED, __version__),
                           split_metaheader[0])
 
     def test_add_tag_values_onePassed(self):
@@ -183,7 +183,7 @@ class SamplesPassedTestCase(test_case.JacquardBaseTestCase):
 class AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
         split_meta_header = consensus_caller._AlleleFreqTag().metaheader.split("\n")
-        self.assertEqual('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].",Source="Jacquard",Version="{1}">'.format(consensus_caller.JQ_CONSENSUS_TAG, utils.__version__),
+        self.assertEqual('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].",Source="Jacquard",Version="{1}">'.format(consensus_caller.JQ_CONSENSUS_TAG, __version__),
                          split_meta_header[0])
 
     def test_insert_consensus(self):
@@ -228,7 +228,7 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
                       '[round(average(JQ_*_DP))].",' \
                       'Source="Jacquard",Version="{1}">'\
                       .format(consensus_caller.JQ_CONSENSUS_TAG, \
-                              utils.__version__), split_meta_header[0])
+                              __version__), split_meta_header[0])
 
     def test_insert_consensus(self):
         tag = consensus_caller._DepthTag()
@@ -262,7 +262,7 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
                       'that reported confident somatic call for this '\
                       'sample-position.",Source="Jacquard",Version="{1}">'\
                       .format(consensus_caller.JQ_CONSENSUS_TAG, \
-                              utils.__version__), split_meta_header[0])
+                              __version__), split_meta_header[0])
 
     def test_insert_consensus(self):
         tag = consensus_caller._SomaticTag()
@@ -306,7 +306,7 @@ class ConsensusHelperTestCase(test_case.JacquardBaseTestCase):
                     'Source="Jacquard",'
                     'Version="{}">').format(consensus_caller.JQ_CONSENSUS_TAG,
                                             consensus_caller.JQ_REPORTED,
-                                            utils.__version__)
+                                            __version__)
 
         caller = consensus_caller.ConsensusCaller()
         actual = caller.get_consensus_metaheaders()

@@ -1,7 +1,7 @@
 #pylint: disable=too-few-public-methods, unused-argument
 from __future__ import print_function, absolute_import
-import jacquard.utils as utils
 import math
+from jacquard import __version__
 
 _JQ_CONSENSUS_TAG = "JQ_CONS_"
 
@@ -83,6 +83,7 @@ class _ZScoreTag(object):
                           dependent_tag_id,
                           mean,
                           stdev):
+        #pylint: disable=too-many-arguments
         metaheaders = []
         metaheaders.append(self._EXECUTION_FORMAT.format(tag_id,
                                                          dependent_tag_id,
@@ -94,7 +95,7 @@ class _ZScoreTag(object):
                                                          stdev))
         tag_metaheader = self._METAHEADER_FORMAT.format(tag_id,
                                                         metaheader_description,
-                                                        utils.__version__)
+                                                        __version__)
         metaheaders.append(tag_metaheader)
         return tuple(metaheaders)
 

@@ -1,6 +1,6 @@
 #pylint: disable=too-few-public-methods, unused-argument
 from __future__ import print_function, absolute_import
-import jacquard.utils as utils
+from jacquard import __version__
 
 CALLER_REPORTED_TAG = "CALLER_REPORTED"
 CALLER_PASSED_TAG = "CALLER_PASSED"
@@ -15,7 +15,7 @@ class ReportedTag(object):
                            'Source="Jacquard",'
                            'Version="{}">').format(self.tag_name,
                                                    CALLER_REPORTED_TAG,
-                                                   utils.__version__)
+                                                   __version__)
 
     def add_tag_values(self, vcf_record):
         sample_values = {}
@@ -33,7 +33,7 @@ class PassedTag(object):
                            'original VCF",'
                            'Version="{}">').format(self.tag_name,
                                                    CALLER_PASSED_TAG,
-                                                   utils.__version__)
+                                                   __version__)
 
     def add_tag_values(self, vcf_record):
         sample_values = {}

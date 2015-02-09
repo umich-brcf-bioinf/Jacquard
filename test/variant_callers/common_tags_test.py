@@ -1,7 +1,7 @@
 #pylint:disable=line-too-long,too-many-public-methods
 import unittest
 import jacquard.variant_callers.common_tags as common_tags
-import jacquard.utils as utils
+from jacquard import __version__
 from jacquard.vcf import VcfRecord
 
 class ReportedTagTestCase(unittest.TestCase):
@@ -15,7 +15,7 @@ class ReportedTagTestCase(unittest.TestCase):
                           'Source="Jacquard",'
                           'Version="{}">').format("foo_",
                                                   common_tags.CALLER_REPORTED_TAG,
-                                                  utils.__version__),
+                                                  __version__),
                         reported_tag.metaheader)
 
     def test_reported_tag_format(self):
@@ -37,7 +37,7 @@ class ReportedTagTestCase(unittest.TestCase):
                            'original VCF",'
                            'Version="{}">').format("foo_",
                                                   common_tags.CALLER_PASSED_TAG,
-                                                  utils.__version__),
+                                                  __version__),
                         passed_tag.metaheader)
 
     def test_passed_tag_format(self):

@@ -2,6 +2,7 @@
 from __future__ import print_function, absolute_import
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.utils as utils
+from jacquard import __version__
 import re
 import os
 
@@ -16,7 +17,7 @@ class _AlleleFreqTag(object):
                            'Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)",'
                            'Source="Jacquard",'
                            'Version={1}>').format(JQ_MUTECT_TAG,
-                                                  utils.__version__)
+                                                  __version__)
 
     def add_tag_values(self, vcf_record):
         if "FA" in vcf_record.format_tags:
@@ -45,7 +46,7 @@ class _DepthTag(object):
                            'Description="Jacquard depth for MuTect (based on DP)",'
                            'Source="Jacquard",'
                            'Version={1}>').format(JQ_MUTECT_TAG,
-                                                  utils.__version__)
+                                                  __version__)
 
     @staticmethod
     def add_tag_values(vcf_record):
@@ -64,7 +65,7 @@ class _SomaticTag(object):
                            'Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)",'
                            'Source="Jacquard",'
                            'Version={1}>').format(JQ_MUTECT_TAG,
-                                                  utils.__version__)
+                                                  __version__)
 
     def add_tag_values(self, vcf_record):
         mutect_tag = JQ_MUTECT_TAG + "HC_SOM"

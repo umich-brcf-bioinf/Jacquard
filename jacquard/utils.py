@@ -1,12 +1,6 @@
 #pylint: disable=invalid-name,too-few-public-methods, global-at-module-level
 from __future__ import absolute_import, print_function
-from os import listdir
 import collections
-import jacquard.logger as logger
-import os
-
-#TODO cgates: This should be in jacquard.__init__?
-__version__ = 0.21
 
 #TODO: cgates: These should be in the callers or the caller factory, but not here.
 global caller_versions

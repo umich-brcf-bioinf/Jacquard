@@ -34,6 +34,7 @@ import jacquard.merge as merge
 import jacquard.normalize as normalize
 import jacquard.tag as tag
 import jacquard.utils as utils
+from jacquard import __version__
 
 
 _SUBCOMMANDS = [normalize,
@@ -124,7 +125,7 @@ def _version_text():
     caller_versions = [key + " " + value for key, value in callers]
     caller_version_string = "\n\t".join(caller_versions)
     return "Jacquard v{0}\nSupported variant callers:\n\t{1}".\
-        format(utils.__version__, caller_version_string)
+        format(__version__, caller_version_string)
 
 
 def dispatch(modules, arguments):
@@ -133,7 +134,7 @@ def dispatch(modules, arguments):
 
         cwd = os.path.dirname(os.getcwd())
         execution_context = [\
-            "##jacquard.version={0}".format(utils.__version__),
+            "##jacquard.version={0}".format(__version__),
             "##jacquard.command={0}".format(" ".join(arguments)),
             "##jacquard.cwd={0}".format(cwd)]
 
@@ -144,7 +145,7 @@ def dispatch(modules, arguments):
 
         command_validator.preflight(args, command)
 
-        logger.info("Jacquard begins (v{})", utils.__version__)
+        logger.info("Jacquard begins (v{})", __version__)
         logger.info("Saving log to [{}]", logger.log_filename)
         logger.debug("Writing output to tmp directory [{}]",
                      args.temp_working_dir)

@@ -3,7 +3,8 @@
 import unittest
 
 import jacquard.variant_callers.mutect as mutect
-from jacquard.utils import __version__, JQException
+from jacquard.utils import JQException
+from jacquard import __version__
 from jacquard.vcf import VcfRecord
 import jacquard.variant_callers.common_tags as common_tags
 

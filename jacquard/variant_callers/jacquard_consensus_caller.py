@@ -3,7 +3,7 @@ from __future__ import print_function, absolute_import
 from collections import defaultdict
 import re
 
-import jacquard.utils as utils
+from jacquard import __version__
 import jacquard.variant_callers.common_tags as common_tags
 import numpy as np
 
@@ -166,7 +166,7 @@ class _CallersReportedListTag(object):
                 'Version="{}">'\
                 .format(JQ_CONSENSUS_TAG,
                         JQ_REPORTED_LIST,
-                        utils.__version__))
+                        __version__))
 
     def add_tag_values(self, vcf_record):
         _add_caller_list_values(self.pattern, vcf_record, JQ_REPORTED_LIST)
@@ -191,7 +191,7 @@ class _CallersReportedTag(object):
                 'Version="{}">')\
                 .format(JQ_CONSENSUS_TAG,
                         JQ_REPORTED,
-                        utils.__version__)
+                        __version__)
 
     def add_tag_values(self, vcf_record):
         _add_caller_count_values(self.pattern, vcf_record, JQ_REPORTED)
@@ -217,7 +217,7 @@ class _CallersPassedListTag(object):
                 'Version="{}">'\
                 .format(JQ_CONSENSUS_TAG,
                         JQ_PASSED_LIST,
-                        utils.__version__))
+                        __version__))
 
     def add_tag_values(self, vcf_record):
         _add_caller_list_values(self.pattern, vcf_record, JQ_PASSED_LIST)
@@ -241,7 +241,7 @@ class _CallersPassedTag(object):
                 'Version="{}">')\
                 .format(JQ_CONSENSUS_TAG,
                         JQ_PASSED,
-                        utils.__version__)
+                        __version__)
 
     def add_tag_values(self, vcf_record):
         _add_caller_count_values(self.pattern, vcf_record, JQ_PASSED)
@@ -264,7 +264,7 @@ class _SamplesReported(object):
                 'Version="{}">')\
                 .format(JQ_CONSENSUS_TAG,
                         JQ_SAMPLES_REPORTED,
-                        utils.__version__)
+                        __version__)
 
     @staticmethod
     def add_tag_values(vcf_record):
@@ -287,7 +287,7 @@ class _SamplesPassed(object):
                 'Version="{}">')\
                 .format(JQ_CONSENSUS_TAG,
                         JQ_SAMPLES_PASSED,
-                        utils.__version__)
+                        __version__)
 
     @staticmethod
     def add_tag_values(vcf_record):
@@ -309,7 +309,7 @@ class _AlleleFreqTag(object):
                       'Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].",'
                       'Source="Jacquard",'
                       'Version="{1}">').format(JQ_CONSENSUS_TAG,
-                                               utils.__version__)
+                                               __version__)
         af_range = ('##FORMAT=<ID={0}AF_RANGE,'
                     'Number=1,'
                     'Type=Float,'
@@ -317,7 +317,7 @@ class _AlleleFreqTag(object):
                     'Description="Max(allele frequency) - min (allele frequency) across recognized callers.",'
                     'Source="Jacquard",'
                     'Version="{1}>">').format(JQ_CONSENSUS_TAG,
-                                              utils.__version__)
+                                              __version__)
         return "\n".join([af_average, af_range])
 
     @staticmethod
@@ -356,7 +356,7 @@ class _DepthTag(object):
                       'Description="Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].",'
                       'Source="Jacquard",'
                       'Version="{1}">').format(JQ_CONSENSUS_TAG,
-                                               utils.__version__)
+                                               __version__)
         dp_range = ('##FORMAT=<ID={0}DP_RANGE,'
                     'Number=1,'
                     'Type=Float,'
@@ -364,7 +364,7 @@ class _DepthTag(object):
                     'Description="Max(depth) - min (depth) across recognized callers.",'
                     'Source="Jacquard",'
                     'Version="{1}>">').format(JQ_CONSENSUS_TAG,
-                                              utils.__version__)
+                                              __version__)
         return "\n".join([dp_average, dp_range])
 
     @staticmethod
@@ -403,7 +403,7 @@ class _SomaticTag(object):
                      'Description="Count of recognized variant callers that reported confident somatic call for this sample-position.",'
                      'Source="Jacquard",'
                      'Version="{1}">').format(JQ_CONSENSUS_TAG,
-                                              utils.__version__)
+                                              __version__)
         return som_count
 
     @staticmethod

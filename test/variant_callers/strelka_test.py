@@ -2,7 +2,8 @@
 # pylint: disable=invalid-name,global-statement
 import unittest
 import jacquard.variant_callers.strelka as strelka
-from jacquard.utils import __version__, JQException
+from jacquard.utils import JQException
+from jacquard import __version__
 import os
 
 from jacquard.vcf import VcfRecord

@@ -2,6 +2,7 @@ from __future__ import print_function, absolute_import
 from jacquard.vcf import VcfReader, VcfRecord
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.utils as utils
+from jacquard import __version__
 import os
 import re
 
@@ -30,7 +31,7 @@ class _AlleleFreqTag(object):
                            'Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)",'
                            'Source="Jacquard",'
                            'Version={1}>').format(JQ_VARSCAN_TAG,
-                                                  utils.__version__)
+                                                  __version__)
 
     @staticmethod
     def add_tag_values(vcf_record):
@@ -52,7 +53,7 @@ class _DepthTag(object):
                            'Description="Jacquard depth for VarScan (based on DP)",'
                            'Source="Jacquard",'
                            'Version={1}>').format(JQ_VARSCAN_TAG,
-                                                  utils.__version__)
+                                                  __version__)
 
     @staticmethod
     def add_tag_values(vcf_record):
@@ -81,7 +82,7 @@ class _SomaticTag(object):
                            'Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)",'
                            'Source="Jacquard",'
                            'Version={1}>').format(JQ_VARSCAN_TAG,
-                                                  utils.__version__)
+                                                  __version__)
 
     @staticmethod
     def add_tag_values(vcf_record):

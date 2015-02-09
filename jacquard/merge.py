@@ -3,6 +3,7 @@ from __future__ import print_function, absolute_import
 from collections import defaultdict, OrderedDict
 import glob
 import jacquard.utils as utils
+from jacquard import __version__
 import jacquard.vcf as vcf
 import natsort
 import os
@@ -13,7 +14,7 @@ _DEFAULT_INCLUDED_FORMAT_TAGS = ["JQ_.*"]
 _MULT_ALT_TAG = "JQ_MULT_ALT_LOCUS"
 _MULT_ALT_HEADER = ('##INFO=<ID={},Number=0,Type=Flag,'
                     'Description="dbSNP Membership",Source="Jacquard",'
-                    'Version="{}">').format(_MULT_ALT_TAG, utils.__version__)
+                    'Version="{}">').format(_MULT_ALT_TAG, __version__)
 _FILE_FORMAT = ["##fileformat=VCFv4.2"]
 JQ_OUTPUT_SUFFIX = "merged"
 
@@ -59,7 +60,7 @@ def _compile_metaheaders(incoming_headers,
                          contigs_to_keep,
                          format_tags_to_keep,
                          info_tags_to_keep):
-
+    #pylint: disable=too-many-arguments
     ordered_metaheaders = list(incoming_headers)
     all_info_metaheaders = {}
     all_format_metaheaders = {}
@@ -290,9 +291,6 @@ def _validate_arguments(args):
     return writers_to_readers, out_files, buffered_readers, format_tag_regex
 
 def _predict_output(args):
-    input_file = os.path.abspath(args.input)
-    output_file = os.path.dirname(args.output)
-
     desired_output_files = set([os.path.basename(args.output)])
 
     return desired_output_files

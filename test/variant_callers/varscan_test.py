@@ -4,7 +4,8 @@ import os
 import unittest
 
 from jacquard.variant_callers import varscan
-from jacquard.utils import __version__, JQException
+from jacquard.utils import JQException
+from jacquard import __version__
 from jacquard.vcf import VcfRecord, FileReader
 from testfixtures import TempDirectory
 import jacquard.variant_callers.common_tags as common_tags
