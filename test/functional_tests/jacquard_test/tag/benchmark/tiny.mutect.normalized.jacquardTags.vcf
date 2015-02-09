@@ -109,8 +109,8 @@
 ##contig=<ID=chrUn_gl000249,length=38502,assembly=hg19>
 ##reference=file:///ccmb/BioinfCore/Common/SOFTWARES/hg19bundle/ucsc.hg19.fasta
 ##jacquard.version=0.21
-##jacquard.command=tag c:\\users\\jebene\\appdata\\local\\temp\\tmpsdn9pm\\normalize c:\\users\\jebene\\appdata\\local\\temp\\tmpsdn9pm\\tag --force
-##jacquard.cwd=C:\\Users\\jebene\\git
+##jacquard.command=tag C:\Users\jebene\Desktop\tag_input C:\Users\jebene\Desktop\tag_test --force
+##jacquard.cwd=C:\Users\jebene\git
 ##jacquard.tag.caller=MuTect
 ##FORMAT=<ID=JQ_MT_CALLER_REPORTED,Number=1,Type=Integer,Description="1 = variant present in original VCF",Source="Jacquard",Version="0.21">
 ##FORMAT=<ID=JQ_MT_CALLER_PASSED,Number=1,Type=Integer,Description="1 = variant FILTER is PASS in original VCF",Version="0.21">

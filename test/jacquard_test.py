@@ -250,7 +250,7 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
             logger.SHOW_WARNING = False
 
 class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
-    def xtest_functional_jacquard(self):
+    def test_functional_jacquard(self):
         with TempDirectory() as output_dir:
             file_dirname = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(file_dirname,
@@ -289,7 +289,7 @@ class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
                         ["merge2", filter_output, merge_output, "--force"],
                         ["consensus", merge_output, consensus_output, "--force"],
                         ["expand", consensus_output, expanded_output, "--force"]]
-
+#  
             for command in commands:
                 expected_dir = os.path.join(module_testdir, command[0], "benchmark")
                 self.assertCommand(command, expected_dir)

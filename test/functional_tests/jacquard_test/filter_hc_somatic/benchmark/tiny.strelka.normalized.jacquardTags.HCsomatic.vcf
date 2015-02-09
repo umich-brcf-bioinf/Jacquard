@@ -77,8 +77,8 @@
 ##source_version=2.0.15
 ##startTime=Wed Jul  9 13:37:22 2014
 ##jacquard.version=0.21
-##jacquard.command=tag c:\\users\\jebene\\appdata\\local\\temp\\tmpv0bmft\\normalize c:\\users\\jebene\\appdata\\local\\temp\\tmpv0bmft\\tag --force
-##jacquard.cwd=C:\\Users\\jebene\\git\\Jacquard
+##jacquard.command=tag C:\Users\jebene\Desktop\tag_input C:\Users\jebene\Desktop\tag_test --force
+##jacquard.cwd=C:\Users\jebene\git
 ##jacquard.tag.caller=Strelka
 ##FORMAT=<ID=JQ_SK_CALLER_REPORTED,Number=1,Type=Integer,Description="1 = variant present in original VCF",Source="Jacquard",Version="0.21">
 ##FORMAT=<ID=JQ_SK_CALLER_PASSED,Number=1,Type=Integer,Description="1 = variant FILTER is PASS in original VCF",Version="0.21">
@@ -89,8 +89,8 @@
 ##FILTER=<ID=JQ_MISSING_ALT,Description="The alternate allele is missing for this variant record.",Source="Jacquard",Version="">
 ##jacquard.filterHCSomatic.excluded_variants=33
 ##jacquard.version=0.21
-##jacquard.command=filter_hc_somatic c:\\users\\jebene\\appdata\\local\\temp\\tmpv0bmft\\tag c:\\users\\jebene\\appdata\\local\\temp\\tmpv0bmft\\filter_hc_somatic --force
-##jacquard.cwd=C:\\Users\\jebene\\git\\Jacquard
+##jacquard.command=filter_hc_somatic C:\Users\jebene\Desktop\tag_test C:\Users\jebene\Desktop\filter_hc_somatic_test --force
+##jacquard.cwd=C:\Users\jebene\git
 ##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=12
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NORMAL	TUMOR
 chr1	1147545	.	A	G	.	PASS	NT=ref;QSS=32;QSS_NT=32;SGT=AA->AG;SOMATIC;TQSS=1;TQSS_NT=1	DP:FDP:SDP:SUBDP:AU:CU:GU:TU:JQ_SK_CALLER_REPORTED:JQ_SK_CALLER_PASSED:JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	25:1:0:0:24,27:0,0:0,0:0,0:1:1:0.0:27:0	35:0:0:0:24,24:0,0:11,11:0,0:1:1:0.31:35:1

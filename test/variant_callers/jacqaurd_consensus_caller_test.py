@@ -160,7 +160,7 @@ class SamplesPassedTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals('##INFO=<ID={}{},Number=1,Type=Integer,Description="Count of samples where a variant caller passed the filter in any of the Jacquard tagged VCFs",Source="Jacquard",Version="{}">'.format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_SAMPLES_PASSED, utils.__version__),
                           split_metaheader[0])
 
-    def test_add_tag_values(self):
+    def test_add_tag_values_onePassed(self):
         line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}|X:2|Y:0\n".format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_PASSED))
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag = consensus_caller._SamplesPassed()
@@ -168,6 +168,17 @@ class SamplesPassedTestCase(test_case.JacquardBaseTestCase):
 
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO;{}{}=1|JQ_DP:{}{}|X:2|Y:0\n".format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_SAMPLES_PASSED, consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_PASSED))
         self.assertEquals(expected, processedVcfRecord.asText())
+
+    def test_add_tag_values_nonePassed(self):
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}|X:0|Y:0\n".format(consensus_caller.JQ_CONSENSUS_TAG, consensus_caller.JQ_PASSED))
+        vcf_record = VcfRecord.parse_record(line, ["SA", "SB"])
+        tag = consensus_caller._SamplesPassed()
+        tag.add_tag_values(vcf_record)
+
+        info_tag = consensus_caller.JQ_CONSENSUS_TAG + consensus_caller.JQ_SAMPLES_PASSED
+        self.assertIn(info_tag, vcf_record.info_dict)
+        self.assertEquals("0", vcf_record.info_dict[info_tag])
+
 
 class AlleleFreqTagTestCase(unittest.TestCase):
     def test_metaheader(self):
@@ -207,7 +218,6 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
-
 class DepthTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         split_meta_header = consensus_caller._DepthTag().metaheader.split("\n")
@@ -243,7 +253,6 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
-
 
 class SomaticTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):

@@ -77,8 +77,8 @@
 ##source_version=2.0.15
 ##startTime=Wed Jul  9 13:37:22 2014
 ##jacquard.version=0.21
-##jacquard.command=tag c:\\users\\jebene\\appdata\\local\\temp\\tmpn2pclp\\normalize c:\\users\\jebene\\appdata\\local\\temp\\tmpn2pclp\\tag --force
-##jacquard.cwd=C:\\Users\\jebene\\git
+##jacquard.command=tag C:\Users\jebene\Desktop\tag_input C:\Users\jebene\Desktop\tag_test --force
+##jacquard.cwd=C:\Users\jebene\git
 ##jacquard.tag.caller=Strelka
 ##FORMAT=<ID=JQ_SK_CALLER_REPORTED,Number=1,Type=Integer,Description="1 = variant present in original VCF",Source="Jacquard",Version="0.21">
 ##FORMAT=<ID=JQ_SK_CALLER_PASSED,Number=1,Type=Integer,Description="1 = variant FILTER is PASS in original VCF",Version="0.21">
