@@ -115,7 +115,9 @@ def _create_temp_working_dir(args):
                                 .format(parent_dir))
 
 
-def _get_temp_working_dir(original_output, required_output):
+def _get_temp_working_dir(args):
+    original_output = args.original_output
+    required_output = args.required_output_type
     abs_original_output = os.path.abspath(original_output)
     pid = os.getpid()
     microseconds_since_epoch = int(time.time() * 1000 * 1000)
@@ -149,15 +151,16 @@ def _makepath(path):
             pass
         else: raise
 
-
+#TODO: (cgates): Refactor to list of validation commands; simplifies code/test
+# Something like: for validate in validation_methods: validate(args, module)
+# validation methdos would add context as necessary to args
 def preflight(args, module):
     args.original_output = args.output
     output_path = os.path.abspath(args.original_output)
     (args.required_input_type,
      args.required_output_type) = module.get_required_input_output_types()
     (args.temp_working_dir,
-     args.output) = _get_temp_working_dir(args.original_output,
-                                          args.required_output_type)
+     args.output) = _get_temp_working_dir(args)
     _check_input_exists(args.input)
     _check_input_readable(args.input)
     _check_input_correct_type(args.subparser_name,

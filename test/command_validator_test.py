@@ -95,9 +95,11 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
         with TempDirectory() as original_output_dir:
             original_output = os.path.join(original_output_dir.path, "dest_dir")
             os.mkdir(original_output)
+            args = Namespace(original_output=original_output,
+                             required_output_type="directory")
+
             (temp_dir,
-             output) = command_validator._get_temp_working_dir(original_output,
-                                                               "directory")
+             output) = command_validator._get_temp_working_dir(args)
         self.assertRegexpMatches(temp_dir,
                                  os.path.join(original_output,
                                               r"jacquard\.\d+\.\d+\.tmp"))
@@ -106,10 +108,11 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
     def test_get_temp_working_dir_besideDestIfDestDirNotExists(self):
         with TempDirectory() as original_parent_dir:
             parent_dir = original_parent_dir.path
-            original_output = os.path.join(parent_dir, "dest_dir")
+            args = Namespace(original_output=os.path.join(parent_dir, "dest_dir"),
+                             required_output_type="directory")
+
             (temp_dir,
-             output) = command_validator._get_temp_working_dir(original_output,
-                                                               "directory")
+             output) = command_validator._get_temp_working_dir(args)
 
         expected_temp_dir = os.path.join(parent_dir,
                                          r"jacquard\.\d+\.\d+\.tmp")
@@ -123,9 +126,10 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
         with TempDirectory() as original_parent_dir:
             parent_dir = original_parent_dir.path
             original_output = os.path.join(parent_dir, "dest_file")
+            args = Namespace(original_output=original_output,
+                             required_output_type="file")
             (temp_dir,
-             output) = command_validator._get_temp_working_dir(original_output,
-                                                               "file")
+             output) = command_validator._get_temp_working_dir(args)
 
         expected_temp_dir = os.path.join(parent_dir,
                                          r"jacquard\.\d+\.\d+\.tmp")
@@ -137,17 +141,23 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
 
     def test_get_temp_working_dir_distinct(self):
         orig_output_path = os.path.join("foo", "bar")
-        temp_dir1, dummy = command_validator._get_temp_working_dir(orig_output_path,
-                                                                   "file")
+        args1 = Namespace(original_output=orig_output_path,
+                          required_output_type="directory")
+        (temp_dir1,
+         dummy) = command_validator._get_temp_working_dir(args1)
         time.sleep(0.01)
-        temp_dir2, dummy = command_validator._get_temp_working_dir(orig_output_path,
-                                                                   "file")
+        args2 = Namespace(original_output=orig_output_path,
+                          required_output_type="directory")
+        (temp_dir2,
+         dummy) = command_validator._get_temp_working_dir(args2)
         self.assertNotEqual(temp_dir1, temp_dir2)
 
     def test_get_temp_working_dir_complexPathOk(self):
         original_output = os.path.join("foo.bar", "baz.hoopy", "frood")
-        temp_dir, output = command_validator._get_temp_working_dir(original_output,
-                                                                   "directory")
+        args = Namespace(original_output=original_output,
+                         required_output_type="directory")
+        (temp_dir,
+         output) = command_validator._get_temp_working_dir(args)
         self.assertRegexpMatches(temp_dir,
                                  os.path.join("foo.bar",
                                               "baz.hoopy",
@@ -159,9 +169,9 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
                                               "frood"))
 
     def test_get_temp_working_dir_trailingSlashOk(self):
-        original_output = os.path.join("foo", "bar") + os.sep
-        temp_dir, output = command_validator._get_temp_working_dir(original_output,
-                                                                   "directory")
+        args = Namespace(original_output=os.path.join("foo", "bar") + os.sep,
+                         required_output_type="directory")
+        temp_dir, output = command_validator._get_temp_working_dir(args)
         self.assertRegexpMatches(temp_dir,
                                  os.path.join("foo", "jacquard.*tmp"))
         self.assertRegexpMatches(output,
@@ -173,9 +183,11 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
             with TempDirectory() as cwd:
                 cwd_absolute_path = os.path.abspath(cwd.path)
                 os.chdir(cwd_absolute_path)
+                args = Namespace(original_output=os.path.join("."),
+                                 required_output_type="directory")
+
                 (temp_dir,
-                 output) = command_validator._get_temp_working_dir(os.path.join("."),
-                                                                   "directory")
+                 output) = command_validator._get_temp_working_dir(args)
                 os.chdir(original_cwd)
                 self.assertIn(cwd_absolute_path, temp_dir)
                 self.assertEquals(temp_dir, output)
@@ -188,8 +200,10 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
             with TempDirectory() as cwd:
                 cwd_absolute_path = os.path.abspath(cwd.path)
                 os.chdir(cwd_absolute_path)
-                actual_dir, dummy = command_validator._get_temp_working_dir(os.path.join(".", "foo", "bar"),
-                                                                            "directory")
+                args = Namespace(original_output=os.path.join(".", "foo", "bar"),
+                                 required_output_type="directory")
+                (actual_dir,
+                 dummy) = command_validator._get_temp_working_dir(args)
                 os.chdir(original_cwd)
                 self.assertIn(cwd_absolute_path, actual_dir)
         finally:
@@ -552,7 +566,7 @@ class CommandValidatorPreflightTestCase(test_case.JacquardBaseTestCase):
             self.assertTrue(CHECK_OUTPUT_CORRECT_TYPE_CALLED)
             self.assertTrue(CHECK_OVERWRITE_EXISTING_FILES_CALLED)
 
-def mock_get_temp_working_dir(unused1, unused2):
+def mock_get_temp_working_dir(unused):
     global GET_TEMP_WORKING_DIR_CALLED
     GET_TEMP_WORKING_DIR_CALLED = True
     return (None, None)
