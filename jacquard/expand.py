@@ -29,38 +29,6 @@ def _read_col_spec(col_spec):
 
     return columns
 
-# def _path_type(path):
-#     return "file" if os.path.isfile(path) else "directory"
-# 
-# def _build_output_file_names(input_path, output_path):
-#     input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
-#     if len(input_files) == 0:
-#         raise utils.JQException(("Specified input directory [{}] contains "
-#                                  "no VCF files. Review inputs and try "
-#                                  "again."),
-#                                 input_path)
-# 
-#     basenames = [os.path.splitext(os.path.basename(i))[0] + ".txt" \
-#                        for i in input_files]
-#     output_path = [os.path.join(output_path, i) for i in basenames]
-# 
-#     return input_files, output_path
-# 
-# 
-# def _validate_input_and_output(input_path, output_path):
-#     input_path_type = _path_type(input_path)
-#     if os.path.exists(output_path) and \
-#             input_path_type != _path_type(output_path):
-#         raise utils.JQException(("Specified output [{0}] must be a {1} "
-#                                  "if input [{2}] is a {1}. Review "
-#                                  "arguments and try again."),
-#                                 output_path,
-#                                 input_path_type,
-#                                 input_path)
-#     if os.path.isfile(input_path):
-#         return [input_path], [output_path]
-#     else:
-#         return _build_output_file_names(input_path, output_path)
 
 ##TODO: hook this idea up -- change method
 def _disambiguate_column_names(column_header, info_header):
@@ -139,7 +107,6 @@ def add_subparser(subparser):
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
 def _predict_output(args):
-    utils.validate_files(args.input, args.output)
     return set([os.path.basename(args.output)])
 
 def report_prediction(args):
@@ -151,8 +118,6 @@ def get_required_input_output_types():
 def execute(args, execution_context):
     input_file = os.path.abspath(args.input)
     output_file = os.path.abspath(args.output)
-    #TODO: Allow _predict_output to handle validation from now on?
-    utils.validate_files(input_file, output_file)
 
     col_spec = args.column_specification if args.column_specification else 0
 

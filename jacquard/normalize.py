@@ -1,18 +1,17 @@
 from __future__ import absolute_import
-
 from collections import defaultdict
 import glob
-import os
-import shutil
-
 import jacquard.logger as logger
 import jacquard.utils as utils
 import jacquard.variant_callers.variant_caller_factory as variant_caller_factory
 import jacquard.vcf as vcf
+import natsort
+import os
+
 
 JQ_OUTPUT_SUFFIX = "normalized"
 
-#TODO: (cgates): this code is not referenced anywhere; it will be eliminated when normalize is rewritten
+#TODO: (cgates): this code is not referenced anywhere; remove? 
 def _validate_single_caller(filepaths, get_caller):
     callers = set()
     try:
@@ -36,7 +35,7 @@ def _validate_single_caller(filepaths, get_caller):
 
 def _get_files_per_patient(in_files):
     patient_to_files = defaultdict(list)
-    for file_path in in_files:
+    for file_path in natsort.natsorted(in_files):
         basename = os.path.basename(file_path)
         patient = basename.split(".")[0]
         patient_to_files[patient].append(file_path)
@@ -95,10 +94,7 @@ def add_subparser(subparser):
 
 def _predict_output(args):
     input_file = os.path.abspath(args.input)
-
-    utils.validate_directories(input_dir=input_file)
     in_files = sorted(glob.glob(os.path.join(input_file, "*.vcf")))
-
     caller = _determine_caller_per_directory(in_files)
     patient_to_files = _get_files_per_patient(in_files)
     desired_output_files = _get_output_filenames(caller, patient_to_files)
@@ -116,7 +112,6 @@ def execute(args, execution_context):
     input_dir = os.path.abspath(args.input)
     output_dir = os.path.abspath(args.output)
 
-    utils.validate_directories(input_dir, output_dir)
     in_files = sorted(glob.glob(os.path.join(input_dir, "*")))
 
     caller = _determine_caller_per_directory(in_files)
@@ -128,12 +123,9 @@ def execute(args, execution_context):
     writer_to_readers = _partition_input_files(patient_to_files, output_dir, caller)
 
     if not writer_to_readers:
-        logger.error("Specified input directory [{0}] contains no files."
-                     "Check parameters and try again.", input_dir)
-
-        #TODO cgates: move to jacquard.py
-        shutil.rmtree(output_dir)
-        exit(1)
+        message = ("Specified input directory [{0}] contains no files."
+                   "Check parameters and try again.").format(input_dir)
+        raise utils.JQException(message)
 
     logger.info("Normalizing input files")
     count = 1

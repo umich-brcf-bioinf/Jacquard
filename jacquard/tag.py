@@ -1,14 +1,13 @@
 from __future__ import print_function, absolute_import
-
+from jacquard.variant_callers import variant_caller_factory
 import collections
 import glob
-import os
-import shutil
-
 import jacquard.logger as logger
 import jacquard.utils as utils
-from jacquard.variant_callers import variant_caller_factory
 import jacquard.vcf as vcf
+import natsort
+import os
+
 
 JQ_OUTPUT_SUFFIX = "jacquardTags"
 
@@ -19,9 +18,8 @@ def _comma_separated(line):
             return False
     return True
 
-#TODO: (cgates): This works, but would rather see this as a collection of validator methods
+#TODO: (cgates): This works; rather see this as a set of validator methods
 def _check_records(reader):
-    #pylint: disable=line-too-long
     correct_ref = "ACGTNacgtn"
     correct_alt = "*.ACGTNacgtn,"
     anomalous_set = set()
@@ -33,6 +31,7 @@ def _check_records(reader):
 
     for vcf_record in reader.vcf_records():
         anomalous_flags = []
+        #TODO: (cgates): Suspect there may be a clearer way to do this?
         if _comma_separated(vcf_record.ref) and not all(x in correct_ref for x in list(vcf_record.ref)):
             anomalous_flags.append("JQ_MALFORMED_REF")
             malformed_ref += 1
@@ -79,23 +78,23 @@ def _modify_metaheaders(reader, writer, execution_context, anomalous_set):
     new_headers.extend(reader.caller.get_new_metaheaders())
 
     if len(anomalous_set) > 0:
-        new_headers.append('##FILTER=<ID=JQ_EXCLUDE,Description="This ' \
-                           'variant record is problematic and will be '\
+        new_headers.append('##FILTER=<ID=JQ_EXCLUDE,Description="This '
+                           'variant record is problematic and will be '
                            'excluded from downstream Jacquard processing.",'
                            'Source="Jacquard",Version="">')
         if "JQ_MALFORMED_REF" in anomalous_set:
-            new_headers.append('##FILTER=<ID=JQ_MALFORMED_REF,Description='\
-                               '"The format of the reference value for this '\
-                               'variant record does not comply with VCF '\
+            new_headers.append('##FILTER=<ID=JQ_MALFORMED_REF,Description='
+                               '"The format of the reference value for this '
+                               'variant record does not comply with VCF '
                                'standard.",Source="Jacquard",Version="">')
         if "JQ_MALFORMED_ALT" in anomalous_set:
-            new_headers.append('##FILTER=<ID=JQ_MALFORMED_ALT,Description='\
-                               '"The the format of the alternate allele value '\
-                               'for this variant record does not comply with '\
+            new_headers.append('##FILTER=<ID=JQ_MALFORMED_ALT,Description='
+                               '"The the format of the alternate allele value '
+                               'for this variant record does not comply with '
                                'VCF standard.",Source="Jacquard",Version="">')
         if "JQ_MISSING_ALT" in anomalous_set:
-            new_headers.append('##FILTER=<ID=JQ_MISSING_ALT,Description="The '\
-                               'alternate allele is missing for this variant '\
+            new_headers.append('##FILTER=<ID=JQ_MISSING_ALT,Description="The '
+                               'alternate allele is missing for this variant '
                                'record.",Source="Jacquard",Version="">')
     new_headers.append(reader.column_header)
 
@@ -186,8 +185,8 @@ def _get_output_filenames(input_files):
     return output_files
 
 def _build_vcf_readers_to_writers(vcf_readers, output_file):
-    vcf_providers_to_writers = {}
-    for reader in vcf_readers:
+    vcf_providers_to_writers = collections.OrderedDict()
+    for reader in natsort.natsorted(vcf_readers):
         new_filename = _mangle_output_filenames(reader.file_name)
         output_filepath = os.path.join(output_file, new_filename)
         vcf_providers_to_writers[reader] = vcf.FileWriter(output_filepath)
@@ -204,10 +203,7 @@ def add_subparser(subparser):
 
 def _predict_output(args):
     input_file = os.path.abspath(args.input)
-
-    utils.validate_directories(input_dir=input_file)
     input_files = sorted(glob.glob(os.path.join(input_file, "*.vcf")))
-
     desired_output_files = _get_output_filenames(input_files)
 
     return desired_output_files
@@ -221,23 +217,17 @@ def get_required_input_output_types():
 def execute(args, execution_context):
     input_dir = os.path.abspath(args.input)
     output_dir = os.path.abspath(args.output)
-    utils.validate_directories(input_dir, output_dir)
 
     vcf_readers = _build_vcf_readers(input_dir)
     if not vcf_readers:
-        logger.error(("Specified input directory [{0}] contains no VCF files."
-                      "Check parameters and try again."),
-                     input_dir)
-        #TODO cgates: move to jacquard.py
-        shutil.rmtree(output_dir)
-        exit(1)
+        message = ("Specified input directory [{0}] contains no VCF files."
+                   "Check parameters and try again.").format(input_dir)
+        raise utils.JQException(message)
 
     readers_to_writers = _build_vcf_readers_to_writers(vcf_readers, output_dir)
     logger.info("Processing [{}] VCF file(s) from [{}]",
                 len(vcf_readers),
-                input_dir)
+                args.input)
 
     tag_files(readers_to_writers, execution_context)
-    logger.info("Wrote [{}] VCF file(s) to [{}]",
-                len(readers_to_writers),
-                output_dir)
+    logger.info("Wrote [{}] VCF file(s)", len(readers_to_writers))

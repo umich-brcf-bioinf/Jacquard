@@ -187,46 +187,6 @@ class ValidateDirectoriesTestCase(test_case.JacquardBaseTestCase):
         logger.warning = self.original_warning
         logger.debug = self.original_debug
 
-    def test_validateDirectories_inputDirectoryDoesntExist(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        input_file = script_dir + "/functional_tests/utils_test/tag_varscan_test/foo"
-        output_file = script_dir + "/functional_tests/utils_test/tag_varscan_test/output"
-
-        with self.assertRaises(SystemExit) as cm:
-            utils.validate_directories(input_file, output_file)
-        self.assertEqual(cm.exception.code, 1)
-
-        self.assertTrue(mock_log_called)
-#         self.assertRegexpMatches(self.output.getvalue(),
-#                                  r"Specified input directory \[.*\] does not exist.")
-
-    def test_validateDirectories_outputDirectoryNotCreated(self):
-        with TempDirectory() as input_file, TempDirectory() as output_file:
-            input_file.write("A.txt",
-                            "##source=VarScan2\n#CHROM\tNORMAL\tTUMOR\n")
-            unwriteable_dir = os.path.join(output_file.path, "unwriteable")
-            desired_dir = os.path.join(unwriteable_dir, "bar")
-
-            try:
-                make_unwritable_dir(unwriteable_dir)
-                with self.assertRaises(SystemExit) as cm:
-                    utils.validate_directories(input_file.path, desired_dir)
-
-            finally:
-                cleanup_unwriteable_dir(unwriteable_dir)
-
-            self.assertEqual(cm.exception.code, 1)
-            self.assertTrue(mock_log_called)
-
-#     def test_validate_arguments_valid(self):
-#         output_files = ["foo.vcf", "bar.vcf"]
-#         writers = [MockWriter(output_filepath="baz.vcf")]
-#         self.assertTrue(utils.validate_arguments(output_files, writers))
-
-#     def test_validate_arguments_invalid(self):
-#         output_files = ["foo.vcf", "bar.vcf"]
-#         writers = [MockWriter(output_filepath="bar.vcf"), MockWriter(output_filepath="blah.vcf")]
-#         self.assertRaisesRegexp(utils.JQException, "This command would overwrite existing files", utils.validate_arguments, output_files, writers)
 
 def is_windows_os():
     return sys.platform.lower().startswith("win")

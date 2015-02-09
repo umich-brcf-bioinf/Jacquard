@@ -82,6 +82,7 @@ def report_prediction(args):
 def get_required_input_output_types():
     return ("file", "file")
 
+#TODO: (cgates): Simplify this so that it onlt accepts a file - not a dir
 def execute(args, execution_context):
     input_file = os.path.abspath(args.input)
     output = os.path.abspath(args.output)
@@ -97,11 +98,8 @@ def execute(args, execution_context):
             raise utils.JQException("Output file [{}] must be a VCF file.",
                                     output)
         else:
-            utils.validate_directories(os.path.dirname(input_file),
-                                       os.path.dirname(output))
             output_file = output
     else:
-        utils.validate_directories(os.path.dirname(input_file), output)
         output_file = os.path.join(output, "consensus.vcf")
 
     cons_helper = consensus_caller.ConsensusCaller()
