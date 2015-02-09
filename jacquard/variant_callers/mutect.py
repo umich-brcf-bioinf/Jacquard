@@ -24,17 +24,14 @@ class _AlleleFreqTag(object):
             sample_values = {}
             for sample in vcf_record.sample_tag_values:
                 freq = vcf_record.sample_tag_values[sample]["FA"].split(",")
-                sample_values[sample] = self._round_two_digits(freq)
+                sample_values[sample] = self._standardize_af(freq)
             vcf_record.add_sample_tag_value(JQ_MUTECT_TAG + "AF", sample_values)
 
     @staticmethod
-    def _round_two_digits(value):
+    def _standardize_af(value):
         new_values = []
         for val in value:
-            if len(val.split(".")[1]) <= 2:
-                new_values.append(val)
-            else:
-                new_values.append(str(round(100 * float(val))/100))
+            new_values.append(utils.round_two_digits(val))
         return ",".join(new_values)
 
 class _DepthTag(object):

@@ -13,6 +13,21 @@ jq_somatic_tag = "HC_SOM"
 jq_af_tag = "AF"
 jq_dp_tag = "DP"
 
+def round_two_digits(val):
+    if len(val.split(".")[1]) > 2:
+        return str(round(100 * float(val))/100)
+
+    return val
+
+#TODO: (jebene/kmeng) - do we want to truncate decimals if it's X.0?
+#     if len(val.split(".")[1]) <= 2:
+#         if val.split(".")[1] == '0':
+#             return val.split(".")[0]
+#         return val
+#
+#     else:
+#         return str(round(100 * float(val))/100)
+
 class JQException(Exception):
     """Base class for exceptions in this module."""
     def __init__(self, msg, *args):
