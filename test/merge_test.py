@@ -1,72 +1,186 @@
-#pylint: disable=line-too-long, global-statement, invalid-name, unused-argument
-#pylint: disable=unused-variable, too-few-public-methods, too-many-public-methods
-#pylint: disable=anomalous-backslash-in-string, maybe-no-member, undefined-variable
+#pylint: disable=missing-docstring,line-too-long,too-many-public-methods
+#pylint: disable=too-few-public-methods,too-many-instance-attributes
+#pylint: disable=too-many-arguments,invalid-name,protected-access,global-statement
 from __future__ import absolute_import
 from argparse import Namespace
 from collections import OrderedDict
-import glob
 import os
-import pandas as pd
-import pandas.util.testing as tm
-from StringIO import StringIO
-import sys
+import re
 from testfixtures import TempDirectory
-import unittest
-
-from jacquard.merge import PivotError, VariantPivoter, merge_samples, _add_mult_alt_flags, create_initial_df, build_pivoter, validate_parameters, rearrange_columns, determine_input_keys, get_headers_and_readers, create_dict, cleanup_df, _combine_format_values, remove_non_jq_tags, add_all_tags, sort_format_tags, determine_merge_execution_context, print_new_execution_context, determine_caller_and_split_mult_alts, validate_samples_for_callers, create_new_line, create_merging_dict, remove_old_columns
-import jacquard.merge as merge
+from StringIO import StringIO
 import jacquard.logger as logger
-from jacquard.utils import JQException
+import sys
+
+import jacquard.merge as merge
+import jacquard.vcf as vcf
 import test.test_case as test_case
+from jacquard.vcf import VcfRecord
+import jacquard.utils as utils
 
-TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
+class MockVcfReader(object):
+    def __init__(self,
+                 input_filepath="vcfName",
+                 metaheaders=None,
+                 column_header='#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR',
+                 content=None,
+                 records=None,
+                 sample_names=None):
 
-mock_log_called = False
+        if content is None:
+            self.content = ["foo"]
+        else:
+            self.content = content
+
+        if metaheaders is None:
+            self.metaheaders = ["##metaheaders"]
+        else:
+            self.metaheaders = metaheaders
+
+        if records:
+            self.records = records
+        elif content:
+            self.records = [MockVcfRecord.parse_record(line) for line in self.content]
+        else:
+            self.records = []
+
+        if sample_names is None:
+            self.sample_names = []
+        else:
+            self.sample_names = sample_names
+        self.file_name = input_filepath
+        self.input_filepath = input_filepath
+        self.column_header = column_header
+        self.opened = False
+        self.closed = False
+
+    def open(self):
+        self.opened = True
+
+    def vcf_records(self):
+        for record in self.records:
+            yield record
+
+    def _get_tag_metaheaders(self, regex_exp):
+        tag_dict = {}
+        for metaheader in self.metaheaders:
+            tag = re.match(regex_exp, metaheader)
+            if tag:
+                tag_key = tag.group(1)
+                tag_dict[tag_key] = metaheader.strip()
+
+        return tag_dict
+
+    @property
+    def format_metaheaders(self):
+        return dict(self._get_tag_metaheaders("^##FORMAT=.*?[<,]ID=([^,>]*)"))
+
+    @property
+    def info_metaheaders(self):
+        return dict(self._get_tag_metaheaders("^##INFO=.*?[<,]ID=([^,>]*)"))
+
+    @property
+    def filter_metaheaders(self):
+        return dict(self._get_tag_metaheaders("^##FILTER=.*?[<,]ID=([^,>]*)"))
+
+    @property
+    def contig_metaheaders(self):
+        return dict(self._get_tag_metaheaders("^##contig=.*?[<,]ID=([^,>]*)"))
+
+    @property
+    def non_format_metaheaders(self):
+        return self.metaheaders
+
+    def close(self):
+        self.closed = True
+
+#pylint: disable=unused-argument
+class MockBufferedReader(object):
+    def __init__(self, vcf_records):
+        self.vcf_records_iter = iter(vcf_records)
+
+    def next_if_equals(self, requested_record):
+        return self.vcf_records_iter.next()
+
+class MockVcfRecord(object):
+    @classmethod
+    def parse_record(cls, vcf_line):
+        vcf_fields = vcf_line.rstrip().split("\t")
+        chrom, pos, rid, ref, alt, qual, rfilter, info, rformat \
+                = vcf_fields[0:9]
+        samples = vcf_fields[9:]
+        return MockVcfRecord(chrom, pos, ref, alt, rid, qual, rfilter, info,
+                             rformat, samples)
+
+    def __init__(self, chrom, pos, ref, alt,
+                 vcf_id=".", qual=".", vcf_filter=".", info=".", vcf_format=".",
+                 samples=None):
+        self.chrom = chrom
+        self.pos = pos
+        self.id = vcf_id
+        self.ref = ref
+        self.alt = alt
+        self.qual = qual
+        self.filter = vcf_filter
+        self.info = info
+        self.format = vcf_format
+        if samples is None:
+            self.samples = []
+        else:
+            self.samples = samples
+
+        tags = self.format.split(":")
+        self.format_set = tags
+
+        self.sample_dict = {}
+        for i, sample in enumerate(self.samples):
+            values = sample.split(":")
+            self.sample_dict[i] = OrderedDict(zip(tags, values))
+
+    def get_empty_record(self):
+        return MockVcfRecord(self.chrom, self.pos, self.ref, self.alt)
+
+    def get_info_dict(self):
+        info_dict = {}
+
+        for key_value in self.info.split(";"):
+            if "=" in key_value:
+                key, value = key_value.split("=")
+                info_dict[key] = value
+            else:
+                info_dict[key_value] = key_value
+
+        return info_dict
+
+    def asText(self):
+        stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
+                       self.qual, self.filter, self.info,
+                       ":".join(self.format_set)]
+
+        for key in self.sample_dict:
+            stringifier.append(":".join(self.sample_dict[key].values()))
+
+        return "\t".join(stringifier) + "\n"
+
+    def __eq__(self, other):
+        return ("^".join([self.chrom,
+                          self.pos,
+                          self.ref,
+                          self.alt]) == other)
+
+class MockFileWriter(object):
+    def __init__(self):
+        self.written = []
+
+    def write(self, text):
+        self.written.append(text)
+
+MOCK_LOG_CALLED = False
 
 def mock_log(msg, *args):
-    global mock_log_called
-    mock_log_called = True
+    global MOCK_LOG_CALLED
+    MOCK_LOG_CALLED = True
 
-def dataframe(input_data, sep="\t", index_col=None):
-    def tupelizer(thing):
-        if isinstance(thing, str) and thing.startswith("(") and thing.endswith(")"):
-            return ast.literal_eval(thing)
-        return thing
-
-    df = pd.read_csv(StringIO(input_data), sep=sep, header=False, dtype='str',
-                     index_col=index_col)
-    new_cols = [tupelizer(col) for col in list(df.columns.values)]
-    df.columns = pd.core.index.Index(new_cols)
-
-    return df
-
-class MockWriter(object):
-    def __init__(self):
-        self._content = []
-        self.wasClosed = False
-
-    def write(self, content):
-        self._content.extend(content.splitlines())
-
-    def lines(self):
-        return self._content
-
-    def close(self):
-        self.wasClosed = True
-
-class MockReader(object):
-    def __init__(self, content):
-        lines = [line + "\n" for line in content.split("\n") if line != ""]
-        self._iter = lines.__iter__()
-        self.wasClosed = False
-
-    def __iter__(self):
-        return self._iter
-
-    def close(self):
-        self.wasClosed=True
-
-class MergeTestCase(unittest.TestCase):
+class MergeTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         self.output = StringIO()
         self.saved_stderr = sys.stderr
@@ -84,8 +198,8 @@ class MergeTestCase(unittest.TestCase):
 
     @staticmethod
     def _change_mock_logger():
-        global mock_log_called
-        mock_log_called = False
+        global MOCK_LOG_CALLED
+        MOCK_LOG_CALLED = False
 
         logger.info = mock_log
         logger.error = mock_log
@@ -98,815 +212,693 @@ class MergeTestCase(unittest.TestCase):
         logger.warning = self.original_warning
         logger.debug = self.original_debug
 
-    def test_combineFormatValues(self):
-        format_tags = "DP:AF:FOO"
-        sample = "23:0.32:1"
-        actual_dict = _combine_format_values(format_tags, sample)
-        expected_dict = OrderedDict([("DP", "23"), ("AF", "0.32"), ("FOO", "1")])
-        self.assertEquals(expected_dict, actual_dict)
-
-
-    def testExecute_multAltsSplitCorrectly(self):
-        vcfRecordFormat = "##jacquard.tag.caller={}\n" + \
-            "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|A|B\n" + \
-            "chr1|42|.|{}|{}|.|.|{}|JQ_AF_{}|0.1|0.2\n"
-        vcfRecordFormat = vcfRecordFormat.replace("|", "\t")
-
+    def test_validate_arguments(self):
         with TempDirectory() as input_file, TempDirectory() as output_file:
-            input_file.write("A.mutect.vcf", vcfRecordFormat.format("MuTect","T","A,C","INFO_Mutect","MT"))
-            input_file.write("A.strelka.vcf", vcfRecordFormat.format("Strelka","T","A,C","INFO_Strelka","SK"))
-            input_file.write("A.varscan.vcf", vcfRecordFormat.format("VarScan","T","A,C","INFO_VarScan","VS"))
+            input_file.write("fileA.vcf",
+                            "##source=strelka\n"
+                            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_A\tSample_B\n"
+                            "chr1\t31\t.\tA\tT\t.\t.\t.\tDP\t23\t52\n")
+            input_file.write("fileB.vcf",
+                            "##source=strelka\n"
+                            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_C\tSample_D\n"
+                            "chr2\t32\t.\tA\tT\t.\t.\t.\tDP\t24\t53\n")
 
             args = Namespace(input=input_file.path,
-                         output=os.path.join(output_file.path,"tmp.vcf"),
-                         allow_inconsistent_sample_sets=False,
-                         keys=None)
-            merge.execute(args, [])
-
-            actual_merged = output_file.read('tmp.vcf').split("\n")
-
-            print actual_merged
-            self.assertEquals(14, len(actual_merged))
-
-    def test_addFiles(self):
-        #pylint: disable=no-self-use
-        rows = ["CHROM", "POS", "REF", "ALT"]
-
-        pivoter = VariantPivoter(rows)
-        sample_A_file = \
-'''CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tSamp1
-1\t23\tA\tT\tfoo\tDP:ESAF\t1:0.2
-2\t24\tA\tT\tfoo\tDP:ESAF\t12:0.2
-3\t25\tA\tT\tfoo\tDP:ESAF\t31:0.2
-4\t26\tA\tT\tfoo\tDP:ESAF\t6:0.2'''
-        sample_B_file = \
-'''CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tSamp2
-1\t23\tA\tT\tfoo\tDP:ESAF\t5:0.2
-2\t24\tA\tT\tfoo\tDP:ESAF\t2:0.2
-3\t25\tA\tT\tfoo\tDP:ESAF\t74:0.2
-4\t26\tA\tT\tfoo\tDP:ESAF\t25:0.2'''
-
-        pivoter.add_file(StringIO(sample_A_file), 0, "MuTect", "file1")
-        pivoter.add_file(StringIO(sample_B_file), 0, "MuTect", "file2")
-
-        actual_df = pivoter._combined_df
-        actual_df.columns.names = [""]
-
-        expected_string = \
-'''CHROM\tPOS\tREF\tALT\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|Samp1\tMuTect|file2|FORMAT\tMuTect|file2|Samp2
-1\t23\tA\tT\t.\tDP:ESAF\t1:0.2\tDP:ESAF\t5:0.2
-2\t24\tA\tT\t.\tDP:ESAF\t12:0.2\tDP:ESAF\t2:0.2
-3\t25\tA\tT\t.\tDP:ESAF\t31:0.2\tDP:ESAF\t74:0.2
-4\t26\tA\tT\t.\tDP:ESAF\t6:0.2\tDP:ESAF\t25:0.2'''
-        expected_df = dataframe(expected_string)
-        expected_df.columns.names = [""]
-
-        tm.assert_frame_equal(expected_df, actual_df)
-
-    def test_validateSampleCallerVcfs(self):
-        dataString1 = \
-'''COORDINATE\tVarScan|foo|FORMAT\tVarScan|sample_A\tVarScan|sample_B\tMuTect|foo|FORMAT\tMuTect|foo|sample_A\tMuTect|foo|sample_A
-1\tGT:ESAF\t10:0.2\t100:0.2
-2\tGT:ESAF\t20:0.2\t200:0.2
-3\tGT:ESAF\t30:0.2\t300:0.2
-4\tGT:ESAF\t40:0.2\t400:0.2'''
-        df = pd.read_csv(StringIO(dataString1), sep="\t", header=False, dtype='str', mangle_dupe_cols=False)
-
-        self.assertRaisesRegexp(JQException,
-                                    "Some samples have calls for the same caller in more than one file. Adjust or move problem input files and try again.",
-                                    merge.validate_sample_caller_vcfs,
-                                    df)
-#         self.assertTrue("Sample [foo|sample_A] appears to be called by [MuTect] in multiple files." in self.output.getvalue())
-        self.assertTrue(mock_log_called)
-
-    def test_isCompatible_raiseIfMissingRequiredColumns(self):
-        rows = ['COORDINATE', 'foo']
-        cols = ['SAMPLE_NAME']
-        pivot_values = ['DP']
-        pivoter = VariantPivoter(rows)
-
-        input_string = \
-'''COORDINATE\tFORMAT\tsample_A\tsample_B
-1\tDP:ESAF\t10:0.2\t100:0.2
-2\tDP:ESAF\t20:0.2\t200:0.2
-3\tDP:ESAF\t30:0.2\t300:0.2
-4\tDP:ESAF\t40:0.2\t400:0.2'''
-        df = dataframe(input_string)
-
-        self.assertRaises(PivotError, pivoter.is_compatible, df)
-
-    def test_checkRequiredColumnsPresent(self):
-        rows = ['Foo']
-        cols = ['SAMPLE_NAME']
-        pivot_values = ['DP']
-        pivoter = VariantPivoter(rows)
-
-        expected_string = \
-'''COORDINATE\tsample_A\tsample_B
-1\t10\t100
-2\t20\t200
-3\t30\t300
-4\t40\t400'''
-        df = dataframe(expected_string)
-
-        self.assertRaises(PivotError, pivoter._check_required_columns_present, df)
-
-    def test_checkPivotIsUnique_DuplicateRaisesError(self):
-        rows = ["Foo", "Bar", "Baz"]
-        cols = ["Blah"]
-        pivot_values = ['DP']
-        pivoter = VariantPivoter(rows)
-
-        expected_string = \
-'''Foo\tBar\tBaz\tBlah
-1\tA\t42\t2
-1\tA\t42\t2'''
-
-        df = dataframe(expected_string)
-
-        self.assertRaises(PivotError, pivoter._check_pivot_is_unique, df)
-
-    def Ytest_validateSampleData_nonUniqueRows(self):
-        #pylint: disable=no-self-use
-        rows = ["CHROM", "POS", "REF", "ALT"]
-
-        input_string = \
-'''CHROM\tPOS\tREF\tALT\tFORMAT\tSAMPLE_DATA
-1\t2\tA\tCG\tGT\t10
-1\t2\tA\tT\tGT\t13
-1\t2\tA\tT\tGT\t12
-2\t3\tC\tG\tGT\t11'''
-        df = dataframe(input_string)
-        combined_df = df
+                             output=os.path.join(output_file.path, "output.vcf"),
+                             tags=None)
+            actual_readers_to_writers, out_files, buffered_readers, format_tag_regex = merge._validate_arguments(args)
 
-        pivoter = VariantPivoter(rows, combined_df)
-        actual_df = pivoter.validate_sample_data()
-
-        expected_string = \
-'''CHROM\tPOS\tREF\tALT\tFORMAT\tSAMPLE_DATA
-1\t2\tA\tCG\tGT\t10
-1\t2\tA\tT\tGT\t^
-2\t3\tC\tG\tGT\t11'''
-        expected_df = dataframe(expected_string)
-
-        tm.assert_frame_equal(expected_df, actual_df)
-
-    ##validate parameters
-    def test_validateParameters_allValid(self):
-        input_keys = ["CHROM", "POS", "REF"]
-        first_line = ["1\t24\tA\tC\tGT:DP\tfoo;bar\t1/1:258"]
-        header_names = "CHROM\tPOS\tREF\tALT\tFORMAT\tINFO\tsample2"
-
-        output, message = validate_parameters(input_keys, first_line, header_names)
-
-        self.assertEqual(0, output)
-
-    def test_validateParameters_invalidKeys(self):
-        input_keys = ["foo"]
-        first_line = ["1\t24\tA\tC\tGT:DP\tfoo;bar\t1/1:258"]
-        header_names = "CHROM\tPOS\tREF\tALT\tFORMAT\tINFO\tsample2"
-
-        output, message = validate_parameters(input_keys, first_line, header_names)
-
-        self.assertEqual(1, output)
-        self.assertEqual("Invalid input parameter(s) ['foo']", message)
-
-    #TODO: move out of reference files
-    def test_determineInputKeysVcf(self):
-        input_file = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_vcf"
-        actual_lst = determine_input_keys(input_file)
-
-        expected_lst = ["CHROM", "POS", "REF", "ALT"]
-
-        self.assertEquals(expected_lst, actual_lst)
-
-    def test_determineInputKeysInvalid(self):
-        input_file = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_invalid"
-
-        self.assertRaises(PivotError, determine_input_keys, input_file)
-
-    ##get headers, readers
-    def test_getHeadersAndReaders(self):
-        input_file = TEST_DIRECTORY + "/functional_tests/test_input/test_input_valid"
-        in_files = sorted(glob.glob(os.path.join(input_file,"*")))
-        sample_file_readers, headers, header_names, first_line, meta_headers = get_headers_and_readers(in_files)
-
-        self.assertEquals([os.path.join(input_file, "foo1.txt")], sample_file_readers)
-        self.assertEquals([3], headers)
-        self.assertEquals("CHROM\tPOS\tREF\tALT\tGENE_SYMBOL\tFORMAT\tSample_2384\tSample_2385", header_names.rstrip())
-        self.assertEquals("1\t2342\tA\tT\tEGFR\tGT:DP\t1/1:241\t0/1:70", first_line[0].rstrip())
-        self.assertEquals(['##FORMAT=<ID=JQ_FOO'], meta_headers)
-
-    def test_getHeadersAndReaders_invalid(self):
-        input_file = TEST_DIRECTORY + "/functional_tests/test_input/test_input_keys_txt"
-        in_files = sorted(glob.glob(os.path.join(input_file,"*")))
-
-        self.assertRaisesRegexp(JQException,
-                                r"VCF file\(s\) .* have no Jacquard tags. Run \[jacquard tag\] on these files and try again.",
-                                get_headers_and_readers,
-                                in_files)
-
-    def test_buildPivoter_invalidHeaderRaisesPivotError(self):
-        input_string = \
-'''COORDINATE\tFORMAT\tsample_A\tsample_B
-1\tGT:ESAF\t10:0.2\t100:0.2
-2\tGT:ESAF\t20:0.2\t200:0.2
-3\tGT:ESAF\t30:0.2\t300:0.2
-4\tGT:ESAF\t40:0.2\t400:0.2'''
-        input_keys = ['CHROM', 'POS']
-
-        self.assertRaises(PivotError, build_pivoter, StringIO(input_string), input_keys, 0)
-
-    ##create_initial_df
-    def test_createInitialDf(self):
-        #pylint: disable=no-self-use
-        reader = StringIO(
-'''#CHROM\tPOS\tREF
-1\t42\tA
-2\t43\tC''')
-
-        actual_df = create_initial_df(reader, 0)
-
-        expected_data = StringIO(
-'''#CHROM\tPOS\tREF\tINFO
-1\t42\tA\t.
-2\t43\tC\t.''')
-
-        expected_df = pd.read_csv(expected_data, sep="\t", header=False, dtype='str')
-
-        tm.assert_frame_equal(expected_df, actual_df)
-
-    def test_mergeSamples_emptyCombinedDf(self):
-        #pylint: disable=no-self-use
-        dataString = \
-'''CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tsample_A\tsample_B
-1\t23\tA\tG\tfoo\tGT:ESAF\t10:0.2\t100:0.2
-2\t24\tA\tG\tfoo\tGT:ESAF\t20:0.2\t200:0.2
-3\t25\tA\tG\tfoo\tGT:ESAF\t30:0.2\t300:0.2
-4\t26\tA\tG\tfoo\tGT:ESAF\t40:0.2\t400:0.2'''
-        df = pd.read_csv(StringIO(dataString), sep="\t", header=False, dtype='str')
-
-        combined_df = pd.DataFrame()
-        actual_df = merge_samples(df, combined_df, ["CHROM", "POS", "REF", "ALT"])
-
-        expected_data = StringIO(
-'''CHROM\tPOS\tREF\tALT\tINFO\tFORMAT\tsample_A\tsample_B
-1\t23\tA\tG\tfoo\tGT:ESAF\t10:0.2\t100:0.2
-2\t24\tA\tG\tfoo\tGT:ESAF\t20:0.2\t200:0.2
-3\t25\tA\tG\tfoo\tGT:ESAF\t30:0.2\t300:0.2
-4\t26\tA\tG\tfoo\tGT:ESAF\t40:0.2\t400:0.2''')
-        expected_df = pd.read_csv(expected_data, sep="\t", header=False, dtype='str')
-
-        tm.assert_frame_equal(expected_df, actual_df)
-
-    def test_addMultAltFlags(self):
-        #pylint: disable=no-self-use
-        dataString = \
-'''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A
-1\t12\tA\tG\t.\tGT:ESAF\t10:0.2
-1\t12\tA\tC\t.\tGT:ESAF\t10:0.2'''
-        df = pd.read_csv(StringIO(dataString), sep="\t", header=False, dtype='str')
-
-        actual_df = _add_mult_alt_flags(df)
-
-        expectedString =  \
-'''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A
-1\t12\tA\tG\tMult_Alt\tGT:ESAF\t10:0.2
-1\t12\tA\tC\tMult_Alt\tGT:ESAF\t10:0.2'''
-        expected_df = pd.read_csv(StringIO(expectedString), sep="\t", header=False, dtype='str')
-        tm.assert_frame_equal(expected_df, actual_df)
-
-    def test_mergeSamples_multAlts(self):
-        #pylint: disable=no-self-use
-        dataString1 = \
-'''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B
-1\t12\tA\tG\t.\tGT:ESAF\t10:0.2\t100:0.2'''
-        df1 = pd.read_csv(StringIO(dataString1), sep="\t", header=False, dtype='str')
-
-        dataString2 = \
-'''CHROM\tPOS\tREF\tALT\tINFO\tfile2|FORMAT\tfile2|sample_C\tfile2|sample_D
-1\t12\tA\tC\t.\tGT:ESAF\t10:0.2\t100:0.2'''
-        df2 = pd.read_csv(StringIO(dataString2), sep="\t", header=False, dtype='str')
-
-        combined_df = df2
-        actual_df = merge_samples(combined_df, df1, ["CHROM", "POS", "REF", "ALT"])
-
-        expectedString = \
-'''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|FORMAT\tfile2|sample_C\tfile2|sample_D
-1\t12\tA\tG\t.\tGT:ESAF\t10:0.2\t100:0.2\tnan\tnan\tnan
-1\t12\tA\tC\t.\tnan\tnan\tnan\tGT:ESAF\t10:0.2\t100:0.2'''
-        expected_df = pd.read_csv(StringIO(expectedString), sep="\t", header=False, dtype='str')
-
-        tm.assert_frame_equal(expected_df, actual_df)
-
-    def test_mergeSamples_populatedCombinedDf(self):
-        #pylint: disable=no-self-use
-        dataString1 = \
-'''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B
-1\t12\tA\tG\tfoo\tGT:ESAF\t10:0.2\t100:0.2
-2\t13\tA\tG\tfoo\tGT:ESAF\t20:0.2\t200:0.2
-3\t14\tA\tG\tfoo\tGT:ESAF\t30:0.2\t300:0.2
-4\t15\tA\tG\tfoo\tGT:ESAF\t40:0.2\t400:0.2'''
-        df1 = pd.read_csv(StringIO(dataString1), sep="\t", header=False, dtype='str')
-
-        dataString2 = \
-'''CHROM\tPOS\tREF\tALT\tINFO\tfile2|FORMAT\tfile2|sample_C\tfile2|sample_D
-1\t12\tA\tG\tfoo\tGT:ESAF\t10:0.2\t100:0.2
-2\t13\tA\tG\tfoo\tGT:ESAF\t20:0.2\t200:0.2
-3\t14\tA\tG\tfoo\tGT:ESAF\t30:0.2\t300:0.2
-4\t15\tA\tG\tfoo\tGT:ESAF\t40:0.2\t400:0.2'''
-        df2 = pd.read_csv(StringIO(dataString2), sep="\t", header=False, dtype='str')
-
-        combined_df = df2
-        actual_df = merge_samples(combined_df, df1, ["CHROM", "POS", "REF", "ALT"])
-
-        expected_data = StringIO(
-'''CHROM\tPOS\tREF\tALT\tINFO\tfile1|FORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|FORMAT\tfile2|sample_C\tfile2|sample_D
-1\t12\tA\tG\tfoo\tGT:ESAF\t10:0.2\t100:0.2\tGT:ESAF\t10:0.2\t100:0.2
-2\t13\tA\tG\tfoo\tGT:ESAF\t20:0.2\t200:0.2\tGT:ESAF\t20:0.2\t200:0.2
-3\t14\tA\tG\tfoo\tGT:ESAF\t30:0.2\t300:0.2\tGT:ESAF\t30:0.2\t300:0.2
-4\t15\tA\tG\tfoo\tGT:ESAF\t40:0.2\t400:0.2\tGT:ESAF\t40:0.2\t400:0.2''')
-        expected_df = pd.read_csv(expected_data, sep="\t", header=False, dtype='str')
-
-        print actual_df
-        tm.assert_frame_equal(expected_df, actual_df)
-
-    ##rearrange columns
-    def test_rearrangeColumns(self):
-        #pylint: disable=no-self-use
-        input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tFORMAT\tsample_A\tsample_B\tINFO
-1\t2\t.\tA\tG\tQUAL\tFILTER\tDP\t57\t57\tfoo
-1\t3\t.\tC\tG\tQUAL\tFILTER\tDP\t58\t57\tfoo
-8\t4\t.\tA\tT\tQUAL\tFILTER\tDP\t59\t57\tfoo
-13\t5\t.\tT\tAA\tQUAL\tFILTER\tDP\t60\t57\tfoo
-13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tDP\t60\t57\tfoo
-'''
-        df = dataframe(input_string)
-        actual_df = rearrange_columns(df)
-
-        expected_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsample_A\tsample_B
-1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tDP\t57\t57
-1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tDP\t58\t57
-8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tDP\t59\t57
-13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tDP\t60\t57
-13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tDP\t60\t57
-'''
-        expected_df = dataframe(expected_string)
-
-        tm.assert_frame_equal(expected_df, actual_df)
-
-    def test_determineCaller_valid(self):
-        reader = MockReader("##foo\n##jacquard.tag.caller=MuTect\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2\n1\t2324\t.\tA\tG,T\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.234,0.124:78:25,312")
-        writer = MockWriter()
-        unknown_callers = 0
-        caller, unknown_callers = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
-        self.assertEquals("MuTect", caller)
-        self.assertEquals(0, unknown_callers)
-
-        self.assertEquals(["##foo", "##jacquard.tag.caller=MuTect", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
-
-    def test_determineCaller_invalid(self):
-        reader = MockReader("##foo\n##jacquard.tag.foo\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2\n1\t2324\t.\tA\tG,T\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.234,0.124:78:25,312")
-        writer = MockWriter()
-        unknown_callers = 2
-        caller, unknown_callers = determine_caller_and_split_mult_alts(reader, writer, unknown_callers)
-        self.assertEquals("unknown", caller)
-        self.assertEquals(3, unknown_callers)
-        self.assertEquals(["##foo", "##jacquard.tag.foo", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1\tSample2","1\t2324\t.\tA\tG\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.234:78:25,312","1\t2324\t.\tA\tT\t.\t.\t.\tJQ_AF_VS:DP:FOO\t0.124:78:25,312"], writer.lines())
-
-    def test_createNewLine(self):
-        fields = ["1", "42", ".", "A", "G,CT", ".", ".", ".", "DP:JQ_VS_AF:AF", "23:0.24,0.32:0.2354,0.324", "23:0.25,0.36:0.254,0.3456"]
-
-        alt_allele_number = 0
-        actual_line = create_new_line(alt_allele_number, fields)
-        expected_line = "\t".join(["1", "42", ".", "A", "G", ".", ".", ".", "DP:JQ_VS_AF:AF", "23:0.24:0.2354,0.324", "23:0.25:0.254,0.3456\n"])
-        self.assertEquals(expected_line, actual_line)
-
-        alt_allele_number = 1
-        actual_line = create_new_line(alt_allele_number, fields)
-        expected_line = "\t".join(["1", "42", ".", "A", "CT", ".", ".", ".", "DP:JQ_VS_AF:AF", "23:0.32:0.2354,0.324", "23:0.36:0.254,0.3456\n"])
-        self.assertEquals(expected_line, actual_line)
-
-    def test_validateSamplesForCallers_valid(self):
-        context = ["jacquard.foo=file1|13523|tumor(file1.vcf)", "jacquard.foo=file2|13523|tumor(file2.vcf)", "jacquard.foo=file3|13523|tumor(file3.vcf)"]
-        value = validate_samples_for_callers(context, False)
-        self.assertEqual(1, value)
-
-    def test_validateSamplesForCallers_validAllow(self):
-        context = ["jacquard.foo=file1|13523|tumor(file1.vcf)", "jacquard.foo=file2|13523|tumor(file2.vcf)", "jacquard.foo=file3|13523|tumor(file3.vcf)"]
-        value = validate_samples_for_callers(context, True)
-        self.assertEqual(1, value)
-
-    def test_validateSamplesForCallers_invalid(self):
-        context = ["jacquard.foo=file1|13523|tumor(file1.vcf)", "jacquard.foo=file2|23|tumor(file2.vcf)", "jacquard.foo=file3|768|tumor(file3.vcf)"]
-
-        self.assertRaisesRegexp(JQException,
-                                "Some samples were not present for all callers. Review log warnings and move/adjust input files as appropriate.",
-                                validate_samples_for_callers,
-                                context, False)
-
-    def test_validateSamplesForCallers_invalidAllow(self):
-        context = ["jacquard.foo=file1|13523|tumor(file1.vcf)", "jacquard.foo=file2|23|tumor(file2.vcf)", "jacquard.foo=file3|768|tumor(file3.vcf)"]
-        value = validate_samples_for_callers(context, True)
-        self.assertEqual(1, value)
-
-    def test_createDict(self):
-        input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B
-1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tDP\t57\t57
-1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tDP\t58\t57
-8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tDP\t59\t57
-13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tDP\t60\t57
-13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tDP\t60\t57
-'''
-        df = dataframe(input_string)
-        row = 0
-        col = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "MuTect|file1|FORMAT", "MuTect|file1|sample_A", "MuTect|file1|sample_B"]
-        expected_file_dict = {'MuTect': [OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_B')])]}
-        file_dict, all_tags = create_dict(df, row, col)
-        self.assertEqual(expected_file_dict, file_dict)
-
-    def test_createDict_multFiles(self):
-        input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tMuTect|file2|FORMAT\tMuTect|file2|sample_A\tMuTect|file2|sample_B
-1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tDP\t57\t57\tDP\t57\t57
-1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tDP\t58\t57\tDP\t57\t57
-8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tDP\t59\t57\tDP\t57\t57
-13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tDP\t60\t57\tDP\t57\t57
-13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tDP\t60\t57\tDP\t57\t57
-'''
-        df = dataframe(input_string)
-        row = 0
-        col = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "MuTect|file1|FORMAT", "MuTect|file1|sample_A", "MuTect|file1|sample_B", "MuTect|file2|FORMAT", "MuTect|file2|sample_A", "MuTect|file2|sample_B"]
-        expected_file_dict = {'MuTect': [OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file1|sample_B')]), OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file2|sample_A')]), OrderedDict([('DP', '57'), ('sample_name', 'MuTect|file2|sample_B')])]}
-        file_dict, all_tags = create_dict(df, row, col)
-        self.assertEqual(expected_file_dict, file_dict)
-
-    def test_cleanupDf(self):
-        #pylint: disable=no-self-use
-        input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|FORMAT\tfile2|sample_A\tfile2|sample_B
-1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tDP:sample_name\t57:file1|sample_A\t57:file1|sample_B\tDP:sample_name\t57:file2|sample_A\t57:file2|sample_B
-1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tDP:sample_name\t58:file1|sample_A\t57:file1|sample_B\tDP:sample_name\t57:file2|sample_A\t57:file2|sample_B
-8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tDP:sample_name\t59:file1|sample_A\t57:file1|sample_B\tDP:sample_name\t57:file2|sample_A\t57:file2|sample_B
-13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tDP:sample_name\t60:file1|sample_A\t57:file1|sample_B\tDP:sample_name\t57:file2|sample_A\t57:file2|sample_B
-13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tnan:sample_name\tnan:file1|sample_A\tnan:file1|sample_B\tDP:sample_name\t57:file2|sample_A\t57:file2|sample_B
-'''
-        df = dataframe(input_string)
-        file_dict = {"file1":"foo", "file2": "foo"}
-        actual_df = cleanup_df(df, file_dict)
-
-        expected_string = \
-        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B\tfile2|sample_A\tfile2|sample_B
-1\t2\t.\tA\tG\t.\t.\tfoo\tDP\t57\t57\t57\t57
-1\t3\t.\tC\tG\t.\t.\tfoo\tDP\t58\t57\t57\t57
-8\t4\t.\tA\tT\t.\t.\tfoo\tDP\t59\t57\t57\t57
-13\t5\t.\tT\tAA\t.\t.\tfoo\tDP\t60\t57\t57\t57
-13\t5\t.\tT\tAAAA\t.\t.\tfoo\t.\t.\t.\t57\t57
-'''
-        expected_df = dataframe(expected_string)
-        tm.assert_frame_equal(expected_df, actual_df)
-
-    def test_cleanupDf_rearranged(self):
-        #pylint: disable=no-self-use
-        input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tMuTect|file2|FORMAT\tMuTect|file2|sample_A\tMuTect|file2|sample_B
-1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tsample_name:DP\t57:MuTect|file1|sample_A\t57:MuTect|file1|sample_B\tDP:sample_name\t57:MuTect|file2|sample_A\t57:MuTect|file2|sample_B
-1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tsample_name:DP\t58:MuTect|file1|sample_A\t57:MuTect|file1|sample_B\tDP:sample_name\t57:MuTect|file2|sample_A\t57:MuTect|file2|sample_B
-8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tsample_name:DP\t59:MuTect|file1|sample_A\t57:MuTect|file1|sample_B\tDP:sample_name\t57:MuTect|file2|sample_A\t57:MuTect|file2|sample_B
-13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tsample_name:DP\t60:MuTect|file1|sample_A\t57:MuTect|file1|sample_B\tDP:sample_name\t57:MuTect|file2|sample_A\t57:MuTect|file2|sample_B
-13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tsample_name:nan\tnan:MuTect|file1|sample_A\tnan:MuTect|file1|sample_B\tDP:sample_name\t57:MuTect|file2|sample_A\t57:MuTect|file2|sample_B
-'''
-        df = dataframe(input_string)
-        file_dict = {"MuTect|file1":"foo", "MuTect|file2": "foo"}
-        actual_df = cleanup_df(df, file_dict)
-
-        expected_string = \
-        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tMuTect|file2|sample_A\tMuTect|file2|sample_B
-1\t2\t.\tA\tG\t.\t.\tfoo\tDP\t57\t57\t57\t57
-1\t3\t.\tC\tG\t.\t.\tfoo\tDP\t58\t57\t57\t57
-8\t4\t.\tA\tT\t.\t.\tfoo\tDP\t59\t57\t57\t57
-13\t5\t.\tT\tAA\t.\t.\tfoo\tDP\t60\t57\t57\t57
-13\t5\t.\tT\tAAAA\t.\t.\tfoo\t.\t.\t.\t57\t57
-'''
-        expected_df = dataframe(expected_string)
-        tm.assert_frame_equal(expected_df, actual_df)
-
-    def test_createMergingDict(self):
-        input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B
-1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP\t57\t57
-1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tJQ_DP\t58\t57
-8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tJQ_DP\t59\t57
-13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tJQ_DP\t60\t57
-13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tnan\tnan\tnan
-'''
-        df = dataframe(input_string)
-        row = 0
-        col = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", "MuTect|file1|sample_A", "MuTect|file1|sample_B"]
-        file_dict = create_merging_dict(df, row, col)
-        expected_file_dict = {'file1|sample_A': [OrderedDict([('JQ_DP', '57')])], 'file1|sample_B': [OrderedDict([('JQ_DP', '57')])]}
-        self.assertEquals(expected_file_dict, file_dict)
-
-    def test_createMergingDict_multipleCallers(self):
-        input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tVarScan|file1|sample_A\tVarScan|file1|sample_B
-1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP_VS:JQ_DP_MT\t.:57\t.:57\t57:.\t57:.
-1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\JQ_DP_VS:JQ_DP_MT\t.:58\t.:57\t57:.\t57:.
-8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\JQ_DP_VS:JQ_DP_MT\t.:59\t.:57\t57:.\t57:.
-13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\JQ_DP_VS:JQ_DP_MT\t.:60\t.:57\t57:.\t57:.
-13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tnan:JQ_DP_MT\t.:nan\t.:nan\t57:.\t57:.
-'''
-        df = dataframe(input_string)
-        row = 0
-        col = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", "MuTect|file1|sample_A", "MuTect|file1|sample_B", "VarScan|file1|sample_A", "VarScan|file1|sample_B"]
-        file_dict = create_merging_dict(df, row, col)
-        expected_file_dict = {'file1|sample_A': [OrderedDict([('JQ_DP_VS', '.'), ('JQ_DP_MT', '57')]), OrderedDict([('JQ_DP_VS', '57'), ('JQ_DP_MT', '.')])], 'file1|sample_B': [OrderedDict([('JQ_DP_VS', '.'), ('JQ_DP_MT', '57')]), OrderedDict([('JQ_DP_VS', '57'), ('JQ_DP_MT', '.')])]}
-        self.assertEquals(expected_file_dict, file_dict)
-
-    def test_removeOldColumns(self):
-        #pylint: disable=no-self-use
-        input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tfile1|sample_A\tfile1|sample_B
-1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t57\t57\t57\t57
-1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t58\t57\t57\t57
-8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t59\t57\t57\t57
-13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t60\t57\t57\t57
-13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\tnan\tnan\t57\t57
-'''
-        df = dataframe(input_string)
-        actual_df = remove_old_columns(df)
-
-        expected_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
-1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t57\t57
-1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t57\t57
-8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t57\t57
-13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t57\t57
-13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t57\t57
-'''
-        expected_df = dataframe(expected_string)
-
-        tm.assert_frame_equal(expected_df, actual_df)
-
-    def test_combineFormatColumns(self):
-        input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B
-1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP:JQ_AF\t57:0.23\t57:0.4
-1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tJQ_DP\t58\t57
-8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tJQ_DP\t59\t57
-13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tJQ_DP\t60\t57
-13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tnan\tnan\tnan
-'''
-        df = dataframe(input_string)
-
-        actual_df = merge.combine_format_columns(df, 0)
-
-        self.assertTrue(mock_log_called)
-
-        expected_string = \
-        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
-1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_AF:JQ_DP\t0.23:57\t0.4:57
-1\t3\t.\tC\tG\t.\t.\tfoo\tJQ_DP\t58\t57
-8\t4\t.\tA\tT\t.\t.\tfoo\tJQ_DP\t59\t57
-13\t5\t.\tT\tAA\t.\t.\tfoo\tJQ_DP\t60\t57
-13\t5\t.\tT\tAAAA\t.\t.\tfoo\t.\t.\t.
-'''
-        expected_df = dataframe(expected_string)
-
-        tm.assert_frame_equal(expected_df, actual_df)
-
-    def test_combineFormatColumns_differentSampleNames(self):
-        input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tVarScan|file1|FORMAT\tVarScan|file1|sample_a\tVarScan|file1|sample_b
-1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t1\t20\tJQ_DP_VS\t6\t25
-1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t2\t21\tJQ_DP_VS\t7\t26
-8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t3\t22\tJQ_DP_VS\t8\t27
-13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t4\t23\tJQ_DP_VS\t9\t28
-13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t5\t24\tJQ_DP_VS\t10\t29
-'''
-        df = dataframe(input_string)
-
-
-        actual_df = merge.combine_format_columns(df, 0)
-
-        self.assertTrue(mock_log_called)
-
-        expected_string = \
-        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_b\tfile1|sample_A\tfile1|sample_B\tfile1|sample_a
-1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t.:25\t1:.\t20:.\t.:6
-1\t3\t.\tC\tG\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t.:26\t2:.\t21:.\t.:7
-8\t4\t.\tA\tT\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t.:27\t3:.\t22:.\t.:8
-13\t5\t.\tT\tAA\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t.:28\t4:.\t23:.\t.:9
-13\t5\t.\tT\tAAAA\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t.:29\t5:.\t24:.\t.:10
-'''
-        expected_df = dataframe(expected_string, "\t", False)
-
-        tm.assert_frame_equal(expected_df, actual_df)
-
-    def test_combineFormatColumns_missingTags(self):
-        input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tVarScan|file1|FORMAT\tVarScan|file1|sample_A\tVarScan|file1|sample_B
-1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t1\t20\t.\t.\t.
-1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t2\t21\tJQ_DP_VS\t7\t26
-8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\t.\t.\t.\tJQ_DP_VS\t8\t27
-13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t4\t23\tJQ_DP_VS\t9\t28
-13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t5\t24\tJQ_DP_VS\t10\t29
-'''
-
-        df = dataframe(input_string)
-
-        actual_df = merge.combine_format_columns(df, 0)
-
-        self.assertTrue(mock_log_called)
-
-        expected_string = \
-        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
-1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_DP_MT\t1\t20
-1\t3\t.\tC\tG\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t2:7\t21:26
-8\t4\t.\tA\tT\t.\t.\tfoo\tJQ_DP_VS\t8\t27
-13\t5\t.\tT\tAA\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t4:9\t23:28
-13\t5\t.\tT\tAAAA\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t5:10\t24:29
-'''
-
-        expected_df = dataframe(expected_string)
-
-        tm.assert_frame_equal(expected_df, actual_df)
-
-    def test_combineFormatColumns_validateOrder(self):
-        input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tVarScan|file1|FORMAT\tVarScan|file1|sample_A\tVarScan|file1|sample_B
-1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t1\t20\tJQ_DP_VS\t6\t25
-1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t2\t21\tJQ_DP_VS\t7\t26
-8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t3\t22\tJQ_DP_VS\t8\t27
-13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t4\t23\tJQ_DP_VS\t9\t28
-13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tJQ_DP_MT\t5\t24\tJQ_DP_VS\t10\t29
-'''
-        df = dataframe(input_string)
-
-        actual_df = merge.combine_format_columns(df, 0)
-
-        self.assertTrue(mock_log_called)
-
-        expected_string = \
-        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile1|sample_A\tfile1|sample_B
-1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t1:6\t20:25
-1\t3\t.\tC\tG\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t2:7\t21:26
-8\t4\t.\tA\tT\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t3:8\t22:27
-13\t5\t.\tT\tAA\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t4:9\t23:28
-13\t5\t.\tT\tAAAA\t.\t.\tfoo\tJQ_DP_MT:JQ_DP_VS\t5:10\t24:29
-'''
-        expected_df = dataframe(expected_string)
-
-        tm.assert_frame_equal(expected_df, actual_df)
-
-    def test_combineFormatColumns_inconsistentSampleSets(self):
-        input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tMuTect|file2|FORMAT\tMuTect|file2|sample_A\tMuTect|file2|sample_B
-1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tDP:JQ_GT\t57:0/1\t57:0/1\tDP:AF:JQ_GT\t57:0.2:0/1\t57:0.2:0/1
-1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tDP:JQ_GT\t58:0/1\t57:0/1\tDP:AF:JQ_GT\t57:0.2:0/1\t57:0.2:0/1
-8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tDP:JQ_GT\t59:0/1\t57:0/1\tDP:AF:JQ_GT\t57:0.2:0/1\t57:0.2:0/1
-13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tDP:JQ_GT\t60:0/1\t57:0/1\tDP:AF:JQ_GT\t57:0.2:0/1\t57:0.2:0/1
-13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tnan\tnan\tnan\tDP:AF:JQ_GT\t57:0.2:0/1\t57:0.2:0/1
-'''
-        df = dataframe(input_string)
-
-        actual_df = merge.combine_format_columns(df, 1)
-
-        self.assertTrue(mock_log_called)
-
-        expected_string = \
-        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_A\tfile2|sample_B\tfile1|sample_A\tfile1|sample_B
-1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
-1\t3\t.\tC\tG\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
-8\t4\t.\tA\tT\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
-13\t5\t.\tT\tAA\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
-13\t5\t.\tT\tAAAA\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t.\t.
-'''
-
-        expected_df = dataframe(expected_string)
-
-        tm.assert_frame_equal(expected_df, actual_df)
-
-    def test_combineFormatColumns_consistentSampleSets(self):
-        input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file1|sample_B\tMuTect|file2|FORMAT\tMuTect|file2|sample_A\tMuTect|file2|sample_B
-1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tDP:JQ_GT\t57:0/1\t57:0/1\tDP:AF:JQ_GT\t57:0.2:0/1\t57:0.2:0/1
-1\t3\t.\tC\tG\tQUAL\tFILTER\tfoo\tDP:JQ_GT\t58:0/1\t57:0/1\tDP:AF:JQ_GT\t57:0.2:0/1\t57:0.2:0/1
-8\t4\t.\tA\tT\tQUAL\tFILTER\tfoo\tDP:JQ_GT\t59:0/1\t57:0/1\tDP:AF:JQ_GT\t57:0.2:0/1\t57:0.2:0/1
-13\t5\t.\tT\tAA\tQUAL\tFILTER\tfoo\tDP:JQ_GT\t60:0/1\t57:0/1\tDP:AF:JQ_GT\t57:0.2:0/1\t57:0.2:0/1
-13\t5\t.\tT\tAAAA\tQUAL\tFILTER\tfoo\tDP:JQ_GT\t61:0/1\t57:0/1\tDP:AF:JQ_GT\t57:0.2:0/1\t57:0.2:0/1
-'''
-        df = dataframe(input_string)
-
-
-        actual_df = merge.combine_format_columns(df, 0)
-
-        self.assertTrue(mock_log_called)
-
-        expected_string = \
-        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_A\tfile2|sample_B\tfile1|sample_A\tfile1|sample_B
-1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
-1\t3\t.\tC\tG\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
-8\t4\t.\tA\tT\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
-13\t5\t.\tT\tAA\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
-13\t5\t.\tT\tAAAA\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1
-'''
-
-        expected_df = dataframe(expected_string)
-
-        tm.assert_frame_equal(expected_df, actual_df)
-
-    def test_combineFormatColumns_differingVariants(self):
-        input_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tMuTect|file1|FORMAT\tMuTect|file1|sample_A\tMuTect|file2|FORMAT\tMuTect|file2|sample_B
-1\t2\t.\tA\tG\tQUAL\tFILTER\tfoo\tnan\tnan\tJQ_DP:JQ_GT\t57:0/1
-1\t3\t.\tA\tG\tQUAL\tFILTER\tfoo\tJQ_DP:JQ_GT\t58:0/1\tnan\tnan
-'''
-        df = dataframe(input_string)
-
-        actual_df = merge.combine_format_columns(df, 0)
-
-        self.assertTrue(mock_log_called)
-
-        expected_string = \
-'''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_B\tfile1|sample_A
-1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_DP:JQ_GT\t57:0/1\t.:.
-1\t3\t.\tA\tG\t.\t.\tfoo\tJQ_DP:JQ_GT\t.:.\t58:0/1
-'''
-
-        expected_df = dataframe(expected_string)
-
-        tm.assert_frame_equal(expected_df, actual_df)
-
-    def test_removeNonJQTags(self):
-        fake_string = \
-        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_A\tfile2|sample_B\tfile1|sample_A\tfile1|sample_B
-1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1'''
-        df = dataframe(fake_string)
-        file_dict = {'file2': [OrderedDict([('DP', '57'), ('JQ_foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('DP', '57'), ('JQ_foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_B')])]}
-        actual_file_dict = remove_non_jq_tags(df, file_dict)
-        expected_file_dict = {'file2': [OrderedDict([('JQ_foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('JQ_foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('JQ_foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('JQ_foo', '.'), ('sample_name', 'file1|sample_B')])]}
-
-        self.assertEquals(expected_file_dict, actual_file_dict)
-
-    def test_removeNonJQTags_noTags(self):
-        fake_string = \
-        '''CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tfile2|sample_A\tfile2|sample_B\tfile1|sample_A\tfile1|sample_B
-1\t2\t.\tA\tG\t.\t.\tfoo\tJQ_GT\t0/1\t0/1\t0/1\t0/1'''
-        df = dataframe(fake_string)
-        file_dict = {'file2': [OrderedDict([('DP', '57'), ('foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('DP', '57'), ('foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('DP', '57'), ('foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('DP', '57'), ('foo', '.'), ('sample_name', 'file1|sample_B')])]}
-        actual_file_dict = remove_non_jq_tags(df, file_dict)
-        expected_file_dict = {'file2': [OrderedDict([('sample_name', 'file2|sample_A')]), OrderedDict([('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('sample_name', 'file1|sample_A')]), OrderedDict([('sample_name', 'file1|sample_B')])]}
-
-        self.assertEquals(expected_file_dict, actual_file_dict)
-
-    def test_addAllTags(self):
-        file_dict = {'file2': [OrderedDict([('JQ_DP', '57'), ('JQ_foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('JQ_foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('JQ_DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('JQ_DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_B')])]}
-        sample_keys = ["JQ_DP", "JQ_foo"]
-
-        actual_file_dict = add_all_tags(file_dict, sample_keys)
-        expected_file_dict = {'file2': [OrderedDict([('JQ_DP', '57'), ('JQ_foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('JQ_foo', '1'), ('sample_name', 'file2|sample_B'), ('JQ_DP', '^')])], 'file1': [OrderedDict([('JQ_DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('JQ_DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_B')])]}
-        self.assertEquals(expected_file_dict, actual_file_dict)
-
-    def test_sortFormatTags(self):
-        file_dict = {'file2': [OrderedDict([('JQ_DP', '57'), ('JQ_foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('JQ_foo', '1'), ('sample_name', 'file2|sample_B'), ('JQ_DP', '.')])], 'file1': [OrderedDict([('JQ_DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('JQ_DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_B')])]}
-
-        sorted_dict = sort_format_tags(file_dict)
-        expected_sorted_dict = {'file2': [OrderedDict([('JQ_DP', '57'), ('JQ_foo', '1'), ('sample_name', 'file2|sample_A')]), OrderedDict([('JQ_DP', '.'), ('JQ_foo', '1'), ('sample_name', 'file2|sample_B')])], 'file1': [OrderedDict([('JQ_DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_A')]), OrderedDict([('JQ_DP', '57'), ('JQ_foo', '.'), ('sample_name', 'file1|sample_B')])]}
-
-        self.assertEquals(expected_sorted_dict, sorted_dict)
-
-    def test_determineMergeContext(self):
-        all_merge_context = []
-        all_merge_column_context = []
-        sample_columns = ["file1|samp1", "file1|samp2"]
-        sample_file = "file1.vcf"
-        count = 1
-        all_merge_context, all_merge_column_context = determine_merge_execution_context(all_merge_context, all_merge_column_context, sample_columns, sample_file, count)
-
-        self.assertEqual(["##jacquard.merge.file1=file1.vcf(['samp1', 'samp2'])"], all_merge_context)
-        self.assertEqual(['##jacquard.merge.sample_column1=file1|samp1(file1.vcf)', '##jacquard.merge.sample_column2=file1|samp2(file1.vcf)'], all_merge_column_context)
-
-    def test_printNewExecutionContext(self):
-        out_file = MockWriter()
-        execution_context = ["##jacquard", "##foo_bar", "##baz"]
-        print_new_execution_context(execution_context, out_file)
-        lines = out_file.lines()
-        self.assertEqual(['##jacquard', '##foo_bar', '##baz'], lines)
-        self.assertEqual(True, out_file.wasClosed)
+            for values in actual_readers_to_writers.values():
+                for vcf_reader in values:
+                    vcf_reader.close()
+
+            self.assertEquals(1, len(actual_readers_to_writers))
+            self.assertEquals(0, len(out_files))
+            self.assertEquals(2, len(buffered_readers))
+            self.assertEquals(merge._DEFAULT_INCLUDED_FORMAT_TAGS, format_tag_regex)
+            self.assertRegexpMatches(actual_readers_to_writers.keys()[0].output_filepath, ".merged.vcf")
+
+    def test_predict_output(self):
+        with TempDirectory() as input_file, TempDirectory() as output_file:
+            input_file.write("A.normalized.jacquardTags.HCsomatic.vcf","##source=strelka\n#colHeader")
+            input_file.write("B.normalized.jacquardTags.HCsomatic.vcf","##source=strelka\n#colHeader")
+            output_file.write("merged.vcf","##source=strelka\n#colHeader")
+            args = Namespace(input=input_file.path,
+                             output=os.path.join(output_file.path,"merged.vcf"))
+
+            desired_output_files = merge._predict_output(args)
+            expected_desired_output_files = set(["merged.vcf"])
+
+            self.assertEquals(expected_desired_output_files, desired_output_files)
+
+    def test_build_coordinates(self):
+        fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
+        fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")
+        fileBrec1 = vcf.VcfRecord("chr2", "12", "A", "G", "id=2")
+        fileBrec2 = vcf.VcfRecord("chr42", "16", "G", "C")
+
+        mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
+                        MockVcfReader(records=[fileBrec1, fileBrec2])]
+
+        actual_coordinates = merge._build_coordinates(mock_readers)
+
+        expected = [fileArec1, fileArec2, fileBrec2]
+        self.assertEquals(expected, actual_coordinates)
+
+    def test_build_coordinates_unsorted(self):
+        fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
+        fileArec2 = vcf.VcfRecord("chr2", "5", "A", "G", "id=1")
+        fileBrec1 = vcf.VcfRecord("chr2", "16", "A", "G", "id=2")
+        fileBrec2 = vcf.VcfRecord("chr2", "12", "G", "C")
+
+        mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
+                        MockVcfReader(records=[fileBrec1, fileBrec2])]
+
+        self.assertRaisesRegexp(utils.JQException,
+                                "One or more VCF files were not sorted.*",
+                                merge._build_coordinates, mock_readers)
+        self.assertTrue(MOCK_LOG_CALLED)
+
+    def test_build_coordinates_multAltsEmpty(self):
+        fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
+        fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")
+        fileBrec1 = vcf.VcfRecord("chr2", "12", "A", "G", "id=2")
+        fileBrec2 = vcf.VcfRecord("chr42", "16", "G", "C")
+
+        mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
+                        MockVcfReader(records=[fileBrec1, fileBrec2])]
+
+        actual_coordinates = merge._build_coordinates(mock_readers)
+
+        actual_multalts = [record for record in actual_coordinates if record.info == "JQ_MULT_ALT_LOCUS"]
+
+        self.assertEquals([], actual_multalts)
+
+    def test_build_coordinates_flagsMultAltsFromDistinctFiles(self):
+        fileA_rec1 = vcf.VcfRecord("chr1", "1", "A", "C")
+        fileA_rec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")
+        fileB_rec1 = vcf.VcfRecord("chr2", "12", "A", "T", "id=2")
+        fileB_rec2 = vcf.VcfRecord("chr42", "16", "G", "C")
+
+        mock_readers = [MockVcfReader(records=[fileA_rec1, fileA_rec2]),
+                        MockVcfReader(records=[fileB_rec1, fileB_rec2])]
+
+        actual_coordinates = merge._build_coordinates(mock_readers)
+
+        actual_multalts = [record for record in actual_coordinates if record.info == "JQ_MULT_ALT_LOCUS"]
+
+        expected = [fileA_rec2, fileB_rec1]
+        self.assertEquals(expected, actual_multalts)
+
+    def test_build_coordinates_flagsMultAltsWithinFile(self):
+        fileA_rec1 = vcf.VcfRecord("chr1", "1", "A", "C")
+        fileA_rec2 = vcf.VcfRecord("chr2", "12", "A", "G,T", "id=1")
+        fileB_rec1 = vcf.VcfRecord("chr3", "12", "A", "T", "id=2")
+        fileB_rec2 = vcf.VcfRecord("chr42", "16", "G", "C")
+
+        mock_readers = [MockVcfReader(records=[fileA_rec1, fileA_rec2]),
+                        MockVcfReader(records=[fileB_rec1, fileB_rec2])]
+
+        actual_coordinates = merge._build_coordinates(mock_readers)
+
+        actual_multalts = [record for record in actual_coordinates if record.info == "JQ_MULT_ALT_LOCUS"]
+
+        expected = [fileA_rec2]
+        self.assertEquals(expected, actual_multalts)
+
+    def test_build_coordinates_flagsMultAltsWithDistinctRefs(self):
+        fileA_rec1 = vcf.VcfRecord("chr1", "1", "A", "C")
+        fileA_rec2 = vcf.VcfRecord("chr2", "2", "A", "G", "id=1")
+        fileB_rec1 = vcf.VcfRecord("chr2", "2", "AT", "T", "id=2")
+        fileB_rec2 = vcf.VcfRecord("chr42", "16", "G", "C")
+
+        mock_readers = [MockVcfReader(records=[fileA_rec1, fileA_rec2]),
+                        MockVcfReader(records=[fileB_rec1, fileB_rec2])]
+
+        actual_coordinates = merge._build_coordinates(mock_readers)
+
+        actual_multalts = [record for record in actual_coordinates if record.info == "JQ_MULT_ALT_LOCUS"]
+
+        expected = [fileA_rec2, fileB_rec1]
+        self.assertEquals(expected, actual_multalts)
+
+    def test_build_merged_record_onlyKeepJQTags(self):
+        OD = OrderedDict
+        coordinate = VcfRecord("chr1", "1", "A", "C", info="baseInfo")
+        samples1 = OD({"SD": {"JQ_foo":"bar1",
+                              "blahJQ_": "bar2"},
+                       "SC": {"JQ_foo":"bar3",
+                              "blah":"bar4"}})
+        samples2 = OD({"SB": {"JQ_foo":"bar5"},
+                       "SA": {"JQ_foo":"bar6"}})
+        record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
+        record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
+
+        sample_list = ["SA", "SB", "SC", "SD"]
+        tags_to_keep = ["JQ_foo", "JQ_foo"]
+        actual_record = merge._build_merged_record(coordinate, [record1, record2], sample_list, tags_to_keep)
+
+        self.assertEquals(OD([("JQ_foo", "bar6")]), actual_record.sample_tag_values["SA"])
+        self.assertEquals(OD([("JQ_foo", "bar5")]), actual_record.sample_tag_values["SB"])
+        self.assertEquals(OD([("JQ_foo", "bar3")]), actual_record.sample_tag_values["SC"])
+        self.assertEquals(OD([("JQ_foo", "bar1")]), actual_record.sample_tag_values["SD"])
+
+    def test_build_merged_record_redundantPatientNames(self):
+        OD = OrderedDict
+        coordinate = VcfRecord("chr1", "1", "A", "C", info="baseInfo")
+        samples1 = OD({"PA|NORMAL": {"JQ_vs":"1"},
+                       "PA|TUMOR": {"JQ_vs":"2"}})
+        samples2 = OD({"PA|NORMAL": {"JQ_mt":"3"},
+                       "PA|TUMOR": {"JQ_mt":"4"}})
+        record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
+        record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
+
+        sample_list = ["PA|NORMAL", "PA|TUMOR"]
+        tags_to_keep = ["JQ_vs", "JQ_mt"]
+        actual_record = merge._build_merged_record(coordinate, [record1, record2], sample_list, tags_to_keep)
+
+        self.assertEquals(OD([("JQ_mt", "3"), ("JQ_vs", "1")]), actual_record.sample_tag_values["PA|NORMAL"])
+        self.assertEquals(OD([("JQ_mt", "4"), ("JQ_vs", "2")]), actual_record.sample_tag_values["PA|TUMOR"])
+
+    def test_build_merged_record_preserveSampleNamesAndOrder(self):
+        OD = OrderedDict
+        coordinate = VcfRecord("chr1", "1", "A", "C", info="baseInfo")
+        samples1 = OD({"SD": {"foo":"bar1"},
+                       "SC": {"foo":"bar2"}})
+        samples2 = OD({"SB": {"foo":"bar3"},
+                       "SA": {"foo":"bar4"}})
+        record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
+        record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
+
+        sample_list = ["SD", "SA", "SC", "SB"]
+        tags_to_keep = ["foo"]
+        actual_record = merge._build_merged_record(coordinate, [record1, record2], sample_list, tags_to_keep)
+
+        self.assertEquals(sample_list, actual_record.sample_tag_values.keys())
+
+    def test_build_merged_record_fillsMissingSamples(self):
+        OD = OrderedDict
+        coordinate = VcfRecord("chr1", "1", "A", "C", info="baseInfo")
+        samples1 = OD({"SA": {"foo":"bar3"},
+                       "SB": {"foo":"bar4"}})
+        record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
+
+        sample_list = ["SA", "SB", "SC", "SD"]
+        tags_to_keep = ["foo"]
+        actual_record = merge._build_merged_record(coordinate, [record1], sample_list, tags_to_keep)
+
+        self.assertEquals(sample_list, actual_record.sample_tag_values.keys())
+
+    def test_build_merged_record_baseInfoCopiedFromCoordinate(self):
+        OD = OrderedDict
+        coordinate = VcfRecord("chr1", "1", "A", "C", info="baseInfo")
+        samples1 = OD({"SA": {},
+                       "SB": {}})
+        samples2 = OD({"SC": {},
+                       "SD": {}})
+        record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
+        record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
+
+        actual_record = merge._build_merged_record(coordinate, [record1, record2], [], [])
+
+        self.assertEquals("chr1", actual_record.chrom)
+        self.assertEquals("1", actual_record.pos)
+        self.assertEquals("A", actual_record.ref)
+        self.assertEquals("C", actual_record.alt)
+        self.assertEquals("baseInfo", actual_record.info)
+
+    def test_build_merged_record_tagsOrdered(self):
+        OD = OrderedDict
+        coordinate = VcfRecord("chr1", "1", "A", "C", info="baseInfo")
+        sampleA_tag_values = OD({"foo":"A1", "bar":"A2"})
+        sampleB_tag_values = OD({"foo":"B1", "bar":"B2"})
+        sampleC_tag_values = OD({"foo":"C1", "bar":"C2"})
+        sampleD_tag_values = OD({"foo":"D1", "bar":"D2"})
+        samples1 = OD({"SA": sampleA_tag_values,
+                       "SB": sampleB_tag_values})
+        samples2 = OD({"SC": sampleC_tag_values,
+                       "SD": sampleD_tag_values})
+        record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
+        record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
+
+        sample_list = ["SA", "SB", "SC", "SD"]
+        tags_to_keep = ["foo", "bar"]
+        actual_record = merge._build_merged_record(coordinate, [record1, record2], sample_list, tags_to_keep)
+
+        self.assertEquals(OD([("bar", "A2"), ("foo", "A1")]), actual_record.sample_tag_values["SA"])
+        self.assertEquals(OD([("bar", "B2"), ("foo", "B1")]), actual_record.sample_tag_values["SB"])
+        self.assertEquals(OD([("bar", "C2"), ("foo", "C1")]), actual_record.sample_tag_values["SC"])
+        self.assertEquals(OD([("bar", "D2"), ("foo", "D1")]), actual_record.sample_tag_values["SD"])
+
+    def test_build_merged_record_heterogeneousTags(self):
+        OD = OrderedDict
+        coordinate = VcfRecord("chr1", "1", "A", "C", info="baseInfo")
+        sampleA_tag_values = OD({"foo":"A1", "bar":"A2"})
+        sampleB_tag_values = OD({"foo":"B1", "bar":"B2"})
+        sampleC_tag_values = OD({"baz":"C1"})
+        sampleD_tag_values = OD({"baz":"D1"})
+        samples1 = OD({"SA": sampleA_tag_values,
+                       "SB": sampleB_tag_values})
+        samples2 = OD({"SC": sampleC_tag_values,
+                       "SD": sampleD_tag_values})
+        record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
+        record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
+
+        sample_list = ["SA", "SB", "SC", "SD"]
+        tags_to_keep = ["foo", "bar", "baz"]
+        actual_record = merge._build_merged_record(coordinate, [record1, record2], sample_list, tags_to_keep)
+
+        self.assertEquals("chr1", actual_record.chrom)
+        self.assertEquals("1", actual_record.pos)
+        self.assertEquals("A", actual_record.ref)
+        self.assertEquals("C", actual_record.alt)
+        self.assertEquals("baseInfo", actual_record.info)
+        self.assertEquals(set(["SA", "SB", "SC", "SD"]), set(actual_record.sample_tag_values.keys()))
+        self.assertEquals(OD([("bar", "A2"), ("baz", "."), ("foo", "A1")]), actual_record.sample_tag_values["SA"])
+        self.assertEquals(OD([("bar", "B2"), ("baz", "."), ("foo", "B1")]), actual_record.sample_tag_values["SB"])
+        self.assertEquals(OD([("bar", "."), ("baz", "C1"), ("foo", ".")]), actual_record.sample_tag_values["SC"])
+        self.assertEquals(OD([("bar", "."), ("baz", "D1"), ("foo", ".")]), actual_record.sample_tag_values["SD"])
+
+    def test_merge_records(self):
+        coordinates = [VcfRecord("chrom", "pos", "ref", "alt")]
+        OD = OrderedDict
+        record1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SA": OD({"foo":"A"}), "SB":OD({"foo":"B"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SC": OD({"foo":"C"}), "SD":OD({"foo":"D"})}))
+        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+        writer = MockFileWriter()
+
+        merge._merge_records(coordinates, buffered_readers, writer, ["SA", "SB", "SC", "SD"], ["foo"])
+        self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD\n", writer.written[0])
+
+    def test_pull_matching_records(self):
+        coordinate = VcfRecord("chrom", "pos", "ref", "alt")
+        OD = OrderedDict
+        record1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SA": OD({"foo":"A"}), "SB":OD({"foo":"B"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SC": OD({"foo":"C"}), "SD":OD({"foo":"D"})}))
+        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+
+        vcf_records = merge._pull_matching_records(coordinate, buffered_readers)
+        self.assertEqual([record1, record2], vcf_records)
+
+    def test_build_sample_list_simpleSampleList(self):
+        reader1 = MockVcfReader("PA.foo.vcf",
+                                sample_names=["Sample_A", "Sample_B"])
+        reader2 = MockVcfReader("PA.bar.vcf",
+                                sample_names=["Sample_A", "Sample_B"])
+        reader3 = MockVcfReader("PB.vcf",
+                                sample_names=["Sample_C", "Sample_D"])
+        readers = [reader1, reader2, reader3]
+        actual_sample_names, dummy = merge._build_sample_list(readers)
+
+        expected_sample_names = ["PA|Sample_A",
+                                 "PA|Sample_B",
+                                 "PB|Sample_C",
+                                 "PB|Sample_D"]
+        self.assertEquals(expected_sample_names, actual_sample_names)
+
+    def test_build_sample_list_patientNamesNaturalOrdered(self):
+        reader1 = MockVcfReader("P10.foo.vcf", sample_names=["S10", "S2"])
+        reader2 = MockVcfReader("P1A.bar.vcf", sample_names=["S10", "S2"])
+        reader3 = MockVcfReader("P1.bar.vcf", sample_names=["S10", "S2"])
+        reader4 = MockVcfReader("P2.vcf", sample_names=["S10", "S2"])
+        readers = [reader1, reader2, reader3, reader4]
+        actual_sample_names, dummy = merge._build_sample_list(readers)
+
+        expected_sample_names = ["P1|S2", "P1|S10",
+                                 "P1A|S2", "P1A|S10",
+                                 "P2|S2", "P2|S10",
+                                 "P10|S2", "P10|S10"]
+        self.assertEquals(expected_sample_names, actual_sample_names)
+
+    def test_build_sample_list_sampleNamesOrdered(self):
+        reader1 = MockVcfReader("P10.foo.vcf", sample_names=["S10", "S1", "S100", "S2"])
+        reader2 = MockVcfReader("P1.foo.vcf", sample_names=["S0", "S1"])
+        readers = [reader1, reader2]
+        actual_sample_names, dummy = merge._build_sample_list(readers)
+
+        expected_sample_names = ["P1|S0", "P1|S1",
+                                 "P10|S1", "P10|S2", "P10|S10", "P10|S100"]
+        self.assertEquals(expected_sample_names, actual_sample_names)
+
+    def test_build_sample_list_mergeMetaheaders(self):
+        reader1 = MockVcfReader("PA.foo.vcf",
+                                sample_names=["Sample_A", "Sample_B"])
+        reader2 = MockVcfReader("PA.bar.vcf",
+                                sample_names=["Sample_A", "Sample_B"])
+        reader3 = MockVcfReader("PB.vcf",
+                                sample_names=["Sample_C", "Sample_D"])
+        readers = [reader1, reader2, reader3]
+
+        dummy, actual_metaheaders = merge._build_sample_list(readers)
+
+        expected_metaheaders = ["##jacquard.merge.sample=<Column=1,Name=PA|Sample_A,Source=PA.foo.vcf|PA.bar.vcf>",
+                                "##jacquard.merge.sample=<Column=2,Name=PA|Sample_B,Source=PA.foo.vcf|PA.bar.vcf>",
+                                "##jacquard.merge.sample=<Column=3,Name=PB|Sample_C,Source=PB.vcf>",
+                                "##jacquard.merge.sample=<Column=4,Name=PB|Sample_D,Source=PB.vcf>"]
+        self.assertEquals(4, len(actual_metaheaders))
+        self.assertEquals(expected_metaheaders, actual_metaheaders)
+
+    def test_create_reader_lists(self):
+        with TempDirectory() as input_file:
+            fileA = input_file.write("fileA.vcf",
+                                    "##source=strelka\n"
+                                    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_A\tSample_B\n"
+                                    "chr1\t31\t.\tA\tT\t.\t.\t.\tDP\t23\t52\n")
+            fileB = input_file.write("fileB.vcf",
+                                    "##source=strelka\n"
+                                    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_C\tSample_D\n"
+                                    "chr2\t32\t.\tA\tT\t.\t.\t.\tDP\t24\t53\n")
+            input_files = [fileA, fileB]
+            buffered_readers, vcf_readers = merge._create_reader_lists(input_files)
+
+            for vcf_reader in vcf_readers:
+                vcf_reader.close()
+
+            self.assertEquals(2, len(buffered_readers))
+            self.assertEquals(2, len(vcf_readers))
+
+    def test_build_info_tags_sorts(self):
+        records = [VcfRecord("1", "42", "A", "C", info="foo"),
+                   VcfRecord("1", "43", "A", "C", info="bar")]
+        actual_tags = merge._build_info_tags(records)
+        self.assertEquals(["bar", "foo"], actual_tags)
+
+    def test_build_info_tags_noDuplicates(self):
+        records = [VcfRecord("1", "42", "A", "C", info="foo"),
+                   VcfRecord("1", "43", "A", "C", info="bar;foo")]
+        actual_tags = merge._build_info_tags(records)
+        self.assertEquals(["bar", "foo"], actual_tags)
+
+    def test_build_info_tags_empty(self):
+        records = [VcfRecord("1", "42", "A", "C", info="")]
+        actual_tags = merge._build_info_tags(records)
+        self.assertEquals([], actual_tags)
+
+    def test_build_info_tags_null(self):
+        records = [VcfRecord("1", "42", "A", "C", info=".")]
+        actual_tags = merge._build_info_tags(records)
+        self.assertEquals([], actual_tags)
+
+    def test_build_format_tags_to_keep_filtersAndSorts(self):
+        meta_headers = ['##FORMAT=<ID=JQ1>',
+                        '##FORMAT=<ID=JQ2>',
+                        '##FORMAT=<ID=JQ3>']
+        vcf_reader = MockVcfReader(metaheaders=meta_headers)
+        format_tags = merge._build_format_tags(["JQ[12]"], [vcf_reader])
+
+        self.assertEquals(["JQ1", "JQ2"], format_tags)
+
+    def test_build_format_tags_to_keep_uniqueSetAcrossMultipleReaders(self):
+        reader1 = MockVcfReader(metaheaders=['##FORMAT=<ID=JQ1>'])
+        reader2 = MockVcfReader(metaheaders=['##FORMAT=<ID=JQ1>', '##FORMAT=<ID=JQ2>'])
+        reader3 = MockVcfReader(metaheaders=['##INFO=<ID=JQ3>'])
+
+        format_tags = merge._build_format_tags(["JQ[123]"], [reader1, reader2, reader3])
+
+        self.assertEquals(["JQ1", "JQ2"], format_tags)
+
+
+    def test_build_contigs(self):
+        records = [VcfRecord("1", "42", "A", "C"),
+                   VcfRecord("4", "42", "A", "C"),
+                   VcfRecord("4", "44", "A", "C"),
+                   VcfRecord("15", "42", "A", "C")]
+        actual_contigs = merge._build_contigs(records)
+
+        expected_contigs = ["1", "4", "15"]
+        self.assertEquals(expected_contigs, actual_contigs)
+
+    def test_compile_metaheaders_preservesExistingMetaheaders(self):
+        reader1 = MockVcfReader(metaheaders=['##FORMAT=<ID=JQ1>'])
+        vcf_readers = [reader1]
+        all_sample_names = []
+        contigs_to_keep = []
+        format_tags_to_keep = []
+        info_tags_to_keep = []
+        existing_metaheaders = ["##existing1", "##existing2"]
+        actual_metaheaders = merge._compile_metaheaders(existing_metaheaders,
+                                                         vcf_readers,
+                                                         all_sample_names,
+                                                         contigs_to_keep,
+                                                         format_tags_to_keep,
+                                                         info_tags_to_keep)
+        self.assertEquals(3, len(actual_metaheaders))
+        metaheaders_iter = iter(actual_metaheaders)
+        self.assertEquals("##existing1", metaheaders_iter.next())
+        self.assertEquals("##existing2", metaheaders_iter.next())
+        self.assertRegexpMatches(metaheaders_iter.next(), "^#CHROM")
+
+    def test_compile_metaheaders_retainsFormatMetaheaders(self):
+        reader1 = MockVcfReader(metaheaders=['##FORMAT=<ID=JQ1,Description="JQA">',
+                                             '##FORMAT=<ID=JQ2,Description="JQB">',
+                                             '##FORMAT=<ID=JQ3,Description="JQC">'])
+        vcf_readers = [reader1]
+        all_sample_names = []
+        contigs_to_keep = []
+        format_tags_to_keep = ["JQ1", "JQ3"]
+        info_tags_to_keep = []
+        existing_metaheaders = []
+        actual_metaheaders = merge._compile_metaheaders(existing_metaheaders,
+                                                         vcf_readers,
+                                                         all_sample_names,
+                                                         contigs_to_keep,
+                                                         format_tags_to_keep,
+                                                         info_tags_to_keep)
+        self.assertEquals(3, len(actual_metaheaders))
+        metaheaders_iter = iter(actual_metaheaders)
+        self.assertRegexpMatches(metaheaders_iter.next(), "##FORMAT.*JQA")
+        self.assertRegexpMatches(metaheaders_iter.next(), "##FORMAT.*JQC")
+        self.assertRegexpMatches(metaheaders_iter.next(), "^#CHROM")
+
+    def test_compile_metaheaders_retainsInfoMetaheaders(self):
+        reader1 = MockVcfReader(metaheaders=['##INFO=<ID=JQ1,Description="JQA">',
+                                             '##INFO=<ID=JQ2,Description="JQB">',
+                                             '##INFO=<ID=JQ3,Description="JQC">'])
+        vcf_readers = [reader1]
+        all_sample_names = []
+        contigs_to_keep = []
+        format_tags_to_keep = []
+        info_tags_to_keep = ["JQ1", "JQ3", merge._MULT_ALT_TAG]
+        existing_metaheaders = []
+        actual_metaheaders = merge._compile_metaheaders(existing_metaheaders,
+                                                         vcf_readers,
+                                                         all_sample_names,
+                                                         contigs_to_keep,
+                                                         format_tags_to_keep,
+                                                         info_tags_to_keep)
+        self.assertEquals(4, len(actual_metaheaders))
+        metaheaders_iter = iter(actual_metaheaders)
+        self.assertRegexpMatches(metaheaders_iter.next(), "##INFO.*JQA")
+        self.assertRegexpMatches(metaheaders_iter.next(), "##INFO.*JQC")
+        self.assertRegexpMatches(metaheaders_iter.next(), merge._MULT_ALT_HEADER)
+        self.assertRegexpMatches(metaheaders_iter.next(), "^#CHROM")
+
+    def test_compile_metaheaders_retainsContigMetaheaders(self):
+        reader1 = MockVcfReader(metaheaders=['##contig=<ID=chr1,Description="chromosome 1">',
+                                             '##contig=<ID=chr2,Description="chromosome 2">',
+                                             '##contig=<ID=chr4,Description="chromosome 2">',
+                                             '##contig=<ID=chr11,Description="chromosome 11">'])
+        vcf_readers = [reader1]
+        all_sample_names = []
+        contigs_to_keep = ["chr1", "chr2", "chr11"]
+        format_tags_to_keep = []
+        info_tags_to_keep = []
+        existing_metaheaders = []
+        actual_metaheaders = merge._compile_metaheaders(existing_metaheaders,
+                                                         vcf_readers,
+                                                         all_sample_names,
+                                                         contigs_to_keep,
+                                                         format_tags_to_keep,
+                                                         info_tags_to_keep)
+
+        self.assertEquals(4, len(actual_metaheaders))
+        metaheaders_iter = iter(actual_metaheaders)
+        self.assertRegexpMatches(metaheaders_iter.next(), "##contig.*chromosome 1")
+        self.assertRegexpMatches(metaheaders_iter.next(), "##contig.*chromosome 2")
+        self.assertRegexpMatches(metaheaders_iter.next(), "##contig.*chromosome 11")
+        self.assertRegexpMatches(metaheaders_iter.next(), "^#CHROM")
+
+    def test_compile_metaheaders_noContigMetaheaders(self):
+        reader1 = MockVcfReader(metaheaders=['##foo'])
+        vcf_readers = [reader1]
+        all_sample_names = []
+        contigs_to_keep = ["chr1", "chr2", "chr11"]
+        format_tags_to_keep = []
+        info_tags_to_keep = []
+        existing_metaheaders = []
+        actual_metaheaders = merge._compile_metaheaders(existing_metaheaders,
+                                                         vcf_readers,
+                                                         all_sample_names,
+                                                         contigs_to_keep,
+                                                         format_tags_to_keep,
+                                                         info_tags_to_keep)
+
+        self.assertEquals(1, len(actual_metaheaders))
+        metaheaders_iter = iter(actual_metaheaders)
+        self.assertRegexpMatches(metaheaders_iter.next(), "^#CHROM")
+
+    def test_compile_metaheaders_addsSampleNamesToColumnHeader(self):
+        reader1 = MockVcfReader()
+        vcf_readers = [reader1]
+        all_sample_names = ["SA", "SB"]
+        contigs_to_keep = []
+        format_tags_to_keep = []
+        info_tags_to_keep = []
+        existing_metaheaders = []
+        actual_metaheaders = merge._compile_metaheaders(existing_metaheaders,
+                                                         vcf_readers,
+                                                         all_sample_names,
+                                                         contigs_to_keep,
+                                                         format_tags_to_keep,
+                                                         info_tags_to_keep)
+        self.assertEquals(1, len(actual_metaheaders))
+        metaheaders_iter = iter(actual_metaheaders)
+        self.assertRegexpMatches(metaheaders_iter.next(), "#CHROM.*SA\tSB")
+
+    def test_compile_metaheaders_ordersHeaders(self):
+        reader1 = MockVcfReader(metaheaders=['##FORMAT=<ID=JQ1,Description="JQA">'])
+        reader2 = MockVcfReader(metaheaders=['##INFO=<ID=JQ2,Description="JQB">'])
+
+        vcf_readers = [reader1, reader2]
+        all_sample_names = []
+        contigs_to_keep = []
+        format_tags_to_keep = ["JQ1"]
+        info_tags_to_keep = ["JQ2"]
+        incoming_metaheaders = ["##foo"]
+        actual_metaheaders = merge._compile_metaheaders(incoming_metaheaders,
+                                                         vcf_readers,
+                                                         all_sample_names,
+                                                         contigs_to_keep,
+                                                         format_tags_to_keep,
+                                                         info_tags_to_keep)
+        self.assertEquals(4, len(actual_metaheaders))
+        metaheaders_iter = iter(actual_metaheaders)
+        self.assertRegexpMatches(metaheaders_iter.next(), "##foo")
+        self.assertRegexpMatches(metaheaders_iter.next(), "##INFO.*JQB")
+        self.assertRegexpMatches(metaheaders_iter.next(), "##FORMAT.*JQA")
+        self.assertRegexpMatches(metaheaders_iter.next(), "#CHROM.*")
+
+    def test_execute(self):
+        vcf_content1 = ('''##source=strelka
+##contig=<ID=chr1,Number=1>
+##contig=<ID=chr2,Number=1>
+##FORMAT=<ID=JQ_Foo1,Number=1,Type=Float,Description="foo",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_Bar1,Number=1,Type=Float,Description="bar",Source="Jacquard",Version=0.21>
+##file1
+#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleA|SampleB
+chr1|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_1_1:A_1_2|B_1_1:B_1_2
+chr1|1|.|A|T|.|.|INFO|JQ_Foo1|A_2|B_2
+chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
+''').replace('|', "\t")
+        vcf_content2 = ('''##source=strelka
+##contig=<ID=chr1,Number=1>
+##contig=<ID=chr2,Number=1>
+##file2
+##FORMAT=<ID=JQ_Foo2,Number=1,Type=Float,Description="foo",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_Bar2,Number=1,Type=Float,Description="bar",Source="Jacquard",Version=0.21>
+#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleA|SampleB
+chr1|10|.|A|C|.|.|INFO|JQ_Foo2|C_1_1|D_1_2
+chr2|10|.|A|C|.|.|INFO|JQ_Bar2|C_2|D_2
+''').replace('|', "\t")
+
+        with TempDirectory() as input_file, TempDirectory() as output_file:
+            input_file.write("P1.fileA.vcf", vcf_content1)
+            input_file.write("P1.fileB.vcf", vcf_content2)
+            args = Namespace(input=input_file.path,
+                             output=os.path.join(output_file.path, "fileC.vcf"),
+                             tags=None)
+
+            merge.execute(args, ["##execution_header1", "##execution_header2"])
+
+            output_file.check("fileC.vcf")
+            with open(os.path.join(output_file.path, "fileC.vcf")) as actual_output_file:
+                actual_output_lines = actual_output_file.readlines()
+
+        self.assertEquals(18, len(actual_output_lines))
+        actual_lines_iter = iter(actual_output_lines)
+        self.assertEquals("##fileformat=VCFv4.2\n", actual_lines_iter.next())
+        self.assertEquals("##execution_header1\n", actual_lines_iter.next())
+        self.assertEquals("##execution_header2\n", actual_lines_iter.next())
+        self.assertRegexpMatches(actual_lines_iter.next(), "##jacquard.merge.sample=<Column=1.*>\n")
+        self.assertRegexpMatches(actual_lines_iter.next(), "##jacquard.merge.sample=<Column=2.*>\n")
+        self.assertRegexpMatches(actual_lines_iter.next(), "##contig=<ID=chr1,Number=1>\n")
+        self.assertRegexpMatches(actual_lines_iter.next(), "##contig=<ID=chr2,Number=1>\n")
+        self.assertRegexpMatches(actual_lines_iter.next(), '##INFO=<ID=JQ_MULT_ALT_LOCUS.*>\n')
+        self.assertRegexpMatches(actual_lines_iter.next(), '##FORMAT=<ID=JQ_Bar1.*>\n')
+        self.assertRegexpMatches(actual_lines_iter.next(), '##FORMAT=<ID=JQ_Bar2.*>\n')
+        self.assertRegexpMatches(actual_lines_iter.next(), '##FORMAT=<ID=JQ_Foo1.*>\n')
+        self.assertRegexpMatches(actual_lines_iter.next(), '##FORMAT=<ID=JQ_Foo2.*>\n')
+        self.assertRegexpMatches(actual_lines_iter.next(), "#CHROM\t.*P1|SampleA\tP1|SampleB\n")
+        self.assertEquals("chr1\t1\t.\tA\tC\t.\t.\tJQ_MULT_ALT_LOCUS\tJQ_Bar1:JQ_Foo1\tA_1_2:A_1_1\tB_1_2:B_1_1\n", actual_lines_iter.next())
+        self.assertEquals("chr1\t1\t.\tA\tT\t.\t.\tJQ_MULT_ALT_LOCUS\tJQ_Foo1\tA_2\tB_2\n", actual_lines_iter.next())
+        self.assertEquals("chr1\t10\t.\tA\tC\t.\t.\t.\tJQ_Foo2\tC_1_1\tD_1_2\n", actual_lines_iter.next())
+        self.assertEquals("chr2\t1\t.\tA\tC\t.\t.\t.\tJQ_Bar1:JQ_Foo1\tA_3_2:A_3_1\tB_3_2:B_3_1\n", actual_lines_iter.next())
+        self.assertEquals("chr2\t10\t.\tA\tC\t.\t.\t.\tJQ_Bar2\tC_2\tD_2\n", actual_lines_iter.next())
+
+    def test_execute_includeFormatIds(self):
+        vcf_content1 = ('''##source=strelka
+##contig=<ID=chr1,Number=1>
+##contig=<ID=chr2,Number=1>
+##FORMAT=<ID=JQ_Foo,Number=1,Type=Float,Description="foo",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_Foo1,Number=1,Type=Float,Description="foo",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=Bar,Number=1,Type=Float,Description="bar",Source="Jacquard",Version=0.21>
+##file1
+#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleA|SampleB
+chr1|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_1_1:A_1_2|B_1_1:B_1_2
+chr1|1|.|A|T|.|.|INFO|JQ_Foo1|A_2|B_2
+chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
+''').replace('|', "\t")
+        with TempDirectory() as input_file, TempDirectory() as output_file:
+            input_file.write("P1.fileA.vcf", vcf_content1)
+            args = Namespace(input=input_file.path,
+                             output=os.path.join(output_file.path, "fileB.vcf"),
+                             tags="JQ_Foo,Bar")
+
+            merge.execute(args, ["##extra_header1", "##extra_header2"])
+
+            output_file.check("fileB.vcf")
+            with open(os.path.join(output_file.path, "fileB.vcf")) as actual_output_file:
+                actual_output_lines = actual_output_file.readlines()
+
+        expected_output_headers = ["##fileformat=VCFv4.2\n",
+                                   "##extra_header1\n",
+                                   "##extra_header2\n",
+                                   "##jacquard.merge.sample=<Column=1,Name=P1|SampleA,Source=P1.fileA.vcf>\n",
+                                   "##jacquard.merge.sample=<Column=2,Name=P1|SampleB,Source=P1.fileA.vcf>\n",
+                                   '##contig=<ID=chr1,Number=1>\n',
+                                   '##contig=<ID=chr2,Number=1>\n',
+                                   '##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,Description="dbSNP Membership",Source="Jacquard",Version="0.21">\n',
+                                   '##FORMAT=<ID=Bar,Number=1,Type=Float,Description="bar",Source="Jacquard",Version=0.21>\n',
+                                   '##FORMAT=<ID=JQ_Foo,Number=1,Type=Float,Description="foo",Source="Jacquard",Version=0.21>\n',
+                                   "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tP1|SampleA\tP1|SampleB\n"]
+
+        self.assertEquals(expected_output_headers, actual_output_lines[0:len(expected_output_headers)])
 
 class MergeFunctionalTestCase(test_case.JacquardBaseTestCase):
-    def xtest_merge(self):
+    def test_merge(self):
         with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir, "functional_tests", "04_merge")
-            input_dir = os.path.join(module_testdir, "input")
-            output_dir = os.path.join(output_dir.path, "tiny_strelka.merged.vcf")
+            input_file = os.path.join(module_testdir, "input")
+            output_file = os.path.join(output_dir.path, "merged.vcf")
 
-            command = ["merge", input_dir, output_dir, "--force"]
+            command = ["merge", input_file, output_file, "--force"]
             expected_dir = os.path.join(module_testdir, "benchmark")
 
             self.assertCommand(command, expected_dir)
+
+class BufferedReaderTestCase(test_case.JacquardBaseTestCase):
+    def test_get_sample_info_advancesCurrentElementWhenMatched(self):
+        reader = [1, 5, 10, 15]
+        buffered_reader = merge._BufferedReader(iter(reader))
+
+        self.assertEquals(None, buffered_reader.next_if_equals(0))
+        self.assertEquals(None, buffered_reader.next_if_equals(5))
+        self.assertEquals(1, buffered_reader.next_if_equals(1))
+        self.assertEquals(None, buffered_reader.next_if_equals(1))
+        self.assertEquals(5, buffered_reader.next_if_equals(5))
+        self.assertEquals(10, buffered_reader.next_if_equals(10))
+        self.assertEquals(15, buffered_reader.next_if_equals(15))
+        self.assertEquals(None, buffered_reader.next_if_equals(15))
+        self.assertEquals(None, buffered_reader.next_if_equals(42))
+        

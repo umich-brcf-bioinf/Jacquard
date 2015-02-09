@@ -15,18 +15,9 @@
 
 
 from __future__ import absolute_import, print_function
+
 import argparse
 import distutils.dir_util
-import jacquard.command_validator as command_validator
-import jacquard.consensus as consensus
-import jacquard.expand as expand
-import jacquard.filter_hc_somatic as filter_hc_somatic
-import jacquard.logger as logger
-import jacquard.merge as merge
-import jacquard.merge2 as merge2
-import jacquard.normalize as normalize
-import jacquard.tag as tag
-import jacquard.utils as utils
 import os
 import re
 import shutil
@@ -34,12 +25,21 @@ import signal
 import sys
 import traceback
 
+import jacquard.command_validator as command_validator
+import jacquard.consensus as consensus
+import jacquard.expand as expand
+import jacquard.filter_hc_somatic as filter_hc_somatic
+import jacquard.logger as logger
+import jacquard.merge as merge
+import jacquard.normalize as normalize
+import jacquard.tag as tag
+import jacquard.utils as utils
+
 
 _SUBCOMMANDS = [normalize,
                 tag,
                 filter_hc_somatic,
                 merge,
-                merge2,
                 consensus,
                 expand]
 

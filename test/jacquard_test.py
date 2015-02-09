@@ -225,7 +225,7 @@ class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
             normalize_output = os.path.join(output_dir.path, "normalize")
             tag_output = os.path.join(output_dir.path, "tag")
             filter_output = os.path.join(output_dir.path, "filter_hc_somatic")
-            merge_output = os.path.join(output_dir.path, "merge2", "merged.vcf")
+            merge_output = os.path.join(output_dir.path, "merge", "merged.vcf")
             consensus_output = os.path.join(output_dir.path, "consensus", "consensus.vcf")
             expanded_output = os.path.join(output_dir.path, "expand", "expanded.tsv")
 
@@ -245,7 +245,7 @@ class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
 
             commands = [["tag", normalize_output, tag_output, "--force"],
                         ["filter_hc_somatic", tag_output, filter_output, "--force"],
-                        ["merge2", filter_output, merge_output, "--force"],
+                        ["merge", filter_output, merge_output, "--force"],
                         ["consensus", merge_output, consensus_output, "--force"],
                         ["expand", consensus_output, expanded_output, "--force"]]
 #  
