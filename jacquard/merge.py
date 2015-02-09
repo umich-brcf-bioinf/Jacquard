@@ -693,7 +693,6 @@ def execute(args, execution_context):
     output_path = os.path.abspath(args.output)
 
     output_file, outfile_name = os.path.split(output_path)
-    utils.validate_directories(input_file, output_file)
     input_keys = args.keys.split(",") if args.keys else determine_input_keys(input_file)
     all_inconsistent_sample_sets = args.allow_inconsistent_sample_sets
 

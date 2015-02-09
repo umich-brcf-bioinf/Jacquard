@@ -10,7 +10,6 @@ _CALLERS = [Varscan(), Strelka(), Mutect()]
 
 def get_caller(metaheaders, column_header, name):
     for caller in _CALLERS:
-        #TODO: (cgates): this should pass vcf instead of header
         if caller.validate_input_file(metaheaders, column_header):
             logger.debug("VCF [{}] recognized by caller [{}]",
                          name,

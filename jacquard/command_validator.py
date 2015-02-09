@@ -1,47 +1,59 @@
 from __future__ import absolute_import
-
-import glob
-import os
 import errno
-
+import glob
 import jacquard.utils as utils
+import os
+import time
 
-TMP_DIR_NAME = "jacquard_tmp"
+
+_TEMP_WORKING_DIR_FORMAT = "jacquard.{}.{}.tmp"
 
 
-def preflight(args, module):
-    input_path = args.input
-    output_path = os.path.abspath(args.original_output)
-    module_name = args.subparser_name
-    force_flag = args.force
-    temp_working_dir = args.temp_working_dir
-    required_input_type, required_output_type =\
-                                    module.get_required_input_output_types()
+def _actual_type(path):
+    if os.path.isdir(path):
+        return "directory"
+    else:
+        return "file"
 
-    _check_input_exists(input_path)
-    _check_input_readable(input_path)
-    _check_input_correct_type(input_path, required_input_type)
-    _check_output_exists(output_path, required_output_type)
-    _create_temp_working_dir(temp_working_dir)
 
-    predicted_output = module.report_prediction(args)
-    _check_overwrite_existing_files(output_path,
-                                    predicted_output,
-                                    module_name,
-                                    force_flag)
+def _build_collision_message(command, collisions):
+    total_collisions = len(collisions)
+    if total_collisions == 1:
+        return ("The {} command would "
+                "overwrite the existing file [{}]; review "
+                "command/output dir to avoid overwriting or "
+                "use the flag '--force'.").format(command,
+                                                  collisions[0])
+    cutoff = 5
+    collision_list = ", ".join(collisions[0:min(cutoff, total_collisions)])
+    if total_collisions > cutoff:
+        omitted = total_collisions - cutoff
+        collision_list += ", ...({} file(s) omitted)".format(omitted)
+    return ("The {} command would "
+            "overwrite {} existing files [{}]; review "
+            "command/output dir to avoid overwriting or "
+            "use the flag '--force'.").format(command,
+                                              total_collisions,
+                                              collision_list)
 
-def _makepath(path):
-    try:
-        os.makedirs(path)
-    except OSError as exc:
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else: raise
+
+def _check_input_correct_type(module_name, input_path, required_type):
+    actual_type = _actual_type(input_path)
+    if required_type != actual_type:
+        raise utils.UsageError(("The {} command requires a {} as "
+                                "input, but the specified input [{}] is a {}. "
+                                "Review inputs and try again.") \
+                                 .format(module_name,
+                                         required_type,
+                                         input_path,
+                                         actual_type))
+
 
 def _check_input_exists(input_path):
     if not os.path.exists(input_path):
         raise utils.UsageError(("Specified input [{}] does not exist. Review "\
                                  "inputs and try again.").format(input_path))
+
 
 def _check_input_readable(input_path):
     try:
@@ -53,51 +65,22 @@ def _check_input_readable(input_path):
         raise utils.UsageError(("Specified input [{}] cannot be read. Review "
                                 "inputs and try again.").format(input_path))
 
-def _check_input_correct_type(input_path, required_type):
-    if required_type != _actual_type(input_path):
-        raise utils.UsageError(("Specified input [{}] does not match "
-                                "command's required file type. "
-                                "Review inputs and try again.") \
-                                 .format(input_path))
 
-def _check_output_exists(output_path, required_type):
-    if not os.path.exists(output_path):
-        _create_parent_dirs(output_path)
-    else:
-        _check_output_correct_type(output_path, required_type)
-
-def _create_parent_dirs(output_path):
-    output_path = os.path.abspath(output_path)
-    parent_path = os.path.dirname(output_path)
-    try:
-        _makepath(parent_path)
-    except OSError:
-        raise utils.UsageError(("Specified output [{}] does not exist "
-                                "and cannot be created. Review inputs "
-                                "and try again.").format(output_path))
-
-def _check_output_correct_type(output_path, required_type):
-    if required_type != _actual_type(output_path):
-        raise utils.UsageError(("Specified output [{}] does not match "
-                                "command's required file type. "
+def _check_output_correct_type(module_name, output_path, required_type):
+    actual_type = _actual_type(output_path)
+    if required_type != actual_type:
+        raise utils.UsageError(("The {} command outputs a {}, but the "
+                                "specified output [{}] is a {}. "
                                 "Review inputs and try again.")\
-                                 .format(output_path))
+                                 .format(module_name,
+                                         required_type,
+                                         output_path,
+                                         actual_type))
 
-def _actual_type(path):
-    if os.path.isdir(path):
-        return "directory"
-    else:
-        return "file"
 
-def _create_temp_working_dir(temp_working_dir):
-    try:
-        _makepath(temp_working_dir)
-    except OSError:
-        parent_dir = os.path.dirname(temp_working_dir)
-        raise utils.UsageError(("A temp directory does not exist in "
-                                "[{}] and cannot be created. Review "
-                                "inputs and try again.")\
-                                .format(parent_dir))
+def _check_output_exists(module_name, output_path, required_type):
+    if os.path.exists(output_path):
+        _check_output_correct_type(module_name, output_path, required_type)
 
 def _check_overwrite_existing_files(output, predicted_output, command, force=0):
     if not os.path.isdir(output):
@@ -106,11 +89,91 @@ def _check_overwrite_existing_files(output, predicted_output, command, force=0):
 
     existing_output = set([os.path.basename(i) for i in existing_output_paths])
 
-    intersection = existing_output.intersection(predicted_output)
-    if intersection and not force:
-        raise utils.UsageError(("ERROR: The command [{}] would "
-                                "overwrite existing files {}; review "
-                                "command/output dir to avoid overwriting or "
-                                "use the flag '--force'. Type 'jacquard -h' "
-                                "for more details").format(command,
-                                                           list(intersection)))
+    collisions = sorted(list(existing_output.intersection(predicted_output)))
+    if collisions and not force:
+        message = _build_collision_message(command, collisions)
+        raise utils.UsageError(message)
+
+
+def _check_there_will_be_output(module_name, input_path, predicted_output):
+    if not predicted_output:
+        message = ("Executing the {} command with the input [{}] would not "
+                   "create any output files. Review inputs and try again.")\
+                   .format(module_name, input_path)
+        raise utils.UsageError(message)
+
+
+def _create_temp_working_dir(args):
+    try:
+        _makepath(args.temp_working_dir)
+        if args.required_output_type == "directory":
+            _makepath(args.output)
+    except OSError:
+        parent_dir = os.path.dirname(args.temp_working_dir)
+        raise utils.UsageError(("Jacquard cannot write to output directory "
+                                "[{}]. Review inputs and try again.")\
+                                .format(parent_dir))
+
+
+def _get_temp_working_dir(original_output, required_output):
+    abs_original_output = os.path.abspath(original_output)
+    pid = os.getpid()
+    microseconds_since_epoch = int(time.time() * 1000 * 1000)
+    dir_name = _TEMP_WORKING_DIR_FORMAT.format(str(pid),
+                                               str(microseconds_since_epoch))
+
+    place_temp_inside_output = True
+    if required_output == "file":
+        place_temp_inside_output = False
+    elif required_output == "directory" and not os.path.isdir(original_output):
+        place_temp_inside_output = False
+
+    if place_temp_inside_output:
+        base_dir = abs_original_output
+        temp_working_dir = os.path.join(base_dir, dir_name)
+        new_output = temp_working_dir
+    else:
+        base_dir = os.path.dirname(abs_original_output)
+        temp_working_dir = os.path.join(base_dir, dir_name)
+        new_output = os.path.join(temp_working_dir,
+                                  os.path.basename(abs_original_output))
+
+    return temp_working_dir, new_output
+
+
+def _makepath(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else: raise
+
+
+def preflight(args, module):
+    args.original_output = args.output
+    output_path = os.path.abspath(args.original_output)
+    (args.required_input_type,
+     args.required_output_type) = module.get_required_input_output_types()
+    (args.temp_working_dir,
+     args.output) = _get_temp_working_dir(args.original_output,
+                                          args.required_output_type)
+    _check_input_exists(args.input)
+    _check_input_readable(args.input)
+    _check_input_correct_type(args.subparser_name,
+                              args.input,
+                              args.required_input_type)
+    _check_output_exists(args.subparser_name,
+                         output_path,
+                         args.required_output_type)
+    _create_temp_working_dir(args)
+
+    predicted_output = module.report_prediction(args)
+    _check_there_will_be_output(args.subparser_name,
+                                args.input,
+                                predicted_output)
+    _check_overwrite_existing_files(output_path,
+                                    predicted_output,
+                                    args.subparser_name,
+                                    args.force)
+

@@ -7,8 +7,8 @@ import sys
 import unittest
 
 import jacquard.jacquard as jacquard
+import jacquard.logger as logger
 import jacquard.vcf as vcf
-
 
 class JacquardBaseTestCase(unittest.TestCase):
     def setUp(self):
@@ -18,6 +18,7 @@ class JacquardBaseTestCase(unittest.TestCase):
         sys.stderr = self.output
 
     def tearDown(self):
+        logger.SHOW_WARNING = False
         self.output.close()
         sys.stderr = self.saved_stderr
         unittest.TestCase.tearDown(self)

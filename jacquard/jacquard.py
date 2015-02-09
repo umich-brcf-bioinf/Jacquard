@@ -32,7 +32,6 @@ import re
 import shutil
 import signal
 import sys
-import time
 import traceback
 
 
@@ -44,14 +43,9 @@ _SUBCOMMANDS = [normalize,
                 consensus,
                 expand]
 
-_TEMP_WORKING_DIR_FORMAT = "jacquard.{}.{}.tmp"
-
 
 class _JacquardArgumentParser(argparse.ArgumentParser):
     '''Suppress default exit behavior'''
-    def error(self, message):
-        message = self._remessage_invalid_subparser(message)
-        raise utils.UsageError(message)
 
     @staticmethod
     def _remessage_invalid_subparser(message):
@@ -62,79 +56,80 @@ class _JacquardArgumentParser(argparse.ArgumentParser):
                        " {}.").format(match.group(1), match.group(2))
         return message
 
+    def error(self, message):
+        '''Suppress default exit behavior'''
+        message = self._remessage_invalid_subparser(message)
+        raise utils.UsageError(message)
 
-def main():
-    _set_interrupt_handler()
-    dispatch(_SUBCOMMANDS, sys.argv[1:])
+
+def _cleanup(temp_working_dir):
+    if temp_working_dir and os.path.exists(temp_working_dir):
+        logger.debug("Cleaning up tmp directory")
+        shutil.rmtree(temp_working_dir)
+
+
+def _move_tmp_contents_to_original(args):
+    temp_dir = args.temp_working_dir
+    dest_dir = os.path.dirname(args.temp_working_dir)
+
+    logger.debug("Moving files from tmp directory [{}] to output "
+                 "directory [{}]",
+                 temp_dir,
+                 dest_dir)
+    distutils.dir_util.copy_tree(temp_dir, dest_dir)
+    logger.debug("Output saved to [{}]", os.path.abspath(args.original_output))
+    logger.info("Output saved to [{}]", args.original_output)
+    _cleanup(temp_dir)
+
+
+def _parse_command_line_args(modules, arguments):
+    parser = _JacquardArgumentParser(
+        usage="jacquard",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        # pylint: disable=line-too-long
+        description='''type 'Jacquard -h <command>' for help on a specific command''',
+        epilog="authors: Jessica Bene, Ashwini Bhasi, Chris Gates, Kevin Meng, Peter Ulintz; October 2014")
+
+    parser.add_argument("-V",
+                        "--version",
+                        action='version',
+                        version=_version_text())
+    subparsers = parser.add_subparsers(title="subcommands",
+                                       dest="subparser_name")
+
+    module_dispatch = {}
+    for module in modules:
+        module.add_subparser(subparsers)
+        short_name = module.__name__.split('.')[-1]
+        module_dispatch[short_name] = module
+
+    args = parser.parse_args(arguments)
+    return module_dispatch[args.subparser_name], args
 
 
 def _set_interrupt_handler(target=signal.signal):
-    def handler(signum, frame): #pylint: disable=unused-argument
+    def _handler(signum, frame): #pylint: disable=unused-argument
         msg = "WARNING: Jacquard was interrupted before completing."
         try:
             logger.debug(msg)
         finally:
             print(msg, file=sys.stderr)
             exit(1)
-
-    target(signal.SIGINT, handler)
-    target(signal.SIGTERM, handler)
+    target(signal.SIGINT, _handler)
+    target(signal.SIGTERM, _handler)
 
 
 def _version_text():
     callers = utils.caller_versions.items()
     caller_versions = [key + " " + value for key, value in callers]
     caller_version_string = "\n\t".join(caller_versions)
-
     return "Jacquard v{0}\nSupported variant callers:\n\t{1}".\
         format(utils.__version__, caller_version_string)
 
-def _get_temp_working_dir(original_output):
-    base_dir = os.path.dirname(os.path.abspath(original_output))
-    pid = os.getpid()
-    microseconds_since_epoch = int(time.time() * 1000 * 1000)
-    dir_name = _TEMP_WORKING_DIR_FORMAT.format(str(pid),
-                                               str(microseconds_since_epoch))
-    temp_working_dir = os.path.join(base_dir, dir_name)
-    new_output = os.path.join(temp_working_dir,
-                              os.path.basename(original_output))
-
-    return temp_working_dir, new_output
-
-def _move_tmp_contents_to_original(args):
-    temp_dir = args.temp_working_dir
-    dest_dir = os.path.dirname(args.temp_working_dir)
-
-    logger.debug("Moving files from tmp directory {} to output directory",
-                 temp_dir,
-                 dest_dir)
-    distutils.dir_util.copy_tree(temp_dir, dest_dir)
-    _cleanup(temp_dir)
 
 def dispatch(modules, arguments):
     try:
-        # pylint: disable=line-too-long
-        parser = _JacquardArgumentParser(
-            usage="jacquard",
-            formatter_class=argparse.RawDescriptionHelpFormatter,
-            description='''type 'Jacquard -h <subcommand>' for help on a specific subcommand''',
-            epilog="authors: Jessica Bene, Ashwini Bhasi, Chris Gates, Kevin Meng, Peter Ulintz; October 2014")
-
-        parser.add_argument("-V",
-                            "--version",
-                            action='version',
-                            version=_version_text())
-
-        subparsers = parser.add_subparsers(title="subcommands",
-                                           dest="subparser_name")
-
-        module_dispatch = {}
-        for module in modules:
-            module.add_subparser(subparsers)
-            short_name = module.__name__.split('.')[-1]
-            module_dispatch[short_name] = module
-
-        args = parser.parse_args(arguments)
+        command, args = _parse_command_line_args(modules, arguments)
 
         cwd = os.path.dirname(os.getcwd())
         execution_context = [\
@@ -147,25 +142,17 @@ def dispatch(modules, arguments):
         logger.debug("cwd|{}", os.getcwd())
         logger.debug("command|{}", " ".join(arguments))
 
-        args.original_output = args.output
-        (args.temp_working_dir,\
-            args.output) = _get_temp_working_dir(args.original_output)
-
-        command_validator.preflight(args, module_dispatch[args.subparser_name])
+        command_validator.preflight(args, command)
 
         logger.info("Jacquard begins (v{})", utils.__version__)
         logger.info("Saving log to [{}]", logger.log_filename)
         logger.debug("Writing output to tmp directory [{}]",
                      args.temp_working_dir)
 
-        module_dispatch[args.subparser_name].execute(args, execution_context)
+        command.execute(args, execution_context)
 
         _move_tmp_contents_to_original(args)
 
-        logger.debug("Output saved to [{}]",
-                     os.path.abspath(args.original_output))
-        logger.info("Output saved to [{}]",
-                    args.original_output)
         if logger.SHOW_WARNING:
             logger.info("Done. (See warnings above)")
         else:
@@ -178,7 +165,7 @@ def dispatch(modules, arguments):
         try:
             print("See 'jacquard {} --help'.".format(args.subparser_name),
                   file=sys.stderr)
-        except NameError:
+        except NameError: #could not determine the command
             print("See 'jacquard --help'.", file=sys.stderr)
         sys.exit(1)
     except Exception as exception: #pylint: disable=broad-except
@@ -195,10 +182,10 @@ def dispatch(modules, arguments):
             pass #we tried
 
 
-def _cleanup(temp_working_dir):
-    if temp_working_dir and os.path.exists(temp_working_dir):
-        logger.debug("Cleaning up tmp directory")
-        shutil.rmtree(temp_working_dir)
+def main():
+    _set_interrupt_handler()
+    dispatch(_SUBCOMMANDS, sys.argv[1:])
+
 
 if __name__ == '__main__':
     main()

@@ -1,18 +1,20 @@
 #pylint: disable=too-many-locals
 from __future__ import print_function, absolute_import
-
 from collections import defaultdict
+import collections
 import glob
-import os
-import re
-
 import jacquard.logger as logger
 import jacquard.utils as utils
 import jacquard.variant_callers.variant_caller_factory as variant_caller_factory
 import jacquard.vcf as vcf
+import natsort
+import os
+import re
+
 
 JQ_OUTPUT_SUFFIX = "HCsomatic"
-#TODO: (cgates): This module contains lots of file parsing/processing which should be using vcfReader structures
+#TODO: (cgates): This module contains lots of file parsing/processing which 
+# should be using vcfReader structures
 #TODO: (cgates): Use tuples instead of concatenated strings
 
 #TODO: (cgates): refactor this as a stats object that collects info in the main processing loop
@@ -60,10 +62,10 @@ def _find_somatic_positions(in_files):
         (filtered_records,
          num_records,
          somatic_positions,
-         somatic) =_iterate_file(vcf_reader,
-                                 num_records,
-                                 somatic_positions,
-                                 somatic)
+         somatic) = _iterate_file(vcf_reader,
+                                  num_records,
+                                  somatic_positions,
+                                  somatic)
 
         callers[caller.name] += filtered_records
 
@@ -157,7 +159,7 @@ def filter_somatic_positions(input_file, output_file, execution_context=None):
     if not execution_context:
         execution_context = []
 
-    in_files = sorted(glob.glob(os.path.join(input_file, "*.vcf")))
+    in_files = natsort.natsorted(glob.glob(os.path.join(input_file, "*.vcf")))
     if len(in_files) < 1:
         logger.error("Specified input directory [{}] contains no VCF files. "
                      "Check parameters and try again.", input_file)
@@ -210,8 +212,8 @@ def _build_readers(input_files):
     return vcf_readers
 
 def _build_writers_to_readers(vcf_readers, output_file):
-    writers_to_readers = {}
-    for reader in vcf_readers:
+    writers_to_readers = collections.OrderedDict()
+    for reader in natsort.natsorted(vcf_readers):
         new_filename = _mangle_output_filenames(reader.file_name)
         output_filepath = os.path.join(output_file, new_filename)
 
@@ -232,8 +234,6 @@ def _get_output_filenames(input_files):
 
 def _predict_output(args):
     input_file = os.path.abspath(args.input)
-
-    utils.validate_directories(input_dir=input_file)
     input_files = sorted(glob.glob(os.path.join(input_file, "*.vcf")))
 
     desired_output_files = _get_output_filenames(input_files)
@@ -258,8 +258,6 @@ def _validate_arguments(args):
     input_file = os.path.abspath(args.input)
     output_file = os.path.abspath(args.output)
 
-    utils.validate_directories(input_file, output_file)
-
     input_files = sorted(glob.glob(os.path.join(input_file, "*.vcf")))
     out_files = sorted(glob.glob(os.path.join(output_file, "*")))
 
@@ -281,7 +279,5 @@ def _validate_arguments(args):
 def execute(args, execution_context):
     input_file = os.path.abspath(args.input)
     output_file = os.path.abspath(args.output)
-
-    utils.validate_directories(input_file, output_file)
 
     filter_somatic_positions(input_file, output_file, execution_context)

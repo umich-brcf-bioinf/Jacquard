@@ -292,7 +292,6 @@ def _validate_arguments(args):
 def _predict_output(args):
     input_file = os.path.abspath(args.input)
     output_file = os.path.dirname(args.output)
-    utils.validate_directories(input_file,output_file)
 
     desired_output_files = set([os.path.basename(args.output)])
 

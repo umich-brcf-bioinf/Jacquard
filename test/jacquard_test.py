@@ -11,9 +11,7 @@ import os
 import signal
 import test.mock_module as mock_module
 import test.test_case as test_case
-import time
 
-MOCK_GET_TEMP_WORKING_DIR_CALLED = False
 MOCK_MOVE_TEMP_CONTENTS_CALLED = False
 MOCK_PREFLIGHT_CALLED = False
 
@@ -21,19 +19,11 @@ def mock_preflight(output, desired_output_files, command):
     global MOCK_PREFLIGHT_CALLED
     MOCK_PREFLIGHT_CALLED = True
 
-def mock_get_temp_working_dir(output_dir):
-    global MOCK_GET_TEMP_WORKING_DIR_CALLED
-    MOCK_GET_TEMP_WORKING_DIR_CALLED = True
-
-    tmp_output = os.path.join(os.path.dirname(output_dir), "tmp_output")
-    return tmp_output, output_dir
-
 def mock_move_tmp_contents_to_original(args):
     global MOCK_MOVE_TEMP_CONTENTS_CALLED
     MOCK_MOVE_TEMP_CONTENTS_CALLED = True
 
 def _change_mock_methods():
-    jacquard._get_temp_working_dir = mock_get_temp_working_dir
     jacquard._move_tmp_contents_to_original = mock_move_tmp_contents_to_original
     jacquard._preflight = mock_preflight
 
@@ -76,34 +66,6 @@ class JacquardTestCase(test_case.JacquardBaseTestCase):
             handler1(None, None)
         self.assertEquals(exit_code.exception.code, 1)
         self.assertRegexpMatches(self.output.getvalue(), "WARNING: Jacquard was interrupted")
-
-
-    def test_get_temp_working_dir(self):
-        actual_dir, dummy = jacquard._get_temp_working_dir(os.path.join("foo", "bar"))
-        self.assertRegexpMatches(actual_dir,
-                                 r"foo.*jacquard\.\d+\.\d+\.tmp")
-
-        time.sleep(0.01)
-        actual_dir2 = jacquard._get_temp_working_dir(os.path.join("foo", "bar"))
-        self.assertNotEqual(actual_dir, actual_dir2)
-
-    def test_get_temp_working_dir_complexPathOk(self):
-        actual_dir, dummy = jacquard._get_temp_working_dir("/foo.bar/baz.hoopy/frood")
-        self.assertRegexpMatches(actual_dir,
-                                 r"foo.bar.*baz.hoopy.*jacquard\.\d+\.\d+\.tmp")
-
-    def test_get_temp_working_dir_relativePathMadeAbsolute(self):
-        original_cwd = os.getcwd()
-        try:
-            with TempDirectory() as cwd:
-                cwd_absolute_path = os.path.abspath(cwd.path)
-                os.chdir(cwd_absolute_path)
-                actual_dir, dummy = jacquard._get_temp_working_dir(os.path.join(".", "foo", "bar"))
-                os.chdir(original_cwd)
-                self.assertIn(cwd_absolute_path, actual_dir)
-        finally:
-            os.chdir(original_cwd)
-
 
     def test_gracefulErrorMessageWhenUnanticipatedProblem(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
@@ -172,12 +134,10 @@ class JacquardTestCase(test_case.JacquardBaseTestCase):
 class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
     def setUp(self):
         test_case.JacquardBaseTestCase.setUp(self)
-        self.original_get_temp_working_dir = jacquard._get_temp_working_dir
         self.original_move_tmp_contents = jacquard._move_tmp_contents_to_original
         _change_mock_methods()
 
     def tearDown(self):
-        jacquard._get_temp_working_dir = self.original_get_temp_working_dir
         jacquard._move_tmp_contents_to_original = self.original_move_tmp_contents
         test_case.JacquardBaseTestCase.tearDown(self)
 
@@ -189,7 +149,6 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
                                               output_dir.path])
             self.assertTrue(mock_module.execute_called)
             self.assertTrue(mock_module.report_called)
-            self.assertTrue(MOCK_GET_TEMP_WORKING_DIR_CALLED)
             self.assertTrue(MOCK_MOVE_TEMP_CONTENTS_CALLED)
 
     def test_dispatch_unknownCommand(self):
@@ -236,7 +195,7 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
                                               input_dir.path,
                                               output_dir.path])
             actual_messages = self.output.getvalue().rstrip().split("\n")
-            self.assertRegexpMatches(actual_messages[3], "Done")
+            self.assertRegexpMatches(actual_messages[-1], "Done")
 
     def test_dispatch_doneWithWarnings(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
@@ -246,7 +205,7 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
                                               input_dir.path,
                                               output_dir.path])
             actual_messages = self.output.getvalue().rstrip().split("\n")
-            self.assertRegexpMatches(actual_messages[3], r"Done. \(See warnings above\)")
+            self.assertRegexpMatches(actual_messages[-1], r"Done. \(See warnings above\)")
             logger.SHOW_WARNING = False
 
 class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
