@@ -243,7 +243,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
         writer = MockWriter()
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
+        tag._tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
 
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -278,7 +278,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
+        tag._tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
 
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -310,7 +310,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
+        tag._tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
 
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -343,7 +343,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
+        tag._tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
 
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -375,7 +375,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
+        tag._tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
 
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -416,7 +416,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader1: writer1, reader2: writer2}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context,
+        tag._tag_files(vcf_readers_to_writers, execution_context,
                       build_mock_get_caller_method([MockCaller(name="foo"),
                                                     MockCaller(name="bar")]))
 
@@ -442,7 +442,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
+        tag._tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
 
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -480,7 +480,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
+        tag._tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
 
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -518,7 +518,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
+        tag._tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
 
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -556,7 +556,7 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         vcf_readers_to_writers = {reader: writer}
         execution_context = []
-        tag.tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
+        tag._tag_files(vcf_readers_to_writers, execution_context, build_mock_get_caller_method([MockCaller()]))
 
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)

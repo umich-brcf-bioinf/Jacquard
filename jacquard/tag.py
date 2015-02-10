@@ -100,8 +100,9 @@ def _modify_metaheaders(reader, writer, execution_context, anomalous_set):
 
     writer.write("\n".join(new_headers) +"\n")
 
-def tag_files(vcf_readers_to_writers, execution_context,
-              get_caller=variant_caller_factory.get_caller):
+def _tag_files(vcf_readers_to_writers,
+               execution_context,
+               get_caller=variant_caller_factory.get_caller):
 
     total_number_of_files = len(vcf_readers_to_writers)
     callers = collections.defaultdict(int)
@@ -229,5 +230,5 @@ def execute(args, execution_context):
                 len(vcf_readers),
                 args.input)
 
-    tag_files(readers_to_writers, execution_context)
+    _tag_files(readers_to_writers, execution_context)
     logger.info("Wrote [{}] VCF file(s)", len(readers_to_writers))

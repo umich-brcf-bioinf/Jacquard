@@ -1,14 +1,14 @@
 # pylint: disable=line-too-long,too-many-public-methods,too-few-public-methods
 # pylint: disable=invalid-name,global-statement
-import unittest
-import jacquard.variant_callers.strelka as strelka
-from jacquard.utils import JQException
 from jacquard import __version__
-import os
-
+from jacquard.utils import JQException
 from jacquard.vcf import VcfRecord
 import jacquard.variant_callers.common_tags as common_tags
+import jacquard.variant_callers.strelka as strelka
+import os
+import unittest
 
+#TODO: (cgates): Lots of PEP8 cleanup in this class
 ORIGINAL_REPORTED_TAG = None
 ORIGINAL_PASSED_TAG = None
 

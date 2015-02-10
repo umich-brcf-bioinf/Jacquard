@@ -2,7 +2,7 @@
 from __future__ import absolute_import, print_function
 import collections
 
-#TODO: cgates: These should be in the callers or the caller factory, but not here.
+#TODO: cgates: These should be in the callers/caller factory, but not here.
 global caller_versions
 caller_versions = {"VarScan":"v2.3", "MuTect": "v1.1.4", "Strelka": "v2.0.15"}
 
