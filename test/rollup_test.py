@@ -1,7 +1,6 @@
 #pylint: disable=unused-wildcard-import, line-too-long, wildcard-import
 #pylint: disable=invalid-name, too-many-public-methods, redefined-builtin
 import pandas as pd
-from pandas import *
 import unittest
 import pandas.util.testing as tm
 from jacquard.rollup_genes import gene_rollup_highest_impact, gene_rollup_damaging_impact, combine_dfs

@@ -1,13 +1,13 @@
 # pylint: disable=line-too-long,too-many-public-methods,too-few-public-methods
 # pylint: disable=invalid-name,global-statement
-import unittest
-
 import jacquard.variant_callers.mutect as mutect
 from jacquard.utils import JQException
 from jacquard import __version__
 from jacquard.vcf import VcfRecord
 import jacquard.variant_callers.common_tags as common_tags
+import test.test_case as test_case
 
+#TODO: (cgates): Lots of PEP8 cleanup in this class
 ORIGINAL_REPORTED_TAG = None
 ORIGINAL_PASSED_TAG = None
 
@@ -51,7 +51,7 @@ class MockReader(object):
     def close(self):
         self.closed = True
 
-class CommonTagTestCase(unittest.TestCase):
+class CommonTagTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         global ORIGINAL_REPORTED_TAG
         global ORIGINAL_PASSED_TAG
@@ -71,7 +71,7 @@ class CommonTagTestCase(unittest.TestCase):
         self.assertEquals("JQ_MT_", reported_tag.input_caller_name)
         self.assertEquals("JQ_MT_", passed_tag.input_caller_name)
 
-class AlleleFreqTagTestCase(unittest.TestCase):
+class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         self.assertEqual('##FORMAT=<ID={0}AF,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)",Source="Jacquard",Version={1}>'.format(mutect.JQ_MUTECT_TAG, __version__), mutect._AlleleFreqTag().metaheader)
 
@@ -99,7 +99,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
-class DepthTagTestCase(unittest.TestCase):
+class DepthTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         self.assertEqual('##FORMAT=<ID={0}DP,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP)",Source="Jacquard",Version={1}>'.format(mutect.JQ_MUTECT_TAG, __version__), mutect._DepthTag().metaheader)
 
@@ -119,7 +119,7 @@ class DepthTagTestCase(unittest.TestCase):
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
-class SomaticTagTestCase(unittest.TestCase):
+class SomaticTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         self.assertEqual('##FORMAT=<ID={0}HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)",Source="Jacquard",Version={1}>'.format(mutect.JQ_MUTECT_TAG, __version__), mutect._SomaticTag().metaheader)
 
@@ -148,8 +148,9 @@ class MockTag(object):
     def add_tag_values(self, vcf_record):
         vcf_record.add_sample_tag_value(self.field_name, {"SA":self.field_value, "SB":self.field_value})
 
-class Mutect_TestCase(unittest.TestCase):
+class Mutect_TestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
+        super(Mutect_TestCase, self).setUp()
         self.caller = mutect.Mutect()
 
     def test_validate_vcfs_in_directory(self):

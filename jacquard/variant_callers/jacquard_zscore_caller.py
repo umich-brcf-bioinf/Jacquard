@@ -5,7 +5,8 @@ from jacquard import __version__
 
 _JQ_CONSENSUS_TAG = "JQ_CONS_"
 
-#TODO: (cgates): Define tag ids as public, class-level constants so dependent tags can reference them directly
+#TODO: (cgates): Define tag ids as public, class-level constants so dependent
+# tags can reference them directly
 class _AlleleFreqZScoreTag(object):
     TAG_ID = "{0}AF_ZSCORE".format(_JQ_CONSENSUS_TAG)
     _RANGE_TAG = "{0}AF_RANGE".format(_JQ_CONSENSUS_TAG)

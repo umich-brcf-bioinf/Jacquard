@@ -11,7 +11,7 @@ import os
 
 JQ_OUTPUT_SUFFIX = "normalized"
 
-#TODO: (cgates): this code is not referenced anywhere; remove? 
+#TODO: (cgates): this code is not referenced anywhere; remove?
 def _validate_single_caller(filepaths, get_caller):
     callers = set()
     try:

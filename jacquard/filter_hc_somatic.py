@@ -13,11 +13,12 @@ import re
 
 
 JQ_OUTPUT_SUFFIX = "HCsomatic"
-#TODO: (cgates): This module contains lots of file parsing/processing which 
+#TODO: (cgates): This module contains lots of file parsing/processing which
 # should be using vcfReader structures
 #TODO: (cgates): Use tuples instead of concatenated strings
 
-#TODO: (cgates): refactor this as a stats object that collects info in the main processing loop
+#TODO: (cgates): refactor this as a stats object that collects info in
+# the main processing loop
 def _iterate_file(vcf_reader, num_records, somatic_positions, somatic):
     filtered_records = 0
     vcf_reader.open()
