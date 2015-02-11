@@ -1,5 +1,5 @@
 # pylint: disable=line-too-long,too-many-public-methods,too-few-public-methods
-# pylint: disable=invalid-name,global-statement
+# pylint: disable=invalid-name,global-statement,too-many-format-args
 from jacquard import __version__
 from jacquard.utils import JQException
 from jacquard.vcf import VcfRecord

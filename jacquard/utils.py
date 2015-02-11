@@ -16,8 +16,9 @@ jq_dp_tag = "DP"
 def round_two_digits(val):
     if len(val.split(".")[1]) > 2:
         return str(round(100 * float(val))/100)
-
     return val
+#     return "{0:.2f}".format(float(val))
+
 
 #TODO: (jebene/kmeng) - do we want to truncate decimals if it's X.0?
 #     if len(val.split(".")[1]) <= 2:

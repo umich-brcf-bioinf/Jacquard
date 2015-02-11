@@ -230,7 +230,7 @@ class ConsensusTestCase(test_case.JacquardBaseTestCase):
             output_dir.check("consensus.vcf")
 
 class ConsensusFunctionalTestCase(test_case.JacquardBaseTestCase):
-    def test_consensus(self):
+    def Xtest_consensus(self):
         with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir, "functional_tests", "05_consensus")
