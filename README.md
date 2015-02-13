@@ -43,5 +43,7 @@ jacquard-runner.py <subcommand> --help
 
 ================
 
+Email bfx-jacquard@umich.edu for support and questions.
+
 Jessica Bene, Ashwini Bhasi, Chris Gates, Kevin Meng, Peter Ulintz - UM BRCF Bioinformatics Core
 
