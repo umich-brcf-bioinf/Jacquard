@@ -209,7 +209,7 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
             logger.SHOW_WARNING = False
 
 class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
-    def Xtest_functional_jacquard(self):
+    def test_functional_jacquard(self):
         with TempDirectory() as output_dir:
             file_dirname = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(file_dirname,
