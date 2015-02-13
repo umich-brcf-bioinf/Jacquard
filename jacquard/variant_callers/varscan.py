@@ -1,5 +1,5 @@
 from __future__ import print_function, absolute_import
-from jacquard.vcf import VcfReader, VcfRecord
+import jacquard.vcf as vcf
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.utils as utils
 from jacquard import __version__
@@ -173,7 +173,7 @@ class Varscan(object):
             if file_reader.file_name.lower().endswith("fpfilter.pass"):
                 hc_candidates.append(file_reader)
             elif file_reader.file_name.lower().endswith(".vcf"):
-                vcf_readers.append(VcfReader(file_reader))
+                vcf_readers.append(vcf.VcfReader(file_reader))
 
         self._validate_vcf_fileset(vcf_readers)
         self._validate_hc_fileset(hc_candidates)
@@ -213,7 +213,7 @@ class Varscan(object):
                 split_line = line.split()
 
                 if split_line[0] != "chrom" and split_line[0].startswith("chr"):
-                    hc_key = VcfRecord(split_line[0],
+                    hc_key = vcf.VcfRecord(split_line[0],
                                        split_line[1],
                                        split_line[2],
                                        split_line[3])
@@ -282,3 +282,17 @@ class Varscan(object):
 
     def get_new_metaheaders(self):
         return [tag.metaheader for tag in self.tags]
+
+    def claim(self, file_readers):
+        unclaimed_readers = []
+        translated_vcf_readers = []
+        for file_reader in file_readers:
+            if self.name in file_reader.file_name:
+                translated_vcf_reader = vcf.RecognizedVcfReader(
+                                            vcf.VcfReader(
+                                                file_reader),
+                                            self)
+                translated_vcf_readers.append(translated_vcf_reader)
+            else:
+                unclaimed_readers.append(file_reader)
+        return (unclaimed_readers, translated_vcf_readers)

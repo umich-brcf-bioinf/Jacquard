@@ -1,6 +1,6 @@
 #pylint: disable=too-few-public-methods, unused-argument
 from __future__ import print_function, absolute_import
-from jacquard.vcf import VcfReader
+import jacquard.vcf as vcf
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.utils as utils
 from jacquard import __version__
@@ -175,7 +175,7 @@ class Strelka(object):
                                     "should have a snvs file and an indels "
                                     "file.")
 
-        vcf_readers = [VcfReader(file_readers[0]), VcfReader(file_readers[1])]
+        vcf_readers = [vcf.VcfReader(file_readers[0]), vcf.VcfReader(file_readers[1])]
         if not vcf_readers[0].column_header == vcf_readers[1].column_header:
             raise utils.JQException("The column headers for VCF files [{},{}] "
                                     "do not match."\
@@ -268,3 +268,17 @@ class Strelka(object):
         for tag in self.tags:
             tag.add_tag_values(vcf_record)
         return vcf_record.asText()
+
+    def claim(self, file_readers):
+        unclaimed_readers = []
+        translated_vcf_readers = []
+        for file_reader in file_readers:
+            if self.name in file_reader.file_name:
+                translated_vcf_reader = vcf.RecognizedVcfReader(
+                                            vcf.VcfReader(
+                                                file_reader),
+                                            self)
+                translated_vcf_readers.append(translated_vcf_reader)
+            else:
+                unclaimed_readers.append(file_reader)
+        return (unclaimed_readers, translated_vcf_readers)

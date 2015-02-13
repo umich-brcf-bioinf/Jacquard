@@ -2,6 +2,7 @@
 from __future__ import print_function, absolute_import
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.utils as utils
+import jacquard.vcf as vcf
 from jacquard import __version__
 import re
 import os
@@ -170,3 +171,17 @@ class Mutect(object):
         for tag in self.tags:
             tag.add_tag_values(vcf_record)
         return vcf_record.asText()
+
+    def claim(self, file_readers):
+        unclaimed_readers = []
+        translated_vcf_readers = []
+        for file_reader in file_readers:
+            if self.name in file_reader.file_name:
+                translated_vcf_reader = vcf.RecognizedVcfReader(
+                                            vcf.VcfReader(
+                                                file_reader),
+                                            self)
+                translated_vcf_readers.append(translated_vcf_reader)
+            else:
+                unclaimed_readers.append(file_reader)
+        return (unclaimed_readers, translated_vcf_readers)
