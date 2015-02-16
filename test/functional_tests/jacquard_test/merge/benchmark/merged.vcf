@@ -1,6 +1,6 @@
 ##fileformat=VCFv4.2
 ##jacquard.version=0.21
-##jacquard.command=merge2 C:\Users\jebene\Desktop\filter_hc_somatic_test C:\Users\jebene\Desktop\merge2_test.vcf --force
+##jacquard.command=merge C:\Users\jebene\Desktop\tests\filtered C:\Users\jebene\Desktop\tests\merge\merged.vcf --force
 ##jacquard.cwd=C:\Users\jebene\git
 ##jacquard.merge.sample=<Column=1,Name=tiny|NORMAL,Source=tiny.mutect.normalized.jacquardTags.HCsomatic.vcf|tiny.strelka.normalized.jacquardTags.HCsomatic.vcf|tiny.varscan.normalized.jacquardTags.HCsomatic.vcf>
 ##jacquard.merge.sample=<Column=2,Name=tiny|TUMOR,Source=tiny.mutect.normalized.jacquardTags.HCsomatic.vcf|tiny.strelka.normalized.jacquardTags.HCsomatic.vcf|tiny.varscan.normalized.jacquardTags.HCsomatic.vcf>

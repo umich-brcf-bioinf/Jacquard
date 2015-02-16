@@ -1,6 +1,6 @@
 ##jacquard.version=0.21
-##jacquard.command=consensus --force C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\jacquard_test\merge\benchmark\merged.vcf C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\jacquard_test\consensus\benchmark\consensus.vcf
-##jacquard.cwd=C:\Users\kmeng
+##jacquard.command=consensus C:\Users\jebene\Desktop\tests\merge\merged.vcf C:\Users\jebene\Desktop\tests\consensus\consensus.vcf --force
+##jacquard.cwd=C:\Users\jebene\git
 ##FORMAT=<ID=JQ_CONS_CALLERS_REPORTED_COUNT,Number=1,Type=Integer,Description="Count of variant callers which listed this variant in the Jacquard tagged VCF",Source="Jacquard",Version="0.21">
 ##FORMAT=<ID=JQ_CONS_CALLERS_PASSED_COUNT,Number=1,Type=Integer,Description="Count of variant callers where FILTER = PASS for this variant in the Jacquard tagged VCF",Source="Jacquard",Version="0.21">
 ##INFO=<ID=JQ_CONS_SAMPLES_REPORTED_COUNT,Number=1,Type=Integer,Description="Count of samples where this variant appeared in any of the Jacquard tagged VCFs (regardless of quality/filtering)",Source="Jacquard",Version="0.21">
@@ -12,7 +12,7 @@
 ##FORMAT=<ID=JQ_CONS_SOM_COUNT,Number=1,Type=Integer,Description="Count of recognized variant callers that reported confident somatic call for this sample-position.",Source="Jacquard",Version="0.21">
 ##fileformat=VCFv4.2
 ##jacquard.version=0.21
-##jacquard.command=merge2 C:\Users\jebene\Desktop\filter_hc_somatic_test C:\Users\jebene\Desktop\merge2_test.vcf --force
+##jacquard.command=merge C:\Users\jebene\Desktop\tests\filtered C:\Users\jebene\Desktop\tests\merge\merged.vcf --force
 ##jacquard.cwd=C:\Users\jebene\git
 ##jacquard.merge.sample=<Column=1,Name=tiny|NORMAL,Source=tiny.mutect.normalized.jacquardTags.HCsomatic.vcf|tiny.strelka.normalized.jacquardTags.HCsomatic.vcf|tiny.varscan.normalized.jacquardTags.HCsomatic.vcf>
 ##jacquard.merge.sample=<Column=2,Name=tiny|TUMOR,Source=tiny.mutect.normalized.jacquardTags.HCsomatic.vcf|tiny.strelka.normalized.jacquardTags.HCsomatic.vcf|tiny.varscan.normalized.jacquardTags.HCsomatic.vcf>
@@ -39,7 +39,7 @@
 ##jacquard.consensus.JQ_CONS_DP_ZSCORE.JQ_CONS_DP_RANGE_stdev=1.0
 ##FORMAT=<ID=JQ_CONS_DP_ZSCORE,Number=1,Type=Float,Description="Concordance of reported depth across callers: [(this DP range - mean DP range)/standard dev(all DP ranges)]. Values with null or missing DP range will be assigned zscore of '.'.",Source="Jacquard",Version="0.21">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	tiny|NORMAL	tiny|TUMOR
-chr1	14948	.	G	A	.	.	JQ_CONS_SAMPLES_PASSED_COUNT=2;JQ_CONS_SAMPLES_REPORTED_COUNT=2	JQ_MT_AF:JQ_MT_CALLER_PASSED:JQ_MT_CALLER_REPORTED:JQ_MT_DP:JQ_MT_HC_SOM:JQ_VS_AF:JQ_VS_CALLER_PASSED:JQ_VS_CALLER_REPORTED:JQ_VS_DP:JQ_VS_HC_SOM:JQ_CONS_CALLERS_REPORTED_COUNT:JQ_CONS_CALLERS_PASSED_COUNT:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_SOM_COUNT:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.09:0:1:174:0:0.06:1:1:171:0:2:1:0.08:0.03:172.5:3.0:0:1.00:1.00	0.13:0:1:302:0:0.14:1:1:303:1:2:1:0.14:0.01:302.5:1.0:1:-1.00:-1.00
+chr1	14948	.	G	A	.	.	JQ_CONS_SAMPLES_PASSED_COUNT=2;JQ_CONS_SAMPLES_REPORTED_COUNT=2	JQ_MT_AF:JQ_MT_CALLER_PASSED:JQ_MT_CALLER_REPORTED:JQ_MT_DP:JQ_MT_HC_SOM:JQ_VS_AF:JQ_VS_CALLER_PASSED:JQ_VS_CALLER_REPORTED:JQ_VS_DP:JQ_VS_HC_SOM:JQ_CONS_CALLERS_REPORTED_COUNT:JQ_CONS_CALLERS_PASSED_COUNT:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_SOM_COUNT:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.09:0:1:174:0:0.06:1:1:171:0:2:1:0.07:0.03:172.5:3.0:0:1.0:1.0	0.13:0:1:302:0:0.14:1:1:303:1:2:1:0.14:0.01:302.5:1.0:1:-1.0:-1.0
 chr1	137622	.	G	A	.	.	JQ_CONS_SAMPLES_PASSED_COUNT=2;JQ_CONS_SAMPLES_REPORTED_COUNT=2	JQ_MT_AF:JQ_MT_CALLER_PASSED:JQ_MT_CALLER_REPORTED:JQ_MT_DP:JQ_MT_HC_SOM:JQ_CONS_CALLERS_REPORTED_COUNT:JQ_CONS_CALLERS_PASSED_COUNT:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_SOM_COUNT:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.24:1:1:35:0:1:1:0.24:.:35.0:.:0:.:.	0.29:1:1:42:1:1:1:0.29:.:42.0:.:1:.:.
 chr1	1147545	.	A	G	.	.	JQ_CONS_SAMPLES_PASSED_COUNT=2;JQ_CONS_SAMPLES_REPORTED_COUNT=2	JQ_SK_AF:JQ_SK_CALLER_PASSED:JQ_SK_CALLER_REPORTED:JQ_SK_DP:JQ_SK_HC_SOM:JQ_CONS_CALLERS_REPORTED_COUNT:JQ_CONS_CALLERS_PASSED_COUNT:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_SOM_COUNT:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.0:1:1:27:0:1:1:0.0:.:27.0:.:0:.:.	0.31:1:1:35:1:1:1:0.31:.:35.0:.:1:.:.
 chr1	1169795	.	C	T	.	.	JQ_CONS_SAMPLES_PASSED_COUNT=2;JQ_CONS_SAMPLES_REPORTED_COUNT=2	JQ_SK_AF:JQ_SK_CALLER_PASSED:JQ_SK_CALLER_REPORTED:JQ_SK_DP:JQ_SK_HC_SOM:JQ_CONS_CALLERS_REPORTED_COUNT:JQ_CONS_CALLERS_PASSED_COUNT:JQ_CONS_AF_AVERAGE:JQ_CONS_AF_RANGE:JQ_CONS_DP_AVERAGE:JQ_CONS_DP_RANGE:JQ_CONS_SOM_COUNT:JQ_CONS_AF_ZSCORE:JQ_CONS_DP_ZSCORE	0.0:1:1:37:0:1:1:0.0:.:37.0:.:0:.:.	0.22:1:1:46:1:1:1:0.22:.:46.0:.:1:.:.

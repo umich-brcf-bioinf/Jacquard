@@ -1,6 +1,8 @@
 #pylint: disable=invalid-name,too-few-public-methods, global-at-module-level
 from __future__ import absolute_import, print_function
+
 import collections
+
 
 #TODO: cgates: These should be in the callers/caller factory, but not here.
 global caller_versions
@@ -15,19 +17,8 @@ jq_dp_tag = "DP"
 
 def round_two_digits(val):
     if len(val.split(".")[1]) > 2:
-        return str(round(100 * float(val))/100)
+        return "{0:.2f}".format(float(val))
     return val
-#     return "{0:.2f}".format(float(val))
-
-
-#TODO: (jebene/kmeng) - do we want to truncate decimals if it's X.0?
-#     if len(val.split(".")[1]) <= 2:
-#         if val.split(".")[1] == '0':
-#             return val.split(".")[0]
-#         return val
-#
-#     else:
-#         return str(round(100 * float(val))/100)
 
 class JQException(Exception):
     """Base class for exceptions in this module."""
