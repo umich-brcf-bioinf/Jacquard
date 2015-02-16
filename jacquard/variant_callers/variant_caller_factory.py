@@ -18,11 +18,11 @@ def get_caller(metaheaders, column_header, name):
     raise utils.JQException(("VCF [{}] was not in the set of "
                              "recognized callers.").format(name))
 
-def claim(file_readers):
-    callers_to_vcf_readers = {}
-    for caller in _CALLERS:
-        (file_readers, vcf_readers) = caller.claim(file_readers)
-        callers_to_vcf_readers[caller.name] = vcf_readers
+# def claim(file_readers):
+#     callers_to_vcf_readers = {}
+#     for caller in _CALLERS:
+#         (file_readers, vcf_readers) = caller.claim(file_readers)
+#         callers_to_vcf_readers[caller.name] = vcf_readers
 
 @property
 def callers():

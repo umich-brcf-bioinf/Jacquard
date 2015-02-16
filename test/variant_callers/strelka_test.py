@@ -1,12 +1,15 @@
 # pylint: disable=line-too-long,too-many-public-methods,too-few-public-methods
 # pylint: disable=invalid-name,global-statement,too-many-format-args
-from jacquard import __version__
-from jacquard.utils import JQException
-from jacquard.vcf import VcfRecord
-import jacquard.variant_callers.common_tags as common_tags
-import jacquard.variant_callers.strelka as strelka
 import os
 import unittest
+
+from jacquard import __version__
+from jacquard.utils import JQException
+import jacquard.variant_callers.common_tags as common_tags
+import jacquard.variant_callers.strelka as strelka
+import jacquard.vcf as vcf
+from test.vcf_test import MockFileReader
+
 
 #TODO: (cgates): Lots of PEP8 cleanup in this class
 ORIGINAL_REPORTED_TAG = None
@@ -33,26 +36,6 @@ class MockWriter(object):
 
     def close(self):
         self.closed = True
-
-class MockFileReader(object):
-    def __init__(self, input_filepath="/foo/mockFileReader.txt", content=None):
-        if not content:
-            content = []
-        self.input_filepath = input_filepath
-        self.file_name = os.path.basename(input_filepath)
-        self._content = content
-        self.open_was_called = False
-        self.close_was_called = False
-
-    def open(self):
-        self.open_was_called = True
-
-    def read_lines(self):
-        for line in self._content:
-            yield line
-
-    def close(self):
-        self.close_was_called = True
 
 class CommonTagTestCase(unittest.TestCase):
     def setUp(self):
@@ -82,8 +65,8 @@ class AlleleFreqTagTestCase(unittest.TestCase):
     def test_format_missingAFTag(self):
         tag = strelka._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
-        originalVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        originalVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
 
@@ -91,7 +74,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         tag = strelka._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|A,C|QUAL|FILTER|INFO|AU:CU:GU:TU|1,2:3,4:5,6:7,8|9,10:11,12:13,14:15,16\n".replace('|', "\t")
         expected = "CHROM|POS|ID|REF|A,C|QUAL|FILTER|INFO|AU:CU:GU:TU:{0}AF|1,2:3,4:5,6:7,8:0.1,0.2|9,10:11,12:13,14:15,16:0.19,0.23\n".format(strelka.JQ_STRELKA_TAG).replace('|', "\t")
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -99,7 +82,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         tag = strelka._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|.|QUAL|FILTER|INFO|AU:CU:GU:TU|1,2:3,4:5,6:7,8|9,10:11,12:13,14:15,16\n".replace('|', "\t")
         expected = "CHROM|POS|ID|REF|.|QUAL|FILTER|INFO|AU:CU:GU:TU:{0}AF|1,2:3,4:5,6:7,8:.|9,10:11,12:13,14:15,16:.\n".format(strelka.JQ_STRELKA_TAG).replace('|', "\t")
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -107,7 +90,7 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         tag = strelka._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP2:TIR|10:3,4|20:11,7\n".replace('|', "\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP2:TIR:{0}AF|10:3,4:0.4|20:11,7:0.35\n".format(strelka.JQ_STRELKA_TAG).replace('|', "\t")
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -119,8 +102,8 @@ class DepthTagTestCase(unittest.TestCase):
     def test_format_missingTag(self):
         tag = strelka._DepthTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
-        originalVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        originalVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
 
@@ -128,7 +111,7 @@ class DepthTagTestCase(unittest.TestCase):
         tag = strelka._DepthTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP2:F2:F3|2:SA.2:SA.3|4:SB.2:SB.3\n".replace('|', "\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP2:F2:F3:{0}DP|2:SA.2:SA.3:2|4:SB.2:SB.3:4\n".format(strelka.JQ_STRELKA_TAG).replace('|', "\t")
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -136,7 +119,7 @@ class DepthTagTestCase(unittest.TestCase):
         tag = strelka._DepthTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|AU:CU:GU:TU|1,2:3,4:5,6:7,8|9,10:11,12:13,14:15,16\n".replace('|', "\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|AU:CU:GU:TU:{0}DP|1,2:3,4:5,6:7,8:20|9,10:11,12:13,14:15,16:52\n".format(strelka.JQ_STRELKA_TAG).replace('|', "\t")
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        processedVcfRecord =vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -149,7 +132,7 @@ class SomaticTagTestCase(unittest.TestCase):
         tag = strelka._SomaticTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
         expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:{0}HC_SOM|SA.1:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n").format(strelka.JQ_STRELKA_TAG).replace('|', "\t")
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -157,7 +140,7 @@ class SomaticTagTestCase(unittest.TestCase):
         tag = strelka._SomaticTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|PASS|INFO|SS:F2:F3|2:SA.2:SA.3|5:SB.2:SB.3\n".replace('|',"\t")
         expected = ("CHROM|POS|ID|REF|ALT|QUAL|PASS|INFO|SS:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|5:SB.2:SB.3:1\n").format(strelka.JQ_STRELKA_TAG).replace('|',"\t")
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA","SB"])
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA","SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -247,3 +230,34 @@ class StrelkaTestCase(unittest.TestCase):
                                      r"Each patient in a Strelka directory should have a snvs file and an indels file."):
             self.caller.normalize(MockWriter(), [MockFileReader(input_filepath=file1),
                                                  MockFileReader(input_filepath=file2)])
+
+    def test_claim(self):
+        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
+        content1 = ["##foo", "##source=strelka", "#chrom", record1]
+        content2 = ["##foo", "##MuTect", "#chrom", record1]
+        reader1 = MockFileReader("fileA.vcf", content1)
+        reader2 = MockFileReader("fileB.vcf", content2)
+        file_readers = [reader1, reader2]
+
+        caller = strelka.Strelka()
+        unrecognized_readers, vcf_readers = caller.claim(file_readers)
+
+        self.assertEquals(1, len(unrecognized_readers))
+        self.assertEquals([reader2], unrecognized_readers)
+        self.assertEquals(1, len(vcf_readers))
+        self.assertIsInstance(vcf_readers[0], vcf.RecognizedVcfReader)
+        self.assertEquals(reader1.file_name, vcf_readers[0].file_name)
+
+    def test_claim_ignores_non_vcf_files(self):
+        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
+        content1 = ["##foo", "##source=strelka", "#chrom", record1]
+        reader1 = MockFileReader("fileA.txt", content1)
+        file_readers = [reader1]
+
+        caller = strelka.Strelka()
+        unrecognized_readers, vcf_readers = caller.claim(file_readers)
+
+        self.assertEquals(1, len(unrecognized_readers))
+        self.assertEquals([reader1], unrecognized_readers)
+        self.assertEquals(0, len(vcf_readers))
+

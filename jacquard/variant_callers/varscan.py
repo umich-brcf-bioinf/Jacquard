@@ -98,6 +98,7 @@ class _SomaticTag(object):
 
 
 class Varscan(object):
+    _HC_FILE_SUFFIX = ".Somatic.hc.fpfilter.pass"
     def __init__(self):
         self.name = "VarScan"
         self.abbr = "VS"
@@ -283,16 +284,27 @@ class Varscan(object):
     def get_new_metaheaders(self):
         return [tag.metaheader for tag in self.tags]
 
+    @staticmethod
+    def _is_varscan_vcf(file_reader):
+        if file_reader.file_name.endswith(".vcf"):
+            vcf_reader = vcf.VcfReader(file_reader)
+            return "##source=VarScan2" in vcf_reader.metaheaders
+        return False
+
+    def _is_varscan_hc_file(self, file_reader):
+        return file_reader.file_name.endswith(self._HC_FILE_SUFFIX)
+
     def claim(self, file_readers):
         unclaimed_readers = []
-        translated_vcf_readers = []
+        vcf_readers = []
+        hc_file_readers = []
         for file_reader in file_readers:
-            if self.name in file_reader.file_name:
-                translated_vcf_reader = vcf.RecognizedVcfReader(
-                                            vcf.VcfReader(
-                                                file_reader),
-                                            self)
-                translated_vcf_readers.append(translated_vcf_reader)
+            if self._is_varscan_vcf(file_reader):
+                vcf_reader = vcf.VcfReader(file_reader)
+                vcf_readers.append(vcf.RecognizedVcfReader(vcf_reader,
+                                                           self))
+            elif self._is_varscan_hc_file(file_reader):
+                hc_file_readers.append(file_reader)
             else:
                 unclaimed_readers.append(file_reader)
-        return (unclaimed_readers, translated_vcf_readers)
+        return (unclaimed_readers, vcf_readers)

@@ -172,16 +172,23 @@ class Mutect(object):
             tag.add_tag_values(vcf_record)
         return vcf_record.asText()
 
+    @staticmethod
+    def _is_mutect_vcf(file_reader):
+        if file_reader.file_name.endswith(".vcf"):
+            vcf_reader = vcf.VcfReader(file_reader)
+            for metaheader in vcf_reader.metaheaders:
+                if metaheader.startswith("##MuTect"):
+                    return True
+        return False
+
     def claim(self, file_readers):
         unclaimed_readers = []
-        translated_vcf_readers = []
+        vcf_readers = []
         for file_reader in file_readers:
-            if self.name in file_reader.file_name:
-                translated_vcf_reader = vcf.RecognizedVcfReader(
-                                            vcf.VcfReader(
-                                                file_reader),
-                                            self)
-                translated_vcf_readers.append(translated_vcf_reader)
+            if self._is_mutect_vcf(file_reader):
+                vcf_reader = vcf.VcfReader(file_reader)
+                vcf_readers.append(vcf.RecognizedVcfReader(vcf_reader,
+                                                           self))
             else:
                 unclaimed_readers.append(file_reader)
-        return (unclaimed_readers, translated_vcf_readers)
+        return (unclaimed_readers, vcf_readers)
