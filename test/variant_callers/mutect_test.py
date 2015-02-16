@@ -6,7 +6,7 @@ import jacquard.variant_callers.common_tags as common_tags
 import jacquard.variant_callers.mutect as mutect
 import jacquard.vcf as vcf
 import test.test_case as test_case
-from test.vcf_test import MockFileReader
+from test.vcf_test import MockFileReader, MockVcfReader
 
 
 #TODO: (cgates): Lots of PEP8 cleanup in this class
@@ -253,4 +253,60 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(1, len(unrecognized_readers))
         self.assertEquals([reader1], unrecognized_readers)
         self.assertEquals(0, len(vcf_readers))
+
+class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
+    def test_metaheaders(self):
+        vcf_reader = MockVcfReader(metaheaders=["##foo", "##MuTect=123"])
+        mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
+        metaheaders = mutect_vcf_reader.metaheaders
+
+        self.assertIn(mutect._AlleleFreqTag().metaheader, metaheaders)
+        self.assertIn(mutect._DepthTag().metaheader, metaheaders)
+        self.assertIn(mutect._SomaticTag().metaheader, metaheaders)
+        self.assertIn("##foo", metaheaders)
+        self.assertIn("##MuTect=123", metaheaders)
+
+    def test_vcf_records_newTagsPresent(self):
+        record1 = vcf.VcfRecord(chrom="chr1",
+                                pos="21",
+                                ref="A",
+                                alt="G",
+                                sample_tag_values={"sampleA": {"DP": "45"},
+                                                   "sampleB": {"DP": "67"}})
+        record2 = vcf.VcfRecord(chrom="chr1",
+                                pos="22",
+                                ref="A",
+                                alt="G",
+                                sample_tag_values={"sampleA": {"DP": "46"},
+                                                   "sampleB": {"DP": "68"}})
+        vcf_reader = MockVcfReader(records=[record1, record2])
+
+        mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
+        vcf_records = [record for record in mutect_vcf_reader.vcf_records()]
+
+        self.assertEquals(2, len(vcf_records))
+        self.assertIn(mutect.JQ_MUTECT_TAG + "DP",
+                      vcf_records[0].sample_tag_values["sampleA"])
+        self.assertIn(mutect.JQ_MUTECT_TAG + "DP",
+                      vcf_records[1].sample_tag_values["sampleA"])
+
+    def test_open_and_close(self):
+        vcf_reader = MockVcfReader(metaheaders=["##foo", "##MuTect=123"])
+        mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
+        mutect_vcf_reader.open()
+        mutect_vcf_reader.close()
+
+        self.assertTrue(mutect_vcf_reader.open)
+        self.assertTrue(mutect_vcf_reader.close)
+
+    def test_column_header_mangleSampleName(self):
+        column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|25714|25715")
+        meta_header = '##MuTect="123 tumor_sample_name=25715 normal_sample_name=25714"'
+        vcf_reader = MockVcfReader(metaheaders=[meta_header],
+                                   column_header=column_header)
+        mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
+
+        expected_column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR")
+
+        self.assertEquals(expected_column_header, mutect_vcf_reader.column_header)
 

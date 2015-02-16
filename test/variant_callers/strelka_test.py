@@ -1,6 +1,6 @@
 # pylint: disable=line-too-long,too-many-public-methods,too-few-public-methods
 # pylint: disable=invalid-name,global-statement,too-many-format-args
-import os
+
 import unittest
 
 from jacquard import __version__
@@ -8,7 +8,8 @@ from jacquard.utils import JQException
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.variant_callers.strelka as strelka
 import jacquard.vcf as vcf
-from test.vcf_test import MockFileReader
+from test.vcf_test import MockFileReader, MockVcfReader
+import test.test_case as test_case
 
 
 #TODO: (cgates): Lots of PEP8 cleanup in this class
@@ -146,7 +147,6 @@ class SomaticTagTestCase(unittest.TestCase):
 
 
 class StrelkaTestCase(unittest.TestCase):
-
     def setUp(self):
         unittest.TestCase.setUp(self)
         self.caller = strelka.Strelka()
@@ -260,4 +260,49 @@ class StrelkaTestCase(unittest.TestCase):
         self.assertEquals(1, len(unrecognized_readers))
         self.assertEquals([reader1], unrecognized_readers)
         self.assertEquals(0, len(vcf_readers))
+
+class StrelkaVcfReaderTestCase(test_case.JacquardBaseTestCase):
+    def test_metaheaders(self):
+        vcf_reader = MockVcfReader(metaheaders=["##foo", "##source=strelka"])
+        strelka_vcf_reader = strelka._StrelkaVcfReader(vcf_reader)
+        metaheaders = strelka_vcf_reader.metaheaders
+
+        self.assertIn(strelka._AlleleFreqTag().metaheader, metaheaders)
+        self.assertIn(strelka._DepthTag().metaheader, metaheaders)
+        self.assertIn(strelka._SomaticTag().metaheader, metaheaders)
+        self.assertIn("##foo", metaheaders)
+        self.assertIn("##source=strelka", metaheaders)
+
+    def test_vcf_records_newTagsPresent(self):
+        record1 = vcf.VcfRecord(chrom="chr1",
+                                pos="21",
+                                ref="A",
+                                alt="G",
+                                sample_tag_values={"sampleA": {"DP2": "45"},
+                                                   "sampleB": {"DP2": "67"}})
+        record2 = vcf.VcfRecord(chrom="chr1",
+                                pos="22",
+                                ref="A",
+                                alt="G",
+                                sample_tag_values={"sampleA": {"DP2": "46"},
+                                                   "sampleB": {"DP2": "68"}})
+        vcf_reader = MockVcfReader(records=[record1, record2])
+
+        strelka_vcf_reader = strelka._StrelkaVcfReader(vcf_reader)
+        vcf_records = [record for record in strelka_vcf_reader.vcf_records()]
+
+        self.assertEquals(2, len(vcf_records))
+        self.assertIn(strelka.JQ_STRELKA_TAG + "DP",
+                      vcf_records[0].sample_tag_values["sampleA"])
+        self.assertIn(strelka.JQ_STRELKA_TAG + "DP",
+                      vcf_records[1].sample_tag_values["sampleA"])
+
+    def test_open_and_close(self):
+        vcf_reader = MockVcfReader(metaheaders=["##foo", "##source=strelka"])
+        strelka_vcf_reader = strelka._StrelkaVcfReader(vcf_reader)
+        strelka_vcf_reader.open()
+        strelka_vcf_reader.close()
+
+        self.assertTrue(strelka_vcf_reader.open)
+        self.assertTrue(strelka_vcf_reader.close)
 

@@ -3,13 +3,16 @@
 import os
 import unittest
 
-from jacquard.variant_callers import varscan
-from jacquard.utils import JQException
-from jacquard import __version__
-import jacquard.vcf as vcf
 from testfixtures import TempDirectory
+
+from jacquard import __version__
+from jacquard.utils import JQException
+from jacquard.variant_callers import varscan
 import jacquard.variant_callers.common_tags as common_tags
+import jacquard.vcf as vcf
 import test.test_case as test_case
+from test.vcf_test import MockVcfReader
+
 
 ORIGINAL_REPORTED_TAG = None
 ORIGINAL_PASSED_TAG = None
@@ -418,4 +421,97 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(1, len(unrecognized_readers))
         self.assertEquals([reader1], unrecognized_readers)
         self.assertEquals(0, len(vcf_readers))
+
+class VarscanVcfReaderTestCase(test_case.JacquardBaseTestCase):
+    def test_metaheaders(self):
+        vcf_reader = MockVcfReader(metaheaders=["##foo", "##source=VarScan2"])
+        varscan_vcf_reader = varscan._VarscanVcfReader(vcf_reader)
+        metaheaders = varscan_vcf_reader.metaheaders
+
+        self.assertIn(varscan._AlleleFreqTag().metaheader, metaheaders)
+        self.assertIn(varscan._DepthTag().metaheader, metaheaders)
+        self.assertIn(varscan._SomaticTag().metaheader, metaheaders)
+        self.assertIn("##foo", metaheaders)
+        self.assertIn("##source=VarScan2", metaheaders)
+
+    def test_vcf_records_newTagsPresent(self):
+        record1 = vcf.VcfRecord(chrom="chr1",
+                                pos="21",
+                                ref="A",
+                                alt="G",
+                                sample_tag_values={"sampleA": {"DP": "45"},
+                                                   "sampleB": {"DP": "67"}})
+        record2 = vcf.VcfRecord(chrom="chr1",
+                                pos="22",
+                                ref="A",
+                                alt="G",
+                                sample_tag_values={"sampleA": {"DP": "46"},
+                                                   "sampleB": {"DP": "68"}})
+        vcf_reader = MockVcfReader(records=[record1, record2])
+
+        varscan_vcf_reader = varscan._VarscanVcfReader(vcf_reader)
+        vcf_records = [record for record in varscan_vcf_reader.vcf_records()]
+
+        self.assertEquals(2, len(vcf_records))
+        self.assertIn(varscan.JQ_VARSCAN_TAG + "DP",
+                      vcf_records[0].sample_tag_values["sampleA"])
+        self.assertIn(varscan.JQ_VARSCAN_TAG + "DP",
+                      vcf_records[1].sample_tag_values["sampleA"])
+
+#TODO: jebene - this isn't an accurate reflection of a match - MAKE PASS
+    def xtest_vcf_records_SomHcFileIndel(self):
+        record1 = vcf.VcfRecord(chrom="chr1", pos="21", ref="A", alt="G", vcf_filter="PASS")
+        record2 = vcf.VcfRecord(chrom="chr1", pos="22", ref="A", alt="TT", vcf_filter="PASS")
+        vcf_reader = MockVcfReader(records=[record1, record2])
+
+        content1 = ["chrom\tposition\tref\tvar",
+                    "chr1\t21\tT\t-C",
+                    "chr1\t22\tA\t+TT"]
+        somatic_hc_reader = MockFileReader("fileA.Somatic.hc.fpfilter.pass", content1)
+
+        varscan_vcf_reader = varscan._VarscanVcfReader(vcf_reader, somatic_hc_reader)
+        vcf_records = [record for record in varscan_vcf_reader.vcf_records()]
+
+        self.assertEquals(2, len(vcf_records))
+        self.assertIn(varscan._LOW_CONFIDENCE_FILTER, vcf_records[0].filter)
+        self.assertIn("PASS", vcf_records[1].filter)
+
+    def test_vcf_records_SomHcFileSNP(self):
+        record1 = vcf.VcfRecord(chrom="chr1", pos="21", ref="A", alt="G", vcf_filter="PASS")
+        record2 = vcf.VcfRecord(chrom="chr1", pos="22", ref="A", alt="T", vcf_filter="PASS")
+        vcf_reader = MockVcfReader(records=[record1, record2])
+
+        content1 = ["chrom\tposition\tref\tvar",
+                    "chr1\t21\tA\tG",
+                    "chr1\t22\tA\tT"]
+        somatic_hc_reader = MockFileReader("fileA.Somatic.hc.fpfilter.pass", content1)
+
+        varscan_vcf_reader = varscan._VarscanVcfReader(vcf_reader, somatic_hc_reader)
+        vcf_records = [record for record in varscan_vcf_reader.vcf_records()]
+
+        self.assertEquals(2, len(vcf_records))
+        self.assertIn("PASS", vcf_records[0].filter)
+        self.assertIn("PASS", vcf_records[1].filter)
+
+    def test_open_and_close(self):
+        vcf_reader = MockVcfReader(metaheaders=["##foo", "##source=VarScan2"])
+        varscan_vcf_reader = varscan._VarscanVcfReader(vcf_reader)
+        varscan_vcf_reader.open()
+        varscan_vcf_reader.close()
+
+        self.assertTrue(varscan_vcf_reader.open)
+        self.assertTrue(varscan_vcf_reader.close)
+
+    def test_get_coordinates_from_somatic_hc_file(self):
+        vcf_reader = MockVcfReader()
+
+        content1 = ["chrom\tposition\tref\tvar",
+                    "chr1\t1560350\tT\t-G",
+                    "chr3\t1890462\tA\t-G"]
+        somatic_hc_reader = MockFileReader("fileA.Somatic.hc.fpfilter.pass", content1)
+
+        varscan_vcf_reader = varscan._VarscanVcfReader(vcf_reader, somatic_hc_reader)
+        self.assertEquals(2, len(varscan_vcf_reader.som_hc_coords))
+        self.assertIsInstance(varscan_vcf_reader.som_hc_coords[0], vcf.VcfRecord)
+        self.assertEquals("1560350", varscan_vcf_reader.som_hc_coords[0].pos)
 

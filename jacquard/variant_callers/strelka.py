@@ -175,7 +175,8 @@ class Strelka(object):
                                     "should have a snvs file and an indels "
                                     "file.")
 
-        vcf_readers = [vcf.VcfReader(file_readers[0]), vcf.VcfReader(file_readers[1])]
+        vcf_readers = [vcf.VcfReader(file_readers[0]),
+                       vcf.VcfReader(file_readers[1])]
         if not vcf_readers[0].column_header == vcf_readers[1].column_header:
             raise utils.JQException("The column headers for VCF files [{},{}] "
                                     "do not match."\
@@ -264,6 +265,14 @@ class Strelka(object):
     def validate_file_set(self, all_keys):
         pass
 
+
+    def _add_tags(self, vcf_record):
+        for tag in self.tags:
+            tag.add_tag_values(vcf_record)
+        return vcf_record
+
+
+    #TODO: (cgates): remove this when translate is complete
     def add_tags(self, vcf_record):
         for tag in self.tags:
             tag.add_tag_values(vcf_record)
@@ -288,3 +297,27 @@ class Strelka(object):
             else:
                 unclaimed_readers.append(file_reader)
         return (unclaimed_readers, vcf_readers)
+
+class _StrelkaVcfReader(object):
+    def __init__(self, vcf_reader):
+        self._vcf_reader = vcf_reader
+        self._caller = Strelka()
+
+    def open(self):
+        return self._vcf_reader.open()
+
+    def close(self):
+        return self._vcf_reader.close()
+    @property
+    def metaheaders(self):
+        new_metaheaders = list(self._vcf_reader.metaheaders)
+        new_metaheaders.extend(self._caller.get_new_metaheaders())
+        return new_metaheaders
+
+    @property
+    def column_header(self):
+        return self._vcf_reader.column_header
+
+    def vcf_records(self):
+        for vcf_record in self._vcf_reader.vcf_records():
+            yield self._caller._add_tags(vcf_record)

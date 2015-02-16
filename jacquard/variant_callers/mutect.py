@@ -85,6 +85,9 @@ class _SomaticTag(object):
             return "0"
 
 class Mutect(object):
+    _NORMAL_SAMPLE_KEY = "normal_sample_name"
+    _TUMOR_SAMPLE_KEY = "tumor_sample_name"
+
     def __init__(self):
         self.name = "MuTect"
         self.abbr = "MT"
@@ -167,6 +170,7 @@ class Mutect(object):
                 break
         return valid
 
+    #TODO: (cgates): remove this when translate is complete
     def add_tags(self, vcf_record):
         for tag in self.tags:
             tag.add_tag_values(vcf_record)
@@ -192,3 +196,70 @@ class Mutect(object):
             else:
                 unclaimed_readers.append(file_reader)
         return (unclaimed_readers, vcf_readers)
+
+    def _add_tags(self, vcf_record):
+        for tag in self.tags:
+            tag.add_tag_values(vcf_record)
+        return vcf_record
+
+    @staticmethod
+    def _build_mutect_dict(metaheaders):
+        mutect_dict = {}
+        for metaheader in metaheaders:
+            if metaheader.startswith("##MuTect="):
+                split_line = metaheader.strip('"').split(" ")
+                for item in split_line:
+                    split_item = item.split("=")
+                    try:
+                        mutect_dict[split_item[0]] = split_item[1]
+                    except IndexError:
+                        pass
+
+        return mutect_dict
+
+    def _get_new_column_header(self, vcf_reader):
+        mutect_dict = self._build_mutect_dict(vcf_reader.metaheaders)
+
+        new_header_list = []
+        required_keys = set([self._NORMAL_SAMPLE_KEY, self._TUMOR_SAMPLE_KEY])
+        mutect_keys = set(mutect_dict.keys())
+
+        if not required_keys.issubset(mutect_keys):
+            raise utils.JQException("Unable to determine normal "
+                                    "and tumor sample ordering "
+                                    "based on MuTect metaheader.")
+
+        for field_name in vcf_reader.column_header.split("\t"):
+            if field_name == mutect_dict[self._NORMAL_SAMPLE_KEY]:
+                field_name = "NORMAL"
+            elif field_name == mutect_dict[self._TUMOR_SAMPLE_KEY]:
+                field_name = "TUMOR"
+            new_header_list.append(field_name)
+
+        return "\t".join(new_header_list)
+
+
+class _MutectVcfReader(object):
+    def __init__(self, vcf_reader):
+        self._vcf_reader = vcf_reader
+        self._caller = Mutect()
+
+    def open(self):
+        return self._vcf_reader.open()
+
+    def close(self):
+        return self._vcf_reader.close()
+    @property
+    def metaheaders(self):
+        new_metaheaders = list(self._vcf_reader.metaheaders)
+        new_metaheaders.extend(self._caller.get_new_metaheaders())
+        return new_metaheaders
+
+    @property
+    def column_header(self):
+        return self._caller._get_new_column_header(self._vcf_reader)
+
+    def vcf_records(self):
+        for vcf_record in self._vcf_reader.vcf_records():
+            yield self._caller._add_tags(vcf_record)
+

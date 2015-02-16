@@ -10,6 +10,7 @@ import re
 VARSCAN_SOMATIC_HEADER = ("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"
                           "NORMAL|TUMOR").replace("|", "\t")
 JQ_VARSCAN_TAG = "JQ_VS_"
+_LOW_CONFIDENCE_FILTER = "JQ_LOW_CONFIDENCE"
 
 class _AlleleFreqTag(object):
     #pylint: disable=too-few-public-methods
@@ -83,6 +84,7 @@ class _SomaticTag(object):
                                                   __version__)
 
     @staticmethod
+    #TODO: jebene - edit this to reflect new HCTag changes
     def add_tag_values(vcf_record):
         info_array = vcf_record.info.split(";")
         varscan_tag = JQ_VARSCAN_TAG + "HC_SOM"
@@ -96,15 +98,34 @@ class _SomaticTag(object):
 
         vcf_record.add_sample_tag_value(varscan_tag, sample_values)
 
+class _HCTag(object):
+    def __init__(self):
+        #pylint: disable=line-too-long
+        self.metaheader = ('##FILTER=<ID={}HC,'
+                           'Number=1,'
+                           'Type=Flag,'
+                           'Description="Jacquard high-confidence somatic flag for VarScan. Based on intersection with filtered VarScan variants"'
+                           'Source="Jacquard",'
+                           'Version={}>').format(JQ_VARSCAN_TAG,
+                                                 __version__)
+
+    @staticmethod
+    def add_tag_values(vcf_record, som_hc_coords):
+        if vcf_record not in som_hc_coords:
+            vcf_record.filter = _LOW_CONFIDENCE_FILTER
+        return vcf_record
 
 class Varscan(object):
     _HC_FILE_SUFFIX = ".Somatic.hc.fpfilter.pass"
+
     def __init__(self):
         self.name = "VarScan"
         self.abbr = "VS"
         self.tags = [common_tags.ReportedTag(JQ_VARSCAN_TAG),
                      common_tags.PassedTag(JQ_VARSCAN_TAG),
-                     _AlleleFreqTag(), _DepthTag(), _SomaticTag()]
+                     _AlleleFreqTag(),
+                     _DepthTag(),
+                     _SomaticTag()]
         self.meta_header = "##jacquard.normalize_varscan.sources={0},{1}\n"
 
     @staticmethod
@@ -308,3 +329,71 @@ class Varscan(object):
             else:
                 unclaimed_readers.append(file_reader)
         return (unclaimed_readers, vcf_readers)
+
+class _VarscanVcfReader(object):
+    def __init__(self, vcf_reader, som_hc_file_reader=None):
+        self._vcf_reader = vcf_reader
+        self._caller = Varscan()
+        self.tags = [common_tags.ReportedTag(JQ_VARSCAN_TAG),
+                     common_tags.PassedTag(JQ_VARSCAN_TAG),
+                     _AlleleFreqTag(),
+                     _DepthTag(),
+                     _SomaticTag()]
+
+        self.som_hc_coords = None
+        if som_hc_file_reader:
+            self.som_hc_coords = self._find_som_hc_coords(som_hc_file_reader)
+
+    def open(self):
+        return self._vcf_reader.open()
+
+    def close(self):
+        return self._vcf_reader.close()
+    @property
+    def metaheaders(self):
+        new_metaheaders = list(self._vcf_reader.metaheaders)
+        new_metaheaders.extend(self._caller.get_new_metaheaders())
+        if self.som_hc_coords:
+            new_metaheaders.extend(_HCTag().metaheader)
+        return new_metaheaders
+
+    @property
+    def column_header(self):
+        return self._vcf_reader.column_header
+
+    def vcf_records(self):
+        for vcf_record in self._vcf_reader.vcf_records():
+            tagged_record = self._add_tags(vcf_record)
+            if self.som_hc_coords:
+                yield _HCTag().add_tag_values(tagged_record, self.som_hc_coords)
+            else:
+                yield tagged_record
+
+    def _add_tags(self, vcf_record):
+        for tag in self.tags:
+            tag.add_tag_values(vcf_record)
+        return vcf_record
+
+    @staticmethod
+    def _find_som_hc_coords(file_reader):
+        vcf_records = []
+        file_reader.open()
+        for line in file_reader.read_lines():
+            if line.startswith("chrom\tposition\tref\tvar"):
+                column_header = line
+            else:
+                split_line = line.split("\t")
+                #TODO: (jebene) - this doesn't look like it'll correctly handle the ref/alts
+                vcf_records.append(vcf.VcfRecord(split_line[0],
+                                                 split_line[1],
+                                                 split_line[2],
+                                                 split_line[3]))
+        file_reader.close()
+
+        if not column_header:
+            raise utils.JQException("Error. The hc file {} is in an incorrect"
+                                    "format. Review inputs and try"
+                                    "again.".format(file_reader.file_name))
+
+        return vcf_records
+
