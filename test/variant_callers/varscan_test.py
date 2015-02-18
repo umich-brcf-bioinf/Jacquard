@@ -12,6 +12,7 @@ import jacquard.variant_callers.common_tags as common_tags
 import jacquard.vcf as vcf
 import test.test_case as test_case
 from test.vcf_test import MockVcfReader
+from jacquard.variant_callers.varscan import _HCTag
 
 
 ORIGINAL_REPORTED_TAG = None
@@ -60,8 +61,9 @@ class MockFileReader(object):
     def close(self):
         self.close_was_called = True
 
-class CommonTagTestCase(unittest.TestCase):
+class CommonTagTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
+        super(CommonTagTestCase, self).setUp()
         global ORIGINAL_REPORTED_TAG
         global ORIGINAL_PASSED_TAG
         ORIGINAL_REPORTED_TAG = common_tags.ReportedTag
@@ -72,6 +74,7 @@ class CommonTagTestCase(unittest.TestCase):
     def tearDown(self):
         common_tags.ReportedTag = ORIGINAL_REPORTED_TAG
         common_tags.PassedTag = ORIGINAL_PASSED_TAG
+        super(CommonTagTestCase, self).tearDown()
 
     def test_reported_tag(self):
         varscan_instance = varscan.Varscan()
@@ -80,7 +83,29 @@ class CommonTagTestCase(unittest.TestCase):
         self.assertEquals("JQ_VS_", reported_tag.input_caller_name)
         self.assertEquals("JQ_VS_", passed_tag.input_caller_name)
 
-class AlleleFreqTagTestCase(unittest.TestCase):
+class HCTagTestCase(test_case.JacquardBaseTestCase):
+    def test_add_tag_values_highConfidence(self):
+        record = vcf.VcfRecord("chr1", "42", "ref", "alt", vcf_filter="pass")
+        input_reader = MockFileReader("foo.txt", ["chrom\tposition\tref\tvar","chr1\t42\tref\tvar","chr2\t50\tref\tvar"])
+        expected = "pass"
+        actual = _HCTag(input_reader).add_tag_values(record).filter
+        self.assertEquals(expected, actual)
+
+    def test_add_tag_values_lowConfidence(self):
+        record = vcf.VcfRecord("chr1", "30", "ref", "alt", vcf_filter="pass")
+        input_reader = MockFileReader("foo.txt", ["chrom\tposition\tref\tvar","chr1\t42\tref\tvar","chr2\t50\tref\tvar"])
+        expected = varscan._LOW_CONFIDENCE_FILTER
+        actual = _HCTag(input_reader).add_tag_values(record).filter
+        self.assertEquals(expected, actual)
+
+    def test_add_tag_values_appendsLowConfidenceForNonPass(self):
+        record = vcf.VcfRecord("chr1", "30", "ref", "alt", vcf_filter="indelBias")
+        input_reader = MockFileReader("foo.txt", ["chrom\tposition\tref\tvar","chr1\t42\tref\tvar","chr2\t50\tref\tvar"])
+        expected = "indelBias;" + varscan._LOW_CONFIDENCE_FILTER
+        actual = _HCTag(input_reader).add_tag_values(record).filter
+        self.assertEquals(expected, actual)
+
+class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         self.assertEqual('##FORMAT=<ID={0}AF,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)",Source="Jacquard",Version={1}>'.format(varscan.JQ_VARSCAN_TAG, __version__),
                          varscan._AlleleFreqTag().metaheader)
@@ -501,17 +526,3 @@ class VarscanVcfReaderTestCase(test_case.JacquardBaseTestCase):
 
         self.assertTrue(varscan_vcf_reader.open)
         self.assertTrue(varscan_vcf_reader.close)
-
-    def test_get_coordinates_from_somatic_hc_file(self):
-        vcf_reader = MockVcfReader()
-
-        content1 = ["chrom\tposition\tref\tvar",
-                    "chr1\t1560350\tT\t-G",
-                    "chr3\t1890462\tA\t-G"]
-        somatic_hc_reader = MockFileReader("fileA.Somatic.hc.fpfilter.pass", content1)
-
-        varscan_vcf_reader = varscan._VarscanVcfReader(vcf_reader, somatic_hc_reader)
-        self.assertEquals(2, len(varscan_vcf_reader.som_hc_coords))
-        self.assertIsInstance(varscan_vcf_reader.som_hc_coords[0], vcf.VcfRecord)
-        self.assertEquals("1560350", varscan_vcf_reader.som_hc_coords[0].pos)
-

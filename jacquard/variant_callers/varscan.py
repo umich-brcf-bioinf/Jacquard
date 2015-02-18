@@ -99,7 +99,7 @@ class _SomaticTag(object):
         vcf_record.add_sample_tag_value(varscan_tag, sample_values)
 
 class _HCTag(object):
-    def __init__(self):
+    def __init__(self, file_reader):
         #pylint: disable=line-too-long
         self.metaheader = ('##FILTER=<ID={}HC,'
                            'Number=1,'
@@ -108,11 +108,33 @@ class _HCTag(object):
                            'Source="Jacquard",'
                            'Version={}>').format(JQ_VARSCAN_TAG,
                                                  __version__)
+        self.hc_loci = self._parse_file_reader(file_reader)
 
     @staticmethod
-    def add_tag_values(vcf_record, som_hc_coords):
-        if vcf_record not in som_hc_coords:
-            vcf_record.filter = _LOW_CONFIDENCE_FILTER
+    def _parse_file_reader(file_reader):
+        hc_loci = set()
+        file_reader.open()
+        for line in file_reader.read_lines():
+            if line.startswith("chrom\tposition\tref\tvar"):
+                column_header = line
+            else:
+                split_line = line.split("\t")
+                hc_loci.add((split_line[0], split_line[1]))
+        file_reader.close()
+
+        if not column_header:
+            raise utils.JQException("Error. The hc file {} is in an incorrect"
+                                    "format. Review inputs and try"
+                                    "again.".format(file_reader.file_name))
+
+        return hc_loci
+
+    def add_tag_values(self, vcf_record):
+        if (vcf_record.chrom, vcf_record.pos) not in self.hc_loci:
+            if vcf_record.filter.lower() == "pass":
+                vcf_record.filter = _LOW_CONFIDENCE_FILTER
+            else:
+                vcf_record.filter += ";" + _LOW_CONFIDENCE_FILTER
         return vcf_record
 
 class Varscan(object):
@@ -342,7 +364,7 @@ class _VarscanVcfReader(object):
 
         self.som_hc_coords = None
         if som_hc_file_reader:
-            self.som_hc_coords = self._find_som_hc_coords(som_hc_file_reader)
+            self.tags.append(_HCTag(som_hc_file_reader))
 
     def open(self):
         return self._vcf_reader.open()
@@ -353,8 +375,6 @@ class _VarscanVcfReader(object):
     def metaheaders(self):
         new_metaheaders = list(self._vcf_reader.metaheaders)
         new_metaheaders.extend(self._caller.get_new_metaheaders())
-        if self.som_hc_coords:
-            new_metaheaders.extend(_HCTag().metaheader)
         return new_metaheaders
 
     @property
@@ -363,37 +383,9 @@ class _VarscanVcfReader(object):
 
     def vcf_records(self):
         for vcf_record in self._vcf_reader.vcf_records():
-            tagged_record = self._add_tags(vcf_record)
-            if self.som_hc_coords:
-                yield _HCTag().add_tag_values(tagged_record, self.som_hc_coords)
-            else:
-                yield tagged_record
+            yield self._add_tags(vcf_record)
 
     def _add_tags(self, vcf_record):
         for tag in self.tags:
             tag.add_tag_values(vcf_record)
         return vcf_record
-
-    @staticmethod
-    def _find_som_hc_coords(file_reader):
-        vcf_records = []
-        file_reader.open()
-        for line in file_reader.read_lines():
-            if line.startswith("chrom\tposition\tref\tvar"):
-                column_header = line
-            else:
-                split_line = line.split("\t")
-                #TODO: (jebene) - this doesn't look like it'll correctly handle the ref/alts
-                vcf_records.append(vcf.VcfRecord(split_line[0],
-                                                 split_line[1],
-                                                 split_line[2],
-                                                 split_line[3]))
-        file_reader.close()
-
-        if not column_header:
-            raise utils.JQException("Error. The hc file {} is in an incorrect"
-                                    "format. Review inputs and try"
-                                    "again.".format(file_reader.file_name))
-
-        return vcf_records
-
