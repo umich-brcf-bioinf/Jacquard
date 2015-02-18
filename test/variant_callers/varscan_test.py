@@ -28,7 +28,7 @@ class MockWriter(object):
         self.opened = False
         self.closed = False
 
-    def open (self):
+    def open(self):
         self.opened = True
 
     def write(self, content):
@@ -41,7 +41,7 @@ class MockWriter(object):
         self.closed = True
 
 class MockFileReader(object):
-    def __init__(self, input_filepath="/foo/mockFileReader.txt", content = None):
+    def __init__(self, input_filepath="/foo/mockFileReader.txt", content=None):
         self.input_filepath = input_filepath
         self.file_name = os.path.basename(input_filepath)
         if content:
@@ -84,26 +84,51 @@ class CommonTagTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals("JQ_VS_", passed_tag.input_caller_name)
 
 class HCTagTestCase(test_case.JacquardBaseTestCase):
-    def test_add_tag_values_highConfidence(self):
+    def test_add_tag_values_highConfidenceDoesNotChangeFilter(self):
         record = vcf.VcfRecord("chr1", "42", "ref", "alt", vcf_filter="pass")
-        input_reader = MockFileReader("foo.txt", ["chrom\tposition\tref\tvar","chr1\t42\tref\tvar","chr2\t50\tref\tvar"])
+        input_reader = MockFileReader("foo.txt", ["chrom\tposition\tref\tvar",
+                                                  "chr1\t42\tref\tvar",
+                                                  "chr2\t50\tref\tvar"])
         expected = "pass"
         actual = _HCTag(input_reader).add_tag_values(record).filter
         self.assertEquals(expected, actual)
 
-    def test_add_tag_values_lowConfidence(self):
+    def test_add_tag_values_lowConfidencePassingReplacesFilter(self):
         record = vcf.VcfRecord("chr1", "30", "ref", "alt", vcf_filter="pass")
-        input_reader = MockFileReader("foo.txt", ["chrom\tposition\tref\tvar","chr1\t42\tref\tvar","chr2\t50\tref\tvar"])
+        input_reader = MockFileReader("foo.txt", ["chrom\tposition\tref\tvar",
+                                                  "chr1\t42\tref\tvar",
+                                                  "chr2\t50\tref\tvar"])
         expected = varscan._LOW_CONFIDENCE_FILTER
         actual = _HCTag(input_reader).add_tag_values(record).filter
         self.assertEquals(expected, actual)
 
-    def test_add_tag_values_appendsLowConfidenceForNonPass(self):
+    def test_add_tag_values_lowConfidenceForNonPassAppendsToFilter(self):
         record = vcf.VcfRecord("chr1", "30", "ref", "alt", vcf_filter="indelBias")
-        input_reader = MockFileReader("foo.txt", ["chrom\tposition\tref\tvar","chr1\t42\tref\tvar","chr2\t50\tref\tvar"])
+        input_reader = MockFileReader("foo.txt", ["chrom\tposition\tref\tvar",
+                                                  "chr1\t42\tref\tvar",
+                                                  "chr2\t50\tref\tvar"])
         expected = "indelBias;" + varscan._LOW_CONFIDENCE_FILTER
         actual = _HCTag(input_reader).add_tag_values(record).filter
         self.assertEquals(expected, actual)
+
+    def test_add_tag_values_lowConfidenceReplacesNullFilter(self):
+        record = vcf.VcfRecord("chr1", "30", "ref", "alt", vcf_filter=".")
+        input_reader = MockFileReader("foo.txt", ["chrom\tposition\tref\tvar",
+                                                  "chr1\t42\tref\tvar",
+                                                  "chr2\t50\tref\tvar"])
+        expected = varscan._LOW_CONFIDENCE_FILTER
+        actual = _HCTag(input_reader).add_tag_values(record).filter
+        self.assertEquals(expected, actual)
+
+    def test_add_tag_values_lowConfidenceReplacesEmptyFilter(self):
+        record = vcf.VcfRecord("chr1", "30", "ref", "alt", vcf_filter="")
+        input_reader = MockFileReader("foo.txt", ["chrom\tposition\tref\tvar",
+                                                  "chr1\t42\tref\tvar",
+                                                  "chr2\t50\tref\tvar"])
+        expected = varscan._LOW_CONFIDENCE_FILTER
+        actual = _HCTag(input_reader).add_tag_values(record).filter
+        self.assertEquals(expected, actual)
+
 
 class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):

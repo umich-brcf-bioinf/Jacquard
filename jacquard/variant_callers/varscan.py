@@ -99,6 +99,8 @@ class _SomaticTag(object):
         vcf_record.add_sample_tag_value(varscan_tag, sample_values)
 
 class _HCTag(object):
+    _FILTERS_TO_REPLACE = set(["", ".", "pass"])
+
     def __init__(self, file_reader):
         #pylint: disable=line-too-long
         self.metaheader = ('##FILTER=<ID={}HC,'
@@ -112,6 +114,7 @@ class _HCTag(object):
 
     @staticmethod
     def _parse_file_reader(file_reader):
+        column_header = None
         hc_loci = set()
         file_reader.open()
         for line in file_reader.read_lines():
@@ -131,11 +134,15 @@ class _HCTag(object):
 
     def add_tag_values(self, vcf_record):
         if (vcf_record.chrom, vcf_record.pos) not in self.hc_loci:
-            if vcf_record.filter.lower() == "pass":
-                vcf_record.filter = _LOW_CONFIDENCE_FILTER
-            else:
-                vcf_record.filter += ";" + _LOW_CONFIDENCE_FILTER
+            vcf_record.filter = self.append_or_replace(vcf_record.filter)
         return vcf_record
+
+    def append_or_replace(self, existing_filter):
+        if existing_filter.lower() in self._FILTERS_TO_REPLACE:
+            return _LOW_CONFIDENCE_FILTER
+        else:
+            return existing_filter + ";" + _LOW_CONFIDENCE_FILTER
+
 
 class Varscan(object):
     _HC_FILE_SUFFIX = ".Somatic.hc.fpfilter.pass"
@@ -352,6 +359,8 @@ class Varscan(object):
                 unclaimed_readers.append(file_reader)
         return (unclaimed_readers, vcf_readers)
 
+#TODO: (cgates): If we can, I would rather inflate the high confidence set when
+# we open and not on construction.
 class _VarscanVcfReader(object):
     def __init__(self, vcf_reader, som_hc_file_reader=None):
         self._vcf_reader = vcf_reader
