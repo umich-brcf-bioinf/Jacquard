@@ -118,13 +118,14 @@ class _HCTag(object):
         hc_loci = set()
         file_reader.open()
         for line in file_reader.read_lines():
-            if line.startswith("chrom\tposition\tref\tvar"):
+            if line.startswith("chrom\tposition"):
                 column_header = line
             else:
                 split_line = line.split("\t")
                 hc_loci.add((split_line[0], split_line[1]))
         file_reader.close()
 
+        #TODO : (cgates): Please test this
         if not column_header:
             raise utils.JQException("Error. The hc file {} is in an incorrect"
                                     "format. Review inputs and try"
@@ -341,6 +342,7 @@ class Varscan(object):
             return "##source=VarScan2" in vcf_reader.metaheaders
         return False
 
+    #TODO: (cgates): Add check of header line (extract constant from HCTag)
     def _is_varscan_hc_file(self, file_reader):
         return file_reader.file_name.endswith(self._HC_FILE_SUFFIX)
 
@@ -360,7 +362,7 @@ class Varscan(object):
         return (unclaimed_readers, vcf_readers)
 
 #TODO: (cgates): If we can, I would rather inflate the high confidence set when
-# we open and not on construction.
+# we open and not on construction. There is a pretty safe/clean way to do this.
 class _VarscanVcfReader(object):
     def __init__(self, vcf_reader, som_hc_file_reader=None):
         self._vcf_reader = vcf_reader
