@@ -191,8 +191,7 @@ class Mutect(object):
         for file_reader in file_readers:
             if self._is_mutect_vcf(file_reader):
                 vcf_reader = vcf.VcfReader(file_reader)
-                vcf_readers.append(vcf.RecognizedVcfReader(vcf_reader,
-                                                           self))
+                vcf_readers.append(_MutectVcfReader(vcf_reader))
             else:
                 unclaimed_readers.append(file_reader)
         return (unclaimed_readers, vcf_readers)

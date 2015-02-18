@@ -237,8 +237,8 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(1, len(unrecognized_readers))
         self.assertEquals([reader1], unrecognized_readers)
         self.assertEquals(1, len(vcf_readers))
-        self.assertIsInstance(vcf_readers[0], vcf.RecognizedVcfReader)
-        self.assertEquals(reader2.file_name, vcf_readers[0].file_name)
+        self.assertIsInstance(vcf_readers[0], mutect._MutectVcfReader)
+        self.assertEquals(reader2.file_name, vcf_readers[0]._vcf_reader.file_name)
 
     def test_claim_ignores_non_vcf_files(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."

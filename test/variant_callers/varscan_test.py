@@ -3,6 +3,7 @@
 import os
 import unittest
 
+from collections import defaultdict
 from testfixtures import TempDirectory
 
 from jacquard import __version__
@@ -248,7 +249,6 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
 
         self.assertRaisesRegexp(JQException, "Each patient in a VarScan directory should have a snp file and an indel file.", self.caller.decorate_files, filenames, decorator)
 
-
     def test_normalize(self):
         writer = MockWriter()
         content1 = ["##foo", "##bar", "#baz"]
@@ -418,6 +418,33 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         readers.append(MockFileReader(file1, content1))
         readers.append(MockFileReader(file2, content2))
 
+
+    def _get_tag_class_names(self, vcf_reader):
+        return [tag.__class__.__name__ for tag in vcf_reader.tags]
+
+    def test_claim_multiple_patients(self):
+        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
+        content1 = ["##foo", "##source=VarScan2", "#chrom", record1]
+        content2 = ["chrom\tposition", "1\t23"]
+        reader1 = MockFileReader("p2.fileA.vcf", content1)
+        reader2 = MockFileReader("p2.fileB.vcf", content1)
+        reader3 = MockFileReader("p2.Somatic.hc.fpfilter.pass", content2)
+        reader4 = MockFileReader("p3.fileA.vcf", content1)
+        file_readers = [reader1, reader2, reader3, reader4]
+
+        caller = varscan.Varscan()
+        dummy, vcf_readers = caller.claim(file_readers)
+
+        self.assertEquals(3, len(vcf_readers))
+        self.assertIsInstance(vcf_readers[0], varscan._VarscanVcfReader)
+        self.assertIn("_HCTag",
+                      self._get_tag_class_names(vcf_readers[0]))
+        self.assertIn("_HCTag",
+                      self._get_tag_class_names(vcf_readers[1]))
+        self.assertNotIn("_HCTag",
+                      self._get_tag_class_names(vcf_readers[2]))
+        self.assertEquals(reader1.file_name, vcf_readers[0]._vcf_reader.file_name)
+
     def test_claim_vcf_only(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
         content1 = ["##foo", "##MuTect=123", "#chrom", record1]
@@ -432,8 +459,8 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(1, len(unrecognized_readers))
         self.assertEquals([reader1], unrecognized_readers)
         self.assertEquals(1, len(vcf_readers))
-        self.assertIsInstance(vcf_readers[0], vcf.RecognizedVcfReader)
-        self.assertEquals(reader2.file_name, vcf_readers[0].file_name)
+        self.assertIsInstance(vcf_readers[0], varscan._VarscanVcfReader)
+        self.assertEquals(reader2.file_name, vcf_readers[0]._vcf_reader.file_name)
 
     def test_claim_vcf_and_filter_file(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
@@ -453,10 +480,10 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(1, len(unrecognized_readers))
         self.assertEquals([reader5], unrecognized_readers)
         self.assertEquals(2, len(vcf_readers))
-        self.assertIsInstance(vcf_readers[0], vcf.RecognizedVcfReader)
-        self.assertEquals(reader2.file_name, vcf_readers[0].file_name)
-        self.assertIsInstance(vcf_readers[1], vcf.RecognizedVcfReader)
-        self.assertEquals(reader4.file_name, vcf_readers[1].file_name)
+        self.assertIsInstance(vcf_readers[0], varscan._VarscanVcfReader)
+        self.assertEquals(reader2.file_name, vcf_readers[0]._vcf_reader.file_name)
+        self.assertIsInstance(vcf_readers[1], varscan._VarscanVcfReader)
+        self.assertEquals(reader4.file_name, vcf_readers[1]._vcf_reader.file_name)
 
 
     def test_claim_ignores_unpaired_non_vcf_files(self):
@@ -471,6 +498,21 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(1, len(unrecognized_readers))
         self.assertEquals([reader1], unrecognized_readers)
         self.assertEquals(0, len(vcf_readers))
+
+    def test_get_files_per_patient(self):
+        reader1 = MockFileReader("p1.fileA.txt")
+        reader2 = MockFileReader("p1.fileB.txt")
+        reader3 = MockFileReader("p2.fileA.txt")
+        reader4 = MockFileReader("p2.fileB.txt")
+        actual_patient_dict = varscan.Varscan._get_files_per_patient([reader1,
+                                                                      reader2,
+                                                                      reader3,
+                                                                      reader4])
+        expected_patient_dict = {"p2": [reader3, reader4],
+                                 "p1": [reader1, reader2]}
+
+        self.assertEquals(expected_patient_dict.keys(), dict(actual_patient_dict).keys())
+        self.assertEquals(expected_patient_dict.values(), dict(actual_patient_dict).values())
 
 class VarscanVcfReaderTestCase(test_case.JacquardBaseTestCase):
     def test_metaheaders(self):

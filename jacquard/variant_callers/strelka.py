@@ -292,8 +292,7 @@ class Strelka(object):
         for file_reader in file_readers:
             if self._is_strelka_vcf(file_reader):
                 vcf_reader = vcf.VcfReader(file_reader)
-                vcf_readers.append(vcf.RecognizedVcfReader(vcf_reader,
-                                                           self))
+                vcf_readers.append(_StrelkaVcfReader(vcf_reader))
             else:
                 unclaimed_readers.append(file_reader)
         return (unclaimed_readers, vcf_readers)

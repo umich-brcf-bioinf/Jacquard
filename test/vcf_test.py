@@ -113,6 +113,29 @@ class MockVcfReader(object):
     def close(self):
         self.closed = True
 
+class MockCaller(object):
+    def __init__(self, name="MockCaller", metaheaders=None):
+        self.name = name
+        if metaheaders:
+            self.metaheaders = metaheaders
+        else:
+            self.metaheaders = ["##mockMetaheader1"]
+        self.file_name_search = "snps|indels"
+
+    @staticmethod
+    def add_tags(vcfRecord):
+        return vcfRecord
+
+    @staticmethod
+    def decorate_files(filenames, dummy):
+        return filenames[0]+"foo"
+
+    def get_new_metaheaders(self):
+        return self.metaheaders
+
+    def claim(self, file_readers):
+        return (file_readers, self.name)
+
 class MockVcfRecord(object):
     @classmethod
     def parse_record(cls, vcf_line):
