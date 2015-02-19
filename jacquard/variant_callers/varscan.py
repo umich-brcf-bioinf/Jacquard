@@ -269,9 +269,9 @@ class Varscan(object):
 
                 if split_line[0] != "chrom" and split_line[0].startswith("chr"):
                     hc_key = vcf.VcfRecord(split_line[0],
-                                       split_line[1],
-                                       split_line[2],
-                                       split_line[3])
+                                           split_line[1],
+                                           split_line[2],
+                                           split_line[3])
                     hc_keys.append(hc_key)
             hc_file_reader.close()
 
@@ -378,7 +378,7 @@ class Varscan(object):
 
             for vcf_reader in vcf_readers:
                 trans_vcf_readers.append(_VarscanVcfReader(vcf_reader,
-                                                hc_file_reader))
+                                                           hc_file_reader))
 
         return unclaimed_readers, trans_vcf_readers
 

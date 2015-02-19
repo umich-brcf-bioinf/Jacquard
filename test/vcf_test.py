@@ -338,11 +338,11 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         self.assertRaises(KeyError, record.add_sample_tag_value, "F1", {"SampleA":0.6, "SampleB":0.6})
 
     def test_get_info_dict_empty(self):
-        vcf_record = VcfRecord("chr1", "42", "A", "C", info = "")
+        vcf_record = VcfRecord("chr1", "42", "A", "C", info="")
         self.assertEquals({}, vcf_record.info_dict)
 
     def test_get_info_dict_null(self):
-        vcf_record = VcfRecord("chr1", "42", "A", "C", info = ".")
+        vcf_record = VcfRecord("chr1", "42", "A", "C", info=".")
         self.assertEquals({}, vcf_record.info_dict)
 
     def test_add_info_field_assignedField(self):

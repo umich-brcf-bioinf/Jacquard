@@ -230,15 +230,19 @@ class ExpandTestCase(unittest.TestCase):
 
     def test_create_actual_column_list_duplicateRegexMatchDoesNotDuplicateColumns(self):
         potential_col_list = ["CHROM",
-                              "JQ_DP|SAMPLE_A|NORMAL", "JQ_DP|SAMPLE_B|NORMAL",
-                              "JQ_AF|SAMPLE_A|NORMAL", "JQ_AF|SAMPLE_B|NORMAL"]
+                              "JQ_DP|SAMPLE_A|NORMAL",
+                              "JQ_DP|SAMPLE_B|NORMAL",
+                              "JQ_AF|SAMPLE_A|NORMAL",
+                              "JQ_AF|SAMPLE_B|NORMAL"]
         col_spec = ["CHROM", r"JQ_DP.*", "JQ_.*"]
         actual_column_list = expand._create_actual_column_list(col_spec,
                                                                potential_col_list,
                                                                "col_spec.txt")
         expected_column_list = ["CHROM",
-                                "JQ_DP|SAMPLE_A|NORMAL", "JQ_DP|SAMPLE_B|NORMAL",
-                                "JQ_AF|SAMPLE_A|NORMAL", "JQ_AF|SAMPLE_B|NORMAL"]
+                                "JQ_DP|SAMPLE_A|NORMAL",
+                                "JQ_DP|SAMPLE_B|NORMAL",
+                                "JQ_AF|SAMPLE_A|NORMAL",
+                                "JQ_AF|SAMPLE_B|NORMAL"]
 
         self.assertEquals(expected_column_list, actual_column_list)
 
@@ -347,15 +351,17 @@ chr2|1|.|A|C|.|.|SOMATIC|GT|0/1|0/1
             input_file = os.path.join(input_dir.path, "P1.vcf")
             output_file = os.path.join(output_dir.path, "P1.txt")
             args = Namespace(input=input_file,
+                             original_output=output_file,
                              output=output_file,
                              column_specification=0)
 
             expand.execute(args, ["##extra_header1", "##extra_header2"])
 
             output_dir.check("P1.txt")
-            with open(os.path.join(output_dir.path, "P1.txt")) as actual_output_file:
+            actual_filename = os.path.join(output_dir.path, "P1.txt")
+            with open(actual_filename) as actual_output_file:
                 actual_output_lines = actual_output_file.readlines()
-        
+
         self.assertEquals(3, len(actual_output_lines))
 
     def test_execute_dirs(self):
@@ -369,84 +375,58 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             input_dir.write("P1.vcf", vcf_content)
-            input_file = os.path.join(input_dir.path,"P1.vcf")
-            output_file = os.path.join(output_dir.path,"P1.txt")
+            input_file = os.path.join(input_dir.path, "P1.vcf")
+            output_file = os.path.join(output_dir.path, "P1.txt")
             args = Namespace(input=input_file,
+                             original_output=output_file,
                              output=output_file,
                              column_specification=0)
 
             expand.execute(args, ["##extra_header1", "##extra_header2"])
 
             output_dir.check("P1.txt")
-            with open(os.path.join(output_dir.path, "P1.txt")) as actual_output_file:
+            actual_filename = os.path.join(output_dir.path, "P1.txt")
+            with open(actual_filename) as actual_output_file:
                 actual_output_lines = actual_output_file.readlines()
 
         self.assertEquals(3, len(actual_output_lines))
 
-#     def test_expand_emptyInputDir(self):
-# 
-#         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-#             args = Namespace(input=input_dir.path,
-#                              output=output_dir.path,
-#                              column_specification=0)
-# 
-#             self.assertRaisesRegexp(utils.JQException,
-#                                     ("Specified input directory .* contains "
-#                                      "no VCF files. Review inputs and .*"),
-#                                     expand.execute,
-#                                     args,
-#                                     ["extra_header1", "extra_header2"])
 
     def test_predict_output(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("foo.txt","")
-            args = Namespace(input=os.path.join(input_dir.path,"foo.txt"),
-                             output=os.path.join(output_dir.path,"consensus.txt"))
+            input_dir.write("foo.txt", "")
+            args = Namespace(input=os.path.join(input_dir.path, "foo.txt"),
+                             output=os.path.join(output_dir.path,
+                                                 "consensus.txt"))
 
             desired_output_files = expand._predict_output(args)
             expected_desired_output_files = set(["consensus.txt"])
-    
-            self.assertEquals(expected_desired_output_files, desired_output_files)
 
-#     def test_execute_inputDirOrOutputDir(self):
-#         vcf_content = ('''##source=strelka
-# ##INFO=<ID=SOMATIC,Number=1,Description="foo">
-# ##FORMAT=<ID=GT,Number=1,Description="bar">
-# #CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
-# chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
-# chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
-# ''').replace('|', "\t")
-# 
-#         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-#             input_dir.write("P1.vcf", vcf_content)
-#             input_file = os.path.join(input_dir.path, "P1.vcf")
-#             args = Namespace(input=input_file,
-#                              output=output_dir.path,
-#                              column_specification=0)
-# 
-#             self.assertRaisesRegexp(utils.JQException,
-#                                     ("Specified output .* must be a file if "
-#                                      "input .* is a file."),
-#                                     expand.execute,
-#                                     args,
-#                                     ["extra_header1", "extra_header2"])
+            self.assertEquals(expected_desired_output_files,
+                              desired_output_files)
+
 
     def test_execute_colSpecValid(self):
-        with TempDirectory() as input_dir, TempDirectory() as output_dir, TempDirectory() as col_spec_dir:
+        with TempDirectory() as input_dir,\
+             TempDirectory() as output_dir,\
+             TempDirectory() as col_spec_dir:
             col_spec_dir.write("col_spec.txt", "foo\nbar")
             col_spec_file = os.path.join(col_spec_dir.path, "col_spec.txt")
             input_dir.write("consensus.vcf", "##source=strelka\n#foo")
             input_file = os.path.join(input_dir.path, "consensus.vcf")
             output_file = os.path.join(output_dir.path, "consensus.txt")
             args = Namespace(input=input_file,
+                             original_output=output_file,
                              output=output_file,
                              column_specification=col_spec_file)
 
             expand.execute(args, ["extra_header1", "extra_header2"])
-            self.assertTrue(1==1)
+            self.assertTrue(True)
 
     def test_execute_colSpecInvalid(self):
-        with TempDirectory() as input_dir, TempDirectory() as output_dir, TempDirectory() as col_spec_dir:
+        with TempDirectory() as input_dir,\
+             TempDirectory() as output_dir,\
+             TempDirectory() as col_spec_dir:
             col_spec_dir.write("col_spec.txt", "foo\nbar")
             input_dir.write("consensus.vcf", "##source=strelka\n#foo")
             input_file = os.path.join(input_dir.path, "consensus.vcf")
@@ -455,30 +435,43 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
                              output=output_file,
                              column_specification=col_spec_dir.path)
 
-            self.assertRaisesRegexp(utils.JQException, "The column "
-                                    "specification file .* could not be "
-                                    "read. Review inputs/usage and try again",
-                                    expand.execute, args,
+            self.assertRaisesRegexp(utils.UsageError,
+                                    "The column specification file .* could "
+                                    "not be read. Review inputs/usage and "
+                                    "try again",
+                                    expand.execute,
+                                    args,
                                     ["extra_header1", "extra_header2"])
 
 class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_expand(self):
         with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
-            module_testdir = os.path.join(test_dir, "functional_tests", "06_expand")
+            module_testdir = os.path.join(test_dir,
+                                          "functional_tests",
+                                          "06_expand")
             input_dir = os.path.join(module_testdir, "input")
 
-            command = ["expand", os.path.join(input_dir,"consensus.vcf"), os.path.join(output_dir.path,"consensus.txt"), "--force"]
+            command = ["expand",
+                       os.path.join(input_dir, "consensus.vcf"),
+                       os.path.join(output_dir.path, "consensus.txt"),
+                       "--force"]
             expected_dir = os.path.join(module_testdir, "benchmark")
             self.assertCommand(command, expected_dir)
 
     def test_expand_colSpec(self):
         with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
-            module_testdir = os.path.join(test_dir, "functional_tests", "06_expand_col_spec")
+            module_testdir = os.path.join(test_dir,
+                                          "functional_tests",
+                                          "06_expand_col_spec")
             input_dir = os.path.join(module_testdir, "input")
             col_spec = os.path.join(test_dir, "functional_tests", "col_spec.txt")
-            command = ["expand", os.path.join(input_dir,"consensus.vcf"), os.path.join(output_dir.path,"consensus.txt"), "--force", "--column_specification=" + col_spec]
+            command = ["expand",
+                       os.path.join(input_dir, "consensus.vcf"),
+                       os.path.join(output_dir.path, "consensus.txt"),
+                       "--force",
+                       "--column_specification=" + col_spec]
             expected_dir = os.path.join(module_testdir, "benchmark")
 
             self.assertCommand(command, expected_dir)

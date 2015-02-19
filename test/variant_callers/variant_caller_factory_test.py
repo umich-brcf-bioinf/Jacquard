@@ -1,4 +1,4 @@
-#pylint:disable=line-too-long,invalid-name,global-statement
+#pylint:disable=line-too-long,invalid-name,global-statement, too-many-public-methods
 import test.test_case as test_case
 import jacquard.variant_callers.variant_caller_factory as variant_caller_factory
 from jacquard.utils import JQException
@@ -29,7 +29,11 @@ class VariantCallerFactoryTestCase(test_case.JacquardBaseTestCase):
         self.assertIn('Strelka', caller_names)
 
     def test_caller_notFoundRaisesException(self):
-        self.assertRaises(JQException, variant_caller_factory.get_caller, ["##metaheaders"],"#header","vcfName")
+        self.assertRaises(JQException,
+                          variant_caller_factory.get_caller,
+                          ["##metaheaders"],
+                          "#header",
+                          "vcfName")
 
     def test_claim(self):
         file_readers = [vcf_test.MockFileReader("fileA.vcf"),

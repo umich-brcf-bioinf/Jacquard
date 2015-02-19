@@ -98,23 +98,23 @@ def _write_headers(file_writer, reader, execution_context, anomalous_set):
     headers.append("##jacquard.tag.caller={0}".format(reader.caller_name))
     if len(anomalous_set) > 0:
         headers.append('##FILTER=<ID=JQ_EXCLUDE,Description="This '
-                           'variant record is problematic and will be '
-                           'excluded from downstream Jacquard processing.",'
-                           'Source="Jacquard",Version="">')
+                       'variant record is problematic and will be '
+                       'excluded from downstream Jacquard processing.",'
+                       'Source="Jacquard",Version="">')
         if "JQ_MALFORMED_REF" in anomalous_set:
             headers.append('##FILTER=<ID=JQ_MALFORMED_REF,Description='
-                               '"The format of the reference value for this '
-                               'variant record does not comply with VCF '
-                               'standard.",Source="Jacquard",Version="">')
+                           '"The format of the reference value for this '
+                           'variant record does not comply with VCF '
+                           'standard.",Source="Jacquard",Version="">')
         if "JQ_MALFORMED_ALT" in anomalous_set:
             headers.append('##FILTER=<ID=JQ_MALFORMED_ALT,Description='
-                               '"The the format of the alternate allele value '
-                               'for this variant record does not comply with '
-                               'VCF standard.",Source="Jacquard",Version="">')
+                           '"The the format of the alternate allele value '
+                           'for this variant record does not comply with '
+                           'VCF standard.",Source="Jacquard",Version="">')
         if "JQ_MISSING_ALT" in anomalous_set:
             headers.append('##FILTER=<ID=JQ_MISSING_ALT,Description="The '
-                               'alternate allele is missing for this variant '
-                               'record.",Source="Jacquard",Version="">')
+                           'alternate allele is missing for this variant '
+                           'record.",Source="Jacquard",Version="">')
     headers.append(reader.column_header)
 
     file_writer.write("\n".join(headers) + "\n")
@@ -140,8 +140,8 @@ def _build_file_readers(input_dir):
     return file_readers
 
 def _translate_files(trans_vcf_readers,
-                    output_dir,
-                    execution_context):
+                     output_dir,
+                     execution_context):
     total_filtered_records = 0
     callers = collections.defaultdict(int)
 
