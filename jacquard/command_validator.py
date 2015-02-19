@@ -37,7 +37,10 @@ def _build_collision_message(command, collisions):
                                               collision_list)
 
 
-def _check_input_correct_type(module_name, input_path, required_type):
+def _check_input_correct_type(dummy, args):
+    module_name = args.subparser_name
+    input_path = args.input
+    required_type = args.required_input_type
     actual_type = _actual_type(input_path)
     if required_type != actual_type:
         raise utils.UsageError(("The {} command requires a {} as "
@@ -49,21 +52,21 @@ def _check_input_correct_type(module_name, input_path, required_type):
                                          actual_type))
 
 
-def _check_input_exists(input_path):
-    if not os.path.exists(input_path):
+def _check_input_exists(dummy, args):
+    if not os.path.exists(args.input):
         raise utils.UsageError(("Specified input [{}] does not exist. Review "\
-                                 "inputs and try again.").format(input_path))
+                                 "inputs and try again.").format(args.input))
 
 
-def _check_input_readable(input_path):
+def _check_input_readable(dummy, args):
     try:
-        if os.path.isdir(input_path):
-            os.listdir(input_path)
+        if os.path.isdir(args.input):
+            os.listdir(args.input)
         else:
-            open(input_path, "r").close()
+            open(args.input, "r").close()
     except (OSError, IOError):
         raise utils.UsageError(("Specified input [{}] cannot be read. Review "
-                                "inputs and try again.").format(input_path))
+                                "inputs and try again.").format(args.input))
 
 
 def _check_output_correct_type(module_name, output_path, required_type):
@@ -78,32 +81,36 @@ def _check_output_correct_type(module_name, output_path, required_type):
                                          actual_type))
 
 
-def _check_output_exists(module_name, output_path, required_type):
-    if os.path.exists(output_path):
-        _check_output_correct_type(module_name, output_path, required_type)
+def _check_output_exists(dummy, args):
+    if os.path.exists(args.output_path):
+        _check_output_correct_type(args.subparser_name,
+                                   args.output_path,
+                                   args.required_output_type)
 
-def _check_overwrite_existing_files(output, predicted_output, command, force=0):
+def _check_overwrite_existing_files(module, args):
+    output = args.output_path
     if not os.path.isdir(output):
         output = os.path.dirname(output)
     existing_output_paths = sorted(glob.glob(os.path.join(output, "*.vcf")))
-
     existing_output = set([os.path.basename(i) for i in existing_output_paths])
-
+    predicted_output = module.report_prediction(args)
     collisions = sorted(list(existing_output.intersection(predicted_output)))
-    if collisions and not force:
-        message = _build_collision_message(command, collisions)
+    if collisions and not args.force:
+        message = _build_collision_message(args.subparser_name, collisions)
         raise utils.UsageError(message)
 
 
-def _check_there_will_be_output(module_name, input_path, predicted_output):
+def _check_there_will_be_output(module, args):
+    predicted_output = module.report_prediction(args)
+
     if not predicted_output:
         message = ("Executing the {} command with the input [{}] would not "
                    "create any output files. Review inputs and try again.")\
-                   .format(module_name, input_path)
+                   .format(args.subparser_name, args.input)
         raise utils.UsageError(message)
 
 
-def _create_temp_working_dir(args):
+def _create_temp_working_dir(dummy, args):
     try:
         _makepath(args.temp_working_dir)
         if args.required_output_type == "directory":
@@ -115,7 +122,7 @@ def _create_temp_working_dir(args):
                                 .format(parent_dir))
 
 
-def _get_temp_working_dir(args):
+def _set_temp_working_dir(dummy, args):
     original_output = args.original_output
     required_output = args.required_output_type
     abs_original_output = os.path.abspath(original_output)
@@ -140,7 +147,8 @@ def _get_temp_working_dir(args):
         new_output = os.path.join(temp_working_dir,
                                   os.path.basename(abs_original_output))
 
-    return temp_working_dir, new_output
+    args.temp_working_dir = temp_working_dir
+    args.output = new_output
 
 
 def _makepath(path):
@@ -151,32 +159,26 @@ def _makepath(path):
             pass
         else: raise
 
-#TODO: (cgates): Refactor to list of validation commands; simplifies code/test
-# Something like: for validate in validation_methods: validate(args, module)
-# validation methdos would add context as necessary to args
-def preflight(args, module):
-    args.original_output = args.output
-    output_path = os.path.abspath(args.original_output)
+def _set_required_types(module, args):
     (args.required_input_type,
      args.required_output_type) = module.get_required_input_output_types()
-    (args.temp_working_dir,
-     args.output) = _get_temp_working_dir(args)
-    _check_input_exists(args.input)
-    _check_input_readable(args.input)
-    _check_input_correct_type(args.subparser_name,
-                              args.input,
-                              args.required_input_type)
-    _check_output_exists(args.subparser_name,
-                         output_path,
-                         args.required_output_type)
-    _create_temp_working_dir(args)
 
-    predicted_output = module.report_prediction(args)
-    _check_there_will_be_output(args.subparser_name,
-                                args.input,
-                                predicted_output)
-    _check_overwrite_existing_files(output_path,
-                                    predicted_output,
-                                    args.subparser_name,
-                                    args.force)
 
+def _set_output_paths(dummy, args):
+    args.original_output = args.output
+    args.output_path = os.path.abspath(args.original_output)
+
+_VALIDATION_TASKS = [_set_output_paths,
+                     _set_required_types,
+                     _set_temp_working_dir,
+                     _check_input_exists,
+                     _check_input_readable,
+                     _check_input_correct_type,
+                     _check_output_exists,
+                     _create_temp_working_dir,
+                     _check_there_will_be_output,
+                     _check_overwrite_existing_files]
+
+def preflight(command, args):
+    for validate in _VALIDATION_TASKS:
+        validate(command, args)
