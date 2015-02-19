@@ -2,6 +2,7 @@
 from __future__ import print_function, absolute_import
 import math
 from jacquard import __version__
+import jacquard.utils as utils
 
 _JQ_CONSENSUS_TAG = "JQ_CONS_"
 
@@ -54,7 +55,6 @@ of \'.\'.''').replace("\n", "")
         self.tag.add_tag_values(vcf_record)
 
 class _ZScoreTag(object):
-    _STRING_FORMAT = "{0:.2f}"
     _EXECUTION_FORMAT = "##jacquard.consensus.{0}.{1}_{2}={3}"
     _METAHEADER_FORMAT = ('##FORMAT=<ID={0},'
                           'Number=1,'
@@ -109,24 +109,28 @@ class _ZScoreTag(object):
         return self._stdev and self._dependent_tag_id in vcf_record.format_tags
 
 
-    def _zscore_as_str(self, zscore):
+    @staticmethod
+    def _zscore_as_str(zscore):
         if zscore == ".":
             return zscore
         else:
-            return self._STRING_FORMAT.format(zscore)
+            return utils.round_two_digits(zscore)
 
     def add_tag_values(self, vcf_record):
         if not self._ok_to_add_tag_values(vcf_record):
             return
+
         sample_values = {}
         for sample_name in vcf_record.sample_tag_values:
             zscore = "."
             tag_values = vcf_record.sample_tag_values[sample_name]
             value = self._get_dependent_value(tag_values,
                                               self._dependent_tag_id)
+
             if  value is not None:
                 zscore = (value - self._mean) / self._stdev
-            sample_values[sample_name] = self._zscore_as_str(zscore)
+            sample_values[sample_name] = self._zscore_as_str(str(zscore))
+
         vcf_record.add_sample_tag_value(self._tag_id,
                                         sample_values)
 

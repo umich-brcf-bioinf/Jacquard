@@ -40,7 +40,7 @@ class _AlleleFreqTag(object):
             sample_format_dict = vcf_record.sample_tag_values[sample]
             freq = self._get_tier2_base_depth(sample_format_dict, alt_allele)
 
-            rounded_af = self._round_two_digits(str(freq))
+            rounded_af = self._standardize_af(str(freq))
             capped_af = min(rounded_af, "1.00")
             afs.append(capped_af)
 
@@ -53,7 +53,7 @@ class _AlleleFreqTag(object):
         denominator = float(vcf_record.sample_tag_values[sample]["DP2"])
         freq = numerator/denominator if denominator != 0 else 0.0
 
-        rounded_af = self._round_two_digits(str(freq))
+        rounded_af = self._standardize_af(str(freq))
         capped_af = min(rounded_af, "1.00")
         afs.append(capped_af)
 
@@ -82,11 +82,8 @@ class _AlleleFreqTag(object):
                                             sample_values)
 
     @staticmethod
-    def _round_two_digits(value):
-        if len(value.split(".")[1]) <= 2:
-            return value
-        else:
-            return str(round(100 * float(value))/100)
+    def _standardize_af(value):
+        return utils.round_two_digits(value)
 
 class _DepthTag(object):
     REQUIRED_TAGS = set(["DP2", "AU"])

@@ -12,15 +12,13 @@ VARSCAN_SOMATIC_HEADER = ("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"
 JQ_VARSCAN_TAG = "JQ_VS_"
 
 class _AlleleFreqTag(object):
+    #pylint: disable=too-few-public-methods
     @classmethod
-    def round_two_digits(cls, value):
+    def _standardize_af(cls, value):
         new_values = []
         for val in value:
             new_val = str(float(val.strip("%"))/100)
-            if len(new_val.split(".")[1]) <= 2:
-                new_values.append(new_val)
-            else:
-                new_values.append(str(round(100 * float(new_val))/100))
+            new_values.append(utils.round_two_digits(new_val))
         return ",".join(new_values)
 
     def __init__(self):
@@ -39,7 +37,7 @@ class _AlleleFreqTag(object):
         if "FREQ" in vcf_record.format_tags:
             for sample in vcf_record.sample_tag_values:
                 freq = vcf_record.sample_tag_values[sample]["FREQ"].split(",")
-                sample_values[sample] = _AlleleFreqTag.round_two_digits(freq)
+                sample_values[sample] = _AlleleFreqTag._standardize_af(freq)
             vcf_record.add_sample_tag_value(JQ_VARSCAN_TAG + "AF",
                                             sample_values)
 

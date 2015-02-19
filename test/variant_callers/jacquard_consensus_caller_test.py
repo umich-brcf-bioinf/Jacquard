@@ -233,7 +233,7 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
     def test_insert_consensus(self):
         tag = consensus_caller._DepthTag()
         line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF:JQ_foo_DP:JQ_bar_DP:JQ_baz_DP|X:1:2:3|Y:4:5:6\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF:JQ_foo_DP:JQ_bar_DP:JQ_baz_DP:{0}DP_AVERAGE:{0}DP_RANGE|X:1:2:3:2:2|Y:4:5:6:5:2\n").format(consensus_caller.JQ_CONSENSUS_TAG)
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF:JQ_foo_DP:JQ_bar_DP:JQ_baz_DP:{0}DP_AVERAGE:{0}DP_RANGE|X:1:2:3:2.0:2.0|Y:4:5:6:5.0:2.0\n").format(consensus_caller.JQ_CONSENSUS_TAG)
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
@@ -241,7 +241,7 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
     def test_insert_consensus_multAlts(self):
         tag = consensus_caller._DepthTag()
         line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_DP:JQ_bar_DP|0,0:1,2|0,0:3,4\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_DP:JQ_bar_DP:{0}DP_AVERAGE:{0}DP_RANGE|0,0:1,2:0.5,1:1,2|0,0:3,4:1.5,2:3,4\n").format(consensus_caller.JQ_CONSENSUS_TAG)
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_DP:JQ_bar_DP:{0}DP_AVERAGE:{0}DP_RANGE|0,0:1,2:0.5,1.0:1.0,2.0|0,0:3,4:1.5,2.0:3.0,4.0\n").format(consensus_caller.JQ_CONSENSUS_TAG)
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
@@ -291,7 +291,7 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
 class ConsensusHelperTestCase(test_case.JacquardBaseTestCase):
     def test_add_tags(self):
         line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_VS_CALLER_REPORTED:JQ_MT_CALLER_REPORTED|0:1:1|0.2:1:1\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO;JQ_CONS_SAMPLES_PASSED_COUNT=0;JQ_CONS_SAMPLES_REPORTED_COUNT=2|JQ_foo_AF:JQ_VS_CALLER_REPORTED:JQ_MT_CALLER_REPORTED:JQ_CONS_CALLERS_REPORTED_COUNT:JQ_CONS_CALLERS_PASSED_COUNT:{0}AF_AVERAGE:{0}AF_RANGE:{0}DP_AVERAGE:{0}DP_RANGE:{0}SOM_COUNT|0:1:1:2:0:0:.:.:.:.|0.2:1:1:2:0:0.2:.:.:.:.\n".format(consensus_caller.JQ_CONSENSUS_TAG))
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO;JQ_CONS_SAMPLES_PASSED_COUNT=0;JQ_CONS_SAMPLES_REPORTED_COUNT=2|JQ_foo_AF:JQ_VS_CALLER_REPORTED:JQ_MT_CALLER_REPORTED:JQ_CONS_CALLERS_REPORTED_COUNT:JQ_CONS_CALLERS_PASSED_COUNT:{0}AF_AVERAGE:{0}AF_RANGE:{0}DP_AVERAGE:{0}DP_RANGE:{0}SOM_COUNT|0:1:1:2:0:0.0:.:.:.:.|0.2:1:1:2:0:0.2:.:.:.:.\n".format(consensus_caller.JQ_CONSENSUS_TAG))
         vcf_record = VcfRecord.parse_record(line, ["SA", "SB"])
         caller = consensus_caller.ConsensusCaller()
         actual = caller.add_tags(vcf_record)

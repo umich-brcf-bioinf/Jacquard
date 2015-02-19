@@ -4,6 +4,7 @@ from collections import defaultdict
 import re
 
 from jacquard import __version__
+import jacquard.utils as utils
 import jacquard.variant_callers.common_tags as common_tags
 import numpy as np
 
@@ -15,17 +16,6 @@ JQ_SAMPLES_REPORTED = "SAMPLES_REPORTED_COUNT"
 JQ_PASSED = "CALLERS_PASSED_COUNT"
 JQ_PASSED_LIST = "CALLERS_PASSED_LIST"
 JQ_SAMPLES_PASSED = "SAMPLES_PASSED_COUNT"
-
-def _round_two_digits(value):
-    split_value = value.split(".")
-
-    if len(split_value[1]) <= 2:
-        if split_value[1] == '0':
-            return split_value[0]
-        return value
-
-    else:
-        return str(round(100 * float(value))/100)
 
 def _build_new_tags(vcf_record, tags, sample):
     desired_tags = []
@@ -62,7 +52,7 @@ def _calculate_average(tags):
 
     for i in xrange(len(tag_array[0,])):
         tag_values = tag_array.astype(float)[:, i]
-        rounded_tag = _round_two_digits(str(np.mean(tag_values)))
+        rounded_tag = utils.round_two_digits(str(np.mean(tag_values)))
         rounded_tags.append(rounded_tag)
 
     return ",".join(rounded_tags)
@@ -77,7 +67,7 @@ def _calculate_range(tags, all_ranges):
         for i in xrange(len(cons_tag_array[0,])):
             tag_values = cons_tag_array.astype(float)[:, i]
             this_tag_range = np.max(tag_values) - np.min(tag_values)
-            rounded_tag_range = _round_two_digits(str(this_tag_range))
+            rounded_tag_range = utils.round_two_digits(str(this_tag_range))
             tag_range.append(rounded_tag_range)
 
             all_ranges.append(float(rounded_tag_range))

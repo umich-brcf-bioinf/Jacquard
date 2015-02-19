@@ -109,7 +109,7 @@
 ##contig=<ID=chrUn_gl000249,length=38502,assembly=hg19>
 ##reference=file:///ccmb/BioinfCore/Common/SOFTWARES/hg19bundle/ucsc.hg19.fasta
 ##jacquard.version=0.21
-##jacquard.command=tag C:\Users\jebene\Desktop\tag_input C:\Users\jebene\Desktop\tag_test --force
+##jacquard.command=tag C:\Users\jebene\Desktop\tests\normalized C:\Users\jebene\Desktop\tests\tagged --force
 ##jacquard.cwd=C:\Users\jebene\git
 ##jacquard.tag.caller=MuTect
 ##FORMAT=<ID=JQ_MT_CALLER_REPORTED,Number=1,Type=Integer,Description="1 = variant present in original VCF",Source="Jacquard",Version="0.21">
@@ -119,7 +119,7 @@
 ##FORMAT=<ID=JQ_MT_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)",Source="Jacquard",Version=0.21>
 ##jacquard.filterHCSomatic.excluded_variants=37
 ##jacquard.version=0.21
-##jacquard.command=filter_hc_somatic C:\Users\jebene\Desktop\tag_test C:\Users\jebene\Desktop\filter_hc_somatic_test --force
+##jacquard.command=filter_hc_somatic C:\Users\jebene\Desktop\tests\tagged C:\Users\jebene\Desktop\tests\filtered --force
 ##jacquard.cwd=C:\Users\jebene\git
 ##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=12
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NORMAL	TUMOR

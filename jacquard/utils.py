@@ -1,6 +1,8 @@
 #pylint: disable=invalid-name,too-few-public-methods, global-at-module-level
 from __future__ import absolute_import, print_function
+
 import collections
+
 
 #TODO: cgates: These should be in the callers/caller factory, but not here.
 global caller_versions
@@ -12,6 +14,11 @@ global jq_dp_tag
 jq_somatic_tag = "HC_SOM"
 jq_af_tag = "AF"
 jq_dp_tag = "DP"
+
+def round_two_digits(val):
+    if len(val.split(".")[1]) > 2:
+        return "{0:.2f}".format(float(val))
+    return val
 
 class JQException(Exception):
     """Base class for exceptions in this module."""

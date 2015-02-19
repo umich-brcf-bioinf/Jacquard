@@ -8,11 +8,11 @@ import subprocess
 import sys
 
 import natsort
-from testfixtures import TempDirectory
 
 import jacquard.logger as logger
 import jacquard.utils as utils
 import test.test_case as test_case
+
 
 mock_log_called = False
 mock_message = ""
@@ -21,6 +21,29 @@ mock_message = ""
 def mock_log(msg, *args):
     global mock_log_called
     mock_log_called = True
+
+class RoundTwoDigitsTestCase(test_case.JacquardBaseTestCase):
+    def test_round_two_digits_noRounding(self):
+        val = "1.01"
+        expected = "1.01"
+        actual = utils.round_two_digits(val)
+        self.assertEquals(expected, actual)
+
+        val = "1.1"
+        expected = "1.1"
+        actual = utils.round_two_digits(val)
+        self.assertEquals(expected, actual)
+
+    def test_round_two_digits_rounding(self):
+        val = "1.011"
+        expected = "1.01"
+        actual = utils.round_two_digits(val)
+        self.assertEquals(expected, actual)
+
+        val = "1.016"
+        expected = "1.02"
+        actual = utils.round_two_digits(val)
+        self.assertEquals(expected, actual)
 
 class JQExceptionTestCase(test_case.JacquardBaseTestCase):
     def test_init(self):
