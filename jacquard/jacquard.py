@@ -32,12 +32,14 @@ import jacquard.filter_hc_somatic as filter_hc_somatic
 import jacquard.logger as logger
 import jacquard.merge as merge
 import jacquard.normalize as normalize
+import jacquard.translate as translate
 import jacquard.tag as tag
 import jacquard.utils as utils
 from jacquard import __version__
 
 
-_SUBCOMMANDS = [normalize,
+_SUBCOMMANDS = [translate,
+                normalize,
                 tag,
                 filter_hc_somatic,
                 merge,

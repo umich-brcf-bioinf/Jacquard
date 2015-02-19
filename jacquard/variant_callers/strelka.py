@@ -302,11 +302,20 @@ class _StrelkaVcfReader(object):
         self._vcf_reader = vcf_reader
         self._caller = Strelka()
 
+    @property
+    def caller_name(self):
+        return self._caller.name
+
+    @property
+    def file_name(self):
+        return self._vcf_reader.file_name
+
     def open(self):
         return self._vcf_reader.open()
 
     def close(self):
         return self._vcf_reader.close()
+
     @property
     def metaheaders(self):
         new_metaheaders = list(self._vcf_reader.metaheaders)

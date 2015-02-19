@@ -35,6 +35,6 @@ class VariantCallerFactoryTestCase(test_case.JacquardBaseTestCase):
         file_readers = [vcf_test.MockFileReader("fileA.vcf"),
                         vcf_test.MockFileReader("fileB.vcf"),
                         vcf_test.MockFileReader("fileC.vcf")]
-        expected = {"foo": "foo", "bar": "bar", "baz": "baz"}
+        expected = ["foo", "bar", "baz"]
         actual = variant_caller_factory.claim(file_readers)
         self.assertEquals(expected, actual)

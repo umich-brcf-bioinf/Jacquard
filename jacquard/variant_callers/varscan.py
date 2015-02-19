@@ -377,11 +377,8 @@ class Varscan(object):
                     unclaimed_readers.append(file_reader)
 
             for vcf_reader in vcf_readers:
-                if hc_file_reader:
-                    trans_vcf_readers.append(_VarscanVcfReader(vcf_reader,
+                trans_vcf_readers.append(_VarscanVcfReader(vcf_reader,
                                                 hc_file_reader))
-                else:
-                    trans_vcf_readers.append(_VarscanVcfReader(vcf_reader))
 
         return unclaimed_readers, trans_vcf_readers
 
@@ -399,6 +396,14 @@ class _VarscanVcfReader(object):
 
         if som_hc_file_reader:
             self.tags.append(_HCTag(som_hc_file_reader))
+
+    @property
+    def file_name(self):
+        return self._vcf_reader.file_name
+
+    @property
+    def caller_name(self):
+        return self._caller.name
 
     def open(self):
         return self._vcf_reader.open()

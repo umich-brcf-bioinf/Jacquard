@@ -134,7 +134,7 @@ class MockCaller(object):
         return self.metaheaders
 
     def claim(self, file_readers):
-        return (file_readers, self.name)
+        return (file_readers, [self.name])
 
 class MockVcfRecord(object):
     @classmethod
