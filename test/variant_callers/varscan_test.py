@@ -3,7 +3,6 @@
 import os
 import unittest
 
-from collections import defaultdict
 from testfixtures import TempDirectory
 
 from jacquard import __version__
@@ -190,7 +189,7 @@ class SomaticTagTestCase(unittest.TestCase):
         tag = varscan._SomaticTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
         expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:{0}HC_SOM|SA.1:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n").format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
-        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA","SB"])
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -242,9 +241,9 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         actual_filenames = self.caller.decorate_files(filenames, decorator)
         expected_filenames = "A.varscan.normalized.vcf"
 
-        self.assertEquals(expected_filenames,actual_filenames)
+        self.assertEquals(expected_filenames, actual_filenames)
 
-        filenames = ["A.varscan.vcf","A.varscan.vcf"]
+        filenames = ["A.varscan.vcf", "A.varscan.vcf"]
         decorator = "normalized"
 
         self.assertRaisesRegexp(JQException, "Each patient in a VarScan directory should have a snp file and an indel file.", self.caller.decorate_files, filenames, decorator)
@@ -300,25 +299,28 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         readers.append(MockFileReader("snp.vcf", content2))
         self.append_hc_files(readers)
 
-        self.assertRaisesRegexp(JQException, r"The column headers for VCF files \[indel.vcf,snp.vcf\] do not match.",
-                                 self.caller.normalize, writer, readers)
+        self.assertRaisesRegexp(JQException,
+                                r"The column headers for VCF files \[indel.vcf,snp.vcf\] do not match.",
+                                self.caller.normalize,
+                                writer,
+                                readers)
 
     def test_process_hc_files(self):
         hc_readers = []
         with TempDirectory() as input_file:
-            input_file.write("A",
-                            ("chrom|position|ref|var|normal_reads1|"+\
-                            "normal_reads2|normal_var_freq|normal_gt|"+\
-                            "tumor_reads1|tumor_reads2|tumor_var_freq|"+\
-                            "tumor_gt|somatic_status|variant_p_value|"+\
-                            "somatic_p_value|tumor_reads1_plus|tumor_reads1_minus|"+\
-                            "tumor_reads2_plus|tumor_reads2_minus|normal_reads1_plus|"+\
-                            "normal_reads1_minus|normal_reads2_plus|normal_reads2_minus\n"+\
-                            "chr1|161332554|A|G|25|1|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n"+\
-                            "chr2|161332557|G|A|25|1|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n"+\
-                            "chr3|99463179|G|A|22|0|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n"+
-                            "").replace("|","\t"))
-            hc_readers.append(vcf.FileReader(os.path.join(input_file.path,"A")))
+            content = self.entab("chrom|position|ref|var|normal_reads1|"
+                                 "normal_reads2|normal_var_freq|normal_gt|"
+                                 "tumor_reads1|tumor_reads2|tumor_var_freq|"+\
+                                 "tumor_gt|somatic_status|variant_p_value|"+\
+                                 "somatic_p_value|tumor_reads1_plus|tumor_reads1_minus|"+\
+                                 "tumor_reads2_plus|tumor_reads2_minus|normal_reads1_plus|"+\
+                                 "normal_reads1_minus|normal_reads2_plus|normal_reads2_minus\n"+\
+                                 "chr1|161332554|A|G|25|1|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n"+\
+                                 "chr2|161332557|G|A|25|1|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n"+\
+                                 "chr3|99463179|G|A|22|0|3.85%|A|25|9|26.47%|R|Somatic|1.0|0.019827310521266846|12|13|3|6|15|10|0|1\n")
+
+            input_file.write("A", content)
+            hc_readers.append(vcf.FileReader(os.path.join(input_file.path, "A")))
 
             actual = self.caller._process_hc_files(hc_readers)
 
@@ -355,7 +357,7 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         readers.append(MockFileReader("indel.vcf", content1))
         readers.append(MockFileReader("snp.vcf", content2))
         self.append_hc_files(readers)
-        self.caller.normalize(writer,readers)
+        self.caller.normalize(writer, readers)
 
         self.assertTrue(writer.opened)
         self.assertTrue(writer.closed)
@@ -401,12 +403,13 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
 
     def assert_two_vcf_files_throw_exception(self, file1, file2):
         readers = []
-        content = ["##foo","#bar"]
+        content = ["##foo", "#bar"]
         readers.append(MockFileReader(input_filepath=file1, content=content))
         readers.append(MockFileReader(input_filepath=file2, content=content))
         self.append_hc_files(readers)
 
-        with self.assertRaisesRegexp(JQException,r"Each patient in a VarScan directory should have a snp file and an indel file."):
+        with self.assertRaisesRegexp(JQException,
+                                     r"Each patient in a VarScan directory should have a snp file and an indel file."):
             self.caller.normalize(MockWriter(), readers)
 
     @staticmethod
@@ -418,8 +421,8 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         readers.append(MockFileReader(file1, content1))
         readers.append(MockFileReader(file2, content2))
 
-
-    def _get_tag_class_names(self, vcf_reader):
+    @staticmethod
+    def _get_tag_class_names(vcf_reader):
         return [tag.__class__.__name__ for tag in vcf_reader.tags]
 
     def test_claim_multiple_patients(self):
@@ -442,7 +445,7 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         self.assertIn("_HCTag",
                       self._get_tag_class_names(vcf_readers[1]))
         self.assertNotIn("_HCTag",
-                      self._get_tag_class_names(vcf_readers[2]))
+                         self._get_tag_class_names(vcf_readers[2]))
         self.assertEquals(reader1.file_name, vcf_readers[0]._vcf_reader.file_name)
 
     def test_claim_vcf_only(self):
