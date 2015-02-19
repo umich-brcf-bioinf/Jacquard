@@ -239,8 +239,8 @@ class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
                 self.assertCommand(command, expected_dir)
 
             self.move_files([vs_normalize_output,
-                            sk_normalize_output,
-                            mt_normalize_output],
+                             sk_normalize_output,
+                             mt_normalize_output],
                             normalize_output)
 
             commands = [["tag", normalize_output, tag_output, "--force"],
@@ -248,7 +248,7 @@ class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
                         ["merge", filter_output, merge_output, "--force"],
                         ["consensus", merge_output, consensus_output, "--force"],
                         ["expand", consensus_output, expanded_output, "--force"]]
-#  
+
             for command in commands:
                 expected_dir = os.path.join(module_testdir, command[0], "benchmark")
                 self.assertCommand(command, expected_dir)

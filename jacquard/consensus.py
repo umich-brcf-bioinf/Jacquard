@@ -3,7 +3,6 @@ from __future__ import print_function, absolute_import
 import os
 
 import jacquard.logger as logger
-import jacquard.utils as utils
 import jacquard.variant_callers.jacquard_consensus_caller as consensus_caller
 import jacquard.variant_callers.jacquard_zscore_caller as zscore_caller
 import jacquard.vcf as vcf
@@ -85,21 +84,6 @@ def get_required_input_output_types():
 def execute(args, execution_context):
     input_file = os.path.abspath(args.input)
     output = os.path.abspath(args.output)
-
-#    extension = os.path.splitext(os.path.basename(input_file))[1]
-#     if not os.path.isfile(input_file) or extension != ".vcf":
-#         raise utils.JQException("Input file [{}] must be a VCF file.",
-#                                 input_file)
-# 
-#     extension = os.path.splitext(os.path.basename(output))[1]
-#     if extension:
-#         if extension != ".vcf":
-#             raise utils.JQException("Output file [{}] must be a VCF file.",
-#                                     output)
-#         else:
-#             output_file = output
-#     else:
-#         output_file = os.path.join(output, "consensus.vcf")
 
     cons_helper = consensus_caller.ConsensusCaller()
 

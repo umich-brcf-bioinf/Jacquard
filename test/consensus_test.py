@@ -7,9 +7,7 @@ from StringIO import StringIO
 import sys
 from testfixtures import TempDirectory
 
-import jacquard.utils as utils
 import jacquard.consensus as consensus
-import jacquard.variant_callers.jacquard_consensus_caller as consensus_caller
 import jacquard.logger as logger
 import test.test_case as test_case
 
