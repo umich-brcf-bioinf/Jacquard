@@ -82,36 +82,35 @@ def report_prediction(args):
 def get_required_input_output_types():
     return ("file", "file")
 
-#TODO: (cgates): Simplify this so that it onlt accepts a file - not a dir
 def execute(args, execution_context):
     input_file = os.path.abspath(args.input)
     output = os.path.abspath(args.output)
 
-    extension = os.path.splitext(os.path.basename(input_file))[1]
-    if not os.path.isfile(input_file) or extension != ".vcf":
-        raise utils.JQException("Input file [{}] must be a VCF file.",
-                                input_file)
-
-    extension = os.path.splitext(os.path.basename(output))[1]
-    if extension:
-        if extension != ".vcf":
-            raise utils.JQException("Output file [{}] must be a VCF file.",
-                                    output)
-        else:
-            output_file = output
-    else:
-        output_file = os.path.join(output, "consensus.vcf")
+#    extension = os.path.splitext(os.path.basename(input_file))[1]
+#     if not os.path.isfile(input_file) or extension != ".vcf":
+#         raise utils.JQException("Input file [{}] must be a VCF file.",
+#                                 input_file)
+# 
+#     extension = os.path.splitext(os.path.basename(output))[1]
+#     if extension:
+#         if extension != ".vcf":
+#             raise utils.JQException("Output file [{}] must be a VCF file.",
+#                                     output)
+#         else:
+#             output_file = output
+#     else:
+#         output_file = os.path.join(output, "consensus.vcf")
 
     cons_helper = consensus_caller.ConsensusCaller()
 
     vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
-    tmp_output_file = output_file + ".tmp"
+    tmp_output_file = output + ".tmp"
     tmp_writer = vcf.FileWriter(tmp_output_file)
 
     _write_to_tmp_file(cons_helper, vcf_reader, tmp_writer)
 
     tmp_reader = vcf.VcfReader(vcf.FileReader(tmp_output_file))
-    file_writer = vcf.FileWriter(output_file)
+    file_writer = vcf.FileWriter(output)
 
     logger.info("Calculating zscores")
     caller = zscore_caller.ZScoreCaller(tmp_reader)

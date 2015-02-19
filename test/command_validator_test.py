@@ -425,8 +425,8 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
 
     def test_check_overwrite_existing_files_whenOverwriteSingleFileWillRaise(self):
         with TempDirectory() as output_dir:
-            output_file = os.path.join(output_dir.path, "output_file.vcf")
-            output_dir.write("output_file.vcf", "foo")
+            output_file = os.path.join(output_dir.path, "output_file")
+            output_dir.write("output_file", "foo")
             args = Namespace(output_path=output_file,
                              subparser_name="awesomeCommand",
                              force=0)
@@ -434,7 +434,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
             self.assertRaisesRegexp(utils.UsageError,
                                     ("The awesomeCommand command would "
                                      "overwrite the existing file "
-                                     r"\[output_file.vcf\]; review "
+                                     r"\[output_file\]; review "
                                      "command/output dir to avoid overwriting or "
                                      "use the flag '--force'."),
                                     command_validator._check_overwrite_existing_files,

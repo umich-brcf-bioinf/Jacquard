@@ -91,7 +91,7 @@ def _check_overwrite_existing_files(module, args):
     output = args.output_path
     if not os.path.isdir(output):
         output = os.path.dirname(output)
-    existing_output_paths = sorted(glob.glob(os.path.join(output, "*.vcf")))
+    existing_output_paths = sorted(glob.glob(os.path.join(output, "*")))
     existing_output = set([os.path.basename(i) for i in existing_output_paths])
     predicted_output = module.report_prediction(args)
     collisions = sorted(list(existing_output.intersection(predicted_output)))
