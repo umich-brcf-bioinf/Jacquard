@@ -17,17 +17,6 @@ JQ_PASSED = "CALLERS_PASSED_COUNT"
 JQ_PASSED_LIST = "CALLERS_PASSED_LIST"
 JQ_SAMPLES_PASSED = "SAMPLES_PASSED_COUNT"
 
-def _round_two_digits(value):
-    split_value = value.split(".")
-
-    if len(split_value[1]) <= 2:
-        if split_value[1] == '0':
-            return split_value[0]
-        return value
-
-    else:
-        return str(round(100 * float(value))/100)
-
 def _build_new_tags(vcf_record, tags, sample):
     desired_tags = []
     for tag in tags:

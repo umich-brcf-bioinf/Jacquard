@@ -185,11 +185,11 @@ def _get_output_filenames(input_files):
 
     return output_files
 
-def _build_vcf_readers_to_writers(vcf_readers, output_file):
+def _build_vcf_readers_to_writers(vcf_readers, output_dir):
     vcf_providers_to_writers = collections.OrderedDict()
     for reader in natsort.natsorted(vcf_readers):
         new_filename = _mangle_output_filenames(reader.file_name)
-        output_filepath = os.path.join(output_file, new_filename)
+        output_filepath = os.path.join(output_dir, new_filename)
         vcf_providers_to_writers[reader] = vcf.FileWriter(output_filepath)
 
     return vcf_providers_to_writers

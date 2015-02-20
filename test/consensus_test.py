@@ -7,9 +7,7 @@ from StringIO import StringIO
 import sys
 from testfixtures import TempDirectory
 
-import jacquard.utils as utils
 import jacquard.consensus as consensus
-import jacquard.variant_callers.jacquard_consensus_caller as consensus_caller
 import jacquard.logger as logger
 import test.test_case as test_case
 
@@ -173,7 +171,7 @@ class ConsensusTestCase(test_case.JacquardBaseTestCase):
         self.assertTrue(cons_helper.add_tags_called)
         self.assertTrue(tag.format_called)
 
-    def test_execute_outputFile(self):
+    def test_execute(self):
         input_data = self.entab(\
 """##blah\n#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SAMPLE
 1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF:JQ_VS_DP:JQ_MT_DP|0.2:0.4:30:45""")
@@ -186,48 +184,6 @@ class ConsensusTestCase(test_case.JacquardBaseTestCase):
                              column_specification=None)
             consensus.execute(args, ["##foo"])
             output_dir.check("baz.vcf")
-
-    def test_execute_badInputFile(self):
-        input_data = self.entab(\
-"""##blah
-#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SAMPLE
-1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF:JQ_VS_DP:JQ_MT_DP|0.2:0.4:30:45""")
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("foo.txt", input_data)
-            input_file = os.path.join(input_dir.path, "foo.txt")
-            output_file = os.path.join(output_dir.path, "baz.vcf")
-            args = Namespace(input=input_file,
-                             output=output_file,
-                             column_specification=None)
-            self.assertRaisesRegexp(utils.JQException,
-                                    r"Input file \[.*foo.txt\] must be a VCF file.",
-                                    consensus.execute, args, ["##foo"])
-
-    def test_execute_badOutputFile(self):
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("foo.vcf", "")
-            input_file = os.path.join(input_dir.path, "foo.vcf")
-            output_file = os.path.join(output_dir.path, "baz.txt")
-            args = Namespace(input=input_file,
-                             output=output_file,
-                             column_specification=None)
-            self.assertRaisesRegexp(utils.JQException, "Output file "+
-                                    r"\[.*baz.txt\] must be a VCF file.",
-                                    consensus.execute, args, ["##foo"])
-
-    def test_execute_outputDirectory(self):
-        input_data = self.entab(\
-"""##blah
-#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SAMPLE
-1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF:JQ_VS_DP:JQ_MT_DP|0.2:0.4:30:45""")
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("foo.vcf", input_data)
-            input_file = os.path.join(input_dir.path, "foo.vcf")
-            args = Namespace(input=input_file,
-                             output=output_dir.path,
-                             column_specification=None)
-            consensus.execute(args, ["##foo"])
-            output_dir.check("consensus.vcf")
 
 class ConsensusFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_consensus(self):

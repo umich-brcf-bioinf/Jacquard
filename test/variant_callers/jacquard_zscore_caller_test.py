@@ -234,7 +234,7 @@ class ZScoreTagTest(test_case.JacquardBaseTestCase):
 
         tag.add_tag_values(rec1)
         sampleA_tag_values = rec1.sample_tag_values["SA"]
-        self.assertEquals("-1.00", sampleA_tag_values["ZScoreX"])
+        self.assertEquals("-1.0", sampleA_tag_values["ZScoreX"])
         sampleB_tag_values = rec1.sample_tag_values["SB"]
         self.assertEquals(".", sampleB_tag_values["ZScoreX"])
 

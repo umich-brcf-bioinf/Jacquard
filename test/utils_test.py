@@ -8,11 +8,11 @@ import subprocess
 import sys
 
 import natsort
-from testfixtures import TempDirectory
 
 import jacquard.logger as logger
 import jacquard.utils as utils
 import test.test_case as test_case
+
 
 mock_log_called = False
 mock_message = ""

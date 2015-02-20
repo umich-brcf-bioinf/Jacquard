@@ -140,10 +140,10 @@ class TagTestCase(unittest.TestCase):
         MOCK_LOG_MESSAGES = []
 
     def test_predict_output(self):
-        with TempDirectory() as input_file:
-            input_file.write("A.normalized.vcf", "##source=strelka\n#colHeader")
-            input_file.write("B.normalized.vcf", "##source=strelka\n#colHeader")
-            args = Namespace(input=input_file.path)
+        with TempDirectory() as input_dir:
+            input_dir.write("A.normalized.vcf", "##source=strelka\n#colHeader")
+            input_dir.write("B.normalized.vcf", "##source=strelka\n#colHeader")
+            args = Namespace(input=input_dir.path)
 
             desired_output_files = tag._predict_output(args)
             expected_desired_output_files = set(["A.normalized.jacquardTags.vcf",
@@ -159,11 +159,11 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
 '''
         vcf_content = vcf_content.replace('|', "\t")
 
-        with TempDirectory() as input_file:
-            input_file.write("A.vcf", vcf_content)
-            input_file.write("B.vcf", vcf_content)
+        with TempDirectory() as input_dir:
+            input_dir.write("A.vcf", vcf_content)
+            input_dir.write("B.vcf", vcf_content)
 
-            vcf_readers = tag._build_vcf_readers(input_file.path)
+            vcf_readers = tag._build_vcf_readers(input_dir.path)
 
             self.assertEqual("A.vcf", vcf_readers[0].file_name)
             self.assertEqual(("##source=strelka",), vcf_readers[0].metaheaders)

@@ -14,10 +14,10 @@ UNUSED_REGEX_WARNING_FORMAT = ("The expression [{}] in column specification " +
 
 def _read_col_spec(col_spec):
     if not os.path.isfile(col_spec):
-        raise utils.JQException("The column specification file [{}] could "
+        raise utils.UsageError(("The column specification file [{}] could "
                                 "not be read. "
-                                "Review inputs/usage and try again.",
-                                col_spec)
+                                "Review inputs/usage and try again."),
+                               col_spec)
 
     spec_file = open(col_spec, "r")
     columns = []
@@ -123,9 +123,12 @@ def execute(args, execution_context):
 
     col_spec_columns = _read_col_spec(col_spec) if col_spec else 0
 
+    logger.debug("Expanding [{}] to [{}]",
+                 input_file,
+                 output_file)
     logger.info("Expanding [{}] to [{}]",
-                input_file,
-                output_file)
+                args.input,
+                args.original_output)
 
     file_reader = vcf.FileReader(input_file)
     vcf_reader = vcf.VcfReader(file_reader)
@@ -160,4 +163,4 @@ def execute(args, execution_context):
     file_writer.close()
     vcf_reader.close()
 
-    logger.info("Wrote input [{}] to output [{}]", input_file, output_file)
+    logger.debug("Wrote input [{}] to output [{}]", input_file, output_file)

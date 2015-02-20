@@ -9,7 +9,6 @@ import test.test_case as test_case
 from test.vcf_test import MockFileReader, MockVcfReader
 
 
-#TODO: (cgates): Lots of PEP8 cleanup in this class
 ORIGINAL_REPORTED_TAG = None
 ORIGINAL_PASSED_TAG = None
 
@@ -36,7 +35,7 @@ class MockWriter(object):
         self.closed = True
 
 class MockReader(object):
-    def __init__(self, lines = None):
+    def __init__(self, lines=None):
         if not lines:
             lines = []
         self._lines_iter = iter(lines)
@@ -79,25 +78,25 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
 
     def test_format_missingAFTag(self):
         tag = mutect._AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
-        originalVcfRecord = vcf.VcfRecord.parse_record(line, ["SA","SB"])
-        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA","SB"])
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
+        originalVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
 
     def test_format_presentAFTag(self):
         tag = mutect._AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3|0.567:SA.2:SA.3|0.834:SB.2:SB.3\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3:{0}AF|0.567:SA.2:SA.3:0.57|0.834:SB.2:SB.3:0.83\n".format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
-        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA","SB"])
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3|0.567:SA.2:SA.3|0.834:SB.2:SB.3\n")
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3:{0}AF|0.567:SA.2:SA.3:0.57|0.834:SB.2:SB.3:0.83\n".format(mutect.JQ_MUTECT_TAG))
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_format_multAlt(self):
         tag = mutect._AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3|0.5,0.8:SA.2:SA.3|0.7,0.6:SB.2:SB.3\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3:{0}AF|0.5,0.8:SA.2:SA.3:0.5,0.8|0.7,0.6:SB.2:SB.3:0.7,0.6\n".format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
-        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA","SB"])
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3|0.5,0.8:SA.2:SA.3|0.7,0.6:SB.2:SB.3\n")
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3:{0}AF|0.5,0.8:SA.2:SA.3:0.5,0.8|0.7,0.6:SB.2:SB.3:0.7,0.6\n".format(mutect.JQ_MUTECT_TAG))
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -107,17 +106,17 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
 
     def test_format_missingDPTag(self):
         tag = mutect._DepthTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
-        originalVcfRecord = vcf.VcfRecord.parse_record(line, ["SA","SB"])
-        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA","SB"])
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
+        originalVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
 
     def test_format_presentDPTag(self):
         tag = mutect._DepthTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP:F2:F3|2:SA.2:SA.3|4:SB.2:SB.3\n".replace('|',"\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP:F2:F3:{0}DP|2:SA.2:SA.3:2|4:SB.2:SB.3:4\n".format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
-        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA","SB"])
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP:F2:F3|2:SA.2:SA.3|4:SB.2:SB.3\n")
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP:F2:F3:{0}DP|2:SA.2:SA.3:2|4:SB.2:SB.3:4\n".format(mutect.JQ_MUTECT_TAG))
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -127,17 +126,17 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
 
     def test_format_missingSSTag(self):
         tag = mutect._SomaticTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|',"\t")
-        expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:{0}HC_SOM|SA.1:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n").format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
-        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA","SB"])
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:{0}HC_SOM|SA.1:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n").format(mutect.JQ_MUTECT_TAG)
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_format_presentSSTag(self):
         tag = mutect._SomaticTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|SS:F2:F3|2:SA.2:SA.3|5:SB.2:SB.3\n".replace('|',"\t")
-        expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|SS:F2:F3:{0}HC_SOM|2:SA.2:SA.3:1|5:SB.2:SB.3:0\n").format(mutect.JQ_MUTECT_TAG).replace('|',"\t")
-        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA","SB"])
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|SS:F2:F3|2:SA.2:SA.3|5:SB.2:SB.3\n")
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|SS:F2:F3:{0}HC_SOM|2:SA.2:SA.3:1|5:SB.2:SB.3:0\n").format(mutect.JQ_MUTECT_TAG)
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
@@ -156,10 +155,10 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
         self.caller = mutect.Mutect()
 
     def test_validate_vcfs_in_directory(self):
-        in_files = ["A.vcf","B.vcf"]
+        in_files = ["A.vcf", "B.vcf"]
         self.caller.validate_vcfs_in_directory(in_files)
 
-        in_files = ["A.vcf","B"]
+        in_files = ["A.vcf", "B"]
         self.assertRaisesRegexp(JQException, "ERROR: Non-VCF file in directory. Check parameters and try again", self.caller.validate_vcfs_in_directory, in_files)
 
     def test_decorate_files(self):
@@ -167,7 +166,7 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
         decorator = "normalized"
         actual_filenames = self.caller.decorate_files(filenames, decorator)
         expected_filenames = "A.normalized.vcf"
-        self.assertEquals(expected_filenames,actual_filenames)
+        self.assertEquals(expected_filenames, actual_filenames)
 
     def test_validateInputFile_isValid(self):
         metaheaders = ["##MuTect=blah"]
@@ -197,7 +196,7 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
         writer = MockWriter()
         content = ["foo", "bar", "baz"]
         reader = MockReader(content)
-        self.caller.normalize(writer,[reader])
+        self.caller.normalize(writer, [reader])
 
         self.assertTrue(reader.opened)
         self.assertTrue(reader.closed)
@@ -212,7 +211,7 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
         writer = MockWriter()
         content = ["##MuTect=foo normal_sample_name=normal_sample tumor_sample_name=tumor_sample foo=bar", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ttumor_sample\tnormal_sample"]
         reader = MockReader(content)
-        self.caller.normalize(writer,[reader])
+        self.caller.normalize(writer, [reader])
 
         expected_lines = ["##MuTect=foo normal_sample_name=normal_sample tumor_sample_name=tumor_sample foo=bar", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tTUMOR\tNORMAL"]
         self.assertEquals(expected_lines, writer.lines())
@@ -238,8 +237,8 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(1, len(unrecognized_readers))
         self.assertEquals([reader1], unrecognized_readers)
         self.assertEquals(1, len(vcf_readers))
-        self.assertIsInstance(vcf_readers[0], vcf.RecognizedVcfReader)
-        self.assertEquals(reader2.file_name, vcf_readers[0].file_name)
+        self.assertIsInstance(vcf_readers[0], mutect._MutectVcfReader)
+        self.assertEquals(reader2.file_name, vcf_readers[0]._vcf_reader.file_name)
 
     def test_claim_ignores_non_vcf_files(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."

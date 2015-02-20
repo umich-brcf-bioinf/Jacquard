@@ -32,12 +32,14 @@ import jacquard.filter_hc_somatic as filter_hc_somatic
 import jacquard.logger as logger
 import jacquard.merge as merge
 import jacquard.normalize as normalize
+import jacquard.translate as translate
 import jacquard.tag as tag
 import jacquard.utils as utils
 from jacquard import __version__
 
 
-_SUBCOMMANDS = [normalize,
+_SUBCOMMANDS = [translate,
+                normalize,
                 tag,
                 filter_hc_somatic,
                 merge,
@@ -143,7 +145,7 @@ def dispatch(modules, arguments):
         logger.debug("cwd|{}", os.getcwd())
         logger.debug("command|{}", " ".join(arguments))
 
-        command_validator.preflight(args, command)
+        command_validator.preflight(command, args)
 
         logger.info("Jacquard begins (v{})", __version__)
         logger.info("Saving log to [{}]", logger.log_filename)
