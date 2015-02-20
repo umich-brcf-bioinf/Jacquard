@@ -382,7 +382,7 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(1, len(unrecognized_readers))
         self.assertEquals([reader1], unrecognized_readers)
         self.assertEquals(1, len(vcf_readers))
-        self.assertIsInstance(vcf_readers[0], vcf.RecognizedVcfReader)
+        self.assertIsInstance(vcf_readers[0], varscan._VarscanVcfReader)
         self.assertEquals(reader2.file_name, vcf_readers[0].file_name)
 
     def test_claim_vcf_and_filter_file(self):
@@ -403,9 +403,9 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(1, len(unrecognized_readers))
         self.assertEquals([reader5], unrecognized_readers)
         self.assertEquals(2, len(vcf_readers))
-        self.assertIsInstance(vcf_readers[0], vcf.RecognizedVcfReader)
+        self.assertIsInstance(vcf_readers[0], varscan._VarscanVcfReader)
         self.assertEquals(reader2.file_name, vcf_readers[0].file_name)
-        self.assertIsInstance(vcf_readers[1], vcf.RecognizedVcfReader)
+        self.assertIsInstance(vcf_readers[1], varscan._VarscanVcfReader)
         self.assertEquals(reader4.file_name, vcf_readers[1].file_name)
 
 
@@ -501,17 +501,4 @@ class VarscanVcfReaderTestCase(test_case.JacquardBaseTestCase):
 
         self.assertTrue(varscan_vcf_reader.open)
         self.assertTrue(varscan_vcf_reader.close)
-
-    def test_get_coordinates_from_somatic_hc_file(self):
-        vcf_reader = MockVcfReader()
-
-        content1 = ["chrom\tposition\tref\tvar",
-                    "chr1\t1560350\tT\t-G",
-                    "chr3\t1890462\tA\t-G"]
-        somatic_hc_reader = MockFileReader("fileA.Somatic.hc.fpfilter.pass", content1)
-
-        varscan_vcf_reader = varscan._VarscanVcfReader(vcf_reader, somatic_hc_reader)
-        self.assertEquals(2, len(varscan_vcf_reader.som_hc_coords))
-        self.assertIsInstance(varscan_vcf_reader.som_hc_coords[0], vcf.VcfRecord)
-        self.assertEquals("1560350", varscan_vcf_reader.som_hc_coords[0].pos)
 

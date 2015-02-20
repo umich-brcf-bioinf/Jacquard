@@ -1,10 +1,13 @@
 from __future__ import print_function, absolute_import
-import jacquard.vcf as vcf
-import jacquard.variant_callers.common_tags as common_tags
-import jacquard.utils as utils
-from jacquard import __version__
+
+from collections import defaultdict
 import os
 import re
+
+from jacquard import __version__
+import jacquard.utils as utils
+import jacquard.variant_callers.common_tags as common_tags
+import jacquard.vcf as vcf
 
 
 VARSCAN_SOMATIC_HEADER = ("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"
@@ -99,7 +102,9 @@ class _SomaticTag(object):
         vcf_record.add_sample_tag_value(varscan_tag, sample_values)
 
 class _HCTag(object):
-    def __init__(self):
+    _FILTERS_TO_REPLACE = set(["", ".", "pass"])
+
+    def __init__(self, file_reader):
         #pylint: disable=line-too-long
         self.metaheader = ('##FILTER=<ID={}HC,'
                            'Number=1,'
@@ -108,12 +113,40 @@ class _HCTag(object):
                            'Source="Jacquard",'
                            'Version={}>').format(JQ_VARSCAN_TAG,
                                                  __version__)
+        self.hc_loci = self._parse_file_reader(file_reader)
 
     @staticmethod
-    def add_tag_values(vcf_record, som_hc_coords):
-        if vcf_record not in som_hc_coords:
-            vcf_record.filter = _LOW_CONFIDENCE_FILTER
+    def _parse_file_reader(file_reader):
+        column_header = None
+        hc_loci = set()
+        file_reader.open()
+        for line in file_reader.read_lines():
+            if line.startswith("chrom\tposition"):
+                column_header = line
+            else:
+                split_line = line.split("\t")
+                hc_loci.add((split_line[0], split_line[1]))
+        file_reader.close()
+
+        #TODO : (cgates): Please test this
+        if not column_header:
+            raise utils.JQException("Error. The hc file {} is in an incorrect"
+                                    "format. Review inputs and try"
+                                    "again.".format(file_reader.file_name))
+
+        return hc_loci
+
+    def add_tag_values(self, vcf_record):
+        if (vcf_record.chrom, vcf_record.pos) not in self.hc_loci:
+            vcf_record.filter = self.append_or_replace(vcf_record.filter)
         return vcf_record
+
+    def append_or_replace(self, existing_filter):
+        if existing_filter.lower() in self._FILTERS_TO_REPLACE:
+            return _LOW_CONFIDENCE_FILTER
+        else:
+            return existing_filter + ";" + _LOW_CONFIDENCE_FILTER
+
 
 class Varscan(object):
     _HC_FILE_SUFFIX = ".Somatic.hc.fpfilter.pass"
@@ -236,9 +269,9 @@ class Varscan(object):
 
                 if split_line[0] != "chrom" and split_line[0].startswith("chr"):
                     hc_key = vcf.VcfRecord(split_line[0],
-                                       split_line[1],
-                                       split_line[2],
-                                       split_line[3])
+                                           split_line[1],
+                                           split_line[2],
+                                           split_line[3])
                     hc_keys.append(hc_key)
             hc_file_reader.close()
 
@@ -312,24 +345,45 @@ class Varscan(object):
             return "##source=VarScan2" in vcf_reader.metaheaders
         return False
 
+    #TODO: (cgates): Add check of header line (extract constant from HCTag)
     def _is_varscan_hc_file(self, file_reader):
         return file_reader.file_name.endswith(self._HC_FILE_SUFFIX)
 
-    def claim(self, file_readers):
-        unclaimed_readers = []
-        vcf_readers = []
-        hc_file_readers = []
+    @staticmethod
+    def _get_files_per_patient(file_readers):
+        patient_to_files = defaultdict(list)
         for file_reader in file_readers:
-            if self._is_varscan_vcf(file_reader):
-                vcf_reader = vcf.VcfReader(file_reader)
-                vcf_readers.append(vcf.RecognizedVcfReader(vcf_reader,
-                                                           self))
-            elif self._is_varscan_hc_file(file_reader):
-                hc_file_readers.append(file_reader)
-            else:
-                unclaimed_readers.append(file_reader)
-        return (unclaimed_readers, vcf_readers)
+            filename = file_reader.file_name
+            patient = filename.split(".")[0]
+            patient_to_files[patient].append(file_reader)
 
+        return patient_to_files
+
+    def claim(self, file_readers):
+        files_per_patient = self._get_files_per_patient(file_readers)
+
+        unclaimed_readers = []
+        trans_vcf_readers = []
+        for patient in files_per_patient:
+            vcf_readers = []
+            hc_file_reader = None
+
+            for file_reader in files_per_patient[patient]:
+                if self._is_varscan_vcf(file_reader):
+                    vcf_readers.append(vcf.VcfReader(file_reader))
+                elif self._is_varscan_hc_file(file_reader):
+                    hc_file_reader = file_reader
+                else:
+                    unclaimed_readers.append(file_reader)
+
+            for vcf_reader in vcf_readers:
+                trans_vcf_readers.append(_VarscanVcfReader(vcf_reader,
+                                                           hc_file_reader))
+
+        return unclaimed_readers, trans_vcf_readers
+
+#TODO: (cgates): If we can, I would rather inflate the high confidence set when
+# we open and not on construction. There is a pretty safe/clean way to do this.
 class _VarscanVcfReader(object):
     def __init__(self, vcf_reader, som_hc_file_reader=None):
         self._vcf_reader = vcf_reader
@@ -340,9 +394,16 @@ class _VarscanVcfReader(object):
                      _DepthTag(),
                      _SomaticTag()]
 
-        self.som_hc_coords = None
         if som_hc_file_reader:
-            self.som_hc_coords = self._find_som_hc_coords(som_hc_file_reader)
+            self.tags.append(_HCTag(som_hc_file_reader))
+
+    @property
+    def file_name(self):
+        return self._vcf_reader.file_name
+
+    @property
+    def caller_name(self):
+        return self._caller.name
 
     def open(self):
         return self._vcf_reader.open()
@@ -353,8 +414,6 @@ class _VarscanVcfReader(object):
     def metaheaders(self):
         new_metaheaders = list(self._vcf_reader.metaheaders)
         new_metaheaders.extend(self._caller.get_new_metaheaders())
-        if self.som_hc_coords:
-            new_metaheaders.extend(_HCTag().metaheader)
         return new_metaheaders
 
     @property
@@ -363,37 +422,9 @@ class _VarscanVcfReader(object):
 
     def vcf_records(self):
         for vcf_record in self._vcf_reader.vcf_records():
-            tagged_record = self._add_tags(vcf_record)
-            if self.som_hc_coords:
-                yield _HCTag().add_tag_values(tagged_record, self.som_hc_coords)
-            else:
-                yield tagged_record
+            yield self._add_tags(vcf_record)
 
     def _add_tags(self, vcf_record):
         for tag in self.tags:
             tag.add_tag_values(vcf_record)
         return vcf_record
-
-    @staticmethod
-    def _find_som_hc_coords(file_reader):
-        vcf_records = []
-        file_reader.open()
-        for line in file_reader.read_lines():
-            if line.startswith("chrom\tposition\tref\tvar"):
-                column_header = line
-            else:
-                split_line = line.split("\t")
-                #TODO: (jebene) - this doesn't look like it'll correctly handle the ref/alts
-                vcf_records.append(vcf.VcfRecord(split_line[0],
-                                                 split_line[1],
-                                                 split_line[2],
-                                                 split_line[3]))
-        file_reader.close()
-
-        if not column_header:
-            raise utils.JQException("Error. The hc file {} is in an incorrect"
-                                    "format. Review inputs and try"
-                                    "again.".format(file_reader.file_name))
-
-        return vcf_records
-
