@@ -20,7 +20,7 @@ def get_caller(metaheaders, column_header, name):
 
 def claim(file_readers):
     all_translated_vcf_readers = []
-    for caller in callers():
+    for caller in _CALLERS:
         (file_readers, translated_vcf_readers) = caller.claim(file_readers)
         all_translated_vcf_readers.extend(translated_vcf_readers)
     return all_translated_vcf_readers

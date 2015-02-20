@@ -12,15 +12,6 @@ def mock_callers():
             vcf_test.MockCaller("baz")]
 
 class VariantCallerFactoryTestCase(test_case.JacquardBaseTestCase):
-    def setUp(self):
-        super(VariantCallerFactoryTestCase, self).setUp()
-        global original_callers
-        original_callers = variant_caller_factory.callers
-        variant_caller_factory.callers = mock_callers
-
-    def tearDown(self):
-        variant_caller_factory.callers = original_callers
-
     def test_defined_caller(self):
         self.assertEquals(3, len(variant_caller_factory._CALLERS))
         caller_names = [caller.name for caller in variant_caller_factory._CALLERS]
@@ -34,6 +25,17 @@ class VariantCallerFactoryTestCase(test_case.JacquardBaseTestCase):
                           ["##metaheaders"],
                           "#header",
                           "vcfName")
+
+class VariantCallerFactoryClaimTestCase(test_case.JacquardBaseTestCase):
+    def setUp(self):
+        super(VariantCallerFactoryClaimTestCase, self).setUp()
+        global original_callers
+        original_callers = list(variant_caller_factory._CALLERS)
+        variant_caller_factory._CALLERS = mock_callers()
+
+    def tearDown(self):
+        variant_caller_factory._CALLERS = original_callers
+        super(VariantCallerFactoryClaimTestCase, self).tearDown()
 
     def test_claim(self):
         file_readers = [vcf_test.MockFileReader("fileA.vcf"),

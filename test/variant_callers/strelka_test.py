@@ -8,7 +8,7 @@ from jacquard.utils import JQException
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.variant_callers.strelka as strelka
 import jacquard.vcf as vcf
-from test.vcf_test import MockFileReader, MockVcfReader
+from test.vcf_test import MockFileReader, MockVcfReader, MockTag
 import test.test_case as test_case
 
 
@@ -306,3 +306,14 @@ class StrelkaVcfReaderTestCase(test_case.JacquardBaseTestCase):
         self.assertTrue(strelka_vcf_reader.open)
         self.assertTrue(strelka_vcf_reader.close)
 
+    @staticmethod
+    def _get_tag_class_names(vcf_reader):
+        return [tag.__class__.__name__ for tag in vcf_reader.tags]
+
+    def test_add_tag_class(self):
+        vcf_reader = MockVcfReader(metaheaders=["##foo", "##source=VarScan2"])
+        strelka_vcf_reader = strelka._StrelkaVcfReader(vcf_reader)
+
+        mocktag = [MockTag("foo")]
+        strelka_vcf_reader.add_tag_class(mocktag)
+        self.assertIn("MockTag", self._get_tag_class_names(strelka_vcf_reader))

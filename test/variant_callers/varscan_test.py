@@ -11,7 +11,7 @@ from jacquard.variant_callers import varscan
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.vcf as vcf
 import test.test_case as test_case
-from test.vcf_test import MockVcfReader
+from test.vcf_test import MockVcfReader, MockTag
 from jacquard.variant_callers.varscan import _HCTag
 
 
@@ -98,35 +98,9 @@ class HCTagTestCase(test_case.JacquardBaseTestCase):
         input_reader = MockFileReader("foo.txt", ["chrom\tposition\tref\tvar",
                                                   "chr1\t42\tref\tvar",
                                                   "chr2\t50\tref\tvar"])
-        expected = varscan._LOW_CONFIDENCE_FILTER
-        actual = _HCTag(input_reader).add_tag_values(record).filter
-        self.assertEquals(expected, actual)
-
-    def test_add_tag_values_lowConfidenceForNonPassAppendsToFilter(self):
-        record = vcf.VcfRecord("chr1", "30", "ref", "alt", vcf_filter="indelBias")
-        input_reader = MockFileReader("foo.txt", ["chrom\tposition\tref\tvar",
-                                                  "chr1\t42\tref\tvar",
-                                                  "chr2\t50\tref\tvar"])
-        expected = "indelBias;" + varscan._LOW_CONFIDENCE_FILTER
-        actual = _HCTag(input_reader).add_tag_values(record).filter
-        self.assertEquals(expected, actual)
-
-    def test_add_tag_values_lowConfidenceReplacesNullFilter(self):
-        record = vcf.VcfRecord("chr1", "30", "ref", "alt", vcf_filter=".")
-        input_reader = MockFileReader("foo.txt", ["chrom\tposition\tref\tvar",
-                                                  "chr1\t42\tref\tvar",
-                                                  "chr2\t50\tref\tvar"])
-        expected = varscan._LOW_CONFIDENCE_FILTER
-        actual = _HCTag(input_reader).add_tag_values(record).filter
-        self.assertEquals(expected, actual)
-
-    def test_add_tag_values_lowConfidenceReplacesEmptyFilter(self):
-        record = vcf.VcfRecord("chr1", "30", "ref", "alt", vcf_filter="")
-        input_reader = MockFileReader("foo.txt", ["chrom\tposition\tref\tvar",
-                                                  "chr1\t42\tref\tvar",
-                                                  "chr2\t50\tref\tvar"])
-        expected = varscan._LOW_CONFIDENCE_FILTER
-        actual = _HCTag(input_reader).add_tag_values(record).filter
+        tag = _HCTag(input_reader)
+        expected = tag._TAG_ID
+        actual = tag.add_tag_values(record).filter
         self.assertEquals(expected, actual)
 
 
@@ -598,3 +572,14 @@ class VarscanVcfReaderTestCase(test_case.JacquardBaseTestCase):
         self.assertTrue(varscan_vcf_reader.open)
         self.assertTrue(varscan_vcf_reader.close)
 
+    @staticmethod
+    def _get_tag_class_names(vcf_reader):
+        return [tag.__class__.__name__ for tag in vcf_reader.tags]
+
+    def test_add_tag_class(self):
+        vcf_reader = MockVcfReader(metaheaders=["##foo", "##source=VarScan2"])
+        varscan_vcf_reader = varscan._VarscanVcfReader(vcf_reader)
+
+        mocktag = [MockTag("foo")]
+        varscan_vcf_reader.add_tag_class(mocktag)
+        self.assertIn("MockTag", self._get_tag_class_names(varscan_vcf_reader))

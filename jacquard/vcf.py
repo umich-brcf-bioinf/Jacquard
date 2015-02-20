@@ -139,6 +139,7 @@ class VcfReader(object):
 class VcfRecord(object):
     #pylint: disable=too-many-instance-attributes
     EMPTY_SET = set()
+    _FILTERS_TO_REPLACE = set(["", ".", "pass"])
 
     @classmethod
     def parse_record(cls, vcf_line, sample_names):
@@ -182,8 +183,8 @@ class VcfRecord(object):
             return int(string)
         except ValueError:
             return sys.maxint
-
-#TODO: (cgates) adjust info field to be stored as dict instead of string
+#TODO: (cgates): Could we make filter an OrderedSet
+#TODO: (cgates) adjust info field to be stored as dict only instead of string
 #TODO: (cgates) adjust vcf names to not collide with reserved python words
 ## pylint: disable=too-many-arguments, invalid-name
 # Alas, something must encapsulate the myriad VCF fields.
@@ -313,6 +314,13 @@ class VcfRecord(object):
         for sample in self.sample_tag_values.keys():
             value = str(new_sample_values[sample])
             self.sample_tag_values[sample][tag_name] = value
+
+    def add_or_replace_filter(self, new_filter):
+        if self.filter.lower() in self._FILTERS_TO_REPLACE:
+            self.filter = new_filter
+        elif new_filter not in self.filter.split(";"):
+            self.filter = ";".join([self.filter,
+                                    new_filter])
 
     def __eq__(self, other):
         return isinstance(other, VcfRecord) and self._key == other._key

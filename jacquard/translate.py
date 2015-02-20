@@ -1,11 +1,15 @@
 from __future__ import absolute_import
-from jacquard.variant_callers import variant_caller_factory
+
+import collections
 import glob
 import os
-import collections
+
+from jacquard import __version__
 import jacquard.logger as logger
 import jacquard.utils as utils
+from jacquard.variant_callers import variant_caller_factory
 from jacquard.vcf import FileReader, FileWriter
+
 
 JQ_OUTPUT_SUFFIX = "translatedTags"
 
@@ -92,43 +96,79 @@ def _check_records(reader):
 
     return anomalous_set, anomalous_records
 
-def _write_headers(file_writer, reader, execution_context, anomalous_set):
+def _write_headers(file_writer, reader, execution_context):
     headers = reader.metaheaders
     headers.extend(execution_context)
     headers.append("##jacquard.tag.caller={0}".format(reader.caller_name))
-    if len(anomalous_set) > 0:
-        headers.append('##FILTER=<ID=JQ_EXCLUDE,Description="This '
-                       'variant record is problematic and will be '
-                       'excluded from downstream Jacquard processing.",'
-                       'Source="Jacquard",Version="">')
-        if "JQ_MALFORMED_REF" in anomalous_set:
-            headers.append('##FILTER=<ID=JQ_MALFORMED_REF,Description='
-                           '"The format of the reference value for this '
-                           'variant record does not comply with VCF '
-                           'standard.",Source="Jacquard",Version="">')
-        if "JQ_MALFORMED_ALT" in anomalous_set:
-            headers.append('##FILTER=<ID=JQ_MALFORMED_ALT,Description='
-                           '"The the format of the alternate allele value '
-                           'for this variant record does not comply with '
-                           'VCF standard.",Source="Jacquard",Version="">')
-        if "JQ_MISSING_ALT" in anomalous_set:
-            headers.append('##FILTER=<ID=JQ_MISSING_ALT,Description="The '
-                           'alternate allele is missing for this variant '
-                           'record.",Source="Jacquard",Version="">')
     headers.append(reader.column_header)
 
+    print headers
     file_writer.write("\n".join(headers) + "\n")
 
-def _write_records(file_writer, records, anomalous_records):
-    for i, record in enumerate(records):
-        anomalous = ";".join(anomalous_records[i])
-        if anomalous:
-            if record.filter == ".":
-                record.filter = anomalous
-            else:
-                record.filter = ";".join([record.filter, anomalous])
+class _ExcludeMalformedRef(object):
+    #pylint: disable=too-few-public-methods
+    _VALID_REF = set(list("ACGTNacgtn"))
+    _TAG_ID = "JQ_EXCLUDE_MALFORMED_REF"
 
-        file_writer.write(record.asText())
+    def __init__(self):
+        self.metaheader = ('##FILTER=<'
+                           'ID={},'
+                           #pylint: disable=line-too-long
+                           'Description="The format of the reference value for this variant record does not comply with VCF standard.",'
+                           'Source="Jacquard",'
+                           'Version="{}">').format(self._TAG_ID, __version__)
+
+    def _is_valid_ref(self, record):
+        return set(list(record.ref)).issubset(self._VALID_REF)
+
+    def add_tag_values(self, record):
+        if not self._is_valid_ref(record):
+            record.add_or_replace_filter(self._TAG_ID)
+
+class _ExcludeMalformedAlt(object):
+    #pylint: disable=too-few-public-methods
+    _VALID_ALT = set(list("*.ACGTNacgtn,"))
+    _TAG_ID = "JQ_EXCLUDE_MALFORMED_ALT"
+
+    def __init__(self):
+        self.metaheader = ('##FILTER=<'
+                           'ID={},'
+                           #pylint: disable=line-too-long
+                           'Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.",'
+                           'Source="Jacquard",'
+                           'Version={}>').format(self._TAG_ID, __version__)
+
+    def _is_valid_alt(self, record):
+        valid_characters = set(list(record.alt)).issubset(self._VALID_ALT)
+        invalid_characters = set(list("*.")).issubset(set(list(record.alt)))
+
+        return valid_characters and not invalid_characters
+
+    def add_tag_values(self, record):
+        if not self._is_valid_alt(record) :
+            record.add_or_replace_filter(self._TAG_ID)
+
+class _ExcludeMissingAlt(object):
+    #pylint: disable=too-few-public-methods
+    _VALID_ALT = set(list("*."))
+    _TAG_ID = "JQ_EXCLUDE_MISSING_ALT"
+
+    def __init__(self):
+        self.metaheader = ('##FILTER='
+                           '<ID={},'
+                           #pylint: disable=line-too-long
+                           'Description="The alternate allele is missing for this variant record.",'
+                           'Source="Jacquard",'
+                           'Version={}>').format(self._TAG_ID, __version__)
+
+    def _is_valid_alt(self, record):
+        valid_length = len(record.alt) == 1
+        return set(list(record.alt)).issubset(self._VALID_ALT) and valid_length
+
+    def add_tag_values(self, record):
+        if self._is_valid_alt(record):
+            record.add_or_replace_filter(self._TAG_ID)
+
 
 def _build_file_readers(input_dir):
     in_files = glob.glob(os.path.join(input_dir, "*.vcf"))
@@ -139,44 +179,60 @@ def _build_file_readers(input_dir):
 
     return file_readers
 
-def _translate_files(trans_vcf_readers,
-                     output_dir,
-                     execution_context):
-    total_filtered_records = 0
-    callers = collections.defaultdict(int)
+#TODO: execution_context is undergoing construction.
+def _translate_files(trans_vcf_reader, file_writer, execution_context):
+    trans_vcf_reader.open()
+    file_writer.open()
 
-    for trans_vcf_reader in trans_vcf_readers:
-        new_filename = _mangle_output_filenames(trans_vcf_reader.file_name)
-        output_filepath = os.path.join(output_dir, new_filename)
-        file_writer = FileWriter(output_filepath)
+    trans_vcf_reader.add_tag_class([_ExcludeMalformedRef(),
+                                    _ExcludeMalformedAlt(),
+                                    _ExcludeMissingAlt()])
 
-        trans_vcf_reader.open()
-        anomalous_set, anomalous_records = _check_records(trans_vcf_reader)
-        callers[trans_vcf_reader.caller_name] += len(anomalous_records)
-        trans_vcf_reader.close()
+    _write_headers(file_writer, trans_vcf_reader, execution_context)
+    for record in trans_vcf_reader.vcf_records():
+        file_writer.write(record.asText())
 
-        trans_vcf_reader.open()
-        file_writer.open()
-        _write_headers(file_writer,
-                       trans_vcf_reader,
-                       execution_context,
-                       anomalous_set)
-        _write_records(file_writer,
-                       trans_vcf_reader.vcf_records(),
-                       anomalous_records)
-        trans_vcf_reader.close()
-        file_writer.close()
+    trans_vcf_reader.close()
+    file_writer.close()
 
-    for caller in callers:
-        total_filtered_records += callers[caller]
-        if callers[caller]:
-            logger.debug("Added a filter flag to [{}] problematic {} variant "
-                         "records.", callers[caller], caller)
-
-    if total_filtered_records:
-        logger.warning("A total of [{}] problematic variant records failed "
-                       "Jacquard's filters. See output and log for details.",
-                       total_filtered_records)
+# def _translate_files(trans_vcf_readers,
+#                      output_dir,
+#                      execution_context):
+#     total_filtered_records = 0
+#     callers = collections.defaultdict(int)
+# 
+#     for trans_vcf_reader in trans_vcf_readers:
+#         new_filename = _mangle_output_filenames(trans_vcf_reader.file_name)
+#         output_filepath = os.path.join(output_dir, new_filename)
+#         file_writer = FileWriter(output_filepath)
+# 
+#         trans_vcf_reader.open()
+#         anomalous_set, anomalous_records = _check_records(trans_vcf_reader)
+#         callers[trans_vcf_reader.caller_name] += len(anomalous_records)
+#         trans_vcf_reader.close()
+# 
+#         trans_vcf_reader.open()
+#         file_writer.open()
+#         _write_headers(file_writer,
+#                        trans_vcf_reader,
+#                        execution_context,
+#                        anomalous_set)
+#         _write_records(file_writer,
+#                        trans_vcf_reader.vcf_records(),
+#                        anomalous_records)
+#         trans_vcf_reader.close()
+#         file_writer.close()
+# 
+#     for caller in callers:
+#         total_filtered_records += callers[caller]
+#         if callers[caller]:
+#             logger.debug("Added a filter flag to [{}] problematic {} variant "
+#                          "records.", callers[caller], caller)
+# 
+#     if total_filtered_records:
+#         logger.warning("A total of [{}] problematic variant records failed "
+#                        "Jacquard's filters. See output and log for details.",
+#                        total_filtered_records)
 
 def execute(args, execution_context):
     input_dir = os.path.abspath(args.input)
@@ -194,6 +250,10 @@ def execute(args, execution_context):
                 len(trans_vcf_readers),
                 args.input)
 
-    _translate_files(trans_vcf_readers, output_dir, execution_context)
+    for trans_vcf_reader in trans_vcf_readers:
+        new_filename = _mangle_output_filenames(trans_vcf_reader.file_name)
+        output_filepath = os.path.join(output_dir, new_filename)
+        file_writer = FileWriter(output_filepath)
+        _translate_files(trans_vcf_reader, file_writer, execution_context)
 
     logger.info("Wrote [{}] VCF file(s)", len(trans_vcf_readers))

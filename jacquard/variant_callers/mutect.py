@@ -242,6 +242,14 @@ class _MutectVcfReader(object):
     def __init__(self, vcf_reader):
         self._vcf_reader = vcf_reader
         self._caller = Mutect()
+        self.tags = [common_tags.ReportedTag(JQ_MUTECT_TAG),
+                     common_tags.PassedTag(JQ_MUTECT_TAG),
+                     _AlleleFreqTag(),
+                     _DepthTag(),
+                     _SomaticTag()]
+
+    def _get_new_metaheaders(self):
+        return [tag.metaheader for tag in self.tags]
 
     @property
     def caller_name(self):
@@ -256,10 +264,11 @@ class _MutectVcfReader(object):
 
     def close(self):
         return self._vcf_reader.close()
+
     @property
     def metaheaders(self):
         new_metaheaders = list(self._vcf_reader.metaheaders)
-        new_metaheaders.extend(self._caller.get_new_metaheaders())
+        new_metaheaders.extend(self._get_new_metaheaders())
         return new_metaheaders
 
     @property
@@ -268,5 +277,13 @@ class _MutectVcfReader(object):
 
     def vcf_records(self):
         for vcf_record in self._vcf_reader.vcf_records():
-            yield self._caller._add_tags(vcf_record)
+            yield self._add_tags(vcf_record)
+
+    def _add_tags(self, vcf_record):
+        for tag in self.tags:
+            tag.add_tag_values(vcf_record)
+        return vcf_record
+
+    def add_tag_class(self, tag_classes):
+        self.tags.extend(tag_classes)
 

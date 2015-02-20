@@ -13,7 +13,6 @@ import jacquard.vcf as vcf
 VARSCAN_SOMATIC_HEADER = ("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"
                           "NORMAL|TUMOR").replace("|", "\t")
 JQ_VARSCAN_TAG = "JQ_VS_"
-_LOW_CONFIDENCE_FILTER = "JQ_LOW_CONFIDENCE"
 
 class _AlleleFreqTag(object):
     #pylint: disable=too-few-public-methods
@@ -101,17 +100,19 @@ class _SomaticTag(object):
 
         vcf_record.add_sample_tag_value(varscan_tag, sample_values)
 
+#TODO: (cgates/jebene): All tags should have _TAG_ID as implemented below
 class _HCTag(object):
     _FILTERS_TO_REPLACE = set(["", ".", "pass"])
+    _TAG_ID = "{}LOW_CONFIDENCE".format(JQ_VARSCAN_TAG)
 
     def __init__(self, file_reader):
         #pylint: disable=line-too-long
-        self.metaheader = ('##FILTER=<ID={}HC,'
+        self.metaheader = ('##FILTER=<ID={},'
                            'Number=1,'
                            'Type=Flag,'
                            'Description="Jacquard high-confidence somatic flag for VarScan. Based on intersection with filtered VarScan variants"'
                            'Source="Jacquard",'
-                           'Version={}>').format(JQ_VARSCAN_TAG,
+                           'Version={}>').format(self._TAG_ID,
                                                  __version__)
         self.hc_loci = self._parse_file_reader(file_reader)
 
@@ -138,14 +139,8 @@ class _HCTag(object):
 
     def add_tag_values(self, vcf_record):
         if (vcf_record.chrom, vcf_record.pos) not in self.hc_loci:
-            vcf_record.filter = self.append_or_replace(vcf_record.filter)
+            vcf_record.add_or_replace_filter(self._TAG_ID)
         return vcf_record
-
-    def append_or_replace(self, existing_filter):
-        if existing_filter.lower() in self._FILTERS_TO_REPLACE:
-            return _LOW_CONFIDENCE_FILTER
-        else:
-            return existing_filter + ";" + _LOW_CONFIDENCE_FILTER
 
 
 class Varscan(object):
@@ -401,6 +396,9 @@ class _VarscanVcfReader(object):
     def file_name(self):
         return self._vcf_reader.file_name
 
+    def _get_new_metaheaders(self):
+        return [tag.metaheader for tag in self.tags]
+
     @property
     def caller_name(self):
         return self._caller.name
@@ -413,7 +411,7 @@ class _VarscanVcfReader(object):
     @property
     def metaheaders(self):
         new_metaheaders = list(self._vcf_reader.metaheaders)
-        new_metaheaders.extend(self._caller.get_new_metaheaders())
+        new_metaheaders.extend(self._get_new_metaheaders())
         return new_metaheaders
 
     @property
@@ -428,3 +426,7 @@ class _VarscanVcfReader(object):
         for tag in self.tags:
             tag.add_tag_values(vcf_record)
         return vcf_record
+
+    def add_tag_class(self, tag_classes):
+        self.tags.extend(tag_classes)
+

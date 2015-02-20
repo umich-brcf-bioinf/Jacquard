@@ -6,7 +6,7 @@ import jacquard.variant_callers.common_tags as common_tags
 import jacquard.variant_callers.mutect as mutect
 import jacquard.vcf as vcf
 import test.test_case as test_case
-from test.vcf_test import MockFileReader, MockVcfReader
+from test.vcf_test import MockFileReader, MockVcfReader, MockTag
 
 
 ORIGINAL_REPORTED_TAG = None
@@ -140,15 +140,6 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
-class MockTag(object):
-    def __init__(self, field_name, field_value, metaheader=None):
-        self.field_name = field_name
-        self.field_value = field_value
-        self.metaheader = metaheader
-
-    def add_tag_values(self, vcf_record):
-        vcf_record.add_sample_tag_value(self.field_name, {"SA":self.field_value, "SB":self.field_value})
-
 class MutectTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         super(MutectTestCase, self).setUp()
@@ -178,7 +169,7 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
 
     def test_addTags(self):
         input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
-        self.caller.tags = [MockTag("mockTag", 42)]
+        self.caller.tags = [MockTag("mockTag", {"SA": "42", "SB": "42"})]
         input_record = vcf.VcfRecord.parse_record(input_line, ["SA", "SB"])
         actual_line = self.caller.add_tags(input_record)
 
@@ -187,7 +178,7 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(expected_line, actual_line)
 
     def test_updateMetaheader(self):
-        self.caller.tags = [MockTag("mockTag", 42, "##my_metaheader\n")]
+        self.caller.tags = [MockTag("mockTag", {"samp1": "42"}, "##my_metaheader\n")]
         actual_metaheader = self.caller.get_new_metaheaders()
 
         self.assertEquals(["##my_metaheader\n"], actual_metaheader)
@@ -309,3 +300,14 @@ class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEquals(expected_column_header, mutect_vcf_reader.column_header)
 
+    @staticmethod
+    def _get_tag_class_names(vcf_reader):
+        return [tag.__class__.__name__ for tag in vcf_reader.tags]
+
+    def test_add_tag_class(self):
+        vcf_reader = MockVcfReader(metaheaders=["##foo", "##source=VarScan2"])
+        mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
+
+        mocktag = [MockTag("foo")]
+        mutect_vcf_reader.add_tag_class(mocktag)
+        self.assertIn("MockTag", self._get_tag_class_names(mutect_vcf_reader))
