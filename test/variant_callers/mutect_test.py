@@ -255,6 +255,7 @@ class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
         self.assertIn(mutect._SomaticTag().metaheader, metaheaders)
         self.assertIn("##foo", metaheaders)
         self.assertIn("##MuTect=123", metaheaders)
+        self.assertIn("##jacquard.translate.caller=MuTect", metaheaders)
 
     def test_vcf_records_newTagsPresent(self):
         record1 = vcf.VcfRecord(chrom="chr1",

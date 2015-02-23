@@ -328,6 +328,9 @@ class _StrelkaVcfReader(object):
     def metaheaders(self):
         new_metaheaders = list(self._vcf_reader.metaheaders)
         new_metaheaders.extend(self._get_new_metaheaders())
+        caller_metaheader = "##jacquard.translate.caller={0}".\
+                format(self._caller.name)
+        new_metaheaders.append(caller_metaheader)
         return new_metaheaders
 
     @property

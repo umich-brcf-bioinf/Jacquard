@@ -503,6 +503,7 @@ class VarscanVcfReaderTestCase(test_case.JacquardBaseTestCase):
         self.assertIn(varscan._SomaticTag().metaheader, metaheaders)
         self.assertIn("##foo", metaheaders)
         self.assertIn("##source=VarScan2", metaheaders)
+        self.assertIn("##jacquard.translate.caller=VarScan", metaheaders)
 
     def test_vcf_records_newTagsPresent(self):
         record1 = vcf.VcfRecord(chrom="chr1",
@@ -543,7 +544,7 @@ class VarscanVcfReaderTestCase(test_case.JacquardBaseTestCase):
         vcf_records = [record for record in varscan_vcf_reader.vcf_records()]
 
         self.assertEquals(2, len(vcf_records))
-        self.assertIn(varscan._LOW_CONFIDENCE_FILTER, vcf_records[0].filter)
+        self.assertIn(varscan._HCTag._TAG_ID, vcf_records[0].filter)
         self.assertIn("PASS", vcf_records[1].filter)
 
     def test_vcf_records_SomHcFileSNP(self):

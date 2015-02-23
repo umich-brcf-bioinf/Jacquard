@@ -272,6 +272,7 @@ class StrelkaVcfReaderTestCase(test_case.JacquardBaseTestCase):
         self.assertIn(strelka._SomaticTag().metaheader, metaheaders)
         self.assertIn("##foo", metaheaders)
         self.assertIn("##source=strelka", metaheaders)
+        self.assertIn("##jacquard.translate.caller=Strelka", metaheaders)
 
     def test_vcf_records_newTagsPresent(self):
         record1 = vcf.VcfRecord(chrom="chr1",

@@ -131,41 +131,6 @@ class MockVcfReader(object):
     def close(self):
         self.closed = True
 
-class MockTranslatedVcfReader(object):
-    def __init__(self, vcf_reader, tags, caller):
-        self._vcf_reader = vcf_reader
-        self._caller = caller
-        self.tags = tags
-        self.add_tag_class_called = False
-        self.vcf_records_called = False
-        self.opened = False
-        self.closed = False
-
-    @property
-    def column_header(self):
-        return "#column_header"
-
-    @property
-    def caller_name(self):
-        return self._caller.name
-
-    def open(self):
-        self.opened = True
-
-    def close(self):
-        self.closed = True
-
-    def vcf_records(self):
-        self.vcf_records_called = True
-        for _ in self._vcf_reader.records:
-            yield
-
-    @property
-    def metaheaders(self):
-        return ["##metaheaders"]
-
-    def add_tag_class(self, tag_class):
-        self.add_tag_class_called = True
 
 class MockCaller(object):
     def __init__(self, name="MockCaller", metaheaders=None):

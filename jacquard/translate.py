@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-import collections
 import glob
 import os
 
@@ -13,97 +12,6 @@ from jacquard.vcf import FileReader, FileWriter
 
 JQ_OUTPUT_SUFFIX = "translatedTags"
 
-#TODO: Edit this later to be appropriate for translate.py
-def add_subparser(subparser):
-    #pylint: disable=line-too-long
-    parser = subparser.add_parser("translate", help="Accepts a directory of VCf results and creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
-    parser.add_argument("input", help="Path to directory containing VCFs. Other file types ignored")
-    parser.add_argument("output", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
-    parser.add_argument("-v", "--verbose", action='store_true')
-    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
-
-def _mangle_output_filenames(input_file):
-    basename, extension = os.path.splitext(os.path.basename(input_file))
-    return ".".join([basename, JQ_OUTPUT_SUFFIX, extension.strip(".")])
-
-def _get_output_filenames(input_files):
-    output_files = set()
-    for input_file in input_files:
-        output_files.add(_mangle_output_filenames(input_file))
-
-    return output_files
-
-def _predict_output(args):
-    input_dir = os.path.abspath(args.input)
-    input_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
-    desired_output_files = _get_output_filenames(input_files)
-
-    return desired_output_files
-
-def report_prediction(args):
-    return _predict_output(args)
-
-def get_required_input_output_types():
-    return ("directory", "directory")
-
-def _comma_separated(line):
-    split_line = line.split(",")
-    for char in split_line:
-        if char == "":
-            return False
-    return True
-
-def _check_records(reader):
-    correct_ref = "ACGTNacgtn"
-    correct_alt = "*.ACGTNacgtn,"
-    anomalous_set = set()
-    anomalous_records = []
-
-    malformed_ref = 0
-    malformed_alt = 0
-    missing_alt = 0
-
-    for vcf_record in reader.vcf_records():
-        anomalous_flags = []
-        #TODO: (cgates): Suspect there may be a clearer way to do this?
-        if _comma_separated(vcf_record.ref) and not\
-                    all(x in correct_ref for x in list(vcf_record.ref)):
-            anomalous_flags.append("JQ_MALFORMED_REF")
-            malformed_ref += 1
-        if _comma_separated(vcf_record.alt) and not\
-                    all(x in correct_alt for x in list(vcf_record.alt)):
-            anomalous_flags.append("JQ_MALFORMED_ALT")
-            malformed_alt += 1
-        if vcf_record.alt == "*" or vcf_record.alt == ".":
-            anomalous_flags.append("JQ_MISSING_ALT")
-            missing_alt += 1
-        if len(anomalous_flags) > 0:
-            anomalous_flags = ["JQ_EXCLUDE"] + anomalous_flags
-
-        for flag in anomalous_flags:
-            anomalous_set.add(flag)
-        anomalous_records.append(anomalous_flags)
-
-    if malformed_ref:
-        logger.debug("{}|Added filter flag [JQ_MALFORMED_REF] to [{}] variant "
-                     "records.", reader.file_name, malformed_ref)
-    if malformed_alt:
-        logger.debug("{}|Added filter flag [JQ_MALFORMED_ALT] to [{}] variant "
-                     "records.", reader.file_name, malformed_alt)
-    if missing_alt:
-        logger.debug("{}|Added filter flag [JQ_MISSING_ALT] to [{}] variant "
-                     "records.", reader.file_name, missing_alt)
-
-    return anomalous_set, anomalous_records
-
-def _write_headers(file_writer, reader, execution_context):
-    headers = reader.metaheaders
-    headers.extend(execution_context)
-    headers.append("##jacquard.tag.caller={0}".format(reader.caller_name))
-    headers.append(reader.column_header)
-
-    print headers
-    file_writer.write("\n".join(headers) + "\n")
 
 class _ExcludeMalformedRef(object):
     #pylint: disable=too-few-public-methods
@@ -145,12 +53,12 @@ class _ExcludeMalformedAlt(object):
         return valid_characters and not invalid_characters
 
     def add_tag_values(self, record):
-        if not self._is_valid_alt(record) :
+        if not self._is_valid_alt(record):
             record.add_or_replace_filter(self._TAG_ID)
 
 class _ExcludeMissingAlt(object):
     #pylint: disable=too-few-public-methods
-    _VALID_ALT = set(list("*."))
+    _MISSING_ALT = "."
     _TAG_ID = "JQ_EXCLUDE_MISSING_ALT"
 
     def __init__(self):
@@ -161,13 +69,24 @@ class _ExcludeMissingAlt(object):
                            'Source="Jacquard",'
                            'Version={}>').format(self._TAG_ID, __version__)
 
-    def _is_valid_alt(self, record):
-        valid_length = len(record.alt) == 1
-        return set(list(record.alt)).issubset(self._VALID_ALT) and valid_length
-
     def add_tag_values(self, record):
-        if self._is_valid_alt(record):
+        if record.alt == self._MISSING_ALT:
             record.add_or_replace_filter(self._TAG_ID)
+
+
+def _mangle_output_filenames(input_file):
+    basename, extension = os.path.splitext(os.path.basename(input_file))
+    return ".".join([basename, JQ_OUTPUT_SUFFIX, extension.strip(".")])
+
+
+def _write_headers(reader, new_tags, execution_context, file_writer):
+    headers = reader.metaheaders
+    headers.extend(execution_context)
+    for tag in new_tags:
+        headers.append(tag.metaheader)
+    headers.append(reader.column_header)
+
+    file_writer.write("\n".join(headers) + "\n")
 
 
 def _build_file_readers(input_dir):
@@ -179,60 +98,38 @@ def _build_file_readers(input_dir):
 
     return file_readers
 
-#TODO: execution_context is undergoing construction.
-def _translate_files(trans_vcf_reader, file_writer, execution_context):
-    trans_vcf_reader.open()
-    file_writer.open()
 
-    trans_vcf_reader.add_tag_class([_ExcludeMalformedRef(),
-                                    _ExcludeMalformedAlt(),
-                                    _ExcludeMissingAlt()])
+def _translate_files(trans_vcf_reader,
+                     new_tags,
+                     execution_context,
+                     file_writer):
+    try:
+        trans_vcf_reader.open()
+        file_writer.open()
 
-    _write_headers(file_writer, trans_vcf_reader, execution_context)
-    for record in trans_vcf_reader.vcf_records():
-        file_writer.write(record.asText())
+        _write_headers(trans_vcf_reader,
+                       new_tags,
+                       execution_context,
+                       file_writer)
+        for record in trans_vcf_reader.vcf_records():
+            for tag in new_tags:
+                tag.add_tag_values(record)
+            file_writer.write(record.asText())
 
-    trans_vcf_reader.close()
-    file_writer.close()
+    finally:
+        trans_vcf_reader.close()
+        file_writer.close()
 
-# def _translate_files(trans_vcf_readers,
-#                      output_dir,
-#                      execution_context):
-#     total_filtered_records = 0
-#     callers = collections.defaultdict(int)
-# 
-#     for trans_vcf_reader in trans_vcf_readers:
-#         new_filename = _mangle_output_filenames(trans_vcf_reader.file_name)
-#         output_filepath = os.path.join(output_dir, new_filename)
-#         file_writer = FileWriter(output_filepath)
-# 
-#         trans_vcf_reader.open()
-#         anomalous_set, anomalous_records = _check_records(trans_vcf_reader)
-#         callers[trans_vcf_reader.caller_name] += len(anomalous_records)
-#         trans_vcf_reader.close()
-# 
-#         trans_vcf_reader.open()
-#         file_writer.open()
-#         _write_headers(file_writer,
-#                        trans_vcf_reader,
-#                        execution_context,
-#                        anomalous_set)
-#         _write_records(file_writer,
-#                        trans_vcf_reader.vcf_records(),
-#                        anomalous_records)
-#         trans_vcf_reader.close()
-#         file_writer.close()
-# 
-#     for caller in callers:
-#         total_filtered_records += callers[caller]
-#         if callers[caller]:
-#             logger.debug("Added a filter flag to [{}] problematic {} variant "
-#                          "records.", callers[caller], caller)
-# 
-#     if total_filtered_records:
-#         logger.warning("A total of [{}] problematic variant records failed "
-#                        "Jacquard's filters. See output and log for details.",
-#                        total_filtered_records)
+
+#TODO: Edit this later to be appropriate for translate.py
+def add_subparser(subparser):
+    #pylint: disable=line-too-long
+    parser = subparser.add_parser("translate", help="Accepts a directory of VCf results and creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
+    parser.add_argument("input", help="Path to directory containing VCFs. Other file types ignored")
+    parser.add_argument("output", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
+    parser.add_argument("-v", "--verbose", action='store_true')
+    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+
 
 def execute(args, execution_context):
     input_dir = os.path.abspath(args.input)
@@ -250,10 +147,30 @@ def execute(args, execution_context):
                 len(trans_vcf_readers),
                 args.input)
 
+    new_tags = [_ExcludeMalformedRef(),
+                _ExcludeMalformedAlt(),
+                _ExcludeMissingAlt()]
+
     for trans_vcf_reader in trans_vcf_readers:
         new_filename = _mangle_output_filenames(trans_vcf_reader.file_name)
         output_filepath = os.path.join(output_dir, new_filename)
         file_writer = FileWriter(output_filepath)
-        _translate_files(trans_vcf_reader, file_writer, execution_context)
+        _translate_files(trans_vcf_reader,
+                         new_tags,
+                         execution_context,
+                         file_writer,)
 
     logger.info("Wrote [{}] VCF file(s)", len(trans_vcf_readers))
+
+def report_prediction(args):
+    input_dir = os.path.abspath(args.input)
+    vcf_readers = _build_file_readers(input_dir)
+    output_file_names = set()
+    for reader in vcf_readers:
+        output_file_names.add(_mangle_output_filenames(reader.file_name))
+    return output_file_names
+
+def get_required_input_output_types():
+    return ("directory", "directory")
+
+

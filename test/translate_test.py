@@ -9,39 +9,76 @@ from testfixtures import TempDirectory
 from jacquard import __version__, vcf
 import jacquard.translate as translate
 import test.test_case as test_case
-from test.vcf_test import MockTranslatedVcfReader, MockVcfReader, MockCaller, MockTag, MockWriter
+from test.vcf_test import MockVcfReader, MockTag, MockWriter
 
 class TranslateTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         super(TranslateTestCase, self).setUp()
 
-    def test_predict_output(self):
+    def test_get_required_input_output_types(self):
+        self.assertEquals(("directory", "directory"),
+                          translate.get_required_input_output_types())
+
+    def test_report_prediction(self):
         with TempDirectory() as input_dir:
             input_dir.write("A.vcf", "##source=strelka\n#colHeader")
             input_dir.write("B.vcf", "##source=strelka\n#colHeader")
             args = Namespace(input=input_dir.path)
 
-            desired_output_files = translate._predict_output(args)
+            desired_output_files = translate.report_prediction(args)
             expected_desired_output_files = set(["A.translatedTags.vcf",
                                                  "B.translatedTags.vcf"])
 
             self.assertEquals(expected_desired_output_files, desired_output_files)
 
     def test_translate_files(self):
-        mock_caller = MockCaller(metaheaders=["##mockCallerMetaheader1"])
-        mock_tags = [MockTag(metaheader="##foo"), MockTag(metaheader="##bar")]
-        reader = MockTranslatedVcfReader(MockVcfReader(), mock_tags, mock_caller)
+        record = vcf.VcfRecord("chr1", "42", "A", "C",
+                               sample_tag_values={"SA":{}, "SB":{}})
+        reader = MockVcfReader(metaheaders=["##metaheader1",
+                                            "##metaheader2"],
+                               records=[record],
+                               sample_names=["SA", "SB"])
         writer = MockWriter()
         execution_context = []
-        translate._translate_files(reader, writer, execution_context)
+        new_tags = [MockTag("TAG1", {"SA":42, "SB":43}, metaheader="##newTag1"),
+                    MockTag("TAG2", {"SA":420, "SB":430}, metaheader="##newTag2")]
+        translate._translate_files(reader,
+                                   new_tags,
+                                   execution_context,
+                                   writer)
 
         self.assertTrue(reader.opened)
-        self.assertTrue(reader.closed)
-        self.assertTrue(reader.add_tag_class_called)
-        self.assertTrue(reader.vcf_records_called)
-
         self.assertTrue(writer.opened)
+        expected = ['##metaheader1',
+                    '##metaheader2',
+                    '##newTag1',
+                    '##newTag2',
+                    '#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR']
+        self.assertEquals(expected, writer._content[0:5])
+        self.assertRegexpMatches(writer._content[5], "TAG1:TAG2")
+        self.assertRegexpMatches(writer._content[5], "42:420")
+        self.assertRegexpMatches(writer._content[5], "43:430")
+
+        self.assertTrue(reader.closed)
         self.assertTrue(writer.closed)
+
+    def test_translate_write_metaheaders_addsExecutionMetaheaders(self):
+        writer = MockWriter()
+        reader = MockVcfReader(metaheaders=["##mockCallerMetaheader1"],
+                               column_header="#CHROM\tPOS\tREF\tALT\tStuff")
+        execution_context = ["##foo1=bar",
+                             "##foo2=baz"]
+        new_tags = [MockTag(metaheader="##newTag1"),
+                    MockTag(metaheader="##newTag2")]
+        translate._write_headers(reader, new_tags, execution_context, writer)
+        expected_headers = ["##mockCallerMetaheader1",
+                            "##foo1=bar",
+                            "##foo2=baz",
+                            "##newTag1",
+                            "##newTag2",
+                            "#CHROM\tPOS\tREF\tALT\tStuff"]
+        self.assertEquals(expected_headers, writer._content)
+
 
 class ExcludeMalformedRefTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
@@ -119,7 +156,7 @@ class ExcludeMissingAltTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals("PASS", record.filter)
 
     def test_add_tag_value_validIndelAltNoFilter(self):
-        record = vcf.VcfRecord("chr1", "42", "A", "ACGT*", vcf_filter="PASS")
+        record = vcf.VcfRecord("chr1", "42", "A", "ACGT", vcf_filter="PASS")
         translate._ExcludeMissingAlt().add_tag_values(record)
         self.assertEquals("PASS", record.filter)
 
@@ -128,10 +165,10 @@ class ExcludeMissingAltTestCase(test_case.JacquardBaseTestCase):
         translate._ExcludeMissingAlt().add_tag_values(record)
         self.assertEquals("PASS", record.filter)
 
-    def test_add_tag_value_missingAltUpstreamDeletionReplacesFilter(self):
+    def test_add_tag_value_missingAltUpstreamDeletionNoFilter(self):
         record = vcf.VcfRecord("chr1", "42", "A", "*", vcf_filter="PASS")
         translate._ExcludeMissingAlt().add_tag_values(record)
-        self.assertEquals("JQ_EXCLUDE_MISSING_ALT", record.filter)
+        self.assertEquals("PASS", record.filter)
 
     def test_add_tag_value_missingAltNullReplacesFilter(self):
         record = vcf.VcfRecord("chr1", "42", "A", ".", vcf_filter="PASS")
