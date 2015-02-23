@@ -73,11 +73,9 @@ class _ExcludeMissingAlt(object):
         if record.alt == self._MISSING_ALT:
             record.add_or_replace_filter(self._TAG_ID)
 
-
-def _mangle_output_filenames(input_file):
+def _mangle_output_filename(input_file):
     basename, extension = os.path.splitext(os.path.basename(input_file))
     return ".".join([basename, JQ_OUTPUT_SUFFIX, extension.strip(".")])
-
 
 def _write_headers(reader, new_tags, execution_context, file_writer):
     headers = reader.metaheaders
@@ -88,16 +86,14 @@ def _write_headers(reader, new_tags, execution_context, file_writer):
 
     file_writer.write("\n".join(headers) + "\n")
 
-
 def _build_file_readers(input_dir):
-    in_files = glob.glob(os.path.join(input_dir, "*.vcf"))
+    in_files = glob.glob(os.path.join(input_dir, "*"))
     file_readers = []
 
     for in_file in in_files:
         file_readers.append(FileReader(in_file))
 
     return file_readers
-
 
 def _translate_files(trans_vcf_reader,
                      new_tags,
@@ -111,15 +107,19 @@ def _translate_files(trans_vcf_reader,
                        new_tags,
                        execution_context,
                        file_writer)
+
+        records = []
         for record in trans_vcf_reader.vcf_records():
             for tag in new_tags:
                 tag.add_tag_values(record)
+            records.append(record)
+
+        for record in sorted(records):
             file_writer.write(record.asText())
 
     finally:
         trans_vcf_reader.close()
         file_writer.close()
-
 
 #TODO: Edit this later to be appropriate for translate.py
 def add_subparser(subparser):
@@ -129,7 +129,6 @@ def add_subparser(subparser):
     parser.add_argument("output", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
-
 
 def execute(args, execution_context):
     input_dir = os.path.abspath(args.input)
@@ -152,7 +151,7 @@ def execute(args, execution_context):
                 _ExcludeMissingAlt()]
 
     for trans_vcf_reader in trans_vcf_readers:
-        new_filename = _mangle_output_filenames(trans_vcf_reader.file_name)
+        new_filename = _mangle_output_filename(trans_vcf_reader.file_name)
         output_filepath = os.path.join(output_dir, new_filename)
         file_writer = FileWriter(output_filepath)
         _translate_files(trans_vcf_reader,
@@ -164,13 +163,17 @@ def execute(args, execution_context):
 
 def report_prediction(args):
     input_dir = os.path.abspath(args.input)
-    vcf_readers = _build_file_readers(input_dir)
+    file_readers = _build_file_readers(input_dir)
     output_file_names = set()
-    for reader in vcf_readers:
-        output_file_names.add(_mangle_output_filenames(reader.file_name))
+
+    for reader in file_readers:
+        mangled_fname =_mangle_output_filename(reader.file_name)
+        extension = os.path.splitext(os.path.basename(mangled_fname))[1]
+        if extension == ".vcf":
+            output_file_names.add(mangled_fname)
+
     return output_file_names
 
 def get_required_input_output_types():
     return ("directory", "directory")
-
 

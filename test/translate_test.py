@@ -23,6 +23,7 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
         with TempDirectory() as input_dir:
             input_dir.write("A.vcf", "##source=strelka\n#colHeader")
             input_dir.write("B.vcf", "##source=strelka\n#colHeader")
+            input_dir.write("B.hpfilter.pass", "##source=strelka\n#colHeader")
             args = Namespace(input=input_dir.path)
 
             desired_output_files = translate.report_prediction(args)
@@ -61,6 +62,28 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
 
         self.assertTrue(reader.closed)
         self.assertTrue(writer.closed)
+
+
+    def test_translate_files_sortsRecords(self):
+        writer = MockWriter()
+        record1 = vcf.VcfRecord("chr1", "42", "A", "C")
+        record2 = vcf.VcfRecord("chr2", "42", "A", "C")
+        record3 = vcf.VcfRecord("chr3", "42", "A", "C")
+        vcf_reader = MockVcfReader(metaheaders=[],
+                                   records=[record3, record1, record2])
+        execution_context = []
+        new_tags = []
+
+        translate._translate_files(vcf_reader,
+                                   new_tags,
+                                   execution_context,
+                                   writer)
+
+        actual_lines= iter(writer.lines())
+        self.assertRegexpMatches(actual_lines.next(), "^#CHROM")
+        self.assertRegexpMatches(actual_lines.next(), "^chr1")
+        self.assertRegexpMatches(actual_lines.next(), "^chr2")
+        self.assertRegexpMatches(actual_lines.next(), "^chr3")
 
     def test_translate_write_metaheaders_addsExecutionMetaheaders(self):
         writer = MockWriter()
@@ -181,7 +204,7 @@ class ExcludeMissingAltTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals("PASS", record.filter)
 
 class TranslateFunctionalTestCase(test_case.JacquardBaseTestCase):
-    def Xtest_translate(self):
+    def test_translate(self):
         with TempDirectory() as output_file:
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir,

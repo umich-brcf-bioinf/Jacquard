@@ -301,14 +301,3 @@ class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEquals(expected_column_header, mutect_vcf_reader.column_header)
 
-    @staticmethod
-    def _get_tag_class_names(vcf_reader):
-        return [tag.__class__.__name__ for tag in vcf_reader.tags]
-
-    def test_add_tag_class(self):
-        vcf_reader = MockVcfReader(metaheaders=["##foo", "##source=VarScan2"])
-        mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
-
-        mocktag = [MockTag("foo")]
-        mutect_vcf_reader.add_tag_class(mocktag)
-        self.assertIn("MockTag", self._get_tag_class_names(mutect_vcf_reader))

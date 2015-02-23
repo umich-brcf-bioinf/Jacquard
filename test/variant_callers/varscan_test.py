@@ -11,7 +11,7 @@ from jacquard.variant_callers import varscan
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.vcf as vcf
 import test.test_case as test_case
-from test.vcf_test import MockVcfReader, MockTag
+from test.vcf_test import MockVcfReader
 from jacquard.variant_callers.varscan import _HCTag
 
 
@@ -169,24 +169,32 @@ class SomaticTagTestCase(unittest.TestCase):
 
     def test_format_presentSSTag_withHC(self):
         tag = varscan._SomaticTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|{0}HC;SS=2|F1:F2:F3|2:SA.2:SA.3|SB.1:SB.2:SB.3\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|{0}HC;SS=2|F1:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:1\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
+        line = "CHROM|POS|ID|REF|ALT|QUAL|PASS|SS=2|F1:F2:F3|2:SA.2:SA.3|SB.1:SB.2:SB.3\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|PASS|SS=2|F1:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:1\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
+        tag.add_tag_values(processedVcfRecord)
+        self.assertEquals(expected, processedVcfRecord.asText())
+
+    def test_format_presentSSTag_withoutHCManyFilters(self):
+        tag = varscan._SomaticTag()
+        line = "CHROM|POS|ID|REF|ALT|QUAL|{0};foo|SS=2|F1:F2:F3|2:SA.2:SA.3|SB.1:SB.2:SB.3\n".format(varscan._HCTag._TAG_ID, varscan.JQ_VARSCAN_TAG).replace('|', "\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|{0};foo|SS=2|F1:F2:F3:{1}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n".format(varscan._HCTag._TAG_ID, varscan.JQ_VARSCAN_TAG).replace('|', "\t")
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_format_presentSSTag_withoutHC(self):
         tag = varscan._SomaticTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|SS=2|F1:F2:F3|2:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|SS=2|F1:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
+        line = "CHROM|POS|ID|REF|ALT|QUAL|{0}|SS=2|F1:F2:F3|2:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t").format(varscan._HCTag._TAG_ID)
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|{0}|SS=2|F1:F2:F3:{1}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n".format(varscan._HCTag._TAG_ID, varscan.JQ_VARSCAN_TAG).replace('|', "\t")
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
     def test_format_SSTag_notEqual2(self):
         tag = varscan._SomaticTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|SS=5|F1:F2:F3|2:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|SS=5|F1:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
+        line = "CHROM|POS|ID|REF|ALT|QUAL|PASS|SS=5|F1:F2:F3|2:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
+        expected = "CHROM|POS|ID|REF|ALT|QUAL|PASS|SS=5|F1:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
@@ -573,14 +581,3 @@ class VarscanVcfReaderTestCase(test_case.JacquardBaseTestCase):
         self.assertTrue(varscan_vcf_reader.open)
         self.assertTrue(varscan_vcf_reader.close)
 
-    @staticmethod
-    def _get_tag_class_names(vcf_reader):
-        return [tag.__class__.__name__ for tag in vcf_reader.tags]
-
-    def test_add_tag_class(self):
-        vcf_reader = MockVcfReader(metaheaders=["##foo", "##source=VarScan2"])
-        varscan_vcf_reader = varscan._VarscanVcfReader(vcf_reader)
-
-        mocktag = [MockTag("foo")]
-        varscan_vcf_reader.add_tag_class(mocktag)
-        self.assertIn("MockTag", self._get_tag_class_names(varscan_vcf_reader))

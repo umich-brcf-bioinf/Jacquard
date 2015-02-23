@@ -86,14 +86,47 @@ class _SomaticTag(object):
                                                   __version__)
 
     @staticmethod
-    #TODO: jebene - edit this to reflect new HCTag changes
     def add_tag_values(vcf_record):
         info_array = vcf_record.info.split(";")
         varscan_tag = JQ_VARSCAN_TAG + "HC_SOM"
         sample_values = {}
-        if "SS=2" in info_array and JQ_VARSCAN_TAG + "HC" in info_array:
+
+        if "SS=2" in info_array and vcf_record.filter == "PASS":
             for i, sample in enumerate(vcf_record.sample_tag_values):
                 sample_values[sample] = _SomaticTag._somatic_status(i)
+        else:
+            for sample in vcf_record.sample_tag_values:
+                sample_values[sample] = "0"
+
+        vcf_record.add_sample_tag_value(varscan_tag, sample_values)
+
+class _OldSomaticTag(object):
+    @staticmethod
+    def _somatic_status(sample_index):
+        if sample_index == 0: #it's NORMAL
+            return "0"
+        else: #it's TUMOR
+            return "1"
+
+    def __init__(self):
+        #pylint: disable=line-too-long
+        self.metaheader = ('##FORMAT=<ID={0}HC_SOM,'
+                           'Number=1,'
+                           'Type=Integer,'
+                           'Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)",'
+                           'Source="Jacquard",'
+                           'Version={1}>').format(JQ_VARSCAN_TAG,
+                                                  __version__)
+
+    @staticmethod
+    def add_tag_values(vcf_record):
+        info_array = vcf_record.info.split(";")
+        varscan_tag = JQ_VARSCAN_TAG + "HC_SOM"
+        sample_values = {}
+
+        if "SS=2" in info_array and JQ_VARSCAN_TAG + "HC" in info_array:
+            for i, sample in enumerate(vcf_record.sample_tag_values):
+                sample_values[sample] = _OldSomaticTag._somatic_status(i)
         else:
             for sample in vcf_record.sample_tag_values:
                 sample_values[sample] = "0"
@@ -153,7 +186,7 @@ class Varscan(object):
                      common_tags.PassedTag(JQ_VARSCAN_TAG),
                      _AlleleFreqTag(),
                      _DepthTag(),
-                     _SomaticTag()]
+                     _OldSomaticTag()]
         self.meta_header = "##jacquard.normalize_varscan.sources={0},{1}\n"
 
     @staticmethod
@@ -359,6 +392,7 @@ class Varscan(object):
 
         unclaimed_readers = []
         trans_vcf_readers = []
+
         for patient in files_per_patient:
             vcf_readers = []
             hc_file_reader = None
@@ -390,7 +424,7 @@ class _VarscanVcfReader(object):
                      _SomaticTag()]
 
         if som_hc_file_reader:
-            self.tags.append(_HCTag(som_hc_file_reader))
+            self.tags.insert(0, _HCTag(som_hc_file_reader))
 
     @property
     def file_name(self):
@@ -429,7 +463,4 @@ class _VarscanVcfReader(object):
         for tag in self.tags:
             tag.add_tag_values(vcf_record)
         return vcf_record
-
-    def add_tag_class(self, tag_classes):
-        self.tags.extend(tag_classes)
 

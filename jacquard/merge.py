@@ -117,8 +117,10 @@ def _build_coordinates(vcf_readers):
 
             for vcf_record in vcf_reader.vcf_records():
                 if previous_record and vcf_record < previous_record:
-                    logger.error("VCF File [{}] is not sorted."
-                                 .format(vcf_reader.file_name))
+                    logger.error("VCF file:chrom:pos [{}:{}:{}] is out of order"
+                                 .format(vcf_reader.file_name,
+                                         vcf_record.chrom,
+                                         vcf_record.pos))
                     error = 1
                 previous_record = vcf_record
                 coordinate_set.add(vcf_record.get_empty_record())

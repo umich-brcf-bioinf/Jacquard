@@ -252,4 +252,3 @@ class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
             for command in commands:
                 expected_dir = os.path.join(module_testdir, command[0], "benchmark")
                 self.assertCommand(command, expected_dir)
-

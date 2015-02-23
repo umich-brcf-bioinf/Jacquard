@@ -346,5 +346,3 @@ class _StrelkaVcfReader(object):
             tag.add_tag_values(vcf_record)
         return vcf_record
 
-    def add_tag_class(self, tag_classes):
-        self.tags.extend(tag_classes)
