@@ -152,9 +152,8 @@ def _write_somatic(in_files, output_file, somatic_positions, execution_context):
     logger.info("Filtered to [{}] calls in high-confidence loci.",
                 total_number_of_calls)
 
-    logger.info("Jacquard wrote [{}] VCF files to [{}]",
-                len(in_files),
-                output_file)
+    logger.info("Jacquard wrote [{}] VCF files.",
+                len(in_files))
 
 def filter_somatic_positions(input_file, output_file, execution_context=None):
     if not execution_context:

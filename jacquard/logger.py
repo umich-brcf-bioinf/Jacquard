@@ -63,6 +63,7 @@ def _print(level, message, args):
                                  'tool':logging_dict['tool'],
                                  'message': _format(message, args)},
           file=sys.stderr)
+    sys.stderr.flush()
 
 def _format(message, args):
     try:
