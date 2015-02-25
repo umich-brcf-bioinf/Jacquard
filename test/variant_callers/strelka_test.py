@@ -4,7 +4,6 @@
 import unittest
 
 from jacquard import __version__
-from jacquard.utils import JQException
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.variant_callers.strelka as strelka
 import jacquard.vcf as vcf
@@ -52,7 +51,7 @@ class CommonTagTestCase(unittest.TestCase):
         common_tags.PassedTag = ORIGINAL_PASSED_TAG
 
     def test_reported_tag(self):
-        strelka_instance = strelka.Strelka()
+        strelka_instance = strelka._StrelkaVcfReader(MockVcfReader())
         reported_tag = strelka_instance.tags[0]
         passed_tag = strelka_instance.tags[1]
         self.assertEquals("JQ_SK_", reported_tag.input_caller_name)
@@ -150,86 +149,6 @@ class StrelkaTestCase(unittest.TestCase):
     def setUp(self):
         unittest.TestCase.setUp(self)
         self.caller = strelka.Strelka()
-
-    def test_validate_vcfs_in_directory(self):
-        in_files = ["A.vcf","B.vcf"]
-        self.caller.validate_vcfs_in_directory(in_files)
-
-        in_files = ["A.vcf","B"]
-        self.assertRaisesRegexp(JQException, "ERROR: Non-VCF file in directory. Check parameters and try again", self.caller.validate_vcfs_in_directory, in_files)
-
-    def test_decorate_files(self):
-        filenames = ["A/A.strelka.snvs.vcf","A.strelka.indels.vcf"]
-        decorator = "normalized"
-
-        actual_filenames = self.caller.decorate_files(filenames, decorator)
-        expected_filenames = "A.strelka.normalized.vcf"
-
-        self.assertEquals(expected_filenames,actual_filenames)
-
-        filenames = ["A.strelka.vcf","A.strelka.vcf"]
-        decorator = "normalized"
-
-        self.assertRaisesRegexp(JQException, "Each patient in a Strelka directory should have a snvs file and an indels file.", self.caller.decorate_files, filenames, decorator)
-
-    def test_normalize(self):
-        writer = MockWriter()
-        content1 = ["##foo", "##bar", "#baz"]
-        content2 = ["##hi", "##bar", "#baz"]
-        reader1 = MockFileReader("indels.vcf", content1)
-        reader2 = MockFileReader("snvs.vcf", content2)
-        self.caller.normalize(writer,[reader1,reader2])
-
-        self.assertTrue(writer.opened)
-        self.assertTrue(writer.closed)
-        self.assertEquals(["##bar", "##foo", "##hi", "#baz"], writer.lines())
-
-    def test_normalize_mismatchedColumnHeaders(self):
-        writer = MockWriter()
-        content1 = ["##foo", "##bar", "#baz"]
-        content2 = ["##foo", "##bar", "#bluh"]
-        reader1 = MockFileReader("indels.vcf", content1)
-        reader2 = MockFileReader("snvs.vcf", content2)
-
-        self.assertRaisesRegexp(JQException, r"The column headers for VCF files \[indels.vcf,snvs.vcf\] do not match.",
-                                 self.caller.normalize, writer, [reader1,reader2])
-
-    def test_normalize_wrongNumberOfFiles(self):
-        self.assertRaisesRegexp(JQException,
-                                r"Strelka directories should have exactly two input files per patient, but found \[1\].",
-                                self.caller.normalize, MockWriter(), [MockFileReader(input_filepath="foo")])
-
-    def test_normalize_raisesExceptionMissingIndelSnvs(self):
-        self.assert_two_vcf_files_throw_exception("foo", "bar")
-        self.assert_two_vcf_files_throw_exception("snvs", "bar")
-        self.assert_two_vcf_files_throw_exception("foo.snvs", "bar")
-        self.assert_two_vcf_files_throw_exception("foo.indels", "bar")
-        self.assert_two_vcf_files_throw_exception("foo.indels", "bar.indels")
-        self.assert_two_vcf_files_throw_exception("foo.snvs", "bar.snvs")
-        self.assert_two_vcf_files_throw_exception("snvs/foo", "indels/bar")
-        self.assert_two_vcf_files_throw_exception("indels.snvs", "bar")
-        self.assert_two_vcf_files_throw_exception("A.indels.snvs", "B.indels.snvs")
-
-    def test_normalize_writesSequentialRecords(self):
-        writer = MockWriter()
-        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
-        record2 = "chr2\t.\t.\t.\t.\t.\t.\t.\t."
-        record3 = "chr3\t.\t.\t.\t.\t.\t.\t.\t."
-        content1 = ["##foo", "#bar", record2, record3]
-        content2 = ["##foo", "#bar", record1, record3]
-        reader1 = MockFileReader("indels.vcf", content1)
-        reader2 = MockFileReader("snvs.vcf", content2)
-        self.caller.normalize(writer, [reader1, reader2])
-
-        self.assertTrue(writer.opened)
-        self.assertTrue(writer.closed)
-        self.assertEquals(["##foo", "#bar", record1, record2, record3, record3], writer.lines())
-
-    def assert_two_vcf_files_throw_exception(self, file1, file2):
-        with self.assertRaisesRegexp(JQException,
-                                     r"Each patient in a Strelka directory should have a snvs file and an indels file."):
-            self.caller.normalize(MockWriter(), [MockFileReader(input_filepath=file1),
-                                                 MockFileReader(input_filepath=file2)])
 
     def test_claim(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."

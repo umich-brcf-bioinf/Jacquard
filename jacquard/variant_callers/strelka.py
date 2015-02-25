@@ -4,8 +4,6 @@ import jacquard.vcf as vcf
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.utils as utils
 from jacquard import __version__
-import os
-import re
 
 JQ_STRELKA_TAG = "JQ_SK_"
 
@@ -148,136 +146,11 @@ class Strelka(object):
     def __init__(self):
         self.name = "Strelka"
         self.abbr = "SK"
-        self.tags = [common_tags.ReportedTag(JQ_STRELKA_TAG),
-                     common_tags.PassedTag(JQ_STRELKA_TAG),
-                     _AlleleFreqTag(), _DepthTag(), _SomaticTag()]
         self.meta_header = "##jacquard.normalize_strelka.sources={0},{1}\n"
-
-    @staticmethod
-    def _validate_raw_input_files(file_readers):
-        if len(file_readers) != 2:
-            raise utils.JQException("Strelka directories should have exactly "
-                                    "two input files per patient, but found "
-                                    "[{}].".format(len(file_readers)))
-
-        tmp = [file_readers[0].file_name, file_readers[1].file_name]
-        for i, name in enumerate(tmp):
-            if "snvs" in name:
-                tmp[i] = "snvs"
-        for i, name in enumerate(tmp):
-            if "indels" in name:
-                tmp[i] = "indels"
-        if not (tmp[0] == "snvs" and tmp[1] == "indels") and not (tmp[1] ==
-                                                                  "snvs" and
-                                                                  tmp[0] ==
-                                                                  "indels"):
-            raise utils.JQException("Each patient in a Strelka directory "
-                                    "should have a snvs file and an indels "
-                                    "file.")
-
-        vcf_readers = [vcf.VcfReader(file_readers[0]),
-                       vcf.VcfReader(file_readers[1])]
-        if not vcf_readers[0].column_header == vcf_readers[1].column_header:
-            raise utils.JQException("The column headers for VCF files [{},{}] "
-                                    "do not match."\
-                .format(vcf_readers[0].file_name, vcf_readers[1].file_name))
-        return vcf_readers
-
-    @staticmethod
-    def _parse_vcf_readers(vcf_readers):
-        all_records = []
-        metaheader_list = []
-        column_header = vcf_readers[0].column_header
-
-        for vcf_reader in vcf_readers:
-            metaheader_list.extend(vcf_reader.metaheaders)
-            vcf_reader.open()
-
-            for record in vcf_reader.vcf_records():
-                all_records.append(record)
-            vcf_reader.close()
-
-        parsed_records = [rec.asText() for rec in sorted(all_records)]
-
-        return metaheader_list, column_header, parsed_records
-
-    @staticmethod
-    def decorate_files(filenames, decorator):
-        output_file = None
-        file_name_search = "snvs|indels"
-        for filename in filenames:
-            if re.search("("+file_name_search+")", filename):
-                prefix, suffix = re.split(file_name_search, filename)
-                output_file = os.path.basename(prefix+decorator+suffix)
-                return output_file
-
-        raise utils.JQException("Each patient in a Strelka directory should "
-                                "have a snvs file and an indels file.")
-
-    @staticmethod
-    def validate_vcfs_in_directory(in_files):
-        for in_file in in_files:
-            if not in_file.lower().endswith("vcf"):
-                raise utils.JQException("ERROR: Non-VCF file in directory. "
-                                        "Check parameters and try again")
-
-    def normalize(self, file_writer, file_readers):
-        vcf_readers = self._validate_raw_input_files(file_readers)
-        (metaheader_list,
-         column_header,
-         parsed_records) = self._parse_vcf_readers(vcf_readers)
-
-        sorted_metaheader_set = sorted(set(metaheader_list))
-
-        file_writer.open()
-
-        for metaheader in sorted_metaheader_set:
-            file_writer.write(metaheader+"\n")
-        file_writer.write(column_header+"\n")
-
-        for record in parsed_records:
-            file_writer.write(record)
-
-        file_writer.close()
-
-    def get_new_metaheaders(self):
-        return [tag.metaheader for tag in self.tags]
 
     @staticmethod
     def validate_input_file(meta_headers, column_header):
         return "##source=strelka" in meta_headers
-
-    @staticmethod
-    def validate_record(vcf_record):
-        return True
-
-    @staticmethod
-    def final_steps(hc_candidates, merge_candidates, output_file):
-        output_file_count = len(merge_candidates.keys())
-        print ("Wrote [{0}] VCF files to [{1}]").format(output_file_count,
-                                                        output_file)
-        return merge_candidates
-
-    @staticmethod
-    def handle_hc_files(in_file, out_dir, hc_candidates):
-        return hc_candidates
-
-    def validate_file_set(self, all_keys):
-        pass
-
-
-    def _add_tags(self, vcf_record):
-        for tag in self.tags:
-            tag.add_tag_values(vcf_record)
-        return vcf_record
-
-
-    #TODO: (cgates): remove this when translate is complete
-    def add_tags(self, vcf_record):
-        for tag in self.tags:
-            tag.add_tag_values(vcf_record)
-        return vcf_record.asText()
-
 
     @staticmethod
     def _is_strelka_vcf(file_reader):

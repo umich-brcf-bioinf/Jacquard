@@ -7,37 +7,6 @@ import sys
 
 import jacquard.utils as utils
 
-class RecognizedVcfReader(object):
-    '''VcfReader with recognized caller'''
-    def __init__(self, vcf_reader, caller):
-        self._vcf_reader = vcf_reader
-        self.caller = caller
-
-    @property
-    def column_header(self):
-        return self._vcf_reader.column_header
-
-    def close(self):
-        return self._vcf_reader.close()
-
-    @property
-    def file_name(self):
-        return self._vcf_reader.file_name
-
-    @property
-    def input_filepath(self):
-        return self._vcf_reader.input_filepath
-
-    @property
-    def metaheaders(self):
-        return self._vcf_reader.metaheaders
-
-    def open(self):
-        return self._vcf_reader.open()
-
-    def vcf_records(self):
-        return self._vcf_reader.vcf_records()
-
 #TODO: (cgates): add context management to open/close
 class VcfReader(object):
     '''Wraps a file reader, providing VCF metaheaders and records'''

@@ -121,11 +121,10 @@ def _translate_files(trans_vcf_reader,
         trans_vcf_reader.close()
         file_writer.close()
 
-#TODO: Edit this later to be appropriate for translate.py
 def add_subparser(subparser):
     #pylint: disable=line-too-long
-    parser = subparser.add_parser("translate", help="Accepts a directory of VCf results and creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
-    parser.add_argument("input", help="Path to directory containing VCFs. Other file types ignored")
+    parser = subparser.add_parser("translate", help="Accepts a directory of VCF results (and VarScan high confidence files). Creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
+    parser.add_argument("input", help="Path to directory containing VCFs (and VarScan high confidence files). Other file types ignored")
     parser.add_argument("output", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")

@@ -1,0 +1,53 @@
+##fileformat=VCFv4.1
+##source=VarScan2
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Total depth of quality bases">
+##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description="Indicates if record is a somatic mutation">
+##INFO=<ID=SS,Number=1,Type=String,Description="Somatic status of variant (0=Reference,1=Germline,2=Somatic,3=LOH, or 5=Unknown)">
+##INFO=<ID=SSC,Number=1,Type=String,Description="Somatic score in Phred scale (0-255) derived from somatic p-value">
+##INFO=<ID=GPV,Number=1,Type=Float,Description="Fisher's Exact Test P-value of tumor+normal versus no variant for Germline calls">
+##INFO=<ID=SPV,Number=1,Type=Float,Description="Fisher's Exact Test P-value of tumor versus normal for Somatic/LOH calls">
+##FILTER=<ID=str10,Description="Less than 10% or more than 90% of variant supporting reads on one strand">
+##FILTER=<ID=indelError,Description="Likely artifact due to indel reads at this position">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+##FORMAT=<ID=RD,Number=1,Type=Integer,Description="Depth of reference-supporting bases (reads1)">
+##FORMAT=<ID=AD,Number=1,Type=Integer,Description="Depth of variant-supporting bases (reads2)">
+##FORMAT=<ID=FREQ,Number=1,Type=String,Description="Variant allele frequency">
+##FORMAT=<ID=DP4,Number=1,Type=String,Description="Strand read counts: ref/fwd, ref/rev, var/fwd, var/rev">
+##FILTER=<ID=JQ_VS_LOW_CONFIDENCE,Number=1,Type=Flag,Description="Jacquard high-confidence somatic flag for VarScan. Based on intersection with filtered VarScan variants"Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_VS_CALLER_REPORTED,Number=1,Type=Integer,Description="1 = variant present in original VCF",Source="Jacquard",Version="0.21">
+##FORMAT=<ID=JQ_VS_CALLER_PASSED,Number=1,Type=Integer,Description="1 = variant FILTER is PASS in original VCF",Version="0.21">
+##FORMAT=<ID=JQ_VS_AF,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_VS_DP,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_VS_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)",Source="Jacquard",Version=0.21>
+##jacquard.translate.caller=VarScan
+##jacquard.version=0.21
+##jacquard.command=translate test/functional_tests/jacquard_test/input/ ../Desktop/translate_test/
+##jacquard.cwd=C:\Users\kmeng
+##FILTER=<ID=JQ_EXCLUDE_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.",Source="Jacquard",Version="0.21">
+##FILTER=<ID=JQ_EXCLUDE_MALFORMED_ALT,Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.",Source="Jacquard",Version=0.21>
+##FILTER=<ID=JQ_EXCLUDE_MISSING_ALT,Description="The alternate allele is missing for this variant record.",Source="Jacquard",Version=0.21>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NORMAL	TUMOR
+chr1	15903	.	G	GC	.	JQ_VS_LOW_CONFIDENCE	DP=21;SS=1;SSC=0;GPV=1.8578E-12;SPV=1E0	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	1/1:.:11:0:11:100%:0,0,10,1:1:0:1.0:11:0	1/1:.:10:0:10:100%:0,0,7,3:1:0:1.0:10:0
+chr1	63735	.	CCTA	C	.	JQ_VS_LOW_CONFIDENCE	DP=72;SS=1;SSC=2;GPV=1.7783E-26;SPV=5.4858E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	1/1:.:37:8:29:78.38%:3,5,6,23:1:0:0.78:37:0	1/1:.:35:7:28:80%:1,6,9,19:1:0:0.8:35:0
+chr1	129010	.	AATG	A	.	JQ_VS_LOW_CONFIDENCE	DP=50;SS=1;SSC=6;GPV=1.1557E-4;SPV=2.505E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/1:.:23:19:4:17.39%:16,3,3,1:1:0:0.17:23:0	0/1:.:27:19:8:29.63%:16,3,6,2:1:0:0.30:27:0
+chr1	267355	.	TATA	T	.	JQ_VS_LOW_CONFIDENCE	DP=124;SS=1;SSC=1;GPV=3.1666E-17;SPV=6.5943E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/1:.:46:28:18:39.13%:4,24,1,17:1:0:0.39:46:0	0/1:.:78:49:29:37.18%:5,44,3,26:1:0:0.37:78:0
+chr1	668394	.	AG	A	.	JQ_VS_LOW_CONFIDENCE	DP=43;SS=1;SSC=4;GPV=1.3525E-7;SPV=3.895E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/1:.:23:13:9:40.91%:11,2,7,2:1:0:0.41:23:0	0/1:.:20:10:10:50%:9,1,9,1:1:0:0.5:20:0
+chr1	721104	.	TA	T	.	JQ_VS_LOW_CONFIDENCE	DP=20;SOMATIC;SS=2;SSC=11;GPV=1E0;SPV=6.8111E-2	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	1/1:.:9:9:0:0%:9,0,0,0:1:0:0.0:9:0	0/1:.:11:7:4:36.36%:7,0,4,0:1:0:0.36:11:0
+chr1	761957	.	A	AT	.	JQ_VS_LOW_CONFIDENCE	DP=49;SS=1;SSC=7;GPV=8.6743E-25;SPV=1.7781E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	1/1:.:21:0:21:100%:0,0,21,0:1:0:1.0:21:0	1/1:.:28:3:25:89.29%:3,0,25,0:1:0:0.89:28:0
+chr1	866511	.	C	CCCCT	.	JQ_VS_LOW_CONFIDENCE	DP=54;SS=1;SSC=0;GPV=5.3813E-5;SPV=9.8141E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/1:.:26:17:9:34.62%:1,16,3,6:1:0:0.35:26:0	0/1:.:28:24:4:14.29%:5,19,1,3:1:0:0.14:28:0
+chr1	874950	.	T	TCCCTGGAGGACC	.	JQ_VS_LOW_CONFIDENCE	DP=28;SS=1;SSC=0;GPV=4.6796E-5;SPV=9.7397E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/1:.:11:4:7:63.64%:0,4,0,7:1:0:0.64:11:0	0/1:.:17:10:5:33.33%:1,9,0,5:1:0:0.33:17:0
+chr1	880639	.	TC	T	.	JQ_VS_LOW_CONFIDENCE	DP=32;SS=1;SSC=0;GPV=5.4567E-19;SPV=1E0	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	1/1:.:13:0:13:100%:0,0,4,9:1:0:1.0:13:0	1/1:.:19:0:19:100%:0,0,5,14:1:0:1.0:19:0
+chr1	894535	.	G	GC	.	JQ_VS_LOW_CONFIDENCE	DP=25;SOMATIC;SS=2;SSC=9;GPV=1E0;SPV=1.2435E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/0:.:12:12:0:0%:3,9,0,0:1:0:0.0:12:0	0/1:.:13:10:3:23.08%:0,10,1,2:1:0:0.23:13:0
+chr1	948846	.	T	TA	.	JQ_VS_LOW_CONFIDENCE	DP=25;SS=1;SSC=0;GPV=7.9107E-15;SPV=1E0	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	1/1:.:11:0:11:100%:0,0,11,0:1:0:1.0:11:0	1/1:.:14:0:14:100%:0,0,12,2:1:0:1.0:14:0
+chr1	978603	.	CCT	C	.	JQ_VS_LOW_CONFIDENCE	DP=53;SS=1;SSC=9;GPV=7.091E-10;SPV=1.1409E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/1:.:29:18:11:37.93%:11,7,10,1:1:0:0.38:29:0	0/1:.:24:10:14:58.33%:7,3,11,3:1:0:0.58:24:0
+chr1	985443	.	AG	A	.	JQ_VS_LOW_CONFIDENCE	DP=25;SOMATIC;SS=2;SSC=16;GPV=1E0;SPV=2.2311E-2	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/0:.:10:10:0:0%:9,1,0,0:1:0:0.0:10:0	0/1:.:15:8:6:42.86%:8,0,5,1:1:0:0.43:15:0
+chr1	1116222	.	CG	C	.	JQ_VS_LOW_CONFIDENCE	DP=22;SOMATIC;SS=2;SSC=9;GPV=1E0;SPV=1.0714E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/0:.:11:11:0:0%:0,11,0,0:1:0:0.0:11:0	0/1:.:11:8:3:27.27%:0,8,1,2:1:0:0.27:11:0
+chr1	1158441	.	GCA	G	.	JQ_VS_LOW_CONFIDENCE	DP=21;SS=1;SSC=0;GPV=6.592E-4;SPV=8.3437E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/1:.:8:4:4:50%:4,0,4,0:1:0:0.5:8:0	0/1:.:13:8:5:38.46%:7,1,4,1:1:0:0.38:13:0
+chr1	1215848	.	TA	T	.	JQ_VS_LOW_CONFIDENCE	DP=31;SS=1;SSC=4;GPV=1.0968E-2;SPV=3.9692E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/1:.:17:12:3:20%:12,0,3,0:1:0:0.2:17:0	0/1:.:14:6:3:33.33%:6,0,2,1:1:0:0.33:14:0
+chr1	1276973	.	G	GACAC	.	JQ_VS_LOW_CONFIDENCE	DP=66;SS=1;SSC=12;GPV=4.14E-31;SPV=5.3588E-2	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	1/1:.:29:5:24:82.76%:4,1,17,7:1:0:0.83:29:0	1/1:.:37:1:36:97.3%:1,0,19,17:1:0:0.97:37:0
+chr1	1289367	.	CTG	C	.	JQ_VS_LOW_CONFIDENCE	DP=40;SS=1;SSC=1;GPV=1.1479E-19;SPV=7.3684E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	1/1:.:14:1:13:92.86%:0,1,5,8:1:0:0.93:14:0	1/1:.:26:2:24:92.31%:2,0,5,19:1:0:0.92:26:0
+chr1	1333831	.	GA	G	.	JQ_VS_LOW_CONFIDENCE	DP=68;SOMATIC;SS=2;SSC=32;GPV=1E0;SPV=5.6171E-4	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/0:.:27:27:0:0%:6,21,0,0:1:0:0.0:27:0	0/1:.:41:28:13:31.71%:5,23,5,8:1:0:0.32:41:0
+chr1	1454460	.	G	GC	.	JQ_VS_LOW_CONFIDENCE	DP=32;SOMATIC;SS=2;SSC=8;GPV=1E0;SPV=1.3473E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/0:.:12:12:0:0%:0,12,0,0:1:0:0.0:12:0	0/1:.:20:16:4:20%:0,16,0,4:1:0:0.2:20:0
+chr1	1479105	.	C	CCT	.	JQ_VS_LOW_CONFIDENCE	DP=31;SS=1;SSC=2;GPV=2.4825E-5;SPV=5.5217E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/1:.:8:5:3:37.5%:4,1,3,0:1:0:0.38:8:0	0/1:.:23:13:10:43.48%:10,3,7,3:1:0:0.43:23:0

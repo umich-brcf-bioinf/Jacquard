@@ -4,8 +4,6 @@ import jacquard.variant_callers.common_tags as common_tags
 import jacquard.utils as utils
 import jacquard.vcf as vcf
 from jacquard import __version__
-import re
-import os
 
 JQ_MUTECT_TAG = "JQ_MT_"
 
@@ -96,70 +94,6 @@ class Mutect(object):
                      _AlleleFreqTag(), _DepthTag(), _SomaticTag()]
         self.file_name_search = ""
 
-    @staticmethod
-    def _get_mutect_cmd_parameters(line, mutect_dict):
-        split_line = line.split(" ")
-
-        for item in split_line:
-            split_item = item.split("=")
-            try:
-                mutect_dict[split_item[0]] = split_item[1]
-            except IndexError:
-                pass
-
-        return mutect_dict
-
-    @staticmethod
-    def decorate_files(filenames, decorator):
-        output_file = None
-        for file_name in filenames:
-            name = re.sub(r"\.vcf$", "." + decorator + ".vcf", file_name)
-            output_file = os.path.basename(name)
-        return output_file
-
-    @staticmethod
-    def validate_vcfs_in_directory(in_files):
-        for in_file in in_files:
-            if not in_file.lower().endswith("vcf"):
-                raise utils.JQException("ERROR: Non-VCF file in directory. "
-                                        "Check parameters and try again")
-
-    def normalize(self, file_writer, file_readers):
-        if len(file_readers) != 1:
-            raise utils.JQException(("MuTect directories should have exactly "
-                                     "one input file per patient, but "
-                                     "found [{}].").format(len(file_readers)))
-        file_writer.open()
-        for file_reader in file_readers:
-            file_reader.open()
-
-            mutect_dict = {}
-            for line in file_reader.read_lines():
-                if "##MuTect=" in line:
-                    mutect_dict = self._get_mutect_cmd_parameters(line,
-                                                                  mutect_dict)
-                if "#CHROM" in line:
-                    if "normal_sample_name" in mutect_dict:
-                        if "tumor_sample_name" in mutect_dict:
-                            line = re.sub(mutect_dict["normal_sample_name"],
-                                          "NORMAL",
-                                          line)
-                            line = re.sub(mutect_dict["tumor_sample_name"],
-                                          "TUMOR",
-                                          line)
-                    else:
-                        raise utils.JQException("Unable to determine normal "
-                                                "and tumor sample ordering "
-                                                "based on MuTect metaheader.")
-
-                file_writer.write(line)
-
-            file_reader.close()
-        file_writer.close()
-
-    def get_new_metaheaders(self):
-        return [tag.metaheader for tag in self.tags]
-
     #TODO: (cgates): Why using ints instead of boolean for this method?
     @staticmethod
     def validate_input_file(meta_headers, column_header):
@@ -169,12 +103,6 @@ class Mutect(object):
                 valid = 1
                 break
         return valid
-
-    #TODO: (cgates): remove this when translate is complete
-    def add_tags(self, vcf_record):
-        for tag in self.tags:
-            tag.add_tag_values(vcf_record)
-        return vcf_record.asText()
 
     @staticmethod
     def _is_mutect_vcf(file_reader):
@@ -195,11 +123,6 @@ class Mutect(object):
             else:
                 unclaimed_readers.append(file_reader)
         return (unclaimed_readers, vcf_readers)
-
-    def _add_tags(self, vcf_record):
-        for tag in self.tags:
-            tag.add_tag_values(vcf_record)
-        return vcf_record
 
     @staticmethod
     def _build_mutect_dict(metaheaders):

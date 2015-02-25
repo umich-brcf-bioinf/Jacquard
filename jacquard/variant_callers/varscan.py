@@ -1,8 +1,6 @@
 from __future__ import print_function, absolute_import
 
 from collections import defaultdict
-import os
-import re
 
 from jacquard import __version__
 import jacquard.utils as utils
@@ -100,39 +98,6 @@ class _SomaticTag(object):
 
         vcf_record.add_sample_tag_value(varscan_tag, sample_values)
 
-class _OldSomaticTag(object):
-    @staticmethod
-    def _somatic_status(sample_index):
-        if sample_index == 0: #it's NORMAL
-            return "0"
-        else: #it's TUMOR
-            return "1"
-
-    def __init__(self):
-        #pylint: disable=line-too-long
-        self.metaheader = ('##FORMAT=<ID={0}HC_SOM,'
-                           'Number=1,'
-                           'Type=Integer,'
-                           'Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)",'
-                           'Source="Jacquard",'
-                           'Version={1}>').format(JQ_VARSCAN_TAG,
-                                                  __version__)
-
-    @staticmethod
-    def add_tag_values(vcf_record):
-        info_array = vcf_record.info.split(";")
-        varscan_tag = JQ_VARSCAN_TAG + "HC_SOM"
-        sample_values = {}
-
-        if "SS=2" in info_array and JQ_VARSCAN_TAG + "HC" in info_array:
-            for i, sample in enumerate(vcf_record.sample_tag_values):
-                sample_values[sample] = _OldSomaticTag._somatic_status(i)
-        else:
-            for sample in vcf_record.sample_tag_values:
-                sample_values[sample] = "0"
-
-        vcf_record.add_sample_tag_value(varscan_tag, sample_values)
-
 #TODO: (cgates/jebene): All tags should have _TAG_ID as implemented below
 class _HCTag(object):
     _FILTERS_TO_REPLACE = set(["", ".", "pass"])
@@ -171,22 +136,19 @@ class _HCTag(object):
         return hc_loci
 
     def add_tag_values(self, vcf_record):
+        if ("chr1", "1560350") in self.hc_loci:
+            print(self.hc_loci)
         if (vcf_record.chrom, vcf_record.pos) not in self.hc_loci:
             vcf_record.add_or_replace_filter(self._TAG_ID)
         return vcf_record
 
 
 class Varscan(object):
-    _HC_FILE_SUFFIX = ".Somatic.hc.fpfilter.pass"
+    _HC_FILE_SUFFIX = "fpfilter.pass"
 
     def __init__(self):
         self.name = "VarScan"
         self.abbr = "VS"
-        self.tags = [common_tags.ReportedTag(JQ_VARSCAN_TAG),
-                     common_tags.PassedTag(JQ_VARSCAN_TAG),
-                     _AlleleFreqTag(),
-                     _DepthTag(),
-                     _OldSomaticTag()]
         self.meta_header = "##jacquard.normalize_varscan.sources={0},{1}\n"
 
     @staticmethod
@@ -199,172 +161,6 @@ class Varscan(object):
         else:
             raise utils.JQException("Unexpected VarScan VCF structure - "
                                     "missing NORMAL and TUMOR headers.")
-
-    #TODO: (cgates) Clarify intent of this method?
-    @staticmethod
-    def _validate_vcf_fileset(vcf_readers):
-        if len(vcf_readers) != 2:
-            raise utils.JQException("VarScan directories should have exactly "
-                                    "two input VCF files per patient, but "
-                                    "found [{}].".format(len(vcf_readers)))
-
-        tmp = [vcf_readers[0].file_name, vcf_readers[1].file_name]
-        for i, name in enumerate(tmp):
-            if "snp" in name:
-                tmp[i] = "snp"
-        for i, name in enumerate(tmp):
-            if "indel" in name:
-                tmp[i] = "indel"
-        if not (tmp[0] == "snp" and tmp[1] == "indel") and not (tmp[1] == "snp"
-                                                                and tmp[0] ==
-                                                                "indel"):
-            raise utils.JQException("Each patient in a VarScan directory "
-                                    "should have a snp file and an indel file.")
-
-        if not vcf_readers[0].column_header == vcf_readers[1].column_header:
-            msg = "The column headers for VCF files [{},{}] do not match."
-            raise utils.JQException(msg.format(vcf_readers[0].file_name,
-                                               vcf_readers[1].file_name))
-
-    @staticmethod
-    def _validate_hc_fileset(hc_candidates):
-        if len(hc_candidates) != 2:
-            msg = ("VarScan directories should have exactly 2 "
-                   "input somatic fpfilter files per patient, but "
-                   "found [{}].")
-            raise utils.JQException(msg.format(len(hc_candidates)))
-
-        tmp = [hc_candidates[0].file_name, hc_candidates[1].file_name]
-        for i, name in enumerate(tmp):
-            if "snp" in name:
-                tmp[i] = "snp"
-        for i, name in enumerate(tmp):
-            if "indel" in name:
-                tmp[i] = "indel"
-        if not (tmp[0] == "snp" and tmp[1] == "indel") and not (tmp[1] == "snp"
-                                                                and tmp[0] ==
-                                                                "indel"):
-            msg = ("Each patient in a VarScan directory should "
-                   "have a somatic fpfilter snp file and indel file.")
-            raise utils.JQException(msg)
-
-    def _validate_raw_input_files(self, file_readers):
-        vcf_readers = []
-        hc_candidates = []
-
-        for file_reader in file_readers:
-            if file_reader.file_name.lower().endswith("fpfilter.pass"):
-                hc_candidates.append(file_reader)
-            elif file_reader.file_name.lower().endswith(".vcf"):
-                vcf_readers.append(vcf.VcfReader(file_reader))
-
-        self._validate_vcf_fileset(vcf_readers)
-        self._validate_hc_fileset(hc_candidates)
-
-        return vcf_readers, hc_candidates
-
-    @staticmethod
-    def _parse_vcf_readers(vcf_readers, hc_keys):
-        all_records = []
-        metaheader_list = []
-        column_header = vcf_readers[0].column_header
-
-        for vcf_reader in vcf_readers:
-            metaheader_list.extend(vcf_reader.metaheaders)
-            vcf_reader.open()
-
-#TODO: utilize the info_column dictionary in vcf
-            for record in vcf_reader.vcf_records():
-                if record in hc_keys:
-                    record.info = record.info + ";" + JQ_VARSCAN_TAG + "HC"
-                all_records.append(record)
-
-            vcf_reader.close()
-
-        parsed_records = [rec.asText() for rec in sorted(all_records)]
-
-        return metaheader_list, column_header, parsed_records
-
-    @staticmethod
-    def _process_hc_files(hc_candidates):
-        metaheader = None
-        hc_keys = []
-        for hc_file_reader in hc_candidates:
-            hc_file_reader.open()
-
-            for line in hc_file_reader.read_lines():
-                split_line = line.split()
-
-                if split_line[0] != "chrom" and split_line[0].startswith("chr"):
-                    hc_key = vcf.VcfRecord(split_line[0],
-                                           split_line[1],
-                                           split_line[2],
-                                           split_line[3])
-                    hc_keys.append(hc_key)
-            hc_file_reader.close()
-
-        if len(hc_keys) > 0:
-            metaheader = '##INFO=<ID=' + JQ_VARSCAN_TAG + "HC"\
-                        ',Number=1,Type=Flag,Description="Jacquard '\
-                        'high-confidence somatic flag for VarScan. Based on '\
-                        'intersection with filtered VarScan variants.">'
-        return metaheader, hc_keys
-
-    @staticmethod
-    def decorate_files(filenames, decorator):
-        output_file = None
-        file_name_search = "snp|indel"
-        for filename in filenames:
-            if not filename.lower().endswith("fpfilter.pass"):
-                if re.search("("+file_name_search+")", filename):
-                    prefix, suffix = re.split(file_name_search, filename)
-                    output_file = os.path.basename(prefix + decorator + suffix)
-                    return output_file
-
-        raise utils.JQException("Each patient in a VarScan directory should "
-                                "have a snp file and an indel file.")
-
-    @staticmethod
-    def validate_vcfs_in_directory(in_files):
-        for in_file in in_files:
-            if not in_file.lower().endswith("vcf"):
-                if not in_file.lower().endswith("fpfilter.pass"):
-                    raise utils.JQException("ERROR: Non-VCF or fpfilter file "
-                                            "in directory. Check parameters "
-                                            "and try again")
-
-#TODO: Add to normalize.py
-    def normalize(self, file_writer, file_readers):
-        (vcf_readers,
-         hc_candidates) = self._validate_raw_input_files(file_readers)
-
-        hc_metaheader, hc_keys = self._process_hc_files(hc_candidates)
-        (metaheader_list,
-         column_header,
-         parsed_records) = self._parse_vcf_readers(vcf_readers, hc_keys)
-
-        if hc_metaheader is not None:
-            metaheader_list.append(hc_metaheader)
-        sorted_metaheader_set = sorted(set(metaheader_list))
-
-        file_writer.open()
-        for metaheader in sorted_metaheader_set:
-            file_writer.write(metaheader+"\n")
-
-        file_writer.write(column_header+"\n")
-
-        for record in parsed_records:
-            file_writer.write(record)
-
-        file_writer.close()
-
-    def add_tags(self, vcf_record):
-        for tag in self.tags:
-            tag.add_tag_values(vcf_record)
-        return vcf_record.asText()
-
-    def get_new_metaheaders(self):
-        return [tag.metaheader for tag in self.tags]
 
     @staticmethod
     def _is_varscan_vcf(file_reader):

@@ -1,12 +1,11 @@
 # pylint: disable=line-too-long,too-many-public-methods,too-few-public-methods
 # pylint: disable=invalid-name,global-statement
 from jacquard import __version__
-from jacquard.utils import JQException
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.variant_callers.mutect as mutect
 import jacquard.vcf as vcf
 import test.test_case as test_case
-from test.vcf_test import MockFileReader, MockVcfReader, MockTag
+from test.vcf_test import MockFileReader, MockVcfReader
 
 
 ORIGINAL_REPORTED_TAG = None
@@ -145,20 +144,6 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
         super(MutectTestCase, self).setUp()
         self.caller = mutect.Mutect()
 
-    def test_validate_vcfs_in_directory(self):
-        in_files = ["A.vcf", "B.vcf"]
-        self.caller.validate_vcfs_in_directory(in_files)
-
-        in_files = ["A.vcf", "B"]
-        self.assertRaisesRegexp(JQException, "ERROR: Non-VCF file in directory. Check parameters and try again", self.caller.validate_vcfs_in_directory, in_files)
-
-    def test_decorate_files(self):
-        filenames = ["A/A.vcf"]
-        decorator = "normalized"
-        actual_filenames = self.caller.decorate_files(filenames, decorator)
-        expected_filenames = "A.normalized.vcf"
-        self.assertEquals(expected_filenames, actual_filenames)
-
     def test_validateInputFile_isValid(self):
         metaheaders = ["##MuTect=blah"]
         self.assertTrue(self.caller.validate_input_file(metaheaders, "#column_header"))
@@ -166,53 +151,6 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
     def test_validateInputFile_isNotValid(self):
         metaheaders = ["Foo"]
         self.assertFalse(self.caller.validate_input_file(metaheaders, "#column_header"))
-
-    def test_addTags(self):
-        input_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n".replace('|', "\t")
-        self.caller.tags = [MockTag("mockTag", {"SA": "42", "SB": "42"})]
-        input_record = vcf.VcfRecord.parse_record(input_line, ["SA", "SB"])
-        actual_line = self.caller.add_tags(input_record)
-
-        expected_line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:mockTag|SA.1:SA.2:SA.3:42|SB.1:SB.2:SB.3:42\n".replace('|', "\t")
-
-        self.assertEquals(expected_line, actual_line)
-
-    def test_updateMetaheader(self):
-        self.caller.tags = [MockTag("mockTag", {"samp1": "42"}, "##my_metaheader\n")]
-        actual_metaheader = self.caller.get_new_metaheaders()
-
-        self.assertEquals(["##my_metaheader\n"], actual_metaheader)
-
-    def test_normalize(self):
-        writer = MockWriter()
-        content = ["foo", "bar", "baz"]
-        reader = MockReader(content)
-        self.caller.normalize(writer, [reader])
-
-        self.assertTrue(reader.opened)
-        self.assertTrue(reader.closed)
-        self.assertTrue(writer.opened)
-        self.assertTrue(writer.closed)
-        self.assertEquals(content, writer.lines())
-
-    def test_normalize_raisesExceptionIfTwoInputFiles(self):
-        self.assertRaisesRegexp(JQException, r"MuTect .* but found \[2\]\.", self.caller.normalize, MockWriter(), [MockReader(), MockReader()])
-
-    def test_normalize_changes_column_headers(self):
-        writer = MockWriter()
-        content = ["##MuTect=foo normal_sample_name=normal_sample tumor_sample_name=tumor_sample foo=bar", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ttumor_sample\tnormal_sample"]
-        reader = MockReader(content)
-        self.caller.normalize(writer, [reader])
-
-        expected_lines = ["##MuTect=foo normal_sample_name=normal_sample tumor_sample_name=tumor_sample foo=bar", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tTUMOR\tNORMAL"]
-        self.assertEquals(expected_lines, writer.lines())
-
-    def test_normalize_doesnt_change_column_headers(self):
-        writer = MockWriter()
-        content = ["##MuTect=foo", "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ttumor_sample\tnormal_sample"]
-        reader = MockReader(content)
-
-        self.assertRaises(JQException, self.caller.normalize, writer, [reader])
 
     def test_claim(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
