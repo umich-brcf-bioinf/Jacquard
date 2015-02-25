@@ -204,7 +204,7 @@ class ExcludeMissingAltTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals("PASS", record.filter)
 
 class TranslateFunctionalTestCase(test_case.JacquardBaseTestCase):
-    def test_translate(self):
+    def Xtest_translate(self):
         with TempDirectory() as output_file:
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir,
