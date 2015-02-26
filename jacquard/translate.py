@@ -135,7 +135,7 @@ def execute(args, execution_context):
 
     file_readers = _build_file_readers(input_dir)
 
-    trans_vcf_readers = variant_caller_factory.claim(file_readers)
+    unclaimed_readers, trans_vcf_readers = variant_caller_factory.claim(file_readers)
     if not trans_vcf_readers:
         message = ("Specified input directory [{0}] contains no VCF files."
                    "Check parameters and try again.").format(input_dir)

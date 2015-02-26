@@ -133,7 +133,11 @@ class MockVcfReader(object):
 
 
 class MockCaller(object):
-    def __init__(self, name="MockCaller", metaheaders=None):
+    def __init__(self, name="MockCaller", metaheaders=None, claimable=None):
+        if claimable:
+            self.claimable = claimable
+        else:
+            self.claimable = set()
         self.name = name
         if metaheaders:
             self.metaheaders = metaheaders
@@ -153,7 +157,15 @@ class MockCaller(object):
         return self.metaheaders
 
     def claim(self, file_readers):
-        return (file_readers, [self.name])
+        claimed = []
+        unclaimed = []
+        for file_reader in file_readers:
+            if file_reader in self.claimable:
+                claimed.append(file_reader)
+            else:
+                unclaimed.append(file_reader)
+
+        return (unclaimed, claimed)
 
 class MockVcfRecord(object):
     @classmethod
