@@ -23,7 +23,7 @@
 ##FORMAT=<ID=JQ_VS_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)",Source="Jacquard",Version=0.21>
 ##jacquard.translate.caller=VarScan
 ##jacquard.version=0.21
-##jacquard.command=translate test/functional_tests/jacquard_test/input/ ../Desktop/translate_test/
+##jacquard.command=translate C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\jacquard_test\input\ C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\jacquard_test\translate\benchmark --force
 ##jacquard.cwd=C:\Users\kmeng
 ##FILTER=<ID=JQ_EXCLUDE_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.",Source="Jacquard",Version="0.21">
 ##FILTER=<ID=JQ_EXCLUDE_MALFORMED_ALT,Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.",Source="Jacquard",Version=0.21>

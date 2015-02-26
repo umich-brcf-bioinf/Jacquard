@@ -23,7 +23,7 @@
 ##FORMAT=<ID=JQ_VS_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)",Source="Jacquard",Version=0.21>
 ##jacquard.translate.caller=VarScan
 ##jacquard.version=0.21
-##jacquard.command=translate test/functional_tests/jacquard_test/input/ ../Desktop/translate_test/
+##jacquard.command=translate C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\jacquard_test\input\ C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\jacquard_test\translate\benchmark --force
 ##jacquard.cwd=C:\Users\kmeng
 ##FILTER=<ID=JQ_EXCLUDE_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.",Source="Jacquard",Version="0.21">
 ##FILTER=<ID=JQ_EXCLUDE_MALFORMED_ALT,Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.",Source="Jacquard",Version=0.21>
@@ -51,3 +51,4 @@ chr1	1289367	.	CTG	C	.	JQ_VS_LOW_CONFIDENCE	DP=40;SS=1;SSC=1;GPV=1.1479E-19;SPV=
 chr1	1333831	.	GA	G	.	JQ_VS_LOW_CONFIDENCE	DP=68;SOMATIC;SS=2;SSC=32;GPV=1E0;SPV=5.6171E-4	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/0:.:27:27:0:0%:6,21,0,0:1:0:0.0:27:0	0/1:.:41:28:13:31.71%:5,23,5,8:1:0:0.32:41:0
 chr1	1454460	.	G	GC	.	JQ_VS_LOW_CONFIDENCE	DP=32;SOMATIC;SS=2;SSC=8;GPV=1E0;SPV=1.3473E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/0:.:12:12:0:0%:0,12,0,0:1:0:0.0:12:0	0/1:.:20:16:4:20%:0,16,0,4:1:0:0.2:20:0
 chr1	1479105	.	C	CCT	.	JQ_VS_LOW_CONFIDENCE	DP=31;SS=1;SSC=2;GPV=2.4825E-5;SPV=5.5217E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/1:.:8:5:3:37.5%:4,1,3,0:1:0:0.38:8:0	0/1:.:23:13:10:43.48%:10,3,7,3:1:0:0.43:23:0
+chr1	1560350	.	T	TG	.	PASS	DP=31;SOMATIC;SS=2;SSC=2;GPV=2.4825E-5;SPV=5.5217E-1	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/1:.:9:6:4:37.6%:4,2,3,0:1:1:0.38:9:0	0/1:.:24:14:11:43.49%:10,3,7,4:1:1:0.43:24:1
