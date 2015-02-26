@@ -1,11 +1,12 @@
 from __future__ import print_function, absolute_import
 
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 from jacquard import __version__
 import jacquard.utils as utils
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.vcf as vcf
+import os
 
 
 VARSCAN_SOMATIC_HEADER = ("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"
@@ -112,7 +113,7 @@ class _HCTag(object):
                            'Source="Jacquard",'
                            'Version={}>').format(self._TAG_ID,
                                                  __version__)
-        self.hc_loci = self._parse_file_reader(file_reader)
+        self._hc_loci = self._parse_file_reader(file_reader)
 
     @staticmethod
     def _parse_file_reader(file_reader):
@@ -136,9 +137,7 @@ class _HCTag(object):
         return hc_loci
 
     def add_tag_values(self, vcf_record):
-        if ("chr1", "1560350") in self.hc_loci:
-            print(self.hc_loci)
-        if (vcf_record.chrom, vcf_record.pos) not in self.hc_loci:
+        if (vcf_record.chrom, vcf_record.pos) not in self._hc_loci:
             vcf_record.add_or_replace_filter(self._TAG_ID)
         return vcf_record
 
@@ -176,7 +175,7 @@ class Varscan(object):
     @staticmethod
     def _get_files_per_patient(file_readers):
         patient_to_files = defaultdict(list)
-        for file_reader in file_readers:
+        for file_reader in sorted(file_readers):
             filename = file_reader.file_name
             patient = filename.split(".")[0]
             patient_to_files[patient].append(file_reader)
@@ -186,32 +185,40 @@ class Varscan(object):
     def claim(self, file_readers):
         files_per_patient = self._get_files_per_patient(file_readers)
 
-        unclaimed_readers = []
+        unclaimed_set = set()
         trans_vcf_readers = []
 
         for patient in files_per_patient:
-            vcf_readers = []
-            hc_file_reader = None
-
+            prefix_reader = OrderedDict()
+            filter_files = set()
             for file_reader in files_per_patient[patient]:
                 if self._is_varscan_vcf(file_reader):
-                    vcf_readers.append(vcf.VcfReader(file_reader))
+                    prefix, _ = os.path.splitext(file_reader.file_name)
+                    prefix_reader[prefix] = file_reader
                 elif self._is_varscan_hc_file(file_reader):
-                    hc_file_reader = file_reader
+                    filter_files.add(file_reader)
                 else:
-                    unclaimed_readers.append(file_reader)
+                    unclaimed_set.add(file_reader)
 
-            for vcf_reader in vcf_readers:
-                trans_vcf_readers.append(_VarscanVcfReader(vcf_reader,
-                                                           hc_file_reader))
+            for prefix, reader in prefix_reader.items():
+                vcf_reader = _VarscanVcfReader(vcf.VcfReader(reader))
+                for filter_file in list(filter_files):
+                    if filter_file.file_name.startswith(prefix):
+                        vcf_reader = _VarscanVcfReader(vcf.VcfReader(reader),
+                                                filter_file)
+                        filter_files.remove(filter_file)
 
-        return unclaimed_readers, trans_vcf_readers
+                trans_vcf_readers.append(vcf_reader)
+            unclaimed_set.update(filter_files)
+
+        return list(unclaimed_set), trans_vcf_readers
 
 #TODO: (cgates): If we can, I would rather inflate the high confidence set when
 # we open and not on construction. There is a pretty safe/clean way to do this.
 class _VarscanVcfReader(object):
     def __init__(self, vcf_reader, som_hc_file_reader=None):
         self._vcf_reader = vcf_reader
+        self._som_hc_file_reader = som_hc_file_reader
         self._caller = Varscan()
         self.tags = [common_tags.ReportedTag(JQ_VARSCAN_TAG),
                      common_tags.PassedTag(JQ_VARSCAN_TAG),

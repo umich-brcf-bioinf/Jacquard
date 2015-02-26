@@ -209,9 +209,7 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
             logger.SHOW_WARNING = False
 
 class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
-    #TODO: (jebene) - blocked by varscan snp/indel distinctions in hc and vcf
-    #need to rebaseline each step of the pipeline (ie make new benchmark files
-    def xtest_functional_jacquard(self):
+    def Xtest_functional_jacquard(self):
         with TempDirectory() as output_dir:
             file_dirname = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(file_dirname,

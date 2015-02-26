@@ -744,6 +744,21 @@ class VcfWriterTestCase(unittest.TestCase):
             self.assertEquals(expected_output, actual_output)
 
 class FileReaderTestCase(unittest.TestCase):
+    def testCompare(self):
+        expected_readers = [FileReader("1A.txt"),
+                            FileReader("1B.txt"),
+                            FileReader("2A.txt"),
+                            FileReader("10A.txt"),
+                            FileReader("10B.txt"),
+                            FileReader("11A.txt"),
+                            FileReader("11B.txt"),
+                            FileReader("20A.txt"),
+                            FileReader("100A.txt")]
+        input_readers = expected_readers[::-1]
+
+        self.assertEquals(expected_readers, sorted(input_readers))
+
+    
     def test_equality(self):
         self.assertEquals(FileReader("foo"), FileReader("foo"))
         self.assertNotEquals(FileReader("foo"), FileReader("bar"))

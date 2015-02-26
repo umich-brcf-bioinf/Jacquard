@@ -58,6 +58,9 @@ class MockFileReader(object):
     def close(self):
         self.close_was_called = True
 
+    def __cmp__(self, other):
+        return cmp(self.file_name, other.file_name)
+
 class CommonTagTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         super(CommonTagTestCase, self).setUp()
@@ -220,7 +223,7 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         content2 = ["chrom\tposition", "1\t23"]
         reader1 = MockFileReader("p2.fileA.vcf", content1)
         reader2 = MockFileReader("p2.fileB.vcf", content1)
-        reader3 = MockFileReader("p2.Somatic.hc.fpfilter.pass", content2)
+        reader3 = MockFileReader("p2.fileA.Somatic.hc.fpfilter.pass", content2)
         reader4 = MockFileReader("p3.fileA.vcf", content1)
         file_readers = [reader1, reader2, reader3, reader4]
 
@@ -229,15 +232,16 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEquals(3, len(vcf_readers))
         self.assertIsInstance(vcf_readers[0], varscan._VarscanVcfReader)
+        self.assertEquals("p2.fileA.vcf", vcf_readers[0]._vcf_reader.file_name)
         self.assertIn("_HCTag",
                       self._get_tag_class_names(vcf_readers[0]))
-        self.assertIn("_HCTag",
+        self.assertNotIn("_HCTag",
                       self._get_tag_class_names(vcf_readers[1]))
         self.assertNotIn("_HCTag",
                          self._get_tag_class_names(vcf_readers[2]))
         self.assertEquals(reader1.file_name, vcf_readers[0]._vcf_reader.file_name)
 
-    def test_claim_vcf_only(self):
+    def test_claim_varscan_vcf_only(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
         content1 = ["##foo", "##MuTect=123", "#chrom", record1]
         content2 = ["##foo", "##source=VarScan2", "#chrom", record1]
@@ -274,10 +278,36 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals([reader5], unrecognized_readers)
         self.assertEquals(2, len(vcf_readers))
         self.assertIsInstance(vcf_readers[0], varscan._VarscanVcfReader)
-
         self.assertEquals(reader2.file_name, vcf_readers[0]._vcf_reader.file_name)
+        self.assertEquals(reader1.file_name, vcf_readers[0]._som_hc_file_reader.file_name)
         self.assertIsInstance(vcf_readers[1], varscan._VarscanVcfReader)
         self.assertEquals(reader4.file_name, vcf_readers[1]._vcf_reader.file_name)
+        self.assertEquals(reader3.file_name, vcf_readers[1]._som_hc_file_reader.file_name)
+
+    def test_claim_heterogeneous_vcfs_and_filter_files(self):
+        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
+        content1 = [self.entab("chrom|position|ref|var"),
+                    record1]
+        content2 = ["##foo", "##source=VarScan2", "#chrom", record1]
+        reader1 = MockFileReader("patientA.indel.Somatic.hc.fpfilter.pass", content1)
+        reader2 = MockFileReader("patientA.indel.vcf", content2)
+        reader3 = MockFileReader("patientA.UNCLAIMED.Somatic.hc.fpfilter.pass", content1)
+        reader4 = MockFileReader("patientA.singleton.vcf", content2)
+        file_readers = [reader1, reader2, reader3, reader4]
+
+        caller = varscan.Varscan()
+        unrecognized_readers, vcf_readers = caller.claim(file_readers)
+
+        self.assertEquals(1, len(unrecognized_readers))
+        self.assertEquals("patientA.UNCLAIMED.Somatic.hc.fpfilter.pass",
+                          unrecognized_readers[0].file_name)
+        self.assertEquals(2, len(vcf_readers))
+        self.assertIsInstance(vcf_readers[0], varscan._VarscanVcfReader)
+        self.assertEquals(reader2.file_name, vcf_readers[0]._vcf_reader.file_name)
+        self.assertEquals(reader1.file_name, vcf_readers[0]._som_hc_file_reader.file_name)
+        self.assertIsInstance(vcf_readers[1], varscan._VarscanVcfReader)
+        self.assertEquals(reader4.file_name, vcf_readers[1]._vcf_reader.file_name)
+        self.assertEquals(None, vcf_readers[1]._som_hc_file_reader)
 
     def test_claim_ignores_unpaired_non_vcf_files(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
@@ -301,8 +331,8 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
                                                                       reader2,
                                                                       reader3,
                                                                       reader4])
-        expected_patient_dict = {"p2": [reader3, reader4],
-                                 "p1": [reader1, reader2]}
+        expected_patient_dict = {"p1": [reader1, reader2],
+                                 "p2": [reader3, reader4]}
 
         self.assertEquals(expected_patient_dict.keys(), dict(actual_patient_dict).keys())
         self.assertEquals(expected_patient_dict.values(), dict(actual_patient_dict).values())

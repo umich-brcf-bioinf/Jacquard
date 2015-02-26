@@ -1,6 +1,7 @@
 # pylint: disable=too-many-instance-attributes, fixme
 from __future__ import print_function, absolute_import
 from collections import defaultdict, OrderedDict
+import natsort
 import os
 import re
 import sys
@@ -351,6 +352,10 @@ class FileReader(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
     def __hash__(self):
         return hash(self.input_filepath)
 
+    def __cmp__(self, other):
+        key = natsort.natsort_keygen()
+        return cmp(key(self.file_name), key(other.file_name))
