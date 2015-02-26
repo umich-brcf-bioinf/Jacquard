@@ -2,18 +2,95 @@
 #pylint: disable=missing-docstring,protected-access,too-few-public-methods
 #pylint: disable=too-many-arguments,too-many-instance-attributes
 from argparse import Namespace
-import os
-
-from testfixtures import TempDirectory
-
 from jacquard import __version__, vcf
-import jacquard.translate as translate
-import test.test_case as test_case
 from test.vcf_test import MockVcfReader, MockTag, MockWriter
+from testfixtures import TempDirectory
+import jacquard.translate as translate
+import jacquard.utils as utils
+import os
+import test.test_case as test_case
+from test import vcf_test
+
+class MockVariantCallerFactory(object):
+    def __init__(self, unclaimed, claimed):
+        self.unclaimed = unclaimed
+        self.claimed = claimed
+
+    def claim(self, dummy):
+        return self.unclaimed, self.claimed
+
 
 class TranslateTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         super(TranslateTestCase, self).setUp()
+        self.original_variant_caller_factory = translate.variant_caller_factory
+
+    def tearDown(self):
+        translate.variant_caller_factory = self.original_variant_caller_factory
+        super(TranslateTestCase, self).tearDown()
+
+    def test_validate_args_ok(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            args = Namespace(input=input_dir.path, output=output_dir.path)
+            claimed = vcf_test.MockFileReader("claimed.vcf")
+            translate.variant_caller_factory = MockVariantCallerFactory([],
+                                                                        [claimed])
+            translate.validate_args(args)
+            self.assertTrue(True)
+
+    def test_validate_args_oneUnclaimed(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            args = Namespace(input=input_dir.path, output=output_dir.path)
+            unclaimed = vcf_test.MockFileReader("unclaimed.vcf")
+            claimed = vcf_test.MockFileReader("claimed.vcf")
+            translate.variant_caller_factory = MockVariantCallerFactory([unclaimed],
+                                                                        [claimed])
+            self.assertRaisesRegexp(utils.UsageError,
+                                    r"Jacquard usage problem: 1 input file \[unclaimed.vcf\] cannot be translated.",
+                                    translate.validate_args,
+                                    args)
+
+    def test_validate_args_fiveUnclaimed(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            args = Namespace(input=input_dir.path, output=output_dir.path)
+            unclaimed1 = vcf_test.MockFileReader("unclaimed1.vcf")
+            unclaimed2 = vcf_test.MockFileReader("unclaimed2.vcf")
+            unclaimed3 = vcf_test.MockFileReader("unclaimed3.vcf")
+            unclaimed4 = vcf_test.MockFileReader("unclaimed4.vcf")
+            unclaimed5 = vcf_test.MockFileReader("unclaimed5.vcf")
+            claimed = vcf_test.MockFileReader("claimed.vcf")
+            translate.variant_caller_factory = MockVariantCallerFactory([unclaimed1,
+                                                                         unclaimed2,
+                                                                         unclaimed3,
+                                                                         unclaimed4,
+                                                                         unclaimed5],
+                                                                        [claimed])
+            self.assertRaisesRegexp(utils.UsageError,
+                                    r"Jacquard usage problem: 5 input files \[unclaimed1.vcf, unclaimed2.vcf, unclaimed3.vcf, unclaimed4.vcf, unclaimed5.vcf\] cannot be translated.",
+                                    translate.validate_args,
+                                    args)
+
+    def test_validate_args_sixUnclaimed(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            args = Namespace(input=input_dir.path, output=output_dir.path)
+            unclaimed1 = vcf_test.MockFileReader("unclaimed1.vcf")
+            unclaimed2 = vcf_test.MockFileReader("unclaimed2.vcf")
+            unclaimed3 = vcf_test.MockFileReader("unclaimed3.vcf")
+            unclaimed4 = vcf_test.MockFileReader("unclaimed4.vcf")
+            unclaimed5 = vcf_test.MockFileReader("unclaimed5.vcf")
+            unclaimed6 = vcf_test.MockFileReader("unclaimed6.vcf")
+            claimed = vcf_test.MockFileReader("claimed.vcf")
+            translate.variant_caller_factory = MockVariantCallerFactory([unclaimed1,
+                                                                         unclaimed2,
+                                                                         unclaimed3,
+                                                                         unclaimed4,
+                                                                         unclaimed5,
+                                                                         unclaimed6],
+                                                                        [claimed])
+            self.assertRaisesRegexp(utils.UsageError,
+                                    r"Jacquard usage problem: 6 input files \[unclaimed1.vcf, unclaimed2.vcf, unclaimed3.vcf, unclaimed4.vcf, unclaimed5.vcf, ...\(1 file\(s\) omitted\)\] cannot be translated.",
+                                    translate.validate_args,
+                                    args)
 
     def test_get_required_input_output_types(self):
         self.assertEquals(("directory", "directory"),
@@ -79,7 +156,7 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
                                    execution_context,
                                    writer)
 
-        actual_lines= iter(writer.lines())
+        actual_lines = iter(writer.lines())
         self.assertRegexpMatches(actual_lines.next(), "^#CHROM")
         self.assertRegexpMatches(actual_lines.next(), "^chr1")
         self.assertRegexpMatches(actual_lines.next(), "^chr2")

@@ -157,15 +157,9 @@ class MockCaller(object):
         return self.metaheaders
 
     def claim(self, file_readers):
-        claimed = []
-        unclaimed = []
-        for file_reader in file_readers:
-            if file_reader in self.claimable:
-                claimed.append(file_reader)
-            else:
-                unclaimed.append(file_reader)
-
-        return (unclaimed, claimed)
+        unclaimed = list(set(file_readers).difference(self.claimable))
+        claimed = list(set(file_readers).intersection(self.claimable))
+        return unclaimed, claimed
 
 class MockVcfRecord(object):
     @classmethod
@@ -770,7 +764,6 @@ class FileReaderTestCase(unittest.TestCase):
 
         self.assertEquals(expected_readers, sorted(input_readers))
 
-    
     def test_equality(self):
         self.assertEquals(FileReader("foo"), FileReader("foo"))
         self.assertNotEquals(FileReader("foo"), FileReader("bar"))

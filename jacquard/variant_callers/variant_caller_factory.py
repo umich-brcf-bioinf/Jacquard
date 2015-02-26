@@ -8,6 +8,8 @@ import jacquard.logger as logger
 
 _CALLERS = [Varscan(), Strelka(), Mutect()]
 
+#TODO: (cgates): Filter uses this, but only for logging; adjust filter and drop
+# method. Then consider renaming the module or folding it into translate.
 def get_caller(metaheaders, column_header, name):
     for caller in _CALLERS:
         if caller.validate_input_file(metaheaders, column_header):
@@ -18,13 +20,13 @@ def get_caller(metaheaders, column_header, name):
     raise utils.JQException(("VCF [{}] was not in the set of "
                              "recognized callers.").format(name))
 
-def claim(unclaimed_readers):
-    all_translated_vcf_readers = []
+def claim(unclaimed_file_readers):
+    claimed_vcf_readers = []
     for caller in _CALLERS:
-        (unclaimed_readers,
-         translated_vcf_readers) = caller.claim(unclaimed_readers)
-        all_translated_vcf_readers.extend(translated_vcf_readers)
-    return unclaimed_readers, all_translated_vcf_readers
+        (unclaimed_file_readers,
+         translated_vcf_readers) = caller.claim(unclaimed_file_readers)
+        claimed_vcf_readers.extend(translated_vcf_readers)
+    return unclaimed_file_readers, claimed_vcf_readers
 
 @property
 def callers():

@@ -38,11 +38,11 @@ class VariantCallerFactoryClaimTestCase(test_case.JacquardBaseTestCase):
         file_readers = [fileA,
                         fileB,
                         fileC]
-        variant_caller_factory._CALLERS = [vcf_test.MockCaller("foo",claimable=[fileC]),
-                                           vcf_test.MockCaller("bar",claimable=[fileB]),
-                                           vcf_test.MockCaller("baz",claimable=[fileA])]
+        variant_caller_factory._CALLERS = [vcf_test.MockCaller("foo", claimable=[fileC]),
+                                           vcf_test.MockCaller("bar", claimable=[fileB]),
+                                           vcf_test.MockCaller("baz", claimable=[fileA])]
         expected = [fileC, fileB, fileA]
-        _,actual = variant_caller_factory.claim(file_readers)
+        _, actual = variant_caller_factory.claim(file_readers)
         self.assertEquals(expected, actual)
 
     def test_claim_unclaimedFilesRemain(self):
@@ -52,9 +52,9 @@ class VariantCallerFactoryClaimTestCase(test_case.JacquardBaseTestCase):
         file_readers = [fileA,
                         fileB,
                         unclaimable_file]
-        variant_caller_factory._CALLERS = [vcf_test.MockCaller("foo",claimable=[fileB]),
-                                           vcf_test.MockCaller("bar",claimable=[fileA])]
+        variant_caller_factory._CALLERS = [vcf_test.MockCaller("foo", claimable=[fileB]),
+                                           vcf_test.MockCaller("bar", claimable=[fileA])]
         expected_unclaimed = [unclaimable_file]
-        actual_unclaimed,_ = variant_caller_factory.claim(file_readers)
+        actual_unclaimed, _ = variant_caller_factory.claim(file_readers)
 
         self.assertEquals(expected_unclaimed, actual_unclaimed)

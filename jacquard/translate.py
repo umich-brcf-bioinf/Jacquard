@@ -1,13 +1,13 @@
 from __future__ import absolute_import
-
-import glob
-import os
-
 from jacquard import __version__
-import jacquard.logger as logger
-import jacquard.utils as utils
 from jacquard.variant_callers import variant_caller_factory
 from jacquard.vcf import FileReader, FileWriter
+import glob
+import jacquard.logger as logger
+import jacquard.utils as utils
+import os
+
+
 
 
 JQ_OUTPUT_SUFFIX = "translatedTags"
@@ -166,7 +166,7 @@ def report_prediction(args):
     output_file_names = set()
 
     for reader in file_readers:
-        mangled_fname =_mangle_output_filename(reader.file_name)
+        mangled_fname = _mangle_output_filename(reader.file_name)
         extension = os.path.splitext(os.path.basename(mangled_fname))[1]
         if extension == ".vcf":
             output_file_names.add(mangled_fname)
@@ -175,4 +175,32 @@ def report_prediction(args):
 
 def get_required_input_output_types():
     return ("directory", "directory")
+
+def validate_args(args):
+    input_dir = os.path.abspath(args.input)
+
+    file_readers = _build_file_readers(input_dir)
+
+    unclaimed_readers, trans_vcf_readers = variant_caller_factory.claim(file_readers)
+    if unclaimed_readers:
+        raise utils.UsageError(_build_validation_message(unclaimed_readers))
+
+def _build_validation_message(unclaimed_readers):
+    total_unclaimed = len(unclaimed_readers)
+    if total_unclaimed == 1:
+        unclaimed_details = "file [{}]".format(unclaimed_readers[0].file_name)
+    else:
+        cutoff = 5
+        file_names = [reader.file_name for reader in unclaimed_readers]
+        file_names = file_names[0:min(cutoff, total_unclaimed)]
+        unclaimed_list = ", ".join(file_names)
+        if total_unclaimed > cutoff:
+            omitted = total_unclaimed - cutoff
+            unclaimed_list += ", ...({} file(s) omitted)".format(omitted)
+        unclaimed_details = "files [{}]".format(unclaimed_list)
+
+    return ("Jacquard usage problem: {} input {} cannot be "
+            "translated; review command/output dir to avoid overwriting "
+            "or use '--force'.").format(total_unclaimed,
+                                        unclaimed_details)
 
