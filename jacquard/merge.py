@@ -2,6 +2,7 @@
 from __future__ import print_function, absolute_import
 from collections import defaultdict, OrderedDict
 import glob
+import errno
 import jacquard.utils as utils
 from jacquard import __version__
 import jacquard.vcf as vcf
@@ -9,6 +10,7 @@ import natsort
 import os
 import re
 import jacquard.logger as logger
+from jacquard.vcf import FileWriter
 
 _DEFAULT_INCLUDED_FORMAT_TAGS = ["JQ_.*"]
 _MULT_ALT_TAG = "JQ_MULT_ALT_LOCUS"
@@ -143,6 +145,42 @@ def _build_coordinates(vcf_readers):
             vcf_record.add_info_field(_MULT_ALT_TAG)
 
     return sorted(list(coordinate_set))
+
+
+def _write_headers(reader, file_writer):
+    headers = reader.metaheaders
+    headers.append(reader.column_header)
+
+    file_writer.write("\n".join(headers) + "\n")
+
+
+def _sort_vcfs(vcf_readers):
+    for vcf_reader in vcf_readers:
+        temp_dir = os.path.join(vcf_reader.input_filepath, "temp")
+        try:
+            os.makedirs(temp_dir)
+        except OSError as exc:
+            if exc.errno == errno.EEXIST and os.path.isdir(temp_dir):
+                pass
+            else: raise
+
+        file_writer = FileWriter(os.path.join(temp_dir,vcf_reader.file_name))
+
+        sort_flag = False
+        previous = None
+        for record in vcf_reader.vcf_records():
+            if previous:
+                if record < previous:
+                    sort_flag = True
+                    break
+            previous = record
+        sorted_records = []
+        for record in vcf_reader.vcf_records():
+            sorted_records.append(record)
+        sorted_records.sort()
+        _write_headers(vcf_reader, file_writer)
+        for record in sorted_records:
+            file_writer.write(record.asText())
 
 
 def _build_merged_record(coordinate,

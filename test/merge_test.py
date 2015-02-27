@@ -734,6 +734,9 @@ chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
 
         self.assertEquals(expected_output_headers, actual_output_lines[0:len(expected_output_headers)])
 
+    def test_sort_vcfs(self):
+        pass
+
 class MergeFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_merge(self):
         with TempDirectory() as output_dir:

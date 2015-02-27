@@ -108,13 +108,9 @@ def _translate_files(trans_vcf_reader,
                        execution_context,
                        file_writer)
 
-        records = []
         for record in trans_vcf_reader.vcf_records():
             for tag in new_tags:
                 tag.add_tag_values(record)
-            records.append(record)
-
-        for record in sorted(records):
             file_writer.write(record.asText())
 
     finally:
