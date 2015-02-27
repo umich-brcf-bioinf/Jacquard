@@ -130,16 +130,10 @@ def add_subparser(subparser):
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
 def execute(args, execution_context):
-    input_dir = os.path.abspath(args.input)
+    validate_args(args)
+
     output_dir = os.path.abspath(args.output)
-
-    file_readers = _build_file_readers(input_dir)
-
-    unclaimed_readers, trans_vcf_readers = variant_caller_factory.claim(file_readers)
-    if not trans_vcf_readers:
-        message = ("Specified input directory [{0}] contains no VCF files."
-                   "Check parameters and try again.").format(input_dir)
-        raise utils.JQException(message)
+    _, trans_vcf_readers = _claim_readers(args)
 
     logger.info("Processing [{}] VCF file(s) from [{}]",
                 len(trans_vcf_readers),
@@ -176,14 +170,18 @@ def report_prediction(args):
 def get_required_input_output_types():
     return ("directory", "directory")
 
-def validate_args(args):
+def _claim_readers(args):
     input_dir = os.path.abspath(args.input)
-
     file_readers = _build_file_readers(input_dir)
+    return variant_caller_factory.claim(file_readers)
 
-    unclaimed_readers, trans_vcf_readers = variant_caller_factory.claim(file_readers)
-    if unclaimed_readers:
+def validate_args(args):
+    unclaimed_readers, trans_vcf_readers = _claim_readers(args)
+    if unclaimed_readers and not args.force:
         raise utils.UsageError(_build_validation_message(unclaimed_readers))
+    elif not trans_vcf_readers:
+        raise utils.UsageError(("no vcfs in input dir "
+                                "[{}] can be translated.").format(args.input))
 
 def _build_validation_message(unclaimed_readers):
     total_unclaimed = len(unclaimed_readers)
@@ -199,8 +197,8 @@ def _build_validation_message(unclaimed_readers):
             unclaimed_list += ", ...({} file(s) omitted)".format(omitted)
         unclaimed_details = "files [{}]".format(unclaimed_list)
 
-    return ("Jacquard usage problem: {} input {} cannot be "
-            "translated; review command/output dir to avoid overwriting "
-            "or use '--force'.").format(total_unclaimed,
-                                        unclaimed_details)
+    return ("{} input {} cannot be "
+            "translated; review input dir and try again, or "
+            "use '--force' to ignore these files.").format(total_unclaimed,
+                                                           unclaimed_details)
 

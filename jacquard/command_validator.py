@@ -109,6 +109,8 @@ def _check_there_will_be_output(module, args):
                    .format(args.subparser_name, args.input)
         raise utils.UsageError(message)
 
+def _check_valid_args(module, args):
+    module.validate_args(args)
 
 def _create_temp_working_dir(dummy, args):
     try:
@@ -177,7 +179,8 @@ _VALIDATION_TASKS = [_set_output_paths,
                      _check_output_exists,
                      _create_temp_working_dir,
                      _check_there_will_be_output,
-                     _check_overwrite_existing_files]
+                     _check_overwrite_existing_files,
+                     _check_valid_args]
 
 def preflight(command, args):
     for validate in _VALIDATION_TASKS:

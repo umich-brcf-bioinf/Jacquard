@@ -255,26 +255,29 @@ def add_subparser(subparser):
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
 def _validate_arguments(args):
-    input_file = os.path.abspath(args.input)
-    output_file = os.path.abspath(args.output)
+    input_dir = os.path.abspath(args.input)
+    output_dir = os.path.abspath(args.output)
 
-    input_files = sorted(glob.glob(os.path.join(input_file, "*.vcf")))
-    out_files = sorted(glob.glob(os.path.join(output_file, "*")))
+    input_files = sorted(glob.glob(os.path.join(input_dir, "*.vcf")))
+    out_files = sorted(glob.glob(os.path.join(output_dir, "*")))
 
     if len(input_files) < 1:
         logger.error("Specified input directory [{}] contains no VCF files. "
-                     "Check parameters and try again.", input_file)
+                     "Check parameters and try again.", input_dir)
         exit(1)
 
-    full_path_input_files = [os.path.join(input_file, i) for i in input_files]
+    full_path_input_files = [os.path.join(input_dir, i) for i in input_files]
     vcf_readers = _build_readers(full_path_input_files)
-    writers_to_readers = _build_writers_to_readers(vcf_readers, output_file)
+    writers_to_readers = _build_writers_to_readers(vcf_readers, output_dir)
 
     logger.info("Processing [{}] VCF file(s) from [{}]",
                 len(input_files),
-                input_file)
+                input_dir)
 
     return writers_to_readers, out_files
+
+def validate_args(args):
+    pass
 
 def execute(args, execution_context):
     input_file = os.path.abspath(args.input)

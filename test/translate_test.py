@@ -39,20 +39,43 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
             self.assertTrue(True)
 
     def test_validate_args_oneUnclaimed(self):
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            args = Namespace(input=input_dir.path, output=output_dir.path)
+        with TempDirectory() as input_dir:
+            args = Namespace(input=input_dir.path,
+                             force=False)
             unclaimed = vcf_test.MockFileReader("unclaimed.vcf")
             claimed = vcf_test.MockFileReader("claimed.vcf")
             translate.variant_caller_factory = MockVariantCallerFactory([unclaimed],
                                                                         [claimed])
             self.assertRaisesRegexp(utils.UsageError,
-                                    r"Jacquard usage problem: 1 input file \[unclaimed.vcf\] cannot be translated.",
+                                    r"1 input file \[unclaimed.vcf\] cannot be translated",
+                                    translate.validate_args,
+                                    args)
+
+    def test_validate_args_oneUnclaimed_withForceOk(self):
+        with TempDirectory() as input_dir:
+            args = Namespace(input=input_dir.path,
+                             force=True)
+            unclaimed = vcf_test.MockFileReader("unclaimed.vcf")
+            claimed = vcf_test.MockFileReader("claimed.vcf")
+            translate.variant_caller_factory = MockVariantCallerFactory([unclaimed],
+                                                                        [claimed])
+            translate.validate_args(args)
+            self.assertTrue(True)
+
+    def test_validate_args_allUnclaimedThrowsException(self):
+        with TempDirectory() as input_dir:
+            args = Namespace(input=input_dir.path)
+            translate.variant_caller_factory = MockVariantCallerFactory(unclaimed=[],
+                                                                        claimed=[])
+            self.assertRaisesRegexp(utils.UsageError,
+                                    "no vcfs in input dir .* can be translated",
                                     translate.validate_args,
                                     args)
 
     def test_validate_args_fiveUnclaimed(self):
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            args = Namespace(input=input_dir.path, output=output_dir.path)
+        with TempDirectory() as input_dir:
+            args = Namespace(input=input_dir.path,
+                             force=False)
             unclaimed1 = vcf_test.MockFileReader("unclaimed1.vcf")
             unclaimed2 = vcf_test.MockFileReader("unclaimed2.vcf")
             unclaimed3 = vcf_test.MockFileReader("unclaimed3.vcf")
@@ -66,13 +89,14 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
                                                                          unclaimed5],
                                                                         [claimed])
             self.assertRaisesRegexp(utils.UsageError,
-                                    r"Jacquard usage problem: 5 input files \[unclaimed1.vcf, unclaimed2.vcf, unclaimed3.vcf, unclaimed4.vcf, unclaimed5.vcf\] cannot be translated.",
+                                    r"5 input files \[unclaimed1.vcf, unclaimed2.vcf, unclaimed3.vcf, unclaimed4.vcf, unclaimed5.vcf\] cannot be translated",
                                     translate.validate_args,
                                     args)
 
     def test_validate_args_sixUnclaimed(self):
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            args = Namespace(input=input_dir.path, output=output_dir.path)
+        with TempDirectory() as input_dir:
+            args = Namespace(input=input_dir.path,
+                             force=False)
             unclaimed1 = vcf_test.MockFileReader("unclaimed1.vcf")
             unclaimed2 = vcf_test.MockFileReader("unclaimed2.vcf")
             unclaimed3 = vcf_test.MockFileReader("unclaimed3.vcf")
@@ -88,7 +112,7 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
                                                                          unclaimed6],
                                                                         [claimed])
             self.assertRaisesRegexp(utils.UsageError,
-                                    r"Jacquard usage problem: 6 input files \[unclaimed1.vcf, unclaimed2.vcf, unclaimed3.vcf, unclaimed4.vcf, unclaimed5.vcf, ...\(1 file\(s\) omitted\)\] cannot be translated.",
+                                    r"6 input files \[unclaimed1.vcf, unclaimed2.vcf, unclaimed3.vcf, unclaimed4.vcf, unclaimed5.vcf, ...\(1 file\(s\) omitted\)\] cannot be translated",
                                     translate.validate_args,
                                     args)
 
