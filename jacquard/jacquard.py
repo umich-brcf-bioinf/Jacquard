@@ -152,7 +152,7 @@ def dispatch(modules, arguments):
 
         _move_tmp_contents_to_original(args)
 
-        if logger.SHOW_WARNING:
+        if logger.WARNING_OCCURRED:
             logger.info("Done. (See warnings above)")
         else:
             logger.info("Done")

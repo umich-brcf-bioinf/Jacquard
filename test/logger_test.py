@@ -44,9 +44,9 @@ class LoggerTestCase(unittest.TestCase):
     def test_warning(self):
         tool = "foo"
         logger.initialize_logger(tool)
-        self.assertFalse(logger.SHOW_WARNING)
+        self.assertFalse(logger.WARNING_OCCURRED)
         logger.warning("bar")
-        self.assertTrue(logger.SHOW_WARNING)
+        self.assertTrue(logger.WARNING_OCCURRED)
         root_logger = logger.logging.getLogger()
 
         current_time = datetime.now().strftime('%Y-%m-%d')

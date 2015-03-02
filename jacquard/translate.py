@@ -125,11 +125,20 @@ def add_subparser(subparser):
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
+
+def _log_unclaimed_readers(unclaimed_readers):
+    unclaimed_log_messgae = "The input file [{}] will not be translated"
+    for reader in unclaimed_readers:
+        msg = unclaimed_log_messgae.format(reader.file_name)
+        logger.warning(msg)
+
 def execute(args, execution_context):
     validate_args(args)
 
     output_dir = os.path.abspath(args.output)
-    _, trans_vcf_readers = _claim_readers(args)
+    unclaimed_readers, trans_vcf_readers = _claim_readers(args)
+
+    _log_unclaimed_readers(unclaimed_readers)
 
     logger.info("Processing [{}] VCF file(s) from [{}]",
                 len(trans_vcf_readers),

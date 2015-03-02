@@ -2,22 +2,18 @@
 #pylint: disable=too-few-public-methods,too-many-instance-attributes
 #pylint: disable=too-many-arguments,invalid-name,protected-access,global-statement
 from __future__ import absolute_import
-
-from StringIO import StringIO
 from argparse import Namespace
 from collections import OrderedDict
-import os
-import sys
-
+from jacquard.vcf import VcfRecord
+from test.vcf_test import MockVcfReader
 from testfixtures import TempDirectory
-
-import jacquard.logger as logger
+import jacquard.logger
 import jacquard.merge as merge
 import jacquard.utils as utils
-from jacquard.vcf import VcfRecord
 import jacquard.vcf as vcf
+import os
+import test.mock_logger
 import test.test_case as test_case
-from test.vcf_test import MockVcfReader
 
 
 class MockBufferedReader(object):
@@ -34,43 +30,15 @@ class MockFileWriter(object):
     def write(self, text):
         self.written.append(text)
 
-MOCK_LOG_CALLED = False
-
-def mock_log(dummy1, *dummy2):
-    global MOCK_LOG_CALLED
-    MOCK_LOG_CALLED = True
-
 class MergeTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
-        self.output = StringIO()
-        self.saved_stderr = sys.stderr
-        sys.stderr = self.output
-        self.original_info = logger.info
-        self.original_error = logger.error
-        self.original_warning = logger.warning
-        self.original_debug = logger.debug
-        self._change_mock_logger()
+        super(MergeTestCase, self).setUp()
+        merge.logger = test.mock_logger
 
     def tearDown(self):
-        self.output.close()
-        sys.stderr = self.saved_stderr
-        self._reset_mock_logger()
-
-    @staticmethod
-    def _change_mock_logger():
-        global MOCK_LOG_CALLED
-        MOCK_LOG_CALLED = False
-
-        logger.info = mock_log
-        logger.error = mock_log
-        logger.warning = mock_log
-        logger.debug = mock_log
-
-    def _reset_mock_logger(self):
-        logger.info = self.original_info
-        logger.error = self.original_error
-        logger.warning = self.original_warning
-        logger.debug = self.original_debug
+        test.mock_logger.reset()
+        merge.logger = jacquard.logger
+        super(MergeTestCase, self).tearDown()
 
     def test_validate_arguments(self):
         with TempDirectory() as input_file, TempDirectory() as output_file:
@@ -131,13 +99,17 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         fileBrec1 = vcf.VcfRecord("chr2", "16", "A", "G", "id=2")
         fileBrec2 = vcf.VcfRecord("chr2", "12", "G", "C")
 
-        mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
-                        MockVcfReader(records=[fileBrec1, fileBrec2])]
+        mock_readers = [MockVcfReader(input_filepath="fileA.vcf",
+                                      records=[fileArec1, fileArec2]),
+                        MockVcfReader(input_filepath="fileB.vcf",
+                                      records=[fileBrec1, fileBrec2])]
 
         self.assertRaisesRegexp(utils.JQException,
                                 "One or more VCF files were not sorted.*",
                                 merge._build_coordinates, mock_readers)
-        self.assertTrue(MOCK_LOG_CALLED)
+        actual_log_errors = test.mock_logger.messages["ERROR"]
+        self.assertRegexpMatches(actual_log_errors[0],
+                                 r"VCF file:chrom:pos \[fileB.vcf:chr2:12\] is out of order")
 
     def test_build_coordinates_multAltsEmpty(self):
         fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")

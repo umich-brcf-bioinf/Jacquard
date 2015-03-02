@@ -3,13 +3,15 @@
 #pylint: disable=too-many-arguments,too-many-instance-attributes
 from argparse import Namespace
 from jacquard import __version__, vcf
+from test import vcf_test
 from test.vcf_test import MockVcfReader, MockTag, MockWriter
 from testfixtures import TempDirectory
+import jacquard.logger
 import jacquard.translate as translate
 import jacquard.utils as utils
 import os
+import test.mock_logger
 import test.test_case as test_case
-from test import vcf_test
 
 class MockVariantCallerFactory(object):
     def __init__(self, unclaimed, claimed):
@@ -24,10 +26,45 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         super(TranslateTestCase, self).setUp()
         self.original_variant_caller_factory = translate.variant_caller_factory
+        self.original_validate_args = translate.validate_args
+        translate.logger = test.mock_logger
 
     def tearDown(self):
+        test.mock_logger.reset()
+        translate.logger = jacquard.logger
+        translate.validate_args = self.original_validate_args
         translate.variant_caller_factory = self.original_variant_caller_factory
         super(TranslateTestCase, self).tearDown()
+
+    def test_execute_forceWarnsUnclaimedFiles(self):
+        with TempDirectory() as temp_dir:
+            translate.validate_args = lambda x: x
+            args = Namespace(input=temp_dir.path,
+                             output=temp_dir.path,
+                             force=True)
+            unclaimed1 = vcf_test.MockFileReader("unclaimed1.vcf")
+            unclaimed2 = vcf_test.MockFileReader("unclaimed2.vcf")
+            unclaimed3 = vcf_test.MockFileReader("unclaimed3.vcf")
+            unclaimed4 = vcf_test.MockFileReader("unclaimed4.vcf")
+            unclaimed5 = vcf_test.MockFileReader("unclaimed5.vcf")
+            unclaimed6 = vcf_test.MockFileReader("unclaimed6.vcf")
+            unclaimed = [unclaimed1,
+                         unclaimed2,
+                         unclaimed3,
+                         unclaimed4,
+                         unclaimed5,
+                         unclaimed6]
+            claimed = []
+            translate.variant_caller_factory = MockVariantCallerFactory(unclaimed,
+                                                                        claimed)
+            translate.execute(args, execution_context=[])
+        actual_log_warnings = test.mock_logger.messages["WARNING"]
+        self.assertEquals(6, len(actual_log_warnings))
+        self.assertRegexpMatches(actual_log_warnings[0],
+                                 r"input file \[unclaimed1.vcf\] will not be translated")
+        self.assertRegexpMatches(actual_log_warnings[5],
+                                 r"input file \[unclaimed6.vcf\] will not be translated")
+
 
     def test_validate_args_ok(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:

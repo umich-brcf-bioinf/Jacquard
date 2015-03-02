@@ -200,13 +200,13 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
     def test_dispatch_doneWithWarnings(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             mock_module.my_exception_string = ""
-            logger.SHOW_WARNING = True
+            logger.WARNING_OCCURRED = True
             jacquard.dispatch([mock_module], ["mock_module",
                                               input_dir.path,
                                               output_dir.path])
             actual_messages = self.output.getvalue().rstrip().split("\n")
             self.assertRegexpMatches(actual_messages[-1], r"Done. \(See warnings above\)")
-            logger.SHOW_WARNING = False
+            logger.WARNING_OCCURRED = False
 
 class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_functional_jacquard(self):

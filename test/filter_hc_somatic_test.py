@@ -1,59 +1,25 @@
 # pylint: disable=line-too-long, invalid-name, global-statement, star-args, too-many-public-methods
 from __future__ import absolute_import
 from argparse import Namespace
-import os
-from StringIO import StringIO
-import sys
 from testfixtures import TempDirectory
 import jacquard.filter_hc_somatic as filter_hc_somatic
-import jacquard.logger as logger
+import jacquard.logger
+import os
+import test.mock_logger
 import test.test_case as test_case
 
 #TODO: (cgates): These tests should start using mocked readers/writers and stop using the file system
 
 VCF_HEADER = "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsampleA\tsampleB\n"
 
-mock_log_called = False
-mock_log_messages = []
-
-def mock_log(msg, *args):
-    global mock_log_called
-    mock_log_called = True
-    mock_log_messages.append(msg.format(*[str(i) for i in args]))
-
 class FilterSomaticTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
-        self.output = StringIO()
-        self.saved_stderr = sys.stderr
-        sys.stderr = self.output
-        self.original_info = logger.info
-        self.original_error = logger.error
-        self.original_warning = logger.warning
-        self.original_debug = logger.debug
-        self._change_mock_logger()
+        super(FilterSomaticTestCase, self).setUp()
+        filter_hc_somatic.logger = test.mock_logger
 
     def tearDown(self):
-        self.output.close()
-        sys.stderr = self.saved_stderr
-        self._reset_mock_logger()
-
-    @staticmethod
-    def _change_mock_logger():
-        global mock_log_called
-        mock_log_called = False
-
-        logger.info = mock_log
-        logger.error = mock_log
-        logger.warning = mock_log
-        logger.debug = mock_log
-
-    def _reset_mock_logger(self):
-        logger.info = self.original_info
-        logger.error = self.original_error
-        logger.warning = self.original_warning
-        logger.debug = self.original_debug
-        global mock_log_messages
-        mock_log_messages = []
+        filter_hc_somatic.logger = jacquard.logger
+        super(FilterSomaticTestCase, self).tearDown()
 
     def test_validate_arguments(self):
         with TempDirectory() as input_file, TempDirectory() as output_file:
@@ -160,9 +126,11 @@ class FilterSomaticTestCase(test_case.JacquardBaseTestCase):
 
             filter_hc_somatic._find_somatic_positions(files)
 
-            self.assertIn('Removed [1] problematic VarScan variant records with filter=JQ_EXCLUDE', mock_log_messages)
-            self.assertIn('Removed [1] problematic Strelka variant records with filter=JQ_EXCLUDE', mock_log_messages)
-            self.assertIn("A total of [2] problematic variant records failed Jacquard's filters. See output and log for details.", mock_log_messages)
+            actual_log_debugs = test.mock_logger.messages["DEBUG"]
+            self.assertIn('Removed [1] problematic VarScan variant records with filter=JQ_EXCLUDE', actual_log_debugs)
+            self.assertIn('Removed [1] problematic Strelka variant records with filter=JQ_EXCLUDE', actual_log_debugs)
+            actual_log_warnings = test.mock_logger.messages["WARNING"]
+            self.assertIn("A total of [2] problematic variant records failed Jacquard's filters. See output and log for details.", actual_log_warnings)
 
     def test_findSomaticPositions_invalidInput(self):
         with TempDirectory() as input_file:
@@ -175,9 +143,10 @@ class FilterSomaticTestCase(test_case.JacquardBaseTestCase):
             file2 = os.path.join(input_file.path, "B.vcf")
 
             filter_hc_somatic._find_somatic_positions([file1, file2])
-            self.assertIn('Input file [A.vcf] has no high-confidence somatic variants.', mock_log_messages)
-            self.assertIn('Input file [B.vcf] has no high-confidence somatic variants.', mock_log_messages)
-            self.assertIn('[2] VCF file(s) had no high-confidence somatic variants. See log for details.', mock_log_messages)
+            actual_log_warnings = test.mock_logger.messages["WARNING"]
+            self.assertIn('Input file [A.vcf] has no high-confidence somatic variants.', actual_log_warnings)
+            self.assertIn('Input file [B.vcf] has no high-confidence somatic variants.', actual_log_warnings)
+            self.assertIn('[2] VCF file(s) had no high-confidence somatic variants. See log for details.', actual_log_warnings)
 
     def test_writeSomatic_outputFileForEachInputFile(self):
         with TempDirectory() as input_file, TempDirectory() as output_file:
@@ -190,7 +159,8 @@ class FilterSomaticTestCase(test_case.JacquardBaseTestCase):
             filter_hc_somatic._write_somatic(in_files, output_file.path, somatic_positions, execution_context)
 
             self.assertEqual(["mutect.HCsomatic.vcf", "varscan.HCsomatic.vcf"], output_file.actual())
-            self.assertIn("Filtered to [1] calls in high-confidence loci.", mock_log_messages)
+            actual_log_warnings = test.mock_logger.messages["INFO"]
+            self.assertIn("Filtered to [1] calls in high-confidence loci.", actual_log_warnings)
 
     def test_sort_sortHeaders(self):
         headers = ["##foo", "##bar", "#CHROM", "##baz"]

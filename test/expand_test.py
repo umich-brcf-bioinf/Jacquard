@@ -4,35 +4,16 @@
 from __future__ import absolute_import
 from argparse import Namespace
 from collections import OrderedDict
-import os
 from testfixtures import TempDirectory
-import unittest
-
-import jacquard.utils as utils
-import jacquard.logger as logger
 import jacquard.expand as expand
+import jacquard.logger
+import jacquard.utils as utils
+import os
+import test.mock_logger
 import test.test_case as test_case
 
+#TODO (cgates): Can we use mocks in test.vcf instead of redefining them here?
 TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
-MOCK_LOG_CALLED = False
-MOCK_WARNINGS = []
-
-def mock_log(msg, *args):
-    global MOCK_LOG_CALLED
-    MOCK_LOG_CALLED = True
-
-def mock_warning(msg, *args):
-    MOCK_WARNINGS.append(msg.format(*[str(i) for i in args]))
-
-def _change_mock_logger():
-    global MOCK_LOG_CALLED
-    MOCK_LOG_CALLED = False
-    global MOCK_WARNINGS
-    MOCK_WARNINGS = []
-    logger.info = mock_log
-    logger.error = mock_log
-    logger.warning = mock_warning
-    logger.debug = mock_log
 
 class MockFileReader(object):
     def __init__(self, input_filepath="/foo/mockFileReader.txt", content=None):
@@ -160,22 +141,15 @@ class MockFileWriter(object):
     def write(self, text):
         self.written.append(text)
 
-class ExpandTestCase(unittest.TestCase):
+class ExpandTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
-        self.original_info = logger.info
-        self.original_error = logger.error
-        self.original_warning = logger.warning
-        self.original_debug = logger.debug
-        _change_mock_logger()
+        super(ExpandTestCase, self).setUp()
+        expand.logger = test.mock_logger
 
     def tearDown(self):
-        self._reset_mock_logger()
-
-    def _reset_mock_logger(self):
-        logger.info = self.original_info
-        logger.error = self.original_error
-        logger.warning = self.original_warning
-        logger.debug = self.original_debug
+        test.mock_logger.reset()
+        expand.mock_logger = jacquard.logger
+        super(ExpandTestCase, self).tearDown()
 
     def test_create_row_dict(self):
         column_list = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER",
@@ -274,7 +248,9 @@ class ExpandTestCase(unittest.TestCase):
                          "columns may have matched earlier expressions, or "+
                          "this expression may be irrelevant.")
 
-        self.assertEquals([exp_warning_1, exp_warning_2], MOCK_WARNINGS)
+        actual_log_warnings = test.mock_logger.messages["WARNING"]
+        self.assertEquals([exp_warning_1, exp_warning_2],
+                          actual_log_warnings)
 
     def test_create_potential_column_list(self):
         info_tags = {"AF":'##INFO=<ID=AF,Number=1>',
