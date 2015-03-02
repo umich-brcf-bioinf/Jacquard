@@ -1,14 +1,19 @@
 #pylint: disable=line-too-long,too-many-public-methods,invalid-name
 #pylint: disable=missing-docstring,protected-access,too-few-public-methods
+#pylint: disable=too-many-arguments,too-many-instance-attributes
 from StringIO import StringIO
 from collections import OrderedDict
-from jacquard.vcf import VcfRecord, VcfReader, FileWriter, FileReader
-from testfixtures import TempDirectory
-import jacquard.utils as utils
 import os
+import re
 import sys
-import test.test_case as test_case
 import unittest
+
+from testfixtures import TempDirectory
+
+import jacquard.utils as utils
+from jacquard.vcf import VcfRecord, VcfReader, FileWriter, FileReader
+import test.test_case as test_case
+
 
 class MockFileReader(object):
     def __init__(self, input_filepath="/foo/mockFileReader.txt", content=None):
@@ -18,7 +23,6 @@ class MockFileReader(object):
             self.content = []
         else:
             self.content = content
-        self._content = content
         self.open_was_called = False
         self.close_was_called = False
 
@@ -26,11 +30,218 @@ class MockFileReader(object):
         self.open_was_called = True
 
     def read_lines(self):
-        for line in self._content:
+        for line in self.content:
             yield line
 
     def close(self):
         self.close_was_called = True
+
+class MockWriter(object):
+    def __init__(self):
+        self._content = []
+        self.output_filepath = "foo"
+        self.opened = False
+        self.closed = False
+
+    def open(self):
+        self.opened = True
+
+    def write(self, content):
+        self._content.extend(content.splitlines())
+
+    def lines(self):
+        return self._content
+
+    def close(self):
+        self.closed = True
+
+class MockVcfReader(object):
+    def __init__(self,
+                 input_filepath="vcfName",
+                 metaheaders=None,
+                 column_header='#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR',
+                 content=None,
+                 records=None,
+                 sample_names=None):
+
+        if content is None:
+            self.content = ["foo"]
+        else:
+            self.content = content
+
+        if metaheaders is None:
+            self.metaheaders = ["##metaheaders"]
+        else:
+            self.metaheaders = metaheaders
+
+        if records:
+            self.records = records
+        elif content:
+            self.records = [MockVcfRecord.parse_record(line) for line in self.content]
+        else:
+            self.records = []
+
+        if sample_names is None:
+            self.sample_names = []
+        else:
+            self.sample_names = sample_names
+        self.file_name = input_filepath
+        self.input_filepath = input_filepath
+        self.column_header = column_header
+        self.opened = False
+        self.closed = False
+
+
+    def open(self):
+        self.opened = True
+
+    def vcf_records(self):
+        for record in self.records:
+            yield record
+
+    def _get_tag_metaheaders(self, regex_exp):
+        tag_dict = {}
+        for metaheader in self.metaheaders:
+            tag = re.match(regex_exp, metaheader)
+            if tag:
+                tag_key = tag.group(1)
+                tag_dict[tag_key] = metaheader.strip()
+
+        return tag_dict
+
+    @property
+    def format_metaheaders(self):
+        return dict(self._get_tag_metaheaders("^##FORMAT=.*?[<,]ID=([^,>]*)"))
+
+    @property
+    def info_metaheaders(self):
+        return dict(self._get_tag_metaheaders("^##INFO=.*?[<,]ID=([^,>]*)"))
+
+    @property
+    def filter_metaheaders(self):
+        return dict(self._get_tag_metaheaders("^##FILTER=.*?[<,]ID=([^,>]*)"))
+
+    @property
+    def contig_metaheaders(self):
+        return dict(self._get_tag_metaheaders("^##contig=.*?[<,]ID=([^,>]*)"))
+
+    @property
+    def non_format_metaheaders(self):
+        return self.metaheaders
+
+    def close(self):
+        self.closed = True
+
+
+class MockCaller(object):
+    def __init__(self, name="MockCaller", metaheaders=None, claimable=None):
+        if claimable:
+            self.claimable = claimable
+        else:
+            self.claimable = set()
+        self.name = name
+        if metaheaders:
+            self.metaheaders = metaheaders
+        else:
+            self.metaheaders = ["##mockMetaheader1"]
+        self.file_name_search = "snps|indels"
+
+    @staticmethod
+    def add_tags(vcfRecord):
+        return vcfRecord
+
+    @staticmethod
+    def decorate_files(filenames, dummy):
+        return filenames[0]+"foo"
+
+    def get_new_metaheaders(self):
+        return self.metaheaders
+
+    def claim(self, file_readers):
+        unclaimed = list(set(file_readers).difference(self.claimable))
+        claimed = list(set(file_readers).intersection(self.claimable))
+        return unclaimed, claimed
+
+class MockVcfRecord(object):
+    @classmethod
+    def parse_record(cls, vcf_line):
+        vcf_fields = vcf_line.rstrip().split("\t")
+        chrom, pos, rid, ref, alt, qual, rfilter, info, rformat \
+                = vcf_fields[0:9]
+        samples = vcf_fields[9:]
+        return MockVcfRecord(chrom, pos, ref, alt, rid, qual, rfilter, info,
+                             rformat, samples)
+
+    def __init__(self, chrom, pos, ref, alt,
+                 vcf_id=".", qual=".", vcf_filter=".", info=".", vcf_format=".",
+                 samples=None):
+        self.chrom = chrom
+        self.pos = pos
+        self.id = vcf_id
+        self.ref = ref
+        self.alt = alt
+        self.qual = qual
+        self.filter = vcf_filter
+        self.info = info
+        self.format = vcf_format
+        if samples is None:
+            self.samples = []
+        else:
+            self.samples = samples
+
+        tags = self.format.split(":")
+        self.format_set = tags
+
+        self.sample_dict = {}
+        for i, sample in enumerate(self.samples):
+            values = sample.split(":")
+            self.sample_dict[i] = OrderedDict(zip(tags, values))
+
+    def get_empty_record(self):
+        return MockVcfRecord(self.chrom, self.pos, self.ref, self.alt)
+
+    def get_info_dict(self):
+        info_dict = {}
+
+        for key_value in self.info.split(";"):
+            if "=" in key_value:
+                key, value = key_value.split("=")
+                info_dict[key] = value
+            else:
+                info_dict[key_value] = key_value
+
+        return info_dict
+
+    def asText(self):
+        stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
+                       self.qual, self.filter, self.info,
+                       ":".join(self.format_set)]
+
+        for key in self.sample_dict:
+            stringifier.append(":".join(self.sample_dict[key].values()))
+
+        return "\t".join(stringifier) + "\n"
+
+    def __eq__(self, other):
+        return ("^".join([self.chrom,
+                          self.pos,
+                          self.ref,
+                          self.alt]) == other)
+
+class MockTag(object):
+    def __init__(self, field_name=None, sample_values=None, metaheader=None):
+        self.field_name = field_name
+        if sample_values:
+            self.sample_values = sample_values
+        else:
+            self.sample_values = {}
+        if metaheader:
+            self.metaheader = metaheader
+        else:
+            self.metaheader = []
+
+    def add_tag_values(self, vcf_record):
+        vcf_record.add_sample_tag_value(self.field_name, self.sample_values)
 
 #TODO: (cgates) Fix tests to that so that they do not rely on parse_record and asText.
 class VcfRecordTestCase(test_case.JacquardBaseTestCase):
@@ -168,11 +379,11 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         self.assertRaises(KeyError, record.add_sample_tag_value, "F1", {"SampleA":0.6, "SampleB":0.6})
 
     def test_get_info_dict_empty(self):
-        vcf_record = VcfRecord("chr1", "42", "A", "C", info = "")
+        vcf_record = VcfRecord("chr1", "42", "A", "C", info="")
         self.assertEquals({}, vcf_record.info_dict)
 
     def test_get_info_dict_null(self):
-        vcf_record = VcfRecord("chr1", "42", "A", "C", info = ".")
+        vcf_record = VcfRecord("chr1", "42", "A", "C", info=".")
         self.assertEquals({}, vcf_record.info_dict)
 
     def test_add_info_field_assignedField(self):
@@ -293,6 +504,38 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
 
         expected_record = VcfRecord(chrom="chr2", pos="1", ref="A", alt="C")
         self.assertEquals(expected_record.asText(), empty_record.asText())
+
+    def test_add_or_replace_filter_filterReplacesPassFilter(self):
+        record = VcfRecord("chr1", "42", "X", "C", vcf_filter="PASS")
+        record.add_or_replace_filter("JQ_EXCLUDE")
+        self.assertEquals("JQ_EXCLUDE", record.filter)
+
+    def test_add_or_replace_filter_filterReplacesNullFilter(self):
+        record = VcfRecord("chr1", "42", "X", "C", vcf_filter=".")
+        record.add_or_replace_filter("JQ_EXCLUDE")
+        self.assertEquals("JQ_EXCLUDE", record.filter)
+
+    def test_add_or_replace_filter_filterReplacesEmptyFilter(self):
+        record = VcfRecord("chr1", "42", "X", "C", vcf_filter="")
+        record.add_or_replace_filter("JQ_EXCLUDE")
+        self.assertEquals("JQ_EXCLUDE", record.filter)
+
+    def test_add_or_replace_filter_filterAppendsFailedFilter(self):
+        record = VcfRecord("chr1", "42", "XYZ", "C", vcf_filter="indelError")
+        record.add_or_replace_filter("JQ_EXCLUDE")
+        self.assertEquals("indelError;JQ_EXCLUDE", record.filter)
+
+    def test_add_or_replace_filter_duplicateFilterNotAdded(self):
+        record = VcfRecord("chr1", "42", "XYZ", "C", vcf_filter="JQ_EXCLUDE")
+        record.add_or_replace_filter("JQ_EXCLUDE")
+        self.assertEquals("JQ_EXCLUDE", record.filter)
+
+    def test_add_or_replace_filter_filtersOnlyAppendsUnique(self):
+        record = VcfRecord("chr1", "42", "XYZ", "C", vcf_filter="indelError")
+        record.add_or_replace_filter("JQ_EXCLUDE")
+        record.add_or_replace_filter("JQ_EXCLUDE")
+        self.assertEquals("indelError;JQ_EXCLUDE", record.filter)
+
 
 class VcfReaderTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
@@ -508,6 +751,20 @@ class VcfWriterTestCase(unittest.TestCase):
             self.assertEquals(expected_output, actual_output)
 
 class FileReaderTestCase(unittest.TestCase):
+    def testCompare(self):
+        expected_readers = [FileReader("1A.txt"),
+                            FileReader("1B.txt"),
+                            FileReader("2A.txt"),
+                            FileReader("10A.txt"),
+                            FileReader("10B.txt"),
+                            FileReader("11A.txt"),
+                            FileReader("11B.txt"),
+                            FileReader("20A.txt"),
+                            FileReader("100A.txt")]
+        input_readers = expected_readers[::-1]
+
+        self.assertEquals(expected_readers, sorted(input_readers))
+
     def test_equality(self):
         self.assertEquals(FileReader("foo"), FileReader("foo"))
         self.assertNotEquals(FileReader("foo"), FileReader("bar"))

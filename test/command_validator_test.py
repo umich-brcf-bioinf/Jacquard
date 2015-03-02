@@ -50,11 +50,13 @@ class MakeDirTestCase(test_case.JacquardBaseTestCase):
 class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         super(CommandValidatorTestCase, self).setUp()
-        self.mock_module_original_predicted_output = mock_module.predicted_output
+        mock_module.init_mock()
 
     def tearDown(self):
-        mock_module.predicted_output = self.mock_module_original_predicted_output
         super(CommandValidatorTestCase, self).tearDown()
+
+    def test_validation_tasks(self):
+        self.assertEquals(11, len(command_validator._VALIDATION_TASKS))
 
     def test_check_output_exists_fileExistsCorrectType(self):
         with TempDirectory() as output_dir:
@@ -523,6 +525,11 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
                                 command_validator._check_there_will_be_output,
                                 mock_module,
                                 args)
+
+    def test_check_valid_args(self):
+        args = Namespace()
+        command_validator._check_valid_args(mock_module, args)
+        self.assertTrue(mock_module.validate_args_called)
 
 
 class MockTask(object):

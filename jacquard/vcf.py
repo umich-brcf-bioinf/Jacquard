@@ -1,42 +1,12 @@
 # pylint: disable=too-many-instance-attributes, fixme
 from __future__ import print_function, absolute_import
 from collections import defaultdict, OrderedDict
+import natsort
 import os
 import re
 import sys
 
 import jacquard.utils as utils
-
-class RecognizedVcfReader(object):
-    '''VcfReader with recognized caller'''
-    def __init__(self, vcf_reader, caller):
-        self._vcf_reader = vcf_reader
-        self.caller = caller
-
-    @property
-    def column_header(self):
-        return self._vcf_reader.column_header
-
-    def close(self):
-        return self._vcf_reader.close()
-
-    @property
-    def file_name(self):
-        return self._vcf_reader.file_name
-
-    @property
-    def input_filepath(self):
-        return self._vcf_reader.input_filepath
-
-    @property
-    def metaheaders(self):
-        return self._vcf_reader.metaheaders
-
-    def open(self):
-        return self._vcf_reader.open()
-
-    def vcf_records(self):
-        return self._vcf_reader.vcf_records()
 
 #TODO: (cgates): add context management to open/close
 class VcfReader(object):
@@ -139,6 +109,7 @@ class VcfReader(object):
 class VcfRecord(object):
     #pylint: disable=too-many-instance-attributes
     EMPTY_SET = set()
+    _FILTERS_TO_REPLACE = set(["", ".", "pass"])
 
     @classmethod
     def parse_record(cls, vcf_line, sample_names):
@@ -182,8 +153,8 @@ class VcfRecord(object):
             return int(string)
         except ValueError:
             return sys.maxint
-
-#TODO: (cgates) adjust info field to be stored as dict instead of string
+#TODO: (cgates): Could we make filter an OrderedSet
+#TODO: (cgates) adjust info field to be stored as dict only instead of string
 #TODO: (cgates) adjust vcf names to not collide with reserved python words
 ## pylint: disable=too-many-arguments, invalid-name
 # Alas, something must encapsulate the myriad VCF fields.
@@ -314,6 +285,13 @@ class VcfRecord(object):
             value = str(new_sample_values[sample])
             self.sample_tag_values[sample][tag_name] = value
 
+    def add_or_replace_filter(self, new_filter):
+        if self.filter.lower() in self._FILTERS_TO_REPLACE:
+            self.filter = new_filter
+        elif new_filter not in self.filter.split(";"):
+            self.filter = ";".join([self.filter,
+                                    new_filter])
+
     def __eq__(self, other):
         return isinstance(other, VcfRecord) and self._key == other._key
 
@@ -322,6 +300,7 @@ class VcfRecord(object):
 
     def __cmp__(self, other):
         return cmp(self._key, other._key)
+
 
 #TODO cgates: add context management to open/close
 class FileWriter(object):
@@ -374,6 +353,10 @@ class FileReader(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
     def __hash__(self):
         return hash(self.input_filepath)
 
+    def __cmp__(self, other):
+        key = natsort.natsort_keygen()
+        return cmp(key(self.file_name), key(other.file_name))

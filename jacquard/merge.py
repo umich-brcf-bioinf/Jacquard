@@ -2,6 +2,7 @@
 from __future__ import print_function, absolute_import
 from collections import defaultdict, OrderedDict
 import glob
+import errno
 import jacquard.utils as utils
 from jacquard import __version__
 import jacquard.vcf as vcf
@@ -9,6 +10,7 @@ import natsort
 import os
 import re
 import jacquard.logger as logger
+from jacquard.vcf import FileWriter
 
 _DEFAULT_INCLUDED_FORMAT_TAGS = ["JQ_.*"]
 _MULT_ALT_TAG = "JQ_MULT_ALT_LOCUS"
@@ -108,29 +110,18 @@ def _create_reader_lists(input_files):
 def _build_coordinates(vcf_readers):
     coordinate_set = set()
     mult_alts = defaultdict(set)
-    error = 0
 
     for vcf_reader in vcf_readers:
-        previous_record = None
         try:
             vcf_reader.open()
 
             for vcf_record in vcf_reader.vcf_records():
-                if previous_record and vcf_record < previous_record:
-                    logger.error("VCF File [{}] is not sorted."
-                                 .format(vcf_reader.file_name))
-                    error = 1
-                previous_record = vcf_record
                 coordinate_set.add(vcf_record.get_empty_record())
                 ref_alt = vcf_record.ref, vcf_record.alt
                 locus = vcf_record.chrom, vcf_record.pos
                 mult_alts[locus].add(ref_alt)
         finally:
             vcf_reader.close()
-
-    if error:
-        raise utils.JQException("One or more VCF files were not sorted. "
-                                "Review inputs and try again.")
 
     for vcf_record in coordinate_set:
         ref_alts_for_this_locus = mult_alts[vcf_record.chrom,
@@ -141,6 +132,65 @@ def _build_coordinates(vcf_readers):
             vcf_record.add_info_field(_MULT_ALT_TAG)
 
     return sorted(list(coordinate_set))
+
+
+def _write_headers(reader, file_writer):
+    headers = reader.metaheaders
+    headers.append(reader.column_header)
+
+    file_writer.write("\n".join(headers) + "\n")
+
+
+
+def _sort_vcf(reader, temp_dir):
+    logger.info("Sorting vcf [{}]", reader.file_name)
+    vcf_records = []
+    sorted_dir = os.path.join(temp_dir, "tmp")
+    os.makedirs(sorted_dir)
+    reader.open()
+    for vcf_record in reader.vcf_records():
+        vcf_records.append(vcf_record)
+
+    reader.close()
+    vcf_records.sort()
+    writer = FileWriter(os.path.join(sorted_dir,
+                                     reader.file_name))
+    writer.open()
+    writer.write("\n".join(reader.metaheaders) + "\n")
+    writer.write(reader.column_header + "\n")
+    for vcf_record in vcf_records:
+        writer.write(vcf_record.asText())
+
+    writer.close()
+    reader = vcf.VcfReader(vcf.FileReader(writer.output_filepath))
+    return reader
+
+def _get_unsorted_readers(vcf_readers):
+    unsorted_readers = []
+    for reader in vcf_readers:
+        previous_record = None
+        reader.open()
+        for vcf_record in reader.vcf_records():
+            if previous_record and vcf_record < previous_record:
+                logger.debug("VCF file:chrom:pos [{}:{}:{}] is out of order"
+                             .format(reader.file_name,
+                                     vcf_record.chrom,
+                                     vcf_record.pos))
+                unsorted_readers.append(reader)
+                break
+            else:
+                previous_record = vcf_record
+        reader.close()
+    return unsorted_readers
+
+def _sort_readers(vcf_readers, temp_dir):
+    unsorted_readers = _get_unsorted_readers(vcf_readers)
+    sorted_readers = []
+    for reader in vcf_readers:
+        if reader in unsorted_readers:
+            reader = _sort_vcf(reader, temp_dir)
+        sorted_readers.append(reader)
+    return sorted_readers
 
 
 def _build_merged_record(coordinate,
@@ -301,6 +351,9 @@ def report_prediction(args):
 def get_required_input_output_types():
     return ("directory", "file")
 
+def validate_args(dummy):
+    pass
+
 def execute(args, execution_context):
     input_path = os.path.abspath(args.input)
     output_path = os.path.abspath(args.output)
@@ -317,6 +370,7 @@ def execute(args, execution_context):
 
         buffered_readers, vcf_readers = _create_reader_lists(input_files)
 
+        vcf_readers = _sort_readers(vcf_readers, output_path)
         all_sample_names, merge_metaheaders = _build_sample_list(vcf_readers)
         coordinates = _build_coordinates(vcf_readers)
         format_tags_to_keep = _build_format_tags(format_tag_regex, vcf_readers)

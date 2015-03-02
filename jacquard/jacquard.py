@@ -31,14 +31,12 @@ import jacquard.expand as expand
 import jacquard.filter_hc_somatic as filter_hc_somatic
 import jacquard.logger as logger
 import jacquard.merge as merge
-import jacquard.normalize as normalize
-import jacquard.tag as tag
+import jacquard.translate as translate
 import jacquard.utils as utils
 from jacquard import __version__
 
 
-_SUBCOMMANDS = [normalize,
-                tag,
+_SUBCOMMANDS = [translate,
                 filter_hc_somatic,
                 merge,
                 consensus,
@@ -154,7 +152,7 @@ def dispatch(modules, arguments):
 
         _move_tmp_contents_to_original(args)
 
-        if logger.SHOW_WARNING:
+        if logger.WARNING_OCCURRED:
             logger.info("Done. (See warnings above)")
         else:
             logger.info("Done")

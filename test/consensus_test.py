@@ -2,14 +2,11 @@
 #pylint: disable=too-many-public-methods, too-few-public-methods, unused-argument
 from __future__ import absolute_import
 from argparse import Namespace
-import os
-from StringIO import StringIO
-import sys
 from testfixtures import TempDirectory
-
 import jacquard.consensus as consensus
-import jacquard.logger as logger
+import os
 import test.test_case as test_case
+
 
 class MockFileWriter(object):
     def __init__(self):
@@ -108,44 +105,7 @@ class MockConsensusHelper(object):
     def get_consensus_metaheaders(self):
         return [tag.metaheader for tag in self.tags]
 
-MOCK_LOG_CALLED = False
-
-def mock_log(msg, *args):
-    global MOCK_LOG_CALLED
-    MOCK_LOG_CALLED = True
-
 class ConsensusTestCase(test_case.JacquardBaseTestCase):
-    def setUp(self):
-        self.output = StringIO()
-        self.saved_stderr = sys.stderr
-        sys.stderr = self.output
-        self.original_info = logger.info
-        self.original_error = logger.error
-        self.original_warning = logger.warning
-        self.original_debug = logger.debug
-        self._change_mock_logger()
-
-    def tearDown(self):
-        self.output.close()
-        sys.stderr = self.saved_stderr
-        self._reset_mock_logger()
-
-    @staticmethod
-    def _change_mock_logger():
-        global MOCK_LOG_CALLED
-        MOCK_LOG_CALLED = False
-
-        logger.info = mock_log
-        logger.error = mock_log
-        logger.warning = mock_log
-        logger.debug = mock_log
-
-    def _reset_mock_logger(self):
-        logger.info = self.original_info
-        logger.error = self.original_error
-        logger.warning = self.original_warning
-        logger.debug = self.original_debug
-
     def test_write_metaheaders(self):
         file_writer = MockFileWriter()
         vcf_reader = MockVcfReader()

@@ -4,168 +4,24 @@
 from __future__ import absolute_import
 from argparse import Namespace
 from collections import OrderedDict
-import os
-import re
-from testfixtures import TempDirectory
-from StringIO import StringIO
-import jacquard.logger as logger
-import sys
-
-import jacquard.merge as merge
-import jacquard.vcf as vcf
-import test.test_case as test_case
 from jacquard.vcf import VcfRecord
+from test.vcf_test import MockVcfReader
+from testfixtures import TempDirectory
+import jacquard.logger
+import jacquard.merge as merge
 import jacquard.utils as utils
+import jacquard.vcf as vcf
+import os
+import test.mock_logger
+import test.test_case as test_case
 
-class MockVcfReader(object):
-    def __init__(self,
-                 input_filepath="vcfName",
-                 metaheaders=None,
-                 column_header='#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR',
-                 content=None,
-                 records=None,
-                 sample_names=None):
 
-        if content is None:
-            self.content = ["foo"]
-        else:
-            self.content = content
-
-        if metaheaders is None:
-            self.metaheaders = ["##metaheaders"]
-        else:
-            self.metaheaders = metaheaders
-
-        if records:
-            self.records = records
-        elif content:
-            self.records = [MockVcfRecord.parse_record(line) for line in self.content]
-        else:
-            self.records = []
-
-        if sample_names is None:
-            self.sample_names = []
-        else:
-            self.sample_names = sample_names
-        self.file_name = input_filepath
-        self.input_filepath = input_filepath
-        self.column_header = column_header
-        self.opened = False
-        self.closed = False
-
-    def open(self):
-        self.opened = True
-
-    def vcf_records(self):
-        for record in self.records:
-            yield record
-
-    def _get_tag_metaheaders(self, regex_exp):
-        tag_dict = {}
-        for metaheader in self.metaheaders:
-            tag = re.match(regex_exp, metaheader)
-            if tag:
-                tag_key = tag.group(1)
-                tag_dict[tag_key] = metaheader.strip()
-
-        return tag_dict
-
-    @property
-    def format_metaheaders(self):
-        return dict(self._get_tag_metaheaders("^##FORMAT=.*?[<,]ID=([^,>]*)"))
-
-    @property
-    def info_metaheaders(self):
-        return dict(self._get_tag_metaheaders("^##INFO=.*?[<,]ID=([^,>]*)"))
-
-    @property
-    def filter_metaheaders(self):
-        return dict(self._get_tag_metaheaders("^##FILTER=.*?[<,]ID=([^,>]*)"))
-
-    @property
-    def contig_metaheaders(self):
-        return dict(self._get_tag_metaheaders("^##contig=.*?[<,]ID=([^,>]*)"))
-
-    @property
-    def non_format_metaheaders(self):
-        return self.metaheaders
-
-    def close(self):
-        self.closed = True
-
-#pylint: disable=unused-argument
 class MockBufferedReader(object):
     def __init__(self, vcf_records):
         self.vcf_records_iter = iter(vcf_records)
 
-    def next_if_equals(self, requested_record):
+    def next_if_equals(self, dummy):
         return self.vcf_records_iter.next()
-
-class MockVcfRecord(object):
-    @classmethod
-    def parse_record(cls, vcf_line):
-        vcf_fields = vcf_line.rstrip().split("\t")
-        chrom, pos, rid, ref, alt, qual, rfilter, info, rformat \
-                = vcf_fields[0:9]
-        samples = vcf_fields[9:]
-        return MockVcfRecord(chrom, pos, ref, alt, rid, qual, rfilter, info,
-                             rformat, samples)
-
-    def __init__(self, chrom, pos, ref, alt,
-                 vcf_id=".", qual=".", vcf_filter=".", info=".", vcf_format=".",
-                 samples=None):
-        self.chrom = chrom
-        self.pos = pos
-        self.id = vcf_id
-        self.ref = ref
-        self.alt = alt
-        self.qual = qual
-        self.filter = vcf_filter
-        self.info = info
-        self.format = vcf_format
-        if samples is None:
-            self.samples = []
-        else:
-            self.samples = samples
-
-        tags = self.format.split(":")
-        self.format_set = tags
-
-        self.sample_dict = {}
-        for i, sample in enumerate(self.samples):
-            values = sample.split(":")
-            self.sample_dict[i] = OrderedDict(zip(tags, values))
-
-    def get_empty_record(self):
-        return MockVcfRecord(self.chrom, self.pos, self.ref, self.alt)
-
-    def get_info_dict(self):
-        info_dict = {}
-
-        for key_value in self.info.split(";"):
-            if "=" in key_value:
-                key, value = key_value.split("=")
-                info_dict[key] = value
-            else:
-                info_dict[key_value] = key_value
-
-        return info_dict
-
-    def asText(self):
-        stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
-                       self.qual, self.filter, self.info,
-                       ":".join(self.format_set)]
-
-        for key in self.sample_dict:
-            stringifier.append(":".join(self.sample_dict[key].values()))
-
-        return "\t".join(stringifier) + "\n"
-
-    def __eq__(self, other):
-        return ("^".join([self.chrom,
-                          self.pos,
-                          self.ref,
-                          self.alt]) == other)
 
 class MockFileWriter(object):
     def __init__(self):
@@ -174,43 +30,15 @@ class MockFileWriter(object):
     def write(self, text):
         self.written.append(text)
 
-MOCK_LOG_CALLED = False
-
-def mock_log(msg, *args):
-    global MOCK_LOG_CALLED
-    MOCK_LOG_CALLED = True
-
 class MergeTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
-        self.output = StringIO()
-        self.saved_stderr = sys.stderr
-        sys.stderr = self.output
-        self.original_info = logger.info
-        self.original_error = logger.error
-        self.original_warning = logger.warning
-        self.original_debug = logger.debug
-        self._change_mock_logger()
+        super(MergeTestCase, self).setUp()
+        merge.logger = test.mock_logger
 
     def tearDown(self):
-        self.output.close()
-        sys.stderr = self.saved_stderr
-        self._reset_mock_logger()
-
-    @staticmethod
-    def _change_mock_logger():
-        global MOCK_LOG_CALLED
-        MOCK_LOG_CALLED = False
-
-        logger.info = mock_log
-        logger.error = mock_log
-        logger.warning = mock_log
-        logger.debug = mock_log
-
-    def _reset_mock_logger(self):
-        logger.info = self.original_info
-        logger.error = self.original_error
-        logger.warning = self.original_warning
-        logger.debug = self.original_debug
+        test.mock_logger.reset()
+        merge.logger = jacquard.logger
+        super(MergeTestCase, self).tearDown()
 
     def test_validate_arguments(self):
         with TempDirectory() as input_file, TempDirectory() as output_file:
@@ -264,20 +92,6 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
 
         expected = [fileArec1, fileArec2, fileBrec2]
         self.assertEquals(expected, actual_coordinates)
-
-    def test_build_coordinates_unsorted(self):
-        fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
-        fileArec2 = vcf.VcfRecord("chr2", "5", "A", "G", "id=1")
-        fileBrec1 = vcf.VcfRecord("chr2", "16", "A", "G", "id=2")
-        fileBrec2 = vcf.VcfRecord("chr2", "12", "G", "C")
-
-        mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
-                        MockVcfReader(records=[fileBrec1, fileBrec2])]
-
-        self.assertRaisesRegexp(utils.JQException,
-                                "One or more VCF files were not sorted.*",
-                                merge._build_coordinates, mock_readers)
-        self.assertTrue(MOCK_LOG_CALLED)
 
     def test_build_coordinates_multAltsEmpty(self):
         fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
@@ -873,6 +687,64 @@ chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
                                    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tP1|SampleA\tP1|SampleB\n"]
 
         self.assertEquals(expected_output_headers, actual_output_lines[0:len(expected_output_headers)])
+
+    def test_sort_vcfs_orderedVcfsPassThrough(self):
+        record1 = vcf.VcfRecord("chr1", "42", "A", "C")
+        record2 = vcf.VcfRecord("chr2", "42", "A", "C")
+        record3 = vcf.VcfRecord("chr3", "42", "A", "C")
+        vcf_readerA = MockVcfReader(records=[record1, record2, record3])
+        vcf_readerB = MockVcfReader(records=[record1, record2, record3])
+
+        input_readers = [vcf_readerA, vcf_readerB]
+        with TempDirectory() as temp_dir:
+            actual_readers = merge._sort_readers(list(input_readers),
+                                                 temp_dir.path)
+
+        self.assertEquals(actual_readers, input_readers)
+
+    def test_sort_readers_vcfsResortedAsNecessary(self):
+        #pylint: disable=too-many-locals
+        record1 = vcf.VcfRecord("chr1", "42", "A", "C")
+        record2 = vcf.VcfRecord("chr2", "42", "A", "C")
+        record3 = vcf.VcfRecord("chr3", "42", "A", "C")
+        vcf_readerA = MockVcfReader(records=[record1, record2, record3])
+        input_metaheaders = ["##foo", "##bar"]
+        input_column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SX|SY")
+        vcf_readerB = MockVcfReader(input_filepath="unsorted.vcf",
+                                    metaheaders=input_metaheaders,
+                                    column_header=input_column_header,
+                                    records=[record3, record1, record2])
+
+        input_readers = [vcf_readerA, vcf_readerB]
+        with TempDirectory() as temp_dir:
+            actual_readers = merge._sort_readers(list(input_readers),
+                                                 temp_dir.path)
+
+            self.assertNotEquals(actual_readers, input_readers)
+            self.assertIn(vcf_readerA, actual_readers)
+            self.assertNotIn(vcf_readerB, actual_readers)
+            self.assertEquals(2, len(actual_readers))
+            actual_readerB = actual_readers[1]
+            actual_readerB.open()
+            actual_metaheaders = list(actual_readerB.metaheaders)
+            actual_column_header = actual_readerB.column_header
+            actual_records = [vcf_record for vcf_record in actual_readerB.vcf_records()]
+            actual_readerB.close()
+
+
+        self.assertEquals(input_metaheaders, actual_metaheaders)
+        self.assertEquals(input_column_header, actual_column_header)
+        self.assertEquals(record1.asText(), actual_records[0].asText())
+        self.assertEquals(record2.asText(), actual_records[1].asText())
+        self.assertEquals(record3.asText(), actual_records[2].asText())
+        actual_log_infos = test.mock_logger.messages["INFO"]
+        self.assertEquals(1, len(actual_log_infos))
+        self.assertRegexpMatches(actual_log_infos[0], r"Sorting vcf \[unsorted.vcf\]")
+        actual_log_debugs = test.mock_logger.messages["DEBUG"]
+        self.assertEquals(1, len(actual_log_debugs))
+        self.assertRegexpMatches(actual_log_debugs[0],
+                                 r"VCF file:chrom:pos \[unsorted.vcf:chr1:42\] is out of order")
+
 
 class MergeFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_merge(self):

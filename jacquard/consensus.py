@@ -81,6 +81,9 @@ def report_prediction(args):
 def get_required_input_output_types():
     return ("file", "file")
 
+def validate_args(dummy):
+    pass
+
 def execute(args, execution_context):
     input_file = os.path.abspath(args.input)
     output = os.path.abspath(args.output)

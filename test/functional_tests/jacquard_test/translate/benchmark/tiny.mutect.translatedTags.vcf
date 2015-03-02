@@ -1,0 +1,162 @@
+##fileformat=VCFv4.1
+##FILTER=<ID=PASS,Description="Accept as a confident somatic mutation">
+##FILTER=<ID=REJECT,Description="Rejected as a confident somatic mutation">
+##FORMAT=<ID=AD,Number=.,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">
+##FORMAT=<ID=BQ,Number=A,Type=Float,Description="Average base quality for reads supporting alleles">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">
+##FORMAT=<ID=FA,Number=A,Type=Float,Description="Allele fraction of the alternate allele with regard to reference">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification">
+##FORMAT=<ID=SS,Number=1,Type=Integer,Description="Variant status relative to non-adjacent Normal,0=wildtype,1=germline,2=somatic,3=LOH,4=post-transcriptional modification,5=unknown">
+##INFO=<ID=DB,Number=0,Type=Flag,Description="dbSNP Membership">
+##INFO=<ID=MQ0,Number=1,Type=Integer,Description="Total Mapping Quality Zero Reads">
+##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description="Somatic event">
+##INFO=<ID=VT,Number=1,Type=String,Description="Variant type, can be SNP, INS or DEL">
+##MuTect="analysis_type=MuTect input_file=[11N_25714.sorted.bam, 11Ta_25715.sorted.bam] read_buffer_size=null phone_home=STANDARD gatk_key=null tag=NA read_filter=[BadCigar] intervals=[/ccmb/BioinfCore/SoftwareDev/common/TargetRegion_buffered10bases.bed] excludeIntervals=null interval_set_rule=UNION interval_merging=ALL interval_padding=0 reference_sequence=/ccmb/BioinfCore/Common/SOFTWARES/hg19bundle/ucsc.hg19.fasta nonDeterministicRandomSeed=false disableRandomization=false maxRuntime=-1 maxRuntimeUnits=MINUTES downsampling_type=BY_SAMPLE downsample_to_fraction=null downsample_to_coverage=1000 enable_experimental_downsampling=false baq=OFF baqGapOpenPenalty=40.0 performanceLog=null useOriginalQualities=false BQSR=null quantize_quals=0 disable_indel_quals=false emit_original_quals=false preserve_qscores_less_than=6 defaultBaseQualities=-1 validation_strictness=SILENT remove_program_records=false keep_program_records=false unsafe=null num_threads=1 num_cpu_threads_per_data_thread=1 num_io_threads=0 monitorThreadEfficiency=false num_bam_file_handles=null read_group_black_list=null pedigree=[] pedigreeString=[] pedigreeValidationType=STRICT allow_intervals_with_unindexed_bam=false generateShadowBCF=false logging_level=INFO log_to_file=null help=false noop=false enable_extended_output=false artifact_detection_mode=false tumor_sample_name=25715 bam_tumor_sample_name=null normal_sample_name=25714 force_output=false force_alleles=false only_passing_calls=false initial_tumor_lod=4.0 tumor_lod=6.3 fraction_contamination=0.02 minimum_mutation_cell_fraction=0.0 normal_lod=2.2 normal_artifact_lod=1.0 strand_artifact_lod=2.0 strand_artifact_power_threshold=0.9 dbsnp_normal_lod=5.5 somatic_classification_normal_power_threshold=0.95 minimum_normal_allele_fraction=0.0 tumor_f_pretest=0.0050 min_qscore=5 gap_events_threshold=3 heavily_clipped_read_fraction=0.3 clipping_bias_pvalue_threshold=0.05 fraction_mapq0_threshold=0.5 pir_median_threshold=10.0 pir_mad_threshold=3.0 required_maximum_alt_allele_mapping_quality_score=20 max_alt_alleles_in_normal_count=2 max_alt_alleles_in_normal_qscore_sum=20 max_alt_allele_in_normal_fraction=0.03 power_constant_qscore=30 absolute_copy_number_data=null power_constant_af=0.30000001192092896 vcf=org.broadinstitute.sting.gatk.io.stubs.VariantContextWriterStub no_cmdline_in_header=org.broadinstitute.sting.gatk.io.stubs.VariantContextWriterStub sites_only=org.broadinstitute.sting.gatk.io.stubs.VariantContextWriterStub bcf=org.broadinstitute.sting.gatk.io.stubs.VariantContextWriterStub dbsnp=[(RodBinding name=dbsnp source=/ccmb/BioinfCore/Common/SOFTWARES/hg19bundle/dbsnp_138.hg19.vcf)] cosmic=[(RodBinding name=cosmic source=/ccmb/BioinfCore/SoftwareDev/common/Cosmic.v68.hg19.vcf)] normal_panel=[] coverage_20_q20_file=null power_file=null tumor_depth_file=null normal_depth_file=null filter_mismatching_base_and_quals=false"
+##contig=<ID=chrM,length=16571,assembly=hg19>
+##contig=<ID=chr1,length=249250621,assembly=hg19>
+##contig=<ID=chr2,length=243199373,assembly=hg19>
+##contig=<ID=chr3,length=198022430,assembly=hg19>
+##contig=<ID=chr4,length=191154276,assembly=hg19>
+##contig=<ID=chr5,length=180915260,assembly=hg19>
+##contig=<ID=chr6,length=171115067,assembly=hg19>
+##contig=<ID=chr7,length=159138663,assembly=hg19>
+##contig=<ID=chr8,length=146364022,assembly=hg19>
+##contig=<ID=chr9,length=141213431,assembly=hg19>
+##contig=<ID=chr10,length=135534747,assembly=hg19>
+##contig=<ID=chr11,length=135006516,assembly=hg19>
+##contig=<ID=chr12,length=133851895,assembly=hg19>
+##contig=<ID=chr13,length=115169878,assembly=hg19>
+##contig=<ID=chr14,length=107349540,assembly=hg19>
+##contig=<ID=chr15,length=102531392,assembly=hg19>
+##contig=<ID=chr16,length=90354753,assembly=hg19>
+##contig=<ID=chr17,length=81195210,assembly=hg19>
+##contig=<ID=chr18,length=78077248,assembly=hg19>
+##contig=<ID=chr19,length=59128983,assembly=hg19>
+##contig=<ID=chr20,length=63025520,assembly=hg19>
+##contig=<ID=chr21,length=48129895,assembly=hg19>
+##contig=<ID=chr22,length=51304566,assembly=hg19>
+##contig=<ID=chrX,length=155270560,assembly=hg19>
+##contig=<ID=chrY,length=59373566,assembly=hg19>
+##contig=<ID=chr1_gl000191_random,length=106433,assembly=hg19>
+##contig=<ID=chr1_gl000192_random,length=547496,assembly=hg19>
+##contig=<ID=chr4_ctg9_hap1,length=590426,assembly=hg19>
+##contig=<ID=chr4_gl000193_random,length=189789,assembly=hg19>
+##contig=<ID=chr4_gl000194_random,length=191469,assembly=hg19>
+##contig=<ID=chr6_apd_hap1,length=4622290,assembly=hg19>
+##contig=<ID=chr6_cox_hap2,length=4795371,assembly=hg19>
+##contig=<ID=chr6_dbb_hap3,length=4610396,assembly=hg19>
+##contig=<ID=chr6_mann_hap4,length=4683263,assembly=hg19>
+##contig=<ID=chr6_mcf_hap5,length=4833398,assembly=hg19>
+##contig=<ID=chr6_qbl_hap6,length=4611984,assembly=hg19>
+##contig=<ID=chr6_ssto_hap7,length=4928567,assembly=hg19>
+##contig=<ID=chr7_gl000195_random,length=182896,assembly=hg19>
+##contig=<ID=chr8_gl000196_random,length=38914,assembly=hg19>
+##contig=<ID=chr8_gl000197_random,length=37175,assembly=hg19>
+##contig=<ID=chr9_gl000198_random,length=90085,assembly=hg19>
+##contig=<ID=chr9_gl000199_random,length=169874,assembly=hg19>
+##contig=<ID=chr9_gl000200_random,length=187035,assembly=hg19>
+##contig=<ID=chr9_gl000201_random,length=36148,assembly=hg19>
+##contig=<ID=chr11_gl000202_random,length=40103,assembly=hg19>
+##contig=<ID=chr17_ctg5_hap1,length=1680828,assembly=hg19>
+##contig=<ID=chr17_gl000203_random,length=37498,assembly=hg19>
+##contig=<ID=chr17_gl000204_random,length=81310,assembly=hg19>
+##contig=<ID=chr17_gl000205_random,length=174588,assembly=hg19>
+##contig=<ID=chr17_gl000206_random,length=41001,assembly=hg19>
+##contig=<ID=chr18_gl000207_random,length=4262,assembly=hg19>
+##contig=<ID=chr19_gl000208_random,length=92689,assembly=hg19>
+##contig=<ID=chr19_gl000209_random,length=159169,assembly=hg19>
+##contig=<ID=chr21_gl000210_random,length=27682,assembly=hg19>
+##contig=<ID=chrUn_gl000211,length=166566,assembly=hg19>
+##contig=<ID=chrUn_gl000212,length=186858,assembly=hg19>
+##contig=<ID=chrUn_gl000213,length=164239,assembly=hg19>
+##contig=<ID=chrUn_gl000214,length=137718,assembly=hg19>
+##contig=<ID=chrUn_gl000215,length=172545,assembly=hg19>
+##contig=<ID=chrUn_gl000216,length=172294,assembly=hg19>
+##contig=<ID=chrUn_gl000217,length=172149,assembly=hg19>
+##contig=<ID=chrUn_gl000218,length=161147,assembly=hg19>
+##contig=<ID=chrUn_gl000219,length=179198,assembly=hg19>
+##contig=<ID=chrUn_gl000220,length=161802,assembly=hg19>
+##contig=<ID=chrUn_gl000221,length=155397,assembly=hg19>
+##contig=<ID=chrUn_gl000222,length=186861,assembly=hg19>
+##contig=<ID=chrUn_gl000223,length=180455,assembly=hg19>
+##contig=<ID=chrUn_gl000224,length=179693,assembly=hg19>
+##contig=<ID=chrUn_gl000225,length=211173,assembly=hg19>
+##contig=<ID=chrUn_gl000226,length=15008,assembly=hg19>
+##contig=<ID=chrUn_gl000227,length=128374,assembly=hg19>
+##contig=<ID=chrUn_gl000228,length=129120,assembly=hg19>
+##contig=<ID=chrUn_gl000229,length=19913,assembly=hg19>
+##contig=<ID=chrUn_gl000230,length=43691,assembly=hg19>
+##contig=<ID=chrUn_gl000231,length=27386,assembly=hg19>
+##contig=<ID=chrUn_gl000232,length=40652,assembly=hg19>
+##contig=<ID=chrUn_gl000233,length=45941,assembly=hg19>
+##contig=<ID=chrUn_gl000234,length=40531,assembly=hg19>
+##contig=<ID=chrUn_gl000235,length=34474,assembly=hg19>
+##contig=<ID=chrUn_gl000236,length=41934,assembly=hg19>
+##contig=<ID=chrUn_gl000237,length=45867,assembly=hg19>
+##contig=<ID=chrUn_gl000238,length=39939,assembly=hg19>
+##contig=<ID=chrUn_gl000239,length=33824,assembly=hg19>
+##contig=<ID=chrUn_gl000240,length=41933,assembly=hg19>
+##contig=<ID=chrUn_gl000241,length=42152,assembly=hg19>
+##contig=<ID=chrUn_gl000242,length=43523,assembly=hg19>
+##contig=<ID=chrUn_gl000243,length=43341,assembly=hg19>
+##contig=<ID=chrUn_gl000244,length=39929,assembly=hg19>
+##contig=<ID=chrUn_gl000245,length=36651,assembly=hg19>
+##contig=<ID=chrUn_gl000246,length=38154,assembly=hg19>
+##contig=<ID=chrUn_gl000247,length=36422,assembly=hg19>
+##contig=<ID=chrUn_gl000248,length=39786,assembly=hg19>
+##contig=<ID=chrUn_gl000249,length=38502,assembly=hg19>
+##reference=file:///ccmb/BioinfCore/Common/SOFTWARES/hg19bundle/ucsc.hg19.fasta
+##FORMAT=<ID=JQ_MT_CALLER_REPORTED,Number=1,Type=Integer,Description="1 = variant present in original VCF",Source="Jacquard",Version="0.21">
+##FORMAT=<ID=JQ_MT_CALLER_PASSED,Number=1,Type=Integer,Description="1 = variant FILTER is PASS in original VCF",Version="0.21">
+##FORMAT=<ID=JQ_MT_AF,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_MT_DP,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP)",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_MT_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)",Source="Jacquard",Version=0.21>
+##jacquard.translate.caller=MuTect
+##jacquard.version=0.21
+##jacquard.command=translate C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\jacquard_test\input\ C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\jacquard_test\translate\benchmark --force
+##jacquard.cwd=C:\Users\kmeng
+##FILTER=<ID=JQ_EXCLUDE_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.",Source="Jacquard",Version="0.21">
+##FILTER=<ID=JQ_EXCLUDE_MALFORMED_ALT,Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.",Source="Jacquard",Version=0.21>
+##FILTER=<ID=JQ_EXCLUDE_MISSING_ALT,Description="The alternate allele is missing for this variant record.",Source="Jacquard",Version=0.21>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NORMAL	TUMOR
+chr1	14436	.	G	A	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:86,3:.:47:0.034:1:0:0.03:47:0	0/1:55,2:34:57:0.035:1:0:0.04:57:0
+chr1	14464	.	A	T	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:62,15:.:53:0.195:1:0:0.20:53:0	0/1:43,24:31:67:0.358:1:0:0.36:67:0
+chr1	14522	.	G	A	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:58,11:.:26:0.159:1:0:0.16:26:0	0/1:30,4:31:34:0.118:1:0:0.12:34:0
+chr1	14542	.	A	G	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:70,11:.:28:0.136:1:0:0.14:28:0	0/1:37,4:30:41:0.098:1:0:0.10:41:0
+chr1	14574	.	A	G	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:84,11:.:41:0.116:1:0:0.12:41:0	0/1:50,1:23:51:0.020:1:0:0.02:51:0
+chr1	14590	.	G	A	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:87,6:.:48:0.065:1:0:0.07:48:0	0/1:62,0:.:62:0.00:1:0:0.00:62:0
+chr1	14599	.	T	A	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:89,2:.:57:0.022:1:0:0.02:57:0	0/1:69,0:.:69:0.00:1:0:0.00:69:0
+chr1	14604	.	A	G	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:94,2:.:62:0.021:1:0:0.02:62:0	0/1:74,0:.:75:0.00:1:0:0.00:75:0
+chr1	14699	rs372910670	C	G	.	REJECT	DB	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:72,38:.:69:0.345:1:0:0.34:69:0	0/1:98,26:33:125:0.210:1:0:0.21:125:0
+chr1	14741	.	C	A	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:109,9:.:60:0.076:1:0:0.08:60:0	0/1:113,11:29:125:0.089:1:0:0.09:125:0
+chr1	14907	rs79585140	A	G	.	REJECT	DB	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:122,73:.:167:0.374:1:0:0.37:167:0	0/1:172,127:33:299:0.425:1:0:0.42:299:0
+chr1	14930	rs75454623	A	G	.	REJECT	DB	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:121,69:.:181:0.363:1:0:0.36:181:0	0/1:181,150:30:331:0.453:1:0:0.45:331:0
+chr1	14948	rs201855936	G	A	.	REJECT	DB	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:179,17:.:174:0.087:1:0:0.09:174:0	0/1:264,38:33:302:0.126:1:0:0.13:302:0
+chr1	15029	rs201045431	G	A	.	REJECT	DB	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:142,19:.:68:0.118:1:0:0.12:68:0	0/1:112,19:32:131:0.145:1:0:0.14:131:0
+chr1	15045	.	C	T	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:131,12:.:59:0.084:1:0:0.08:59:0	0/1:123,6:32:129:0.047:1:0:0.05:129:0
+chr1	15820	rs200482301	G	T	.	REJECT	DB	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:21,16:.:25:0.432:1:0:0.43:25:0	0/1:7,2:33:9:0.222:1:0:0.22:9:0
+chr1	16571	rs199676946	G	A	.	REJECT	DB	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:88,64:.:60:0.421:1:0:0.42:60:0	0/1:40,53:32:93:0.570:1:0:0.57:93:0
+chr1	16580	.	C	G	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:143,12:.:62:0.077:1:0:0.08:62:0	0/1:102,3:35:105:0.029:1:0:0.03:105:0
+chr1	16719	.	T	A	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:151,32:.:60:0.175:1:0:0.17:60:0	0/1:50,12:30:64:0.194:1:0:0.19:64:0
+chr1	16841	rs199652822	G	T	.	REJECT	DB	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:189,35:.:133:0.156:1:0:0.16:133:0	0/1:145,32:31:177:0.181:1:0:0.18:177:0
+chr1	16957	rs200658479	G	T	.	REJECT	DB	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:299,15:.:58:0.048:1:0:0.05:58:0	0/1:84,28:32:112:0.250:1:0:0.25:112:0
+chr1	16963	.	G	A	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:270,50:.:76:0.156:1:0:0.16:76:0	0/1:121,4:31:125:0.032:1:0:0.03:125:0
+chr1	16975	.	G	A	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:300,17:.:90:0.054:1:0:0.05:90:0	0/1:130,3:31:133:0.023:1:0:0.02:133:0
+chr1	16977	.	G	A	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:222,87:.:91:0.282:1:0:0.28:91:0	0/1:94,42:31:136:0.309:1:0:0.31:136:0
+chr1	16996	.	T	C	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:287,23:.:102:0.074:1:0:0.07:102:0	0/1:123,3:33:126:0.024:1:0:0.02:126:0
+chr1	17587	.	C	T	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:142,0:.:21:0.00:1:0:0.00:21:0	0/1:31,5:32:36:0.139:1:0:0.14:36:0
+chr1	17697	rs374995955	G	C	.	REJECT	DB	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:147,21:.:63:0.125:1:0:0.12:63:0	0/1:74,11:29:85:0.129:1:0:0.13:85:0
+chr1	17746	rs370884870	A	G	.	REJECT	DB	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:104,38:.:59:0.268:1:0:0.27:59:0	0/1:46,17:31:63:0.270:1:0:0.27:63:0
+chr1	17765	rs373918278	G	A	.	REJECT	DB	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:132,14:.:47:0.096:1:0:0.10:47:0	0/1:39,10:33:49:0.204:1:0:0.20:49:0
+chr1	17829	.	G	A	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:122,17:.:18:0.122:1:0:0.12:18:0	0/1:13,2:33:15:0.133:1:0:0.13:15:0
+chr1	19248	.	C	T	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:74,10:.:52:0.119:1:0:0.12:52:0	0/1:83,12:31:95:0.126:1:0:0.13:95:0
+chr1	20595	.	A	G	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:379,23:.:12:0.057:1:0:0.06:12:0	0/1:11,2:33:13:0.154:1:0:0.15:13:0
+chr1	69270	rs201219564	A	G	.	REJECT	DB	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:52,51:.:18:0.495:1:0:0.49:18:0	0/1:0,20:27:20:1.00:1:0:1.00:20:0
+chr1	69511	rs75062661	A	G	.	REJECT	DB	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:1,60:.:37:0.984:1:0:0.98:37:0	0/1:1,35:29:36:0.972:1:0:0.97:36:0
+chr1	69897	rs200676709	T	C	.	REJECT	DB	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:31,45:.:12:0.592:1:0:0.59:12:0	0/1:0,6:29:6:1.00:1:0:1.00:6:0
+chr1	135982	rs368140013	A	G	.	REJECT	DB	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:30,18:.:14:0.375:1:0:0.38:14:0	0/1:4,7:27:11:0.636:1:0:0.64:11:0
+chr1	137622	rs376555721	G	A	.	PASS	DB	GT:AD:BQ:DP:FA:SS:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:63,20:.:35:0.241:1:1:1:0.24:35:0	0/1:30,12:32:42:0.286:2:1:1:0.29:42:1
+chr1	137632	.	G	A	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:77,12:.:41:0.135:1:0:0.14:41:0	0/1:38,12:32:50:0.240:1:0:0.24:50:0
+chr1	267114	.	C	A	.	REJECT	.	GT:AD:BQ:DP:FA:JQ_MT_CALLER_REPORTED:JQ_MT_CALLER_PASSED:JQ_MT_AF:JQ_MT_DP:JQ_MT_HC_SOM	0:219,4:.:57:0.018:1:0:0.02:57:0	0/1:84,4:27:88:0.045:1:0:0.04:88:0

@@ -1,26 +1,10 @@
 #pylint: disable=line-too-long, too-many-public-methods, invalid-name
 #pylint: disable=missing-docstring, protected-access, global-statement, too-few-public-methods
 from __future__ import absolute_import, print_function
-
-from StringIO import StringIO
-import os
-import subprocess
-import sys
-
-import natsort
-
-import jacquard.logger as logger
 import jacquard.utils as utils
+import natsort
 import test.test_case as test_case
 
-
-mock_log_called = False
-mock_message = ""
-
-#pylint: disable=unused-argument
-def mock_log(msg, *args):
-    global mock_log_called
-    mock_log_called = True
 
 class RoundTwoDigitsTestCase(test_case.JacquardBaseTestCase):
     def test_round_two_digits_noRounding(self):
@@ -45,11 +29,13 @@ class RoundTwoDigitsTestCase(test_case.JacquardBaseTestCase):
         actual = utils.round_two_digits(val)
         self.assertEquals(expected, actual)
 
+
 class JQExceptionTestCase(test_case.JacquardBaseTestCase):
     def test_init(self):
         actual = utils.JQException("msg:{}, {}", "bar", [1, 2, 3])
         self.assertIsInstance(actual, Exception)
         self.assertEquals(actual.message, "msg:bar, [1, 2, 3]")
+
 
 class OrderedSetTestCase(test_case.JacquardBaseTestCase):
     def test_isOrderedSet(self):
@@ -177,68 +163,4 @@ class NaturalSortTestCase(test_case.JacquardBaseTestCase):
         expected = ["X10", "X100A", "X100B", "X100C"]
         actual = natsort.natsorted(unsorted)
         self.assertEquals(expected, actual)
-
-
-class ValidateDirectoriesTestCase(test_case.JacquardBaseTestCase):
-    def setUp(self):
-        self.original_info = logger.info
-        self.original_error = logger.error
-        self.original_warning = logger.warning
-        self.original_debug = logger.debug
-        self._change_mock_logger()
-        self.output = StringIO()
-        self.saved_stderr = sys.stderr
-        sys.stderr = self.output
-
-    def tearDown(self):
-        self.output.close()
-        sys.stderr = self.saved_stderr
-        self._reset_mock_logger()
-
-    @staticmethod
-    def _change_mock_logger():
-        global mock_log_called
-        mock_log_called = False
-        logger.info = mock_log
-        logger.error = mock_log
-        logger.warning = mock_log
-        logger.debug = mock_log
-
-    def _reset_mock_logger(self):
-        logger.info = self.original_info
-        logger.error = self.original_error
-        logger.warning = self.original_warning
-        logger.debug = self.original_debug
-
-
-def is_windows_os():
-    return sys.platform.lower().startswith("win")
-
-def make_unwritable_dir(unwriteable_dir):
-    os.mkdir(unwriteable_dir, 0555)
-
-    if is_windows_os():
-        FNULL = open(os.devnull, 'w')
-        subprocess.call("icacls {0} /deny Everyone:W".format(unwriteable_dir), stdout=FNULL, stderr=subprocess.STDOUT)
-
-def cleanup_unwriteable_dir(unwriteable_dir):
-    if is_windows_os():
-        FNULL = open(os.devnull, 'w')
-        subprocess.call("icacls {0} /reset /t /c".format(unwriteable_dir), stdout=FNULL, stderr=subprocess.STDOUT)
-    os.rmdir(unwriteable_dir)
-
-class MockWriter(object):
-    def __init__(self, output_filepath=None):
-        self._content = []
-        self.output_filepath = output_filepath
-        self.wasClosed = False
-
-    def write(self, content):
-        self._content.extend(content.splitlines())
-
-    def lines(self):
-        return self._content
-
-    def close(self):
-        self.wasClosed = True
 

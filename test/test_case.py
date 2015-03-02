@@ -18,7 +18,7 @@ class JacquardBaseTestCase(unittest.TestCase):
         sys.stderr = self.output
 
     def tearDown(self):
-        logger.SHOW_WARNING = False
+        logger.WARNING_OCCURRED = False
         self.output.close()
         sys.stderr = self.saved_stderr
         unittest.TestCase.tearDown(self)
