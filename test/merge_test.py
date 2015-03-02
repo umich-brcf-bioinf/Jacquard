@@ -93,24 +93,6 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         expected = [fileArec1, fileArec2, fileBrec2]
         self.assertEquals(expected, actual_coordinates)
 
-    def test_build_coordinates_unsorted(self):
-        fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
-        fileArec2 = vcf.VcfRecord("chr2", "5", "A", "G", "id=1")
-        fileBrec1 = vcf.VcfRecord("chr2", "16", "A", "G", "id=2")
-        fileBrec2 = vcf.VcfRecord("chr2", "12", "G", "C")
-
-        mock_readers = [MockVcfReader(input_filepath="fileA.vcf",
-                                      records=[fileArec1, fileArec2]),
-                        MockVcfReader(input_filepath="fileB.vcf",
-                                      records=[fileBrec1, fileBrec2])]
-
-        self.assertRaisesRegexp(utils.JQException,
-                                "One or more VCF files were not sorted.*",
-                                merge._build_coordinates, mock_readers)
-        actual_log_errors = test.mock_logger.messages["ERROR"]
-        self.assertRegexpMatches(actual_log_errors[0],
-                                 r"VCF file:chrom:pos \[fileB.vcf:chr2:12\] is out of order")
-
     def test_build_coordinates_multAltsEmpty(self):
         fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
         fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")
@@ -758,6 +740,11 @@ chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
         actual_log_infos = test.mock_logger.messages["INFO"]
         self.assertEquals(1, len(actual_log_infos))
         self.assertRegexpMatches(actual_log_infos[0], r"Sorting vcf \[unsorted.vcf\]")
+        actual_log_debugs = test.mock_logger.messages["DEBUG"]
+        self.assertEquals(1, len(actual_log_debugs))
+        self.assertRegexpMatches(actual_log_debugs[0],
+                                 r"VCF file:chrom:pos \[unsorted.vcf:chr1:42\] is out of order")
+
 
 class MergeFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_merge(self):

@@ -110,31 +110,18 @@ def _create_reader_lists(input_files):
 def _build_coordinates(vcf_readers):
     coordinate_set = set()
     mult_alts = defaultdict(set)
-    error = 0
 
     for vcf_reader in vcf_readers:
-        previous_record = None
         try:
             vcf_reader.open()
 
             for vcf_record in vcf_reader.vcf_records():
-                if previous_record and vcf_record < previous_record:
-                    logger.error("VCF file:chrom:pos [{}:{}:{}] is out of order"
-                                 .format(vcf_reader.file_name,
-                                         vcf_record.chrom,
-                                         vcf_record.pos))
-                    error = 1
-                previous_record = vcf_record
                 coordinate_set.add(vcf_record.get_empty_record())
                 ref_alt = vcf_record.ref, vcf_record.alt
                 locus = vcf_record.chrom, vcf_record.pos
                 mult_alts[locus].add(ref_alt)
         finally:
             vcf_reader.close()
-
-    if error:
-        raise utils.JQException("One or more VCF files were not sorted. "
-                                "Review inputs and try again.")
 
     for vcf_record in coordinate_set:
         ref_alts_for_this_locus = mult_alts[vcf_record.chrom,
@@ -185,6 +172,10 @@ def _get_unsorted_readers(vcf_readers):
         reader.open()
         for vcf_record in reader.vcf_records():
             if previous_record and vcf_record < previous_record:
+                logger.debug("VCF file:chrom:pos [{}:{}:{}] is out of order"
+                             .format(reader.file_name,
+                                     vcf_record.chrom,
+                                     vcf_record.pos))
                 unsorted_readers.append(reader)
                 break
             else:
@@ -379,6 +370,7 @@ def execute(args, execution_context):
 
         buffered_readers, vcf_readers = _create_reader_lists(input_files)
 
+        vcf_readers = _sort_readers(vcf_readers, output_path)
         all_sample_names, merge_metaheaders = _build_sample_list(vcf_readers)
         coordinates = _build_coordinates(vcf_readers)
         format_tags_to_keep = _build_format_tags(format_tag_regex, vcf_readers)
