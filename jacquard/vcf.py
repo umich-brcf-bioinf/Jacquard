@@ -301,6 +301,7 @@ class VcfRecord(object):
     def __cmp__(self, other):
         return cmp(self._key, other._key)
 
+
 #TODO cgates: add context management to open/close
 class FileWriter(object):
     def __init__(self, output_filepath):

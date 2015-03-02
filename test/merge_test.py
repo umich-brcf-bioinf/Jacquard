@@ -706,8 +706,58 @@ chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
 
         self.assertEquals(expected_output_headers, actual_output_lines[0:len(expected_output_headers)])
 
-    def test_sort_vcfs(self):
-        pass
+    def test_sort_vcfs_orderedVcfsPassThrough(self):
+        record1 = vcf.VcfRecord("chr1", "42", "A", "C")
+        record2 = vcf.VcfRecord("chr2", "42", "A", "C")
+        record3 = vcf.VcfRecord("chr3", "42", "A", "C")
+        vcf_readerA = MockVcfReader(records=[record1, record2, record3])
+        vcf_readerB = MockVcfReader(records=[record1, record2, record3])
+
+        input_readers = [vcf_readerA, vcf_readerB]
+        with TempDirectory() as temp_dir:
+            actual_readers = merge._sort_readers(list(input_readers),
+                                                 temp_dir.path)
+
+        self.assertEquals(actual_readers, input_readers)
+
+    def test_sort_readers_vcfsResortedAsNecessary(self):
+        #pylint: disable=too-many-locals
+        record1 = vcf.VcfRecord("chr1", "42", "A", "C")
+        record2 = vcf.VcfRecord("chr2", "42", "A", "C")
+        record3 = vcf.VcfRecord("chr3", "42", "A", "C")
+        vcf_readerA = MockVcfReader(records=[record1, record2, record3])
+        input_metaheaders = ["##foo", "##bar"]
+        input_column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SX|SY")
+        vcf_readerB = MockVcfReader(input_filepath="unsorted.vcf",
+                                    metaheaders=input_metaheaders,
+                                    column_header=input_column_header,
+                                    records=[record3, record1, record2])
+
+        input_readers = [vcf_readerA, vcf_readerB]
+        with TempDirectory() as temp_dir:
+            actual_readers = merge._sort_readers(list(input_readers),
+                                                 temp_dir.path)
+
+            self.assertNotEquals(actual_readers, input_readers)
+            self.assertIn(vcf_readerA, actual_readers)
+            self.assertNotIn(vcf_readerB, actual_readers)
+            self.assertEquals(2, len(actual_readers))
+            actual_readerB = actual_readers[1]
+            actual_readerB.open()
+            actual_metaheaders = list(actual_readerB.metaheaders)
+            actual_column_header = actual_readerB.column_header
+            actual_records = [vcf_record for vcf_record in actual_readerB.vcf_records()]
+            actual_readerB.close()
+
+
+        self.assertEquals(input_metaheaders, actual_metaheaders)
+        self.assertEquals(input_column_header, actual_column_header)
+        self.assertEquals(record1.asText(), actual_records[0].asText())
+        self.assertEquals(record2.asText(), actual_records[1].asText())
+        self.assertEquals(record3.asText(), actual_records[2].asText())
+        actual_log_infos = test.mock_logger.messages["INFO"]
+        self.assertEquals(1, len(actual_log_infos))
+        self.assertRegexpMatches(actual_log_infos[0], r"Sorting vcf \[unsorted.vcf\]")
 
 class MergeFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_merge(self):

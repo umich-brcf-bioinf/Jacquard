@@ -154,33 +154,52 @@ def _write_headers(reader, file_writer):
     file_writer.write("\n".join(headers) + "\n")
 
 
-def _sort_vcfs(vcf_readers):
-    for vcf_reader in vcf_readers:
-        temp_dir = os.path.join(vcf_reader.input_filepath, "temp")
-        try:
-            os.makedirs(temp_dir)
-        except OSError as exc:
-            if exc.errno == errno.EEXIST and os.path.isdir(temp_dir):
-                pass
-            else: raise
 
-        file_writer = FileWriter(os.path.join(temp_dir,vcf_reader.file_name))
+def _sort_vcf(reader, temp_dir):
+    logger.info("Sorting vcf [{}]", reader.file_name)
+    vcf_records = []
+    sorted_dir = os.path.join(temp_dir, "tmp")
+    os.makedirs(sorted_dir)
+    reader.open()
+    for vcf_record in reader.vcf_records():
+        vcf_records.append(vcf_record)
 
-        sort_flag = False
-        previous = None
-        for record in vcf_reader.vcf_records():
-            if previous:
-                if record < previous:
-                    sort_flag = True
-                    break
-            previous = record
-        sorted_records = []
-        for record in vcf_reader.vcf_records():
-            sorted_records.append(record)
-        sorted_records.sort()
-        _write_headers(vcf_reader, file_writer)
-        for record in sorted_records:
-            file_writer.write(record.asText())
+    reader.close()
+    vcf_records.sort()
+    writer = FileWriter(os.path.join(sorted_dir,
+                                     reader.file_name))
+    writer.open()
+    writer.write("\n".join(reader.metaheaders) + "\n")
+    writer.write(reader.column_header + "\n")
+    for vcf_record in vcf_records:
+        writer.write(vcf_record.asText())
+
+    writer.close()
+    reader = vcf.VcfReader(vcf.FileReader(writer.output_filepath))
+    return reader
+
+def _get_unsorted_readers(vcf_readers):
+    unsorted_readers = []
+    for reader in vcf_readers:
+        previous_record = None
+        reader.open()
+        for vcf_record in reader.vcf_records():
+            if previous_record and vcf_record < previous_record:
+                unsorted_readers.append(reader)
+                break
+            else:
+                previous_record = vcf_record
+        reader.close()
+    return unsorted_readers
+
+def _sort_readers(vcf_readers, temp_dir):
+    unsorted_readers = _get_unsorted_readers(vcf_readers)
+    sorted_readers = []
+    for reader in vcf_readers:
+        if reader in unsorted_readers:
+            reader = _sort_vcf(reader, temp_dir)
+        sorted_readers.append(reader)
+    return sorted_readers
 
 
 def _build_merged_record(coordinate,
@@ -341,7 +360,7 @@ def report_prediction(args):
 def get_required_input_output_types():
     return ("directory", "file")
 
-def validate_args(args):
+def validate_args(dummy):
     pass
 
 def execute(args, execution_context):

@@ -91,6 +91,7 @@ class MockVcfReader(object):
         self.opened = False
         self.closed = False
 
+
     def open(self):
         self.opened = True
 

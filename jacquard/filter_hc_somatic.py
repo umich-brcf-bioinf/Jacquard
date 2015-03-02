@@ -276,7 +276,7 @@ def _validate_arguments(args):
 
     return writers_to_readers, out_files
 
-def validate_args(args):
+def validate_args(dummy):
     pass
 
 def execute(args, execution_context):
