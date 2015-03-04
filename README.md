@@ -19,15 +19,10 @@ For help on a specific subcommand:
 jacquard-runner.py <subcommand> --help 
 
 ## Subcommands
-    normalize           Accepts a single directory containing:
-                            MuTect VCFs
-                            Strelka snvs/indels VCFs
-                            VarScan snp/indel VCFs and filtered native output
-                        Creates a new directory of merged, sorted VCFs (adding 
-                        high confidence tags for merged VarScan results).
-    tag                 Accepts a directory of VCF results and creates a new
-                        directory of VCFs, adding Jacquard-specific FORMAT
-                        tags for each VCF record.
+    translate           Accepts a directory of VCF results (including VarScan high
+                        confidence files). Creates a new directory of VCFs,
+                        adding Jacquard-specific FORMAT tags for each VCF
+                        record.
     filter_hc_somatic   Accepts a directory of Jacquard-tagged VCF results
                         from one or more callers and creates a new directory
                         of VCFs, where rows have been filtered to contain only
