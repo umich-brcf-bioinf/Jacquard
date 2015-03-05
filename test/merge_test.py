@@ -5,11 +5,10 @@ from __future__ import absolute_import
 from argparse import Namespace
 from collections import OrderedDict
 from jacquard.vcf import VcfRecord
-from test.vcf_test import MockVcfReader
+from test.vcf_test import MockVcfReader, MockFileWriter
 from testfixtures import TempDirectory
 import jacquard.logger
 import jacquard.merge as merge
-import jacquard.utils as utils
 import jacquard.vcf as vcf
 import os
 import test.mock_logger
@@ -22,13 +21,6 @@ class MockBufferedReader(object):
 
     def next_if_equals(self, dummy):
         return self.vcf_records_iter.next()
-
-class MockFileWriter(object):
-    def __init__(self):
-        self.written = []
-
-    def write(self, text):
-        self.written.append(text)
 
 class MergeTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
@@ -302,7 +294,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         writer = MockFileWriter()
 
         merge._merge_records(coordinates, buffered_readers, writer, ["SA", "SB", "SC", "SD"], ["foo"])
-        self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD\n", writer.written[0])
+        self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD", writer.lines()[0])
 
     def test_pull_matching_records(self):
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")

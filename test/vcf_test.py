@@ -14,6 +14,26 @@ import jacquard.utils as utils
 from jacquard.vcf import VcfRecord, VcfReader, FileWriter, FileReader
 import test.test_case as test_case
 
+class MockFileWriter(object):
+    def __init__(self):
+        self._content = []
+        self.opened = False
+        self.closed = False
+
+    def open(self):
+        self.opened = True
+
+    def write(self, content):
+        if content == None:
+            return
+        self._content.extend(content.splitlines())
+
+    def lines(self):
+        return self._content
+
+    def close(self):
+        self.closed = True
+
 
 class MockFileReader(object):
     def __init__(self, input_filepath="/foo/mockFileReader.txt", content=None):

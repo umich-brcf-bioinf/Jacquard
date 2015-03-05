@@ -9,7 +9,7 @@ import jacquard.variant_callers.common_tags as common_tags
 import numpy as np
 
 
-JQ_CONSENSUS_TAG = "JQ_CONS_"
+JQ_SUMMARY_TAG = "JQ_SUMMARY_"
 JQ_REPORTED = "CALLERS_REPORTED_COUNT"
 JQ_REPORTED_LIST = "CALLERS_REPORTED_LIST"
 JQ_SAMPLES_REPORTED = "SAMPLES_REPORTED_COUNT"
@@ -29,21 +29,21 @@ def _build_new_tags(vcf_record, tags, sample):
 
     return desired_tags
 
-def _get_tag_consensus_and_range(vcf_record, tags, all_ranges):
-    tag_consensus = {}
+def _get_tag_summary_and_range(vcf_record, tags, all_ranges):
+    tag_summary = {}
     tag_range = {}
 
     for sample in vcf_record.sample_tag_values.keys():
         desired_tags = _build_new_tags(vcf_record, tags, sample)
 
         if len(desired_tags) == 0:
-            tag_consensus[sample] = "."
+            tag_summary[sample] = "."
         else:
-            tag_consensus[sample] = _calculate_average(desired_tags)
+            tag_summary[sample] = _calculate_average(desired_tags)
 
         tag_range[sample] = _calculate_range(desired_tags, all_ranges)
 
-    return tag_consensus, tag_range
+    return tag_summary, tag_range
 
 def _calculate_average(tags):
     #pylint: disable=no-member
@@ -61,11 +61,11 @@ def _calculate_range(tags, all_ranges):
     #don't calculate range if only called by one caller
     if len(tags) > 1:
         #pylint: disable=no-member
-        cons_tag_array = np.array(tags)
+        summary_tag_array = np.array(tags)
         tag_range = []
 
-        for i in xrange(len(cons_tag_array[0,])):
-            tag_values = cons_tag_array.astype(float)[:, i]
+        for i in xrange(len(summary_tag_array[0,])):
+            tag_values = summary_tag_array.astype(float)[:, i]
             this_tag_range = np.max(tag_values) - np.min(tag_values)
             rounded_tag_range = utils.round_two_digits(str(this_tag_range))
             tag_range.append(rounded_tag_range)
@@ -111,7 +111,7 @@ def _add_caller_list_values(pattern, vcf_record, jq_global_variable):
 
     for sample in sample_tag:
         sample_tag[sample] = ",".join(sorted(sample_tag[sample]))
-    vcf_record.add_sample_tag_value(JQ_CONSENSUS_TAG + jq_global_variable,
+    vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + jq_global_variable,
                                     sample_tag)
 
 def _add_caller_count_values(pattern, vcf_record, jq_global_variable):
@@ -121,7 +121,7 @@ def _add_caller_count_values(pattern, vcf_record, jq_global_variable):
         for tag in tags:
             if pattern.match(tag) and tags[tag] != '0':
                 sample_tag[sample] += int(tags[tag])
-    vcf_record.add_sample_tag_value(JQ_CONSENSUS_TAG + jq_global_variable,
+    vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + jq_global_variable,
                                     sample_tag)
 
 def _add_sample_count_values(vcf_record,
@@ -129,11 +129,11 @@ def _add_sample_count_values(vcf_record,
                              jq_samples_global_variable):
     count = 0
     for tags in vcf_record.sample_tag_values.values():
-        tag_key = JQ_CONSENSUS_TAG + jq_callers_global_variable
+        tag_key = JQ_SUMMARY_TAG + jq_callers_global_variable
         if tag_key in tags and tags[tag_key] != "0":
             count += 1
 
-    info_key = JQ_CONSENSUS_TAG + jq_samples_global_variable
+    info_key = JQ_SUMMARY_TAG + jq_samples_global_variable
     vcf_record.add_info_field("=".join([info_key, str(count)]))
 
 class _CallersReportedListTag(object):
@@ -154,7 +154,7 @@ class _CallersReportedListTag(object):
                 'which listed this variant in the Jacquard tagged VCF",'\
                 'Source="Jacquard",'\
                 'Version="{}">'\
-                .format(JQ_CONSENSUS_TAG,
+                .format(JQ_SUMMARY_TAG,
                         JQ_REPORTED_LIST,
                         __version__))
 
@@ -179,7 +179,7 @@ class _CallersReportedTag(object):
                 'this variant in the Jacquard tagged VCF",'\
                 'Source="Jacquard",'\
                 'Version="{}">')\
-                .format(JQ_CONSENSUS_TAG,
+                .format(JQ_SUMMARY_TAG,
                         JQ_REPORTED,
                         __version__)
 
@@ -205,7 +205,7 @@ class _CallersPassedListTag(object):
                 'the Jacquard tagged VCF",'\
                 'Source="Jacquard",'\
                 'Version="{}">'\
-                .format(JQ_CONSENSUS_TAG,
+                .format(JQ_SUMMARY_TAG,
                         JQ_PASSED_LIST,
                         __version__))
 
@@ -229,7 +229,7 @@ class _CallersPassedTag(object):
                 'for this variant in the Jacquard tagged VCF",'\
                 'Source="Jacquard",'\
                 'Version="{}">')\
-                .format(JQ_CONSENSUS_TAG,
+                .format(JQ_SUMMARY_TAG,
                         JQ_PASSED,
                         __version__)
 
@@ -252,7 +252,7 @@ class _SamplesReported(object):
                 'quality/filtering)",'\
                 'Source="Jacquard",'\
                 'Version="{}">')\
-                .format(JQ_CONSENSUS_TAG,
+                .format(JQ_SUMMARY_TAG,
                         JQ_SAMPLES_REPORTED,
                         __version__)
 
@@ -275,7 +275,7 @@ class _SamplesPassed(object):
                 'the filter in any of the Jacquard tagged VCFs",'\
                 'Source="Jacquard",'\
                 'Version="{}">')\
-                .format(JQ_CONSENSUS_TAG,
+                .format(JQ_SUMMARY_TAG,
                         JQ_SAMPLES_PASSED,
                         __version__)
 
@@ -298,7 +298,7 @@ class _AlleleFreqTag(object):
                       ##pylint: disable=line-too-long
                       'Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].",'
                       'Source="Jacquard",'
-                      'Version="{1}">').format(JQ_CONSENSUS_TAG,
+                      'Version="{1}">').format(JQ_SUMMARY_TAG,
                                                __version__)
         af_range = ('##FORMAT=<ID={0}AF_RANGE,'
                     'Number=1,'
@@ -306,7 +306,7 @@ class _AlleleFreqTag(object):
                     ##pylint: disable=line-too-long
                     'Description="Max(allele frequency) - min (allele frequency) across recognized callers.",'
                     'Source="Jacquard",'
-                    'Version="{1}>">').format(JQ_CONSENSUS_TAG,
+                    'Version="{1}>">').format(JQ_SUMMARY_TAG,
                                               __version__)
         return "\n".join([af_average, af_range])
 
@@ -321,13 +321,13 @@ class _AlleleFreqTag(object):
 
     def add_tag_values(self, vcf_record):
         tags = self._get_allele_freq_tags(vcf_record)
-        tag_consensus, tag_range = _get_tag_consensus_and_range(vcf_record,
-                                                                tags,
-                                                                self.all_ranges)
+        tag_summary, tag_range = _get_tag_summary_and_range(vcf_record,
+                                                            tags,
+                                                            self.all_ranges)
 
-        vcf_record.add_sample_tag_value(JQ_CONSENSUS_TAG + "AF_AVERAGE",
-                                        tag_consensus)
-        vcf_record.add_sample_tag_value(JQ_CONSENSUS_TAG + "AF_RANGE",
+        vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + "AF_AVERAGE",
+                                        tag_summary)
+        vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + "AF_RANGE",
                                         tag_range)
 
 class _DepthTag(object):
@@ -345,7 +345,7 @@ class _DepthTag(object):
                       ##pylint: disable=line-too-long
                       'Description="Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].",'
                       'Source="Jacquard",'
-                      'Version="{1}">').format(JQ_CONSENSUS_TAG,
+                      'Version="{1}">').format(JQ_SUMMARY_TAG,
                                                __version__)
         dp_range = ('##FORMAT=<ID={0}DP_RANGE,'
                     'Number=1,'
@@ -353,7 +353,7 @@ class _DepthTag(object):
                     ##pylint: disable=line-too-long
                     'Description="Max(depth) - min (depth) across recognized callers.",'
                     'Source="Jacquard",'
-                    'Version="{1}>">').format(JQ_CONSENSUS_TAG,
+                    'Version="{1}>">').format(JQ_SUMMARY_TAG,
                                               __version__)
         return "\n".join([dp_average, dp_range])
 
@@ -368,13 +368,13 @@ class _DepthTag(object):
 
     def add_tag_values(self, vcf_record):
         tags = self._get_depth_tags(vcf_record)
-        tag_consensus, tag_range = _get_tag_consensus_and_range(vcf_record,
-                                                                tags,
-                                                                self.all_ranges)
+        tag_summary, tag_range = _get_tag_summary_and_range(vcf_record,
+                                                            tags,
+                                                            self.all_ranges)
 
-        vcf_record.add_sample_tag_value(JQ_CONSENSUS_TAG + "DP_AVERAGE",
-                                        tag_consensus)
-        vcf_record.add_sample_tag_value(JQ_CONSENSUS_TAG + "DP_RANGE",
+        vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + "DP_AVERAGE",
+                                        tag_summary)
+        vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + "DP_RANGE",
                                         tag_range)
 
 class _SomaticTag(object):
@@ -392,7 +392,7 @@ class _SomaticTag(object):
                      ##pylint: disable=line-too-long
                      'Description="Count of recognized variant callers that reported confident somatic call for this sample-position.",'
                      'Source="Jacquard",'
-                     'Version="{1}">').format(JQ_CONSENSUS_TAG,
+                     'Version="{1}">').format(JQ_SUMMARY_TAG,
                                               __version__)
         return som_count
 
@@ -409,10 +409,10 @@ class _SomaticTag(object):
         tags = self._get_somatic_tags(vcf_record)
         somatic_count = _get_somatic_count(vcf_record, tags)
 
-        vcf_record.add_sample_tag_value(JQ_CONSENSUS_TAG + "SOM_COUNT",
+        vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + "SOM_COUNT",
                                         somatic_count)
 
-class ConsensusCaller(object):
+class SummarizeCaller(object):
     def __init__(self):
         self.tags = [_CallersReportedTag(),
                      _CallersPassedTag(),
@@ -427,8 +427,7 @@ class ConsensusCaller(object):
         for tag in self.tags:
             tag.add_tag_values(vcf_record)
             self.ranges[tag.name] = tag.all_ranges
-
-        return vcf_record.asText()
+        return vcf_record
 
     def get_metaheaders(self):
         return [tag.metaheader for tag in self.tags]

@@ -134,13 +134,6 @@ class MockVcfRecord(object):
                     info_dict[key_value] = key_value
         return info_dict
 
-class MockFileWriter(object):
-    def __init__(self):
-        self.written = []
-
-    def write(self, text):
-        self.written.append(text)
-
 class ExpandTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         super(ExpandTestCase, self).setUp()
@@ -429,8 +422,8 @@ class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):
             input_dir = os.path.join(module_testdir, "input")
 
             command = ["expand",
-                       os.path.join(input_dir, "consensus.vcf"),
-                       os.path.join(output_dir.path, "consensus.txt"),
+                       os.path.join(input_dir, "summarized.vcf"),
+                       os.path.join(output_dir.path, "expanded.txt"),
                        "--force"]
             expected_dir = os.path.join(module_testdir, "benchmark")
             self.assertCommand(command, expected_dir)
@@ -444,8 +437,8 @@ class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):
             input_dir = os.path.join(module_testdir, "input")
             col_spec = os.path.join(test_dir, "functional_tests", "col_spec.txt")
             command = ["expand",
-                       os.path.join(input_dir, "consensus.vcf"),
-                       os.path.join(output_dir.path, "consensus.txt"),
+                       os.path.join(input_dir, "summarized.vcf"),
+                       os.path.join(output_dir.path, "expanded.txt"),
                        "--force",
                        "--column_specification=" + col_spec]
             expected_dir = os.path.join(module_testdir, "benchmark")

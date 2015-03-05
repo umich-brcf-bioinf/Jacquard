@@ -221,14 +221,14 @@ class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
             translate_output = os.path.join(output_dir.path, "translate")
             filter_output = os.path.join(output_dir.path, "filter_hc_somatic")
             merge_output = os.path.join(output_dir.path, "merge", "merged.vcf")
-            consensus_output = os.path.join(output_dir.path, "consensus", "consensus.vcf")
+            summarize_output = os.path.join(output_dir.path, "summarize", "summarized.vcf")
             expanded_output = os.path.join(output_dir.path, "expand", "expanded.tsv")
 
             commands = [["translate", initial_input, translate_output, "--force"],
                         ["filter_hc_somatic", translate_output, filter_output, "--force"],
                         ["merge", filter_output, merge_output, "--force"],
-                        ["consensus", merge_output, consensus_output, "--force"],
-                        ["expand", consensus_output, expanded_output, "--force"]]
+                        ["summarize", merge_output, summarize_output, "--force"],
+                        ["expand", summarize_output, expanded_output, "--force"]]
 
             for command in commands:
                 expected_dir = os.path.join(module_testdir, command[0], "benchmark")

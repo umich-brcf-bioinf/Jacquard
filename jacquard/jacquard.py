@@ -31,6 +31,7 @@ import jacquard.expand as expand
 import jacquard.filter_hc_somatic as filter_hc_somatic
 import jacquard.logger as logger
 import jacquard.merge as merge
+import jacquard.summarize as summarize
 import jacquard.translate as translate
 import jacquard.utils as utils
 from jacquard import __version__
@@ -40,6 +41,7 @@ _SUBCOMMANDS = [translate,
                 filter_hc_somatic,
                 merge,
                 consensus,
+                summarize,
                 expand]
 
 

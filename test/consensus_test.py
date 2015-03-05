@@ -102,7 +102,7 @@ class MockConsensusHelper(object):
             tag.format_called = True
         self.add_zscore_called = True
 
-    def get_consensus_metaheaders(self):
+    def get_metaheaders(self):
         return [tag.metaheader for tag in self.tags]
 
 class ConsensusTestCase(test_case.JacquardBaseTestCase):

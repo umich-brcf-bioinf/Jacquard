@@ -309,7 +309,7 @@ class ConsensusHelperTestCase(test_case.JacquardBaseTestCase):
                                             __version__)
 
         caller = consensus_caller.ConsensusCaller()
-        actual = caller.get_consensus_metaheaders()
+        actual = caller.get_metaheaders()
 
         split_actual = actual[0].split("\n")
         first_meta_header = split_actual[0]
