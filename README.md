@@ -30,8 +30,8 @@ jacquard-runner.py <subcommand> --help
                         in any VCF.
     merge               Accepts a directory of VCFs and returns a single
                         merged VCF file.
-    consensus           Accepts a Jacquard-merged VCF file and creates a new VCF
-                        file, adding consensus fields.
+    summarize           Accepts a Jacquard-merged VCF file and creates a new VCF
+                        file, adding summary fields/tags.
     expand              Transforms VCF file into tab-separated text file 
                         expanding INFO fields and FORMAT tags into distinct
                         columns.

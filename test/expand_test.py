@@ -3,136 +3,15 @@
 #pylint: disable=too-many-public-methods
 from __future__ import absolute_import
 from argparse import Namespace
-from collections import OrderedDict
+from test.vcf_test import MockVcfReader
 from testfixtures import TempDirectory
 import jacquard.expand as expand
 import jacquard.logger
 import jacquard.utils as utils
+import jacquard.vcf as vcf
 import os
 import test.mock_logger
 import test.test_case as test_case
-
-#TODO (cgates): Can we use mocks in test.vcf instead of redefining them here?
-TEST_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
-
-class MockFileReader(object):
-    def __init__(self, input_filepath="/foo/mockFileReader.txt", content=None):
-        self.input_filepath = input_filepath
-        self.file_name = os.path.basename(input_filepath)
-        if content:
-            self._content = content
-        else:
-            self._content = []
-        self.open_was_called = False
-        self.close_was_called = False
-
-    def open(self):
-        self.open_was_called = True
-
-    def read_lines(self):
-        for line in self._content:
-            yield line
-
-    def close(self):
-        self.close_was_called = True
-
-
-class MockVcfReader(object):
-    #pylint: disable=too-many-branches, too-many-arguments
-    def __init__(self,
-                 input_filepath="vcfName",
-                 metaheaders=None,
-                 column_header='#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR',
-                 content=None,
-                 records=None,
-                 sample_names=None,
-                 info_tags=None,
-                 format_tags=None,
-                 split_column_header=None):
-
-        if info_tags:
-            self.info_metaheaders = info_tags
-        else:
-            self.info_metaheaders = {"foo":'##INFO=<ID="foo">'}
-        if format_tags:
-            self.format_metaheaders = format_tags
-        else:
-            self.format_metaheaders = {"foo":'##FORMAT=<ID="foo">'}
-        if split_column_header:
-            self.split_column_header = split_column_header
-        else:
-            self.split_column_header = []
-        if content is None:
-            self.content = ["foo"]
-        else:
-            self.content = content
-
-        if metaheaders is None:
-            self.metaheaders = ["##metaheaders"]
-        else:
-            self.metaheaders = metaheaders
-
-        if records:
-            self.records = records
-        else:
-            self.records = []
-
-        if sample_names is None:
-            self.sample_names = []
-        else:
-            self.sample_names = sample_names
-        self.file_name = input_filepath
-        self.input_filepath = input_filepath
-        self.column_header = column_header
-        self.opened = False
-        self.closed = False
-
-    def open(self):
-        self.opened = True
-
-    def vcf_records(self):
-        for record in self.records:
-            yield record
-
-    def close(self):
-        self.closed = True
-
-class MockVcfRecord(object):
-    def __init__(self, header=None, content=None):
-        if content is None:
-            content = ["CHROM",
-                       "POS",
-                       "ID",
-                       "REF",
-                       "ALT",
-                       "QUAL",
-                       "FILTER",
-                       "tag1=val1;tag3=val3;tag4",
-                       "FOO:BAR",
-                       "42:1"]
-        self.chrom, self.pos, self.id, self.ref, self.alt, self.qual, \
-            self.filter, self.info, self.format = content[0:9]
-        self.sample_names = header[9:] if header else []
-        self.sample_values = content[9:]
-
-        self.info_dict = self._init_info_dict()
-        tags = self.format.split(":")
-        self.sample_tag_values = {}
-        for i, sample in enumerate(self.sample_names):
-            values = self.sample_values[i].split(":")
-            self.sample_tag_values[sample] = OrderedDict(zip(tags, values))
-
-    def _init_info_dict(self):
-        info_dict = {}
-        if self.info and self.info != ".":
-            info_list = self.info.split(";")
-            for key_value in info_list:
-                if "=" in key_value:
-                    key, value = key_value.split("=")
-                    info_dict[key] = value
-                else:
-                    info_dict[key_value] = key_value
-        return info_dict
 
 class ExpandTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
@@ -147,10 +26,12 @@ class ExpandTestCase(test_case.JacquardBaseTestCase):
     def test_create_row_dict(self):
         column_list = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER",
                        "INFO", "FORMAT", "SAMPLE_A|NORMAL", "SAMPLE_A|TUMOR"]
-        row = ["1", "42", "rs32", "A", "AT", "30", "PASS",
-               "SNP;SOMATIC=1", "DP:AF", "50:0.2", "87:0.3"]
-        vcf_record = MockVcfRecord(header=column_list, content=row)
-
+        sample_tag_values = {"SAMPLE_A|NORMAL":{"DP":"50", "AF":"0.2"},
+                             "SAMPLE_A|TUMOR":{"DP":"87", "AF":"0.3"}}
+        vcf_record = vcf.VcfRecord("1", "42", "A", "AT",
+                                   vcf_id="rs32", qual="30", vcf_filter="PASS",
+                                   info="SNP;SOMATIC=1",
+                                   sample_tag_values=sample_tag_values)
         actual_dict = expand._create_row_dict(column_list, vcf_record)
 
         expected_dict = {"CHROM": "1",
@@ -246,18 +127,17 @@ class ExpandTestCase(test_case.JacquardBaseTestCase):
                           actual_log_warnings)
 
     def test_create_potential_column_list(self):
-        info_tags = {"AF":'##INFO=<ID=AF,Number=1>',
-                     "AA":'##INFO=<ID=AA,Number=1>'}
-        format_tags = {"GT":'##FORMAT=<ID=GT,Number=1>',
-                       "GQ":'##FORMAT=<ID=GQ,Number=1,Description="bar">'}
+        metaheaders = ['##INFO=<ID=AF,Number=1>',
+                       '##INFO=<ID=AA,Number=1>',
+                       '##FORMAT=<ID=GT,Number=1>',
+                       '##FORMAT=<ID=GQ,Number=1,Description="bar">']
         sample_names = ["sampleA", "sampleB"]
-        split_column_header = ["chrom", "pos", "id", "ref", "alt",
-                               "qual", "filter", "info", "format",
-                               "sampleA", "sampleB"]
-        mock_vcf_reader = MockVcfReader(info_tags=info_tags,
-                                        format_tags=format_tags,
-                                        sample_names=sample_names,
-                                        split_column_header=split_column_header)
+        column_header = self.entab("#chrom|pos|id|ref|alt|"
+                                   "qual|filter|info|format|"
+                                   "sampleA|sampleB")
+        mock_vcf_reader = MockVcfReader(metaheaders=metaheaders,
+                                        column_header=column_header,
+                                        sample_names=sample_names)
 
         actual_col_list = expand._create_potential_column_list(mock_vcf_reader)
         expected_col_list = ["chrom", "pos", "id", "ref", "alt",
@@ -268,22 +148,18 @@ class ExpandTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(expected_col_list, actual_col_list)
 
     def test_create_potential_column_list_preservesSampleOrdering(self):
-        info_tags = {}
-        format_tags = {"B":'##FORMAT=<ID=B,Number=1>',
-                       "A":'##FORMAT=<ID=A,Number=1>'}
-        sample_names = ["sample1",
-                        "sample2",
-                        "sample10"]
-        split_column_header = ["chrom", "pos", "id", "ref", "alt",
-                               "qual", "filter", "info", "format"]
-        split_column_header.extend(sample_names)
-        mock_vcf_reader = MockVcfReader(info_tags=info_tags,
-                                        format_tags=format_tags,
-                                        sample_names=sample_names,
-                                        split_column_header=split_column_header)
+        metaheaders = ['##FORMAT=<ID=B,Number=1>', '##FORMAT=<ID=A,Number=1>']
+        sample_names = ["sample1", "sample2", "sample10"]
+        column_header = self.entab("#chrom|pos|id|ref|alt|"
+                                   "qual|filter|info|format|"
+                                   "sample1|sample2|sample10")
+
+        mock_vcf_reader = MockVcfReader(metaheaders=metaheaders,
+                                        column_header=column_header,
+                                        sample_names=sample_names)
 
         actual_col_list = expand._create_potential_column_list(mock_vcf_reader)
-        actual_format_sample_names = actual_col_list[9:]
+        actual_format_sample_names = actual_col_list[8:]
 
         expected_format_sample_names = ["A|sample1", "A|sample2", "A|sample10",
                                         "B|sample1", "B|sample2", "B|sample10"]
@@ -306,7 +182,7 @@ class ExpandTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEquals(expected, actual)
 
-    def test_execute_files(self):
+    def test_execute(self):
         vcf_content = ('''##source=strelka
 ##INFO=<ID=SOMATIC,Number=1,Description="foo">
 ##FORMAT=<ID=GT,Number=1,Description="bar">
@@ -333,43 +209,16 @@ chr2|1|.|A|C|.|.|SOMATIC|GT|0/1|0/1
 
         self.assertEquals(3, len(actual_output_lines))
 
-    def test_execute_dirs(self):
-        vcf_content = ('''##source=strelka
-##INFO=<ID=SOMATIC,Number=1,Description="foo">
-##FORMAT=<ID=GT,Number=1,Description="bar">
-#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR
-chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
-chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
-''').replace('|', "\t")
-
-        with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("P1.vcf", vcf_content)
-            input_file = os.path.join(input_dir.path, "P1.vcf")
-            output_file = os.path.join(output_dir.path, "P1.txt")
-            args = Namespace(input=input_file,
-                             original_output=output_file,
-                             output=output_file,
-                             column_specification=0)
-
-            expand.execute(args, ["##extra_header1", "##extra_header2"])
-
-            output_dir.check("P1.txt")
-            actual_filename = os.path.join(output_dir.path, "P1.txt")
-            with open(actual_filename) as actual_output_file:
-                actual_output_lines = actual_output_file.readlines()
-
-        self.assertEquals(3, len(actual_output_lines))
-
 
     def test_predict_output(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             input_dir.write("foo.txt", "")
             args = Namespace(input=os.path.join(input_dir.path, "foo.txt"),
                              output=os.path.join(output_dir.path,
-                                                 "consensus.txt"))
+                                                 "expanded.txt"))
 
             desired_output_files = expand._predict_output(args)
-            expected_desired_output_files = set(["consensus.txt"])
+            expected_desired_output_files = set(["expanded.txt"])
 
             self.assertEquals(expected_desired_output_files,
                               desired_output_files)
@@ -381,9 +230,9 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
              TempDirectory() as col_spec_dir:
             col_spec_dir.write("col_spec.txt", "foo\nbar")
             col_spec_file = os.path.join(col_spec_dir.path, "col_spec.txt")
-            input_dir.write("consensus.vcf", "##source=strelka\n#foo")
-            input_file = os.path.join(input_dir.path, "consensus.vcf")
-            output_file = os.path.join(output_dir.path, "consensus.txt")
+            input_dir.write("summarized.vcf", "##source=strelka\n#foo")
+            input_file = os.path.join(input_dir.path, "summarized.vcf")
+            output_file = os.path.join(output_dir.path, "expanded.txt")
             args = Namespace(input=input_file,
                              original_output=output_file,
                              output=output_file,
@@ -397,9 +246,9 @@ chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR
              TempDirectory() as output_dir,\
              TempDirectory() as col_spec_dir:
             col_spec_dir.write("col_spec.txt", "foo\nbar")
-            input_dir.write("consensus.vcf", "##source=strelka\n#foo")
-            input_file = os.path.join(input_dir.path, "consensus.vcf")
-            output_file = os.path.join(output_dir.path, "consensus.txt")
+            input_dir.write("summarized.vcf", "##source=strelka\n#foo")
+            input_file = os.path.join(input_dir.path, "summarized.vcf")
+            output_file = os.path.join(output_dir.path, "expanded.txt")
             args = Namespace(input=input_file,
                              output=output_file,
                              column_specification=col_spec_dir.path)

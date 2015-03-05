@@ -26,7 +26,6 @@ import sys
 import traceback
 
 import jacquard.command_validator as command_validator
-import jacquard.consensus as consensus
 import jacquard.expand as expand
 import jacquard.filter_hc_somatic as filter_hc_somatic
 import jacquard.logger as logger
@@ -40,7 +39,6 @@ from jacquard import __version__
 _SUBCOMMANDS = [translate,
                 filter_hc_somatic,
                 merge,
-                consensus,
                 summarize,
                 expand]
 

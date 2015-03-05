@@ -108,6 +108,7 @@ class MockVcfReader(object):
         self.file_name = input_filepath
         self.input_filepath = input_filepath
         self.column_header = column_header
+        self.split_column_header = self.column_header.strip("#").split("\t")
         self.opened = False
         self.closed = False
 

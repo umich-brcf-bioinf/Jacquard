@@ -173,11 +173,11 @@
 ##FORMAT=<ID=GL,Number=.,Type=Float,Description="Genotype Likelihoods">
 ##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
-##FORMAT=<ID=JQ_CONS_AF,Number=A,Type=Integer,Description="Jacquard consensus somatic call = average(*AF*)">
+##FORMAT=<ID=JQ_CONS_AF,Number=A,Type=Integer,Description="Jacquard summarized somatic call = average(*AF*)">
 ##FORMAT=<ID=JQ_CONS_AF_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of allele frequencies among callers = (sample AF range - population mean AF range)/standard dev(population AF range)">
-##FORMAT=<ID=JQ_CONS_DP,Number=1,Type=Integer,Description="Jacquard consensus depth = average(*DP*)">
+##FORMAT=<ID=JQ_CONS_DP,Number=1,Type=Integer,Description="Jacquard summarized depth = average(*DP*)">
 ##FORMAT=<ID=JQ_CONS_DP_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of depth among callers = (sample DP range - population mean DP range)/standard dev(population DP range)">
-##FORMAT=<ID=JQ_CONS_SOM_SUM,Number=1,Type=Integer,Description="Jacquard consensus somatic call = sum(*HC_SOM*)">
+##FORMAT=<ID=JQ_CONS_SOM_SUM,Number=1,Type=Integer,Description="Jacquard summarized somatic call = sum(*HC_SOM*)">
 ##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)",Source=Jacquard,Version=0.21>
 ##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",Source=Jacquard,Version=0.21>
 ##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",Source=Jacquard,Version=0.21>
@@ -194,11 +194,11 @@
 ##RUNTIME_ARG=out dir: output
 ##RUNTIME_ARG=snpEff options: -ud 1000 -geneID
 ##RUNTIME_ARG=transcript accession: GRCh37.75
-##SnpEffCmd="SnpEff  -o vcf -geneID GRCh37.75 -s output/consensus/tmp/consensus_snpEff_summary.html output/consensus/tmp/consensus_snpEff_vartype.vcf "
+##SnpEffCmd="SnpEff  -o vcf -geneID GRCh37.75 -s output/summarized/tmp/summarized_snpEff_summary.html output/summarized/tmp/summarized_snpEff_vartype.vcf "
 ##SnpEffVersion="4.0e (build 2014-09-13), by Pablo Cingolani"
-##SnpSiftCmd="SnpSift dbnsfp -f Uniprot_id,Uniprot_acc,Ensembl_transcriptid,SIFT_pred,SIFT_score,SIFT_converted_rankscore,Polyphen2_HDIV_pred,Polyphen2_HDIV_score,Polyphen2_HDIV_rankscore,Polyphen2_HVAR_pred,Polyphen2_HVAR_score,Polyphen2_HVAR_rankscore,LRT_pred,LRT_score,LRT_converted_rankscore,MutationTaster_pred,MutationTaster_score,MutationTaster_converted_rankscore,MutationAssessor_pred,MutationAssessor_score,MutationAssessor_rankscore,FATHMM_score,FATHMM_pred,FATHMM_rankscore,RadialSVM_pred,RadialSVM_score,RadialSVM_rankscore,LR_pred,LR_score,LR_rankscore output/consensus/tmp/consensus_COSMIC.vcf"
-##SnpSiftCmd="SnpSift gwasCat output/consensus/tmp/consensus_dbSNP_mapped.vcf"
-##SnpSiftCmd="SnpSift varType output/consensus/tmp/consensus_prefixed.vcf"
+##SnpSiftCmd="SnpSift dbnsfp -f Uniprot_id,Uniprot_acc,Ensembl_transcriptid,SIFT_pred,SIFT_score,SIFT_converted_rankscore,Polyphen2_HDIV_pred,Polyphen2_HDIV_score,Polyphen2_HDIV_rankscore,Polyphen2_HVAR_pred,Polyphen2_HVAR_score,Polyphen2_HVAR_rankscore,LRT_pred,LRT_score,LRT_converted_rankscore,MutationTaster_pred,MutationTaster_score,MutationTaster_converted_rankscore,MutationAssessor_pred,MutationAssessor_score,MutationAssessor_rankscore,FATHMM_score,FATHMM_pred,FATHMM_rankscore,RadialSVM_pred,RadialSVM_score,RadialSVM_rankscore,LR_pred,LR_score,LR_rankscore output/summarized/tmp/summarized_COSMIC.vcf"
+##SnpSiftCmd="SnpSift gwasCat output/summarized/tmp/summarized_dbSNP_mapped.vcf"
+##SnpSiftCmd="SnpSift varType output/summarized/tmp/summarized_prefixed.vcf"
 ##SnpSiftVersion="SnpSift 4.0e (build 2014-09-13), by Pablo Cingolani"
 ##epee.allele_freq_cutoff=5%
 ##epee_version_cosmic_annotation=COSMIC|hg19|
@@ -209,10 +209,10 @@
 ##epee_version_snpEff_base_dir=snpEff/snpSift|4.0|2014-09-14
 ##epee_version_snpEff_database=GRCh37.75
 ##jacquard.command=merge C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\04_merge\input C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\04_merge\output\tiny_strelka.merged.vcf
-##jacquard.consensus.JQ_CONS_AF_RANGE_ZSCORE.mean_AF_range=0.0
-##jacquard.consensus.JQ_CONS_AF_RANGE_ZSCORE.standard_deviation=0.0
-##jacquard.consensus.JQ_CONS_DP_RANGE_ZSCORE.mean_DP_range=0.0
-##jacquard.consensus.JQ_CONS_DP_RANGE_ZSCORE.standard deviation_DP_range=0.0
+##jacquard.summarize.JQ_CONS_AF_RANGE_ZSCORE.mean_AF_range=0.0
+##jacquard.summarize.JQ_CONS_AF_RANGE_ZSCORE.standard_deviation=0.0
+##jacquard.summarize.JQ_CONS_DP_RANGE_ZSCORE.mean_DP_range=0.0
+##jacquard.summarize.JQ_CONS_DP_RANGE_ZSCORE.standard deviation_DP_range=0.0
 ##jacquard.cwd=C:\Users\kmeng
 ##jacquard.merge.file2=tiny_strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf(['NORMAL', 'TUMOR'])
 ##jacquard.merge.sample_column1=Strelka|tiny_strelka|NORMAL(tiny_strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf)
