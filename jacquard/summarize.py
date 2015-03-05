@@ -1,11 +1,14 @@
+"""Adds summary tags/fields to a merged VCF file.
+
+Collaborates with two summary "callers" to add INFO and FORMAT tags to each
+variant record based on the presence of previously translated tags.
+"""
 from __future__ import print_function, absolute_import
-
-import os
-
 import jacquard.logger as logger
 import jacquard.variant_callers.summarize_caller as summarize_caller
 import jacquard.variant_callers.zscore_caller as zscore_caller
 import jacquard.vcf as vcf
+import os
 
 
 def _write_metaheaders(caller,
@@ -63,7 +66,7 @@ def _write_zscores(caller,
 def _add_tags(caller, vcf_reader, file_writer):
     for vcf_record in vcf_reader.vcf_records():
         caller.add_tags(vcf_record)
-        file_writer.write(vcf_record.asText())
+        file_writer.write(vcf_record.text())
 
 def add_subparser(subparser):
     # pylint: disable=line-too-long
@@ -73,15 +76,13 @@ def add_subparser(subparser):
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
 
-def _predict_output(args):
-    return set([os.path.basename(args.output)])
-
 def report_prediction(args):
-    return _predict_output(args)
+    return set([os.path.basename(args.output)])
 
 def get_required_input_output_types():
     return ("file", "file")
 
+#TODO (cgates): Validate should actually validate
 def validate_args(dummy):
     pass
 

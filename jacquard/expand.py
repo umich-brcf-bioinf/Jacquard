@@ -1,4 +1,16 @@
-#pylint: disable=unused-argument, too-many-locals
+"""Expands a VCF file to tab-separated text file
+
+The number of rows will be the same as the number of records in the VCF (i.e.
+line count of VCF including the column header - number of metaheaders).
+
+Will create a column for each:
+ * static field (e.g. CHROM, POS, ID, REF, ALT, QUAL, FILTER)
+ * INFO field listed in the metaheader
+ * combination of sample name and FORMAT tag listed in the metaheader
+
+Expand relies on accurate metaheaders; it will not expand any fields absent
+from the metaheaders.
+"""
 from __future__ import print_function, absolute_import
 import os
 import re
@@ -7,9 +19,9 @@ import jacquard.logger as logger
 import jacquard.utils as utils
 import jacquard.vcf as vcf
 
-UNUSED_REGEX_WARNING_FORMAT = ("The expression [{}] in column specification " +
-                               "file [{}:{}] didn't match any input columns; " +
-                               "columns may have matched earlier expressions, "+
+UNUSED_REGEX_WARNING_FORMAT = ("The expression [{}] in column specification "
+                               "file [{}:{}] didn't match any input columns; "
+                               "columns may have matched earlier expressions, "
                                "or this expression may be irrelevant.")
 
 def _read_col_spec(col_spec):
@@ -42,7 +54,7 @@ def _disambiguate_column_names(column_header, info_header):
 def _create_row_dict(column_list, vcf_record):
     row_dict = {"CHROM" : vcf_record.chrom,
                 "POS" : vcf_record.pos,
-                "ID" : vcf_record.id,
+                "ID" : vcf_record.vcf_id,
                 "REF" : vcf_record.ref,
                 "ALT" : vcf_record.alt,
                 "QUAL" : vcf_record.qual,
@@ -115,15 +127,15 @@ def report_prediction(args):
 def get_required_input_output_types():
     return ("file", "file")
 
+#TODO (cgates): Validate should actually validate
 def validate_args(dummy):
     pass
 
-def execute(args, execution_context):
+def execute(args, dummy_execution_context):
+    #for the moment, there is no good place to put the execution context
     input_file = os.path.abspath(args.input)
     output_file = os.path.abspath(args.output)
-
     col_spec = args.column_specification if args.column_specification else 0
-
     col_spec_columns = _read_col_spec(col_spec) if col_spec else 0
 
     logger.debug("Expanding [{}] to [{}]",

@@ -12,7 +12,8 @@ import os
 import re
 
 
-JQ_OUTPUT_SUFFIX = "HCsomatic"
+_FILE_OUTPUT_SUFFIX = "HCsomatic"
+_JQ_SOMATIC_TAG = "HC_SOM"
 #TODO: (cgates): This module contains lots of file parsing/processing which
 # should be using vcfReader structures
 #TODO: (cgates): Use tuples instead of concatenated strings
@@ -30,7 +31,7 @@ def _iterate_file(vcf_reader, num_records, somatic_positions, somatic):
             num_records += 1
             for sample in sample_tag_values:
                 for tag in sample_tag_values[sample]:
-                    if re.search(utils.jq_somatic_tag, tag):
+                    if re.search(_JQ_SOMATIC_TAG, tag):
                         if sample_tag_values[sample][tag] == "1":
                             somatic_key = "^".join([record.chrom,
                                                     record.pos,
@@ -223,7 +224,7 @@ def _build_writers_to_readers(vcf_readers, output_file):
 
 def _mangle_output_filenames(input_file):
     basename, extension = os.path.splitext(os.path.basename(input_file))
-    return ".".join([basename, JQ_OUTPUT_SUFFIX, extension.strip(".")])
+    return ".".join([basename, _FILE_OUTPUT_SUFFIX, extension.strip(".")])
 
 def _get_output_filenames(input_files):
     output_files = set()

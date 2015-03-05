@@ -1,3 +1,14 @@
+"""Translates a set of VCF files by adding standardized tags.
+
+Reads incoming VCF files determining appropriate origin caller (e.g. MuTect);
+emits a new file with additional translated versions of incoming FORMAT tags
+(e.g. JQ_MT_AF).
+
+There will typically be a translated VCF file for each input VCF file.
+Unrecognized VCFs are not copied to output.
+The origin caller of a VCFs is recognized in part by the content of metaheaders,
+so it's imperative that VCF metaheaders be present and accurate.
+"""
 from __future__ import absolute_import
 from jacquard import __version__
 from jacquard.variant_callers import variant_caller_factory
@@ -8,9 +19,7 @@ import jacquard.utils as utils
 import os
 
 
-
-
-JQ_OUTPUT_SUFFIX = "translatedTags"
+_FILE_OUTPUT_SUFFIX = "translatedTags"
 
 
 class _ExcludeMalformedRef(object):
@@ -75,7 +84,7 @@ class _ExcludeMissingAlt(object):
 
 def _mangle_output_filename(input_file):
     basename, extension = os.path.splitext(os.path.basename(input_file))
-    return ".".join([basename, JQ_OUTPUT_SUFFIX, extension.strip(".")])
+    return ".".join([basename, _FILE_OUTPUT_SUFFIX, extension.strip(".")])
 
 def _write_headers(reader, new_tags, execution_context, file_writer):
     headers = reader.metaheaders
@@ -111,7 +120,7 @@ def _translate_files(trans_vcf_reader,
         for record in trans_vcf_reader.vcf_records():
             for tag in new_tags:
                 tag.add_tag_values(record)
-            file_writer.write(record.asText())
+            file_writer.write(record.text())
 
     finally:
         trans_vcf_reader.close()

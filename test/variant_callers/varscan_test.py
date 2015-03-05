@@ -118,7 +118,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         originalVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
+        self.assertEquals(originalVcfRecord.text(), processedVcfRecord.text())
 
     def test_format_presentAFTag(self):
         tag = varscan._AlleleFreqTag()
@@ -126,7 +126,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FREQ:F2:F3:{0}AF|56.7%:SA.2:SA.3:0.57|83.4%:SB.2:SB.3:0.83\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
     def test_format_multAlt(self):
         tag = varscan._AlleleFreqTag()
@@ -134,7 +134,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FREQ:F2:F3:{0}AF|56.7%,41%:SA.2:SA.3:0.57,0.41|83.4%,23%:SB.2:SB.3:0.83,0.23\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
 
 class DepthTagTestCase(test_case.JacquardBaseTestCase):
@@ -148,7 +148,7 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
         originalVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
+        self.assertEquals(originalVcfRecord.text(), processedVcfRecord.text())
 
     def test_format_presentDPTag(self):
         tag = varscan._DepthTag()
@@ -156,7 +156,7 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP:F2:F3:{0}DP|2:SA.2:SA.3:2|4:SB.2:SB.3:4\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
 
 class SomaticTagTestCase(test_case.JacquardBaseTestCase):
@@ -170,7 +170,7 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:{0}HC_SOM|SA.1:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n").format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
     def test_format_presentSSTag_withHC(self):
         tag = varscan._SomaticTag()
@@ -178,7 +178,7 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         expected = "CHROM|POS|ID|REF|ALT|QUAL|PASS|SS=2|F1:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:1\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
     def test_format_presentSSTag_withoutHCManyFilters(self):
         tag = varscan._SomaticTag()
@@ -186,7 +186,7 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         expected = "CHROM|POS|ID|REF|ALT|QUAL|{0};foo|SS=2|F1:F2:F3:{1}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n".format(varscan._HCTag._TAG_ID, varscan.JQ_VARSCAN_TAG).replace('|', "\t")
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
     def test_format_presentSSTag_withoutHC(self):
         tag = varscan._SomaticTag()
@@ -194,7 +194,7 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         expected = "CHROM|POS|ID|REF|ALT|QUAL|{0}|SS=2|F1:F2:F3:{1}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n".format(varscan._HCTag._TAG_ID, varscan.JQ_VARSCAN_TAG).replace('|', "\t")
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
     def test_format_SSTag_notEqual2(self):
         tag = varscan._SomaticTag()
@@ -202,7 +202,7 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         expected = "CHROM|POS|ID|REF|ALT|QUAL|PASS|SS=5|F1:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
 
 class VarscanTestCase(test_case.JacquardBaseTestCase):

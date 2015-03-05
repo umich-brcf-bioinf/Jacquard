@@ -1,3 +1,16 @@
+"""Validates command preconditions.
+
+Specifically checks that the command, arguments, and environment
+(e.g. input/output directories or files) are consistent and plausible.
+
+Each validation function evaluates a specific precondition.
+Each function is allowed to:
+ * change the environment (e.g. create a dir)
+ * change the args (replace the original output dir with a new temp output dir)
+ * add arguments which may be required for sub-commands
+ * delegate to/interact with a sub-command
+ * raise a UsageException if things look problematic
+"""
 from __future__ import absolute_import
 import errno
 import glob

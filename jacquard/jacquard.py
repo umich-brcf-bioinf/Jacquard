@@ -1,4 +1,12 @@
 #!/usr/bin/env python
+"""Launcher for suite of VCF sub-commands.
+
+The only executable module in the project; this module
+ * validates command line args
+ * manages use of temp directories (to keep output clean and atomic)
+ * dipatches to sub-commands as appropriate
+ * attempts to deal with usage and run-time errors
+"""
 ##   Copyright 2014 Bioinformatics Core, University of Michigan
 ##
 ##   Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,19 +20,11 @@
 ##   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ##   See the License for the specific language governing permissions and
 ##   limitations under the License.
-
-
 from __future__ import absolute_import, print_function
-
+from jacquard import __version__
+from jacquard.variant_callers import variant_caller_factory
 import argparse
 import distutils.dir_util
-import os
-import re
-import shutil
-import signal
-import sys
-import traceback
-
 import jacquard.command_validator as command_validator
 import jacquard.expand as expand
 import jacquard.filter_hc_somatic as filter_hc_somatic
@@ -33,7 +33,12 @@ import jacquard.merge as merge
 import jacquard.summarize as summarize
 import jacquard.translate as translate
 import jacquard.utils as utils
-from jacquard import __version__
+import os
+import re
+import shutil
+import signal
+import sys
+import traceback
 
 
 _SUBCOMMANDS = [translate,
@@ -44,7 +49,8 @@ _SUBCOMMANDS = [translate,
 
 
 class _JacquardArgumentParser(argparse.ArgumentParser):
-    '''Suppress default exit behavior'''
+    """Argument parser that raises UsageError instead of exiting."""
+    #pylint: disable=too-few-public-methods
 
     @staticmethod
     def _remessage_invalid_subparser(message):
@@ -107,7 +113,7 @@ def _parse_command_line_args(modules, arguments):
 
 
 def _set_interrupt_handler(target=signal.signal):
-    def _handler(signum, frame): #pylint: disable=unused-argument
+    def _handler(dummy_signum, dummy_frame):
         msg = "WARNING: Jacquard was interrupted before completing."
         try:
             logger.debug(msg)
@@ -119,14 +125,14 @@ def _set_interrupt_handler(target=signal.signal):
 
 
 def _version_text():
-    callers = utils.caller_versions.items()
+    callers = variant_caller_factory.SUPPORTED_CALLER_VERSIONS.items()
     caller_versions = [key + " " + value for key, value in callers]
     caller_version_string = "\n\t".join(caller_versions)
     return "Jacquard v{0}\nSupported variant callers:\n\t{1}".\
         format(__version__, caller_version_string)
 
 
-def dispatch(modules, arguments):
+def _dispatch(modules, arguments):
     try:
         command, args = _parse_command_line_args(modules, arguments)
 
@@ -183,7 +189,7 @@ def dispatch(modules, arguments):
 
 def main():
     _set_interrupt_handler()
-    dispatch(_SUBCOMMANDS, sys.argv[1:])
+    _dispatch(_SUBCOMMANDS, sys.argv[1:])
 
 
 if __name__ == '__main__':

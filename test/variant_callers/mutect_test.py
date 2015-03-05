@@ -81,7 +81,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         originalVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
+        self.assertEquals(originalVcfRecord.text(), processedVcfRecord.text())
 
     def test_format_presentAFTag(self):
         tag = mutect._AlleleFreqTag()
@@ -89,7 +89,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3:{0}AF|0.567:SA.2:SA.3:0.57|0.834:SB.2:SB.3:0.83\n".format(mutect.JQ_MUTECT_TAG))
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
     def test_format_multAlt(self):
         tag = mutect._AlleleFreqTag()
@@ -97,7 +97,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3:{0}AF|0.5,0.8:SA.2:SA.3:0.5,0.8|0.7,0.6:SB.2:SB.3:0.7,0.6\n".format(mutect.JQ_MUTECT_TAG))
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
 class DepthTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
@@ -109,7 +109,7 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
         originalVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
+        self.assertEquals(originalVcfRecord.text(), processedVcfRecord.text())
 
     def test_format_presentDPTag(self):
         tag = mutect._DepthTag()
@@ -117,7 +117,7 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP:F2:F3:{0}DP|2:SA.2:SA.3:2|4:SB.2:SB.3:4\n".format(mutect.JQ_MUTECT_TAG))
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
 class SomaticTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
@@ -129,7 +129,7 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:{0}HC_SOM|SA.1:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n").format(mutect.JQ_MUTECT_TAG)
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
     def test_format_presentSSTag(self):
         tag = mutect._SomaticTag()
@@ -137,7 +137,7 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|SS:F2:F3:{0}HC_SOM|2:SA.2:SA.3:1|5:SB.2:SB.3:0\n").format(mutect.JQ_MUTECT_TAG)
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
 class MutectTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):

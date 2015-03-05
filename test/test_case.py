@@ -63,7 +63,7 @@ class JacquardBaseTestCase(unittest.TestCase):
                                   actual[i].rstrip())
 
     def assertCommand(self, command, expected_dir):
-        jacquard.dispatch(jacquard._SUBCOMMANDS, command)
+        jacquard._dispatch(jacquard._SUBCOMMANDS, command)
 
         output = command[2]
 

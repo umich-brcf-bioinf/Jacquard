@@ -194,5 +194,5 @@ class ZScoreCaller(object):
     def add_tags(self, vcf_record):
         for tag in self._tags:
             tag.add_tag_values(vcf_record)
-        return vcf_record.asText()
+        return vcf_record.text()
 

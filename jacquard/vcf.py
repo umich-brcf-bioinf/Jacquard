@@ -1,4 +1,4 @@
-# pylint: disable=too-many-instance-attributes, fixme
+"""Classes to help interpret and manipulate VCF files and records."""
 from __future__ import print_function, absolute_import
 from collections import defaultdict, OrderedDict
 import natsort
@@ -10,8 +10,7 @@ import jacquard.utils as utils
 
 #TODO: (cgates): add context management to open/close
 class VcfReader(object):
-    '''Wraps a file reader, providing VCF metaheaders and records'''
-
+    """Wraps a file reader, providing VCF metaheaders and records"""
     def __init__(self, file_reader):
         self._file_reader = file_reader
         (self.column_header, self.metaheaders) = self._init_headers()
@@ -90,9 +89,28 @@ class VcfReader(object):
 
         return column_header, tuple(metaheaders)
 
+    #TODO (cgates): qualified is used by ONE invocation in merge. Can we 
+    #somehow make merge do this instead of universally complicating the method?
     def vcf_records(self, qualified=False):
-        #pylint: disable=line-too-long
-        sample_names = self.qualified_sample_names if qualified else self.sample_names
+        """Generates parsed VcfRecord objects.
+
+        Typically called in a for loop to process each vcf record in a
+        VcfReader. VcfReader must be opened in advanced and closed when
+        complete. Skips all headers.
+
+        Args:
+            qualified: When True, sample names are prefixed with file name
+
+        Returns:
+            Parsed VcfRecord
+
+        Raises:
+            StopIteration: when reader is exhausted.
+        """
+        if qualified:
+            sample_names = self.qualified_sample_names
+        else:
+            sample_names = self.sample_names
 
         for line in self._file_reader.read_lines():
             if line.startswith("#"):
@@ -105,10 +123,10 @@ class VcfReader(object):
     def close(self):
         self._file_reader.close()
 
-# Alas, something must encapsulate the myriad VCF fields.
 class VcfRecord(object):
+    # Alas, something must encapsulate the myriad VCF fields.
     #pylint: disable=too-many-instance-attributes
-    EMPTY_SET = set()
+    _EMPTY_SET = set()
     _FILTERS_TO_REPLACE = set(["", ".", "pass"])
 
     @classmethod
@@ -155,8 +173,7 @@ class VcfRecord(object):
             return sys.maxint
 #TODO: (cgates): Could we make filter an OrderedSet
 #TODO: (cgates) adjust info field to be stored as dict only instead of string
-#TODO: (cgates) adjust vcf names to not collide with reserved python words
-## pylint: disable=too-many-arguments, invalid-name
+## pylint: disable=too-many-arguments
 # Alas, something must encapsulate the myriad VCF fields.
 #  Note that some VCF field names collide with reserved python names
 # (e.g. id, filter, format).
@@ -165,7 +182,7 @@ class VcfRecord(object):
                  sample_tag_values=None):
         self.chrom = chrom
         self.pos = pos
-        self.id = vcf_id
+        self.vcf_id = vcf_id
         self.ref = ref
         self.alt = alt
         self.qual = qual
@@ -182,7 +199,7 @@ class VcfRecord(object):
 
     @property
     def format_tags(self):
-        tags = VcfRecord.EMPTY_SET
+        tags = VcfRecord._EMPTY_SET
         if self.sample_tag_values:
             first_sample = self.sample_tag_values.keys()[0]
             tags = set(self.sample_tag_values[first_sample].keys())
@@ -249,8 +266,8 @@ class VcfRecord(object):
         else:
             return "."
 
-    def asText(self):
-        stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
+    def text(self):
+        stringifier = [self.chrom, self.pos, self.vcf_id, self.ref, self.alt,
                        self.qual, self.filter, self.info,
                        self._format_field()]
 

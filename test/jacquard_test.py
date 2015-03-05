@@ -72,7 +72,7 @@ class JacquardTestCase(test_case.JacquardBaseTestCase):
             mock_module.my_exception_string = "I'm feeling angry"
 
             with self.assertRaises(SystemExit) as exit_code:
-                jacquard.dispatch([mock_module], ["mock_module",
+                jacquard._dispatch([mock_module], ["mock_module",
                                                   input_dir.path,
                                                   output_dir.path])
             self.assertEqual(1, exit_code.exception.code)
@@ -144,7 +144,7 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
     def test_dispatch(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             mock_module.my_exception_string = ""
-            jacquard.dispatch([mock_module], ["mock_module",
+            jacquard._dispatch([mock_module], ["mock_module",
                                               input_dir.path,
                                               output_dir.path])
             self.assertTrue(mock_module.execute_called)
@@ -155,7 +155,7 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             mock_module.my_exception_string = ""
             with self.assertRaises(SystemExit) as exit_code:
-                jacquard.dispatch([mock_module], ["foo_command",
+                jacquard._dispatch([mock_module], ["foo_command",
                                                   input_dir.path,
                                                   output_dir.path])
             self.assertEquals(1, exit_code.exception.code)
@@ -170,7 +170,7 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
             mock_module.my_exception_string = ""
             mock_module.predicted_output = set(["file1.vcf"])
             with self.assertRaises(SystemExit) as exit_code:
-                jacquard.dispatch([mock_module], ["mock_module",
+                jacquard._dispatch([mock_module], ["mock_module",
                                                   input_dir.path,
                                                   output_file])
 
@@ -181,7 +181,7 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
             output_dir.write("file1.vcf", "foo")
             mock_module.my_exception_string = ""
 
-            jacquard.dispatch([mock_module], ["mock_module",
+            jacquard._dispatch([mock_module], ["mock_module",
                                               input_dir.path,
                                               output_dir.path,
                                               "--force"])
@@ -191,7 +191,7 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
     def test_dispatch_done(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             mock_module.my_exception_string = ""
-            jacquard.dispatch([mock_module], ["mock_module",
+            jacquard._dispatch([mock_module], ["mock_module",
                                               input_dir.path,
                                               output_dir.path])
             actual_messages = self.output.getvalue().rstrip().split("\n")
@@ -201,7 +201,7 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             mock_module.my_exception_string = ""
             logger.WARNING_OCCURRED = True
-            jacquard.dispatch([mock_module], ["mock_module",
+            jacquard._dispatch([mock_module], ["mock_module",
                                               input_dir.path,
                                               output_dir.path])
             actual_messages = self.output.getvalue().rstrip().split("\n")

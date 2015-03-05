@@ -69,7 +69,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         originalVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
+        self.assertEquals(originalVcfRecord.text(), processedVcfRecord.text())
 
     def test_format_AUTag(self):
         tag = strelka._AlleleFreqTag()
@@ -77,7 +77,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         expected = "CHROM|POS|ID|REF|A,C|QUAL|FILTER|INFO|AU:CU:GU:TU:{0}AF|1,2:3,4:5,6:7,8:0.1,0.2|9,10:11,12:13,14:15,16:0.19,0.23\n".format(strelka.JQ_STRELKA_TAG).replace('|', "\t")
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
     def test_format_AFTag_noAlt(self):
         tag = strelka._AlleleFreqTag()
@@ -85,7 +85,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         expected = "CHROM|POS|ID|REF|.|QUAL|FILTER|INFO|AU:CU:GU:TU:{0}AF|1,2:3,4:5,6:7,8:.|9,10:11,12:13,14:15,16:.\n".format(strelka.JQ_STRELKA_TAG).replace('|', "\t")
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
     def test_format_TIRTag(self):
         tag = strelka._AlleleFreqTag()
@@ -93,7 +93,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP2:TIR:{0}AF|10:3,4:0.4|20:11,7:0.35\n".format(strelka.JQ_STRELKA_TAG).replace('|', "\t")
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
 
 class DepthTagTestCase(test_case.JacquardBaseTestCase):
@@ -107,7 +107,7 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
         originalVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(originalVcfRecord.asText(), processedVcfRecord.asText())
+        self.assertEquals(originalVcfRecord.text(), processedVcfRecord.text())
 
     def test_format_DP2Tag(self):
         tag = strelka._DepthTag()
@@ -115,7 +115,7 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|DP2:F2:F3:{0}DP|2:SA.2:SA.3:2|4:SB.2:SB.3:4\n".format(strelka.JQ_STRELKA_TAG).replace('|', "\t")
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
     def test_format_AUTag(self):
         tag = strelka._DepthTag()
@@ -123,7 +123,7 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|AU:CU:GU:TU:{0}DP|1,2:3,4:5,6:7,8:20|9,10:11,12:13,14:15,16:52\n".format(strelka.JQ_STRELKA_TAG).replace('|', "\t")
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
 
 class SomaticTagTestCase(test_case.JacquardBaseTestCase):
@@ -136,7 +136,7 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         expected = ("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:{0}HC_SOM|SA.1:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n").format(strelka.JQ_STRELKA_TAG).replace('|', "\t")
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
     def test_format_presentPASS(self):
         tag = strelka._SomaticTag()
@@ -144,7 +144,7 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|PASS|INFO|SS:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|5:SB.2:SB.3:1\n").format(strelka.JQ_STRELKA_TAG)
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
 
 class StrelkaTestCase(test_case.JacquardBaseTestCase):

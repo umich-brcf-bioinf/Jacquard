@@ -6,6 +6,10 @@ from jacquard.variant_callers.mutect import Mutect
 import jacquard.utils as utils
 import jacquard.logger as logger
 
+#TODO: cgates: These should be defined by the caller modules themselves.
+SUPPORTED_CALLER_VERSIONS = {"VarScan":"v2.3",
+                             "MuTect": "v1.1.4",
+                             "Strelka": "v2.0.15"}
 _CALLERS = [Varscan(), Strelka(), Mutect()]
 
 #TODO: (cgates): Filter uses this, but only for logging; adjust filter and drop

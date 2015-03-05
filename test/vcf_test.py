@@ -45,16 +45,19 @@ class MockFileReader(object):
             self.content = content
         self.open_was_called = False
         self.close_was_called = False
+        self.lines_to_iterate = None
 
     def open(self):
         self.open_was_called = True
+        self.lines_to_iterate = list(self.content)
 
     def read_lines(self):
-        for line in self.content:
+        for line in self.lines_to_iterate:
             yield line
 
     def close(self):
         self.close_was_called = True
+        self.lines_to_iterate = None
 
 class MockWriter(object):
     def __init__(self):
@@ -233,7 +236,7 @@ class MockVcfRecord(object):
 
         return info_dict
 
-    def asText(self):
+    def text(self):
         stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
                        self.qual, self.filter, self.info,
                        ":".join(self.format_set)]
@@ -264,7 +267,7 @@ class MockTag(object):
     def add_tag_values(self, vcf_record):
         vcf_record.add_sample_tag_value(self.field_name, self.sample_values)
 
-#TODO: (cgates) Fix tests to that so that they do not rely on parse_record and asText.
+#TODO: (cgates) Fix tests to not use parse_record() and text().
 class VcfRecordTestCase(test_case.JacquardBaseTestCase):
     def test_parse_record(self):
         sample_names = ["SampleA", "SampleB"]
@@ -272,7 +275,7 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         record = VcfRecord.parse_record(input_line, sample_names)
         self.assertEquals("CHROM", record.chrom)
         self.assertEquals("POS", record.pos)
-        self.assertEquals("ID", record.id)
+        self.assertEquals("ID", record.vcf_id)
         self.assertEquals("REF", record.ref)
         self.assertEquals("ALT", record.alt)
         self.assertEquals("QUAL", record.qual)
@@ -383,7 +386,7 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         record = VcfRecord.parse_record(input_line, sample_names)
         record.add_sample_tag_value("inserted", {"SampleB":"insertedValueB", "SampleA":"insertedValueA"})
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:inserted|SA.1:SA.2:SA.3:insertedValueA|SB.1:SB.2:SB.3:insertedValueB\n")
-        self.assertEquals(expected, record.asText())
+        self.assertEquals(expected, record.text())
 
     def test_insert_format_field_failsOnInvalidSampleDict(self):
         sample_names = ["SampleA", "SampleB"]
@@ -440,13 +443,13 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         vcf_record._join_info_fields()
         self.assertEquals("foo", vcf_record.info)
 
-    def test_asText(self):
+    def test_text(self):
         sampleA = OrderedDict({"F1":"SA.1", "F2":"SA.2", "F3":"SA.3"})
         sampleB = OrderedDict({"F1":"SB.1", "F2":"SB.2", "F3":"SB.3"})
         sample_tag_values = OrderedDict({"SampleA":sampleA, "SampleB":sampleB})
         record = VcfRecord("CHROM", "POS", "REF", "ALT", "ID", "QUAL", "FILTER", "INFO", sample_tag_values)
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
-        self.assertEquals(expected, record.asText())
+        self.assertEquals(expected, record.text())
 
     def test_asTextWhenEmptyFormatField(self):
         sampleA = OrderedDict({})
@@ -454,7 +457,7 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         sample_tag_values = OrderedDict({"SampleA":sampleA, "SampleB":sampleB})
         record = VcfRecord("CHROM", "POS", "REF", "ALT", "ID", "QUAL", "FILTER", "INFO", sample_tag_values)
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|.|.|.\n")
-        self.assertEquals(expected, record.asText())
+        self.assertEquals(expected, record.text())
 
     def test_equals(self):
         sample_names = ["sampleA"]
@@ -524,7 +527,7 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         empty_record = base.get_empty_record()
 
         expected_record = VcfRecord(chrom="chr2", pos="1", ref="A", alt="C")
-        self.assertEquals(expected_record.asText(), empty_record.asText())
+        self.assertEquals(expected_record.text(), empty_record.text())
 
     def test_add_or_replace_filter_filterReplacesPassFilter(self):
         record = VcfRecord("chr1", "42", "X", "C", vcf_filter="PASS")
@@ -718,6 +721,30 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
         self.assertTrue(mock_reader.open_was_called)
         self.assertTrue(mock_reader.close_was_called)
 
+    def test_vcf_records_raisesStopIterationWhenExhausted(self):
+        file_contents = ["##metaheader1\n",
+                         self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
+                         self.entab("chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR\n")]
+        mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+        reader = VcfReader(mock_reader)
+
+        reader.open()
+        record_iter = reader.vcf_records()
+        record_iter.next()
+        self.assertRaises(StopIteration,
+                          record_iter.next)
+
+    def test_vcf_records_raisesTypeErrorWhenClosed(self):
+        file_contents = ["##metaheader1\n",
+                         self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
+                         self.entab("chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR\n")]
+        mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+        reader = VcfReader(mock_reader)
+
+        record_iter = reader.vcf_records()
+        self.assertRaises(TypeError,
+                          record_iter.next)
+
     def test_noColumnHeaders(self):
         mock_reader = MockFileReader("my_dir/my_file.txt", ["##metaheader\n"])
         self.assertRaises(utils.JQException, VcfReader, mock_reader)
@@ -805,6 +832,13 @@ class FileReaderTestCase(unittest.TestCase):
             reader.close()
 
             self.assertEquals(["1\n", "2\n", "3"], actual_lines)
+
+    def test_read_lines_raisesTypeErrorWhenClosed(self):
+        with TempDirectory() as input_file:
+            input_file.write("A.tmp", "1\n2\n3")
+            reader = FileReader(os.path.join(input_file.path, "A.tmp"))
+            line_iter = reader.read_lines()
+            self.assertRaises(TypeError, line_iter.next)
 
 class FileWriterTestCase(unittest.TestCase):
     def test_equality(self):

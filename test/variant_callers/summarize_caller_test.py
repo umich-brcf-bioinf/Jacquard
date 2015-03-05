@@ -23,7 +23,7 @@ class CallersReportedListTagTestCase(test_case.JacquardBaseTestCase):
         tag.add_tag_values(processedVcfRecord)
 
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:MT,VS|Y:1:1:MT,VS\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_REPORTED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_REPORTED_TAG, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_REPORTED_LIST))
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
 class CallersReportedTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
@@ -38,7 +38,7 @@ class CallersReportedTagTestCase(test_case.JacquardBaseTestCase):
         tag.add_tag_values(processedVcfRecord)
 
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:2|Y:1:1:2\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_REPORTED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_REPORTED_TAG, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_REPORTED))
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
 class CallersPassedListTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
@@ -53,7 +53,7 @@ class CallersPassedListTagTestCase(test_case.JacquardBaseTestCase):
         tag.add_tag_values(processedVcfRecord)
 
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:MT,VS|Y:1:0:MT\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_PASSED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_PASSED_TAG, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_PASSED_LIST))
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
 class CallersPassedTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
@@ -68,7 +68,7 @@ class CallersPassedTagTestCase(test_case.JacquardBaseTestCase):
         tag.add_tag_values(processedVcfRecord)
 
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:2|Y:1:0:1\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_PASSED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_PASSED_TAG, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_PASSED))
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
 class SamplesReportedTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
@@ -83,7 +83,7 @@ class SamplesReportedTestCase(test_case.JacquardBaseTestCase):
         tag.add_tag_values(processedVcfRecord)
 
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO;{}{}=2|JQ_DP:{}{}|X:2|Y:1\n".format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_SAMPLES_REPORTED, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_REPORTED))
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
 class SamplesPassedTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
@@ -98,7 +98,7 @@ class SamplesPassedTestCase(test_case.JacquardBaseTestCase):
         tag.add_tag_values(processedVcfRecord)
 
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO;{}{}=1|JQ_DP:{}{}|X:2|Y:0\n".format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_SAMPLES_PASSED, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_PASSED))
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
     def test_add_tag_values_nonePassed(self):
         line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}|X:0|Y:0\n".format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_PASSED))
@@ -123,7 +123,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE|X:0:0.1:0.2:0.1:0.2|Y:0.2:0.3:0.4:0.3:0.2\n".format(summarize_caller.JQ_SUMMARY_TAG).replace('|', "\t")
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
     def test_add_tag_values_multAlts(self):
         tag = summarize_caller._AlleleFreqTag()
@@ -131,7 +131,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:{0}AF_AVERAGE:{0}AF_RANGE|0,0:0.2,0.4:0.1,0.2:0.2,0.4|0,0:0.1,0.3:0.05,0.15:0.1,0.3\n".format(summarize_caller.JQ_SUMMARY_TAG).replace('|', "\t")
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
     def test_add_tag_values_noJQ_AFTags(self):
         tag = summarize_caller._AlleleFreqTag()
@@ -139,7 +139,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{0}AF_AVERAGE:{0}AF_RANGE|X:.:.|Y:.:.\n".format(summarize_caller.JQ_SUMMARY_TAG).replace('|', "\t")
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
     def test_add_tag_values_noNullValuesInAvgCalculation(self):
         tag = summarize_caller._AlleleFreqTag()
@@ -147,7 +147,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE|X:0:0.1:.:0.05:0.1|Y:0.2:0.3:.:0.25:0.1\n".format(summarize_caller.JQ_SUMMARY_TAG).replace('|', "\t")
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
 class DepthTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
@@ -167,7 +167,7 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF:JQ_foo_DP:JQ_bar_DP:JQ_baz_DP:{0}DP_AVERAGE:{0}DP_RANGE|X:1:2:3:2.0:2.0|Y:4:5:6:5.0:2.0\n").format(summarize_caller.JQ_SUMMARY_TAG)
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
     def test_add_tag_values_multAlts(self):
         tag = summarize_caller._DepthTag()
@@ -175,7 +175,7 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_DP:JQ_bar_DP:{0}DP_AVERAGE:{0}DP_RANGE|0,0:1,2:0.5,1.0:1.0,2.0|0,0:3,4:1.5,2.0:3.0,4.0\n").format(summarize_caller.JQ_SUMMARY_TAG)
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
     def test_add_tag_values_noJQ_DPTags(self):
         tag = summarize_caller._DepthTag()
@@ -183,7 +183,7 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF:{0}DP_AVERAGE:{0}DP_RANGE|X:.:.|Y:.:.\n").format(summarize_caller.JQ_SUMMARY_TAG)
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
 class SomaticTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
@@ -201,7 +201,7 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:JQ_bar_HC_SOM:JQ_baz_HC_SOM:{0}SOM_COUNT|X:2:0:1:1|Y:4:1:1:2\n").format(summarize_caller.JQ_SUMMARY_TAG)
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
     def test_add_tag_values_allZero(self):
         tag = summarize_caller._SomaticTag()
@@ -209,7 +209,7 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:JQ_bar_HC_SOM:JQ_baz_HC_SOM:{0}SOM_COUNT|X:2:0:0:0|Y:4:0:0:0\n").format(summarize_caller.JQ_SUMMARY_TAG)
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
     def test_add_tag_values_noJQ_HC_SOMTags(self):
         tag = summarize_caller._SomaticTag()
@@ -217,7 +217,7 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:{0}SOM_COUNT|X:2:.|Y:4:.\n").format(summarize_caller.JQ_SUMMARY_TAG)
         processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.asText())
+        self.assertEquals(expected, processedVcfRecord.text())
 
 class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
     def test_summary_tag_prefix(self):

@@ -1,4 +1,13 @@
-# pylint: disable=missing-docstring, too-many-locals, too-few-public-methods
+"""Merges a set of VCF files into a single VCF file.
+
+Each incoming VCF record is joined with other VCF records that share the same
+"coordinate", where coordinate is the (chrom, pos, ref, and alt).
+The merged file will have as many records as the distinct set of
+(chrom, pos, ref, alt) across all input files.
+The FORMAT tags from all incoming VCFs are aggregated to a single merged list.
+Each variant record will be the merged set of incoming format tags.
+Incoming fixed fields (e.g. QUAL, FILTER, INFO) are ignored.
+"""
 from __future__ import print_function, absolute_import
 from collections import defaultdict, OrderedDict
 from jacquard import __version__
@@ -16,16 +25,32 @@ _MULT_ALT_HEADER = ('##INFO=<ID={},Number=0,Type=Flag,'
                     'Description="dbSNP Membership",Source="Jacquard",'
                     'Version="{}">').format(_MULT_ALT_TAG, __version__)
 _FILE_FORMAT = ["##fileformat=VCFv4.2"]
-JQ_OUTPUT_SUFFIX = "merged"
+_FILE_OUTPUT_SUFFIX = "merged"
 
-# This class must capture the state of the incoming iterator and provide
-# modified behavior based on data in that iterator. A small class works ok, but
-# suspect there may be a more pythonic way to curry iterator in a partial
-# function. (cgates)
 class _BufferedReader(object):
-    '''Accepts an iterator and returns element (advancing current element) if
+    """A look-ahead reader that expedites merging.
+
+    Accepts an iterator and returns element (advancing current element) if
     requested element equals next element in collection and None otherwise.
-    Never returns StopIteration so cannot be used as iteration control-flow.'''
+    Never returns StopIteration so cannot be used as iteration control-flow.
+
+    This behavior is useful only because VcfRecord equality is based on their
+    coordinate (chrom, pos, ref, alt), so by iterating over a list of
+    coordinates, you can either park on your next record or return the
+    current record and advance the reader to the next.
+
+    Each incoming VcfReader is wrapped in a a BufferedReader and readers are
+    advanced to the next reader when their current coordinate is requested.
+    This approach avoids reading all VCFs into memory, but does require a file
+    handle for each VCF you are merging and also requires that VcfReaders are
+    sorted identically.
+
+    Stylistic note:
+    This class must capture the state of the incoming iterator and provide
+    modified behavior based on data in that iterator. A small class works ok,
+    but suspect there may be a more pythonic way to curry iterator in a
+    partial function. Uncertain if that would be clearer/simpler. [cgates]
+    """
     def __init__(self, iterator):
         self._iterator = iterator
         self._current_element = self._iterator.next()
@@ -60,7 +85,6 @@ def _compile_metaheaders(incoming_headers,
                          contigs_to_keep,
                          format_tags_to_keep,
                          info_tags_to_keep):
-    #pylint: disable=too-many-arguments
     ordered_metaheaders = list(incoming_headers)
     all_info_metaheaders = {}
     all_format_metaheaders = {}
@@ -157,7 +181,7 @@ def _sort_vcf(reader, temp_dir):
     writer.write("\n".join(reader.metaheaders) + "\n")
     writer.write(reader.column_header + "\n")
     for vcf_record in vcf_records:
-        writer.write(vcf_record.asText())
+        writer.write(vcf_record.text())
 
     writer.close()
     reader = vcf.VcfReader(vcf.FileReader(writer.output_filepath))
@@ -221,7 +245,7 @@ def _build_merged_record(coordinate,
                                   coordinate.pos,
                                   coordinate.ref,
                                   coordinate.alt,
-                                  coordinate.id,
+                                  coordinate.vcf_id,
                                   coordinate.qual,
                                   coordinate.filter,
                                   coordinate.info,
@@ -250,7 +274,7 @@ def _merge_records(coordinates,
                                              vcf_records,
                                              all_sample_names,
                                              tags_to_keep)
-        writer.write(merged_record.asText())
+        writer.write(merged_record.text())
 
 def _build_sample_list(vcf_readers):
     def _column(patient, sample):
@@ -349,6 +373,7 @@ def report_prediction(args):
 def get_required_input_output_types():
     return ("directory", "file")
 
+#TODO (cgates): Validate should actually validate
 def validate_args(dummy):
     pass
 

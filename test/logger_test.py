@@ -24,7 +24,7 @@ class LoggerTestCase(unittest.TestCase):
         tool = "foo"
         logger.initialize_logger(tool)
         self.assertEquals(['host', 'tool', 'start_time', 'user'],
-                          logger.logging_dict.keys())
+                          logger._logging_dict.keys())
 
     def test_error(self):
         tool = "foo"

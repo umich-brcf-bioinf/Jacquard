@@ -726,9 +726,9 @@ chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
 
         self.assertEquals(input_metaheaders, actual_metaheaders)
         self.assertEquals(input_column_header, actual_column_header)
-        self.assertEquals(record1.asText(), actual_records[0].asText())
-        self.assertEquals(record2.asText(), actual_records[1].asText())
-        self.assertEquals(record3.asText(), actual_records[2].asText())
+        self.assertEquals(record1.text(), actual_records[0].text())
+        self.assertEquals(record2.text(), actual_records[1].text())
+        self.assertEquals(record3.text(), actual_records[2].text())
         actual_log_infos = test.mock_logger.messages["INFO"]
         self.assertEquals(1, len(actual_log_infos))
         self.assertRegexpMatches(actual_log_infos[0], r"Sorting vcf \[unsorted.vcf\]")
