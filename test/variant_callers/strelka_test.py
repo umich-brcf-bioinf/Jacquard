@@ -1,13 +1,10 @@
 # pylint: disable=line-too-long,too-many-public-methods,too-few-public-methods
 # pylint: disable=invalid-name,global-statement,too-many-format-args
-
-import unittest
-
 from jacquard import __version__
+from test.vcf_test import MockFileReader, MockVcfReader
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.variant_callers.strelka as strelka
 import jacquard.vcf as vcf
-from test.vcf_test import MockFileReader, MockVcfReader
 import test.test_case as test_case
 
 
@@ -15,9 +12,11 @@ import test.test_case as test_case
 ORIGINAL_REPORTED_TAG = None
 ORIGINAL_PASSED_TAG = None
 
+
 class MockCommonTag(object):
     def __init__(self, input_caller_name):
         self.input_caller_name = input_caller_name
+
 
 class MockWriter(object):
     def __init__(self):
@@ -37,7 +36,8 @@ class MockWriter(object):
     def close(self):
         self.closed = True
 
-class CommonTagTestCase(unittest.TestCase):
+
+class CommonTagTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         global ORIGINAL_REPORTED_TAG
         global ORIGINAL_PASSED_TAG
@@ -57,7 +57,8 @@ class CommonTagTestCase(unittest.TestCase):
         self.assertEquals("JQ_SK_", reported_tag.input_caller_name)
         self.assertEquals("JQ_SK_", passed_tag.input_caller_name)
 
-class AlleleFreqTagTestCase(unittest.TestCase):
+
+class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
 
     def test_metaheader(self):
         self.assertEqual('##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)",Source="Jacquard",Version=0.21>'.format(strelka.JQ_STRELKA_TAG, __version__), strelka._AlleleFreqTag().metaheader)
@@ -94,7 +95,8 @@ class AlleleFreqTagTestCase(unittest.TestCase):
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
-class DepthTagTestCase(unittest.TestCase):
+
+class DepthTagTestCase(test_case.JacquardBaseTestCase):
 
     def test_metaheader(self):
         self.assertEqual('##FORMAT=<ID={0}DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version={1}>'.format(strelka.JQ_STRELKA_TAG, __version__), strelka._DepthTag().metaheader)
@@ -119,12 +121,12 @@ class DepthTagTestCase(unittest.TestCase):
         tag = strelka._DepthTag()
         line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|AU:CU:GU:TU|1,2:3,4:5,6:7,8|9,10:11,12:13,14:15,16\n".replace('|', "\t")
         expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|AU:CU:GU:TU:{0}DP|1,2:3,4:5,6:7,8:20|9,10:11,12:13,14:15,16:52\n".format(strelka.JQ_STRELKA_TAG).replace('|', "\t")
-        processedVcfRecord =vcf.VcfRecord.parse_record(line, ["SA", "SB"])
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
-class SomaticTagTestCase(unittest.TestCase):
 
+class SomaticTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         self.assertEqual('##FORMAT=<ID={0}HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",Source="Jacquard",Version={1}>'.format(strelka.JQ_STRELKA_TAG, __version__), strelka._SomaticTag().metaheader)
 
@@ -138,16 +140,16 @@ class SomaticTagTestCase(unittest.TestCase):
 
     def test_format_presentPASS(self):
         tag = strelka._SomaticTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|PASS|INFO|SS:F2:F3|2:SA.2:SA.3|5:SB.2:SB.3\n".replace('|',"\t")
-        expected = ("CHROM|POS|ID|REF|ALT|QUAL|PASS|INFO|SS:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|5:SB.2:SB.3:1\n").format(strelka.JQ_STRELKA_TAG).replace('|',"\t")
-        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA","SB"])
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|PASS|INFO|SS:F2:F3|2:SA.2:SA.3|5:SB.2:SB.3\n")
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|PASS|INFO|SS:F2:F3:{0}HC_SOM|2:SA.2:SA.3:0|5:SB.2:SB.3:1\n").format(strelka.JQ_STRELKA_TAG)
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
 
-class StrelkaTestCase(unittest.TestCase):
+class StrelkaTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
-        unittest.TestCase.setUp(self)
+        super(StrelkaTestCase, self).setUp()
         self.caller = strelka.Strelka()
 
     def test_claim(self):
@@ -179,6 +181,7 @@ class StrelkaTestCase(unittest.TestCase):
         self.assertEquals(1, len(unrecognized_readers))
         self.assertEquals([reader1], unrecognized_readers)
         self.assertEquals(0, len(vcf_readers))
+
 
 class StrelkaVcfReaderTestCase(test_case.JacquardBaseTestCase):
     def test_metaheaders(self):
@@ -225,4 +228,3 @@ class StrelkaVcfReaderTestCase(test_case.JacquardBaseTestCase):
 
         self.assertTrue(strelka_vcf_reader.open)
         self.assertTrue(strelka_vcf_reader.close)
-

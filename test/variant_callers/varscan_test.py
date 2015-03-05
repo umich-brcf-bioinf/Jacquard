@@ -1,23 +1,23 @@
 # pylint: disable=line-too-long,too-many-public-methods,too-few-public-methods
 # pylint: disable=invalid-name,global-statement
-import os
-import unittest
-
 from jacquard import __version__
 from jacquard.variant_callers import varscan
+from jacquard.variant_callers.varscan import _HCTag
+from test.vcf_test import MockVcfReader
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.vcf as vcf
+import os
 import test.test_case as test_case
-from test.vcf_test import MockVcfReader
-from jacquard.variant_callers.varscan import _HCTag
 
 
 ORIGINAL_REPORTED_TAG = None
 ORIGINAL_PASSED_TAG = None
 
+
 class MockCommonTag(object):
     def __init__(self, input_caller_name):
         self.input_caller_name = input_caller_name
+
 
 class MockWriter(object):
     def __init__(self):
@@ -36,6 +36,7 @@ class MockWriter(object):
 
     def close(self):
         self.closed = True
+
 
 class MockFileReader(object):
     def __init__(self, input_filepath="/foo/mockFileReader.txt", content=None):
@@ -61,6 +62,7 @@ class MockFileReader(object):
     def __cmp__(self, other):
         return cmp(self.file_name, other.file_name)
 
+
 class CommonTagTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         super(CommonTagTestCase, self).setUp()
@@ -82,6 +84,7 @@ class CommonTagTestCase(test_case.JacquardBaseTestCase):
         passed_tag = varscan_instance.tags[1]
         self.assertEquals("JQ_VS_", reported_tag.input_caller_name)
         self.assertEquals("JQ_VS_", passed_tag.input_caller_name)
+
 
 class HCTagTestCase(test_case.JacquardBaseTestCase):
     def test_add_tag_values_highConfidenceDoesNotChangeFilter(self):
@@ -133,7 +136,8 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
-class DepthTagTestCase(unittest.TestCase):
+
+class DepthTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         self.assertEqual('##FORMAT=<ID={0}DP,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)",Source="Jacquard",Version={1}>'.format(varscan.JQ_VARSCAN_TAG, __version__),
                          varscan._DepthTag().metaheader)
@@ -154,7 +158,8 @@ class DepthTagTestCase(unittest.TestCase):
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
-class SomaticTagTestCase(unittest.TestCase):
+
+class SomaticTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         self.assertEqual('##FORMAT=<ID={0}HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)",Source="Jacquard",Version={1}>'.format(varscan.JQ_VARSCAN_TAG, __version__),
                          varscan._SomaticTag().metaheader)
@@ -199,6 +204,7 @@ class SomaticTagTestCase(unittest.TestCase):
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.asText())
 
+
 class VarscanTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         super(VarscanTestCase, self).setUp()
@@ -236,7 +242,7 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         self.assertIn("_HCTag",
                       self._get_tag_class_names(vcf_readers[0]))
         self.assertNotIn("_HCTag",
-                      self._get_tag_class_names(vcf_readers[1]))
+                         self._get_tag_class_names(vcf_readers[1]))
         self.assertNotIn("_HCTag",
                          self._get_tag_class_names(vcf_readers[2]))
         self.assertEquals(reader1.file_name, vcf_readers[0]._vcf_reader.file_name)
@@ -337,6 +343,7 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(expected_patient_dict.keys(), dict(actual_patient_dict).keys())
         self.assertEquals(expected_patient_dict.values(), dict(actual_patient_dict).values())
 
+
 class VarscanVcfReaderTestCase(test_case.JacquardBaseTestCase):
     def test_metaheaders(self):
         vcf_reader = MockVcfReader(metaheaders=["##foo", "##source=VarScan2"])
@@ -417,4 +424,3 @@ class VarscanVcfReaderTestCase(test_case.JacquardBaseTestCase):
 
         self.assertTrue(varscan_vcf_reader.open)
         self.assertTrue(varscan_vcf_reader.close)
-

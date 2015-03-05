@@ -13,13 +13,14 @@ VARSCAN_SOMATIC_HEADER = ("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"
                           "NORMAL|TUMOR").replace("|", "\t")
 JQ_VARSCAN_TAG = "JQ_VS_"
 
+
 class _AlleleFreqTag(object):
     #pylint: disable=too-few-public-methods
     @classmethod
     def _standardize_af(cls, value):
         new_values = []
         for val in value:
-            new_val = str(float(val.strip("%"))/100)
+            new_val = str(float(val.strip("%")) / 100)
             new_values.append(utils.round_two_digits(new_val))
         return ",".join(new_values)
 
@@ -43,8 +44,9 @@ class _AlleleFreqTag(object):
             vcf_record.add_sample_tag_value(JQ_VARSCAN_TAG + "AF",
                                             sample_values)
 
-#pylint: disable=too-few-public-methods
+
 class _DepthTag(object):
+    #pylint: disable=too-few-public-methods
     def __init__(self):
         #pylint: disable=line-too-long
         self.metaheader = ('##FORMAT=<ID={0}DP,'
@@ -65,13 +67,15 @@ class _DepthTag(object):
             vcf_record.add_sample_tag_value(JQ_VARSCAN_TAG + "DP",
                                             sample_values)
 
-#pylint: disable=too-few-public-methods
+
 class _SomaticTag(object):
+    #pylint: disable=too-few-public-methods
+
     @staticmethod
     def _somatic_status(sample_index):
-        if sample_index == 0: #it's NORMAL
+        if sample_index == 0:  # it's NORMAL
             return "0"
-        else: #it's TUMOR
+        else:  # it's TUMOR
             return "1"
 
     def __init__(self):
@@ -99,8 +103,10 @@ class _SomaticTag(object):
 
         vcf_record.add_sample_tag_value(varscan_tag, sample_values)
 
+
 #TODO: (cgates/jebene): All tags should have _TAG_ID as implemented below
 class _HCTag(object):
+    #pylint: disable=too-few-public-methods
     _FILTERS_TO_REPLACE = set(["", ".", "pass"])
     _TAG_ID = "{}LOW_CONFIDENCE".format(JQ_VARSCAN_TAG)
 
@@ -205,13 +211,14 @@ class Varscan(object):
                 for filter_file in list(filter_files):
                     if filter_file.file_name.startswith(prefix):
                         vcf_reader = _VarscanVcfReader(vcf.VcfReader(reader),
-                                                filter_file)
+                                                       filter_file)
                         filter_files.remove(filter_file)
 
                 trans_vcf_readers.append(vcf_reader)
             unclaimed_set.update(filter_files)
 
         return list(unclaimed_set), trans_vcf_readers
+
 
 #TODO: (cgates): If we can, I would rather inflate the high confidence set when
 # we open and not on construction. There is a pretty safe/clean way to do this.
@@ -245,6 +252,7 @@ class _VarscanVcfReader(object):
 
     def close(self):
         return self._vcf_reader.close()
+
     @property
     def metaheaders(self):
         new_metaheaders = list(self._vcf_reader.metaheaders)
@@ -266,4 +274,3 @@ class _VarscanVcfReader(object):
         for tag in self.tags:
             tag.add_tag_values(vcf_record)
         return vcf_record
-

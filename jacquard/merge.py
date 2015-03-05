@@ -1,16 +1,14 @@
 # pylint: disable=missing-docstring, too-many-locals, too-few-public-methods
 from __future__ import print_function, absolute_import
 from collections import defaultdict, OrderedDict
-import glob
-import errno
-import jacquard.utils as utils
 from jacquard import __version__
+from jacquard.vcf import FileWriter
+import glob
+import jacquard.logger as logger
 import jacquard.vcf as vcf
 import natsort
 import os
 import re
-import jacquard.logger as logger
-from jacquard.vcf import FileWriter
 
 _DEFAULT_INCLUDED_FORMAT_TAGS = ["JQ_.*"]
 _MULT_ALT_TAG = "JQ_MULT_ALT_LOCUS"
