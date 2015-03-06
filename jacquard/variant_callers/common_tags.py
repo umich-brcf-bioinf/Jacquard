@@ -1,4 +1,4 @@
-#pylint: disable=too-few-public-methods, unused-argument
+"""Common tags used by several callers."""
 from __future__ import print_function, absolute_import
 from jacquard import __version__
 
@@ -6,6 +6,12 @@ CALLER_REPORTED_TAG = "CALLER_REPORTED"
 CALLER_PASSED_TAG = "CALLER_PASSED"
 
 class ReportedTag(object):
+    """Tracks whether the caller reported this variant (i.e. it's in the VCF).
+
+    This tag could be inferred through the presence of other tags, but adding
+    it explicitly simplifies how summary tags are generated.
+    """
+    #pylint: disable=too-few-public-methods
     def __init__(self, tag_name):
         self.tag_name = tag_name
         self.metaheader = ('##FORMAT=<ID={}{},'
@@ -25,6 +31,14 @@ class ReportedTag(object):
                                         sample_values)
 
 class PassedTag(object):
+    """Tracks whether the caller passed this variant.
+
+    This enables a useful summary tag. Note that Jaquard may flag a variant
+    that originally passed as invalid (e.g. invalid Varscan ALT value). In
+    this case, this tag represents what the origin caller thought and not
+    Jacquard's opinion.
+    """
+    #pylint: disable=too-few-public-methods
     def __init__(self, tag_name):
         self.tag_name = tag_name
         self.metaheader = ('##FORMAT=<ID={}{},'

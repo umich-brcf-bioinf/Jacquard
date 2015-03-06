@@ -1,7 +1,5 @@
 from __future__ import print_function, absolute_import
-
 from collections import defaultdict, OrderedDict
-
 from jacquard import __version__
 import jacquard.utils as utils
 import jacquard.variant_callers.common_tags as common_tags
@@ -67,7 +65,7 @@ class _DepthTag(object):
             vcf_record.add_sample_tag_value(JQ_VARSCAN_TAG + "DP",
                                             sample_values)
 
-
+##TODO (cgates): Make this robust to sample order changes
 class _SomaticTag(object):
     #pylint: disable=too-few-public-methods
 
@@ -156,6 +154,7 @@ class Varscan(object):
         self.abbr = "VS"
         self.meta_header = "##jacquard.normalize_varscan.sources={0},{1}\n"
 
+    ##TODO (cgates): deprecated
     @staticmethod
     def validate_input_file(meta_headers, column_header):
         if "##source=VarScan2" not in meta_headers:

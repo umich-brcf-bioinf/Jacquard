@@ -1,13 +1,18 @@
-#pylint: disable=too-few-public-methods, unused-argument
+"""Interprets MuTect VCF files adding Jacquard standard information.
+
+MuTect VCFs are assumed to have a ".vcf" extension and have a valid 
+"##MuTect=..." metaheader.
+"""
 from __future__ import print_function, absolute_import
-import jacquard.variant_callers.common_tags as common_tags
-import jacquard.utils as utils
-import jacquard.vcf as vcf
 from jacquard import __version__
+import jacquard.utils as utils
+import jacquard.variant_callers.common_tags as common_tags
+import jacquard.vcf as vcf
 
 JQ_MUTECT_TAG = "JQ_MT_"
 
 class _AlleleFreqTag(object):
+    #pylint: disable=too-few-public-methods
     def __init__(self):
         self.metaheader = ('##FORMAT=<ID={0}AF,'
                            'Number=A,'
@@ -34,6 +39,7 @@ class _AlleleFreqTag(object):
         return ",".join(new_values)
 
 class _DepthTag(object):
+    #pylint: disable=too-few-public-methods
     def __init__(self):
         self.metaheader = ('##FORMAT=<ID={0}DP,'
                            'Number=1,'
@@ -53,6 +59,7 @@ class _DepthTag(object):
             vcf_record.add_sample_tag_value(JQ_MUTECT_TAG + "DP", sample_values)
 
 class _SomaticTag(object):
+    #pylint: disable=too-few-public-methods
     def __init__(self):
         self.metaheader = ('##FORMAT=<ID={0}HC_SOM,'
                            'Number=1,'
@@ -83,37 +90,50 @@ class _SomaticTag(object):
             return "0"
 
 class Mutect(object):
+    """Recognize and transform MuTect VCFs to standard Jacquard format.
+    
+    MuTect VCFs are blessedly compliant and straightforward to translate, with
+    the following exception. The incoming header has the sample name values
+    (derived from the input alignments). To play well with other callers like
+    Strelka and VarScan, the sample headers are replaced with Normal and Tumor.
+    """
+    _MUTECT_METAHEADER_PREFIX = "##MuTect"
     _NORMAL_SAMPLE_KEY = "normal_sample_name"
     _TUMOR_SAMPLE_KEY = "tumor_sample_name"
 
     def __init__(self):
         self.name = "MuTect"
         self.abbr = "MT"
-        self.tags = [common_tags.ReportedTag(JQ_MUTECT_TAG),
-                     common_tags.PassedTag(JQ_MUTECT_TAG),
-                     _AlleleFreqTag(), _DepthTag(), _SomaticTag()]
-        self.file_name_search = ""
 
-    #TODO: (cgates): Why using ints instead of boolean for this method?
+    ##TODO (cgates): deprecate; remove
     @staticmethod
-    def validate_input_file(meta_headers, column_header):
-        valid = 0
+    def validate_input_file(meta_headers, dummy_column_header):
         for line in meta_headers:
-            if "##MuTect" in line:
-                valid = 1
-                break
-        return valid
+            if line.startswith(Mutect._MUTECT_METAHEADER_PREFIX):
+                return True
+        return False
 
     @staticmethod
     def _is_mutect_vcf(file_reader):
-        if file_reader.file_name.endswith(".vcf"):
+        if file_reader.file_name.lower().endswith(".vcf"):
             vcf_reader = vcf.VcfReader(file_reader)
             for metaheader in vcf_reader.metaheaders:
-                if metaheader.startswith("##MuTect"):
+                if metaheader.startswith(Mutect._MUTECT_METAHEADER_PREFIX):
                     return True
         return False
 
     def claim(self, file_readers):
+        """Recognizes and claims MuTect VCFs form the set of all input VCFs.
+
+        Each defined caller has a chance to evaluate and claim all the incoming
+        files as something that it can process.
+        
+        Args:
+            file_readers: the collection of currently unclaimed files
+        
+        Returns:
+            A tuple of unclaimed readers and MuTectVcfReaders.
+        """
         unclaimed_readers = []
         vcf_readers = []
         for file_reader in file_readers:
@@ -128,7 +148,7 @@ class Mutect(object):
     def _build_mutect_dict(metaheaders):
         mutect_dict = {}
         for metaheader in metaheaders:
-            if metaheader.startswith("##MuTect="):
+            if metaheader.startswith(Mutect._MUTECT_METAHEADER_PREFIX):
                 split_line = metaheader.strip('"').split(" ")
                 for item in split_line:
                     split_item = item.split("=")
@@ -140,6 +160,12 @@ class Mutect(object):
         return mutect_dict
 
     def _get_new_column_header(self, vcf_reader):
+        """Returns a standardized column header.
+
+        MuTect sample headers include the name of input alignment, which is
+        nice, but doesn't match up with the sample names reported in Strelka
+        or VarScan. To fix this, we replace with NORMAL and TUMOR using the
+        MuTect metadata command line to replace them correctly."""
         mutect_dict = self._build_mutect_dict(vcf_reader.metaheaders)
 
         new_header_list = []
@@ -162,6 +188,14 @@ class Mutect(object):
 
 
 class _MutectVcfReader(object):
+    """Adapter that presents a MuTect VCF as a VcfReader.
+
+    This follows the VcfReader interface, delegating calls to the base
+    VcfReader, adjusting metaheaders, column header, and individual
+    variants as appropriate.
+
+    See VcfReader for more info.
+    """
     def __init__(self, vcf_reader):
         self._vcf_reader = vcf_reader
         self._caller = Mutect()

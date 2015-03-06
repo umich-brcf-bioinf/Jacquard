@@ -1,12 +1,16 @@
+"""Classes to summarize data for a sample-variant or variant as a whole.
+
+A collection of individual Tag classes hold the metaheader and logic to
+transform incoming VcfRecords.
+"""
+#pylint: disable=missing-docstring
 from __future__ import print_function, absolute_import
-
 from collections import defaultdict
-import re
-
 from jacquard import __version__
 import jacquard.utils as utils
 import jacquard.variant_callers.common_tags as common_tags
 import numpy as np
+import re
 
 
 JQ_SUMMARY_TAG = "JQ_SUMMARY_"
@@ -140,8 +144,8 @@ class _CallersReportedListTag(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         self.metaheader = self._get_metaheader()
-        self.all_ranges = []
-        self.name = ""
+#         self.all_ranges = []
+#         self.name = ""
         self.pattern = re.compile(r"JQ_(.*?)_{}"\
                                   .format(common_tags.CALLER_REPORTED_TAG))
 
@@ -165,8 +169,8 @@ class _CallersReportedTag(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         self.metaheader = self._get_metaheader()
-        self.all_ranges = []
-        self.name = ""
+#         self.all_ranges = []
+#         self.name = ""
         self.pattern = re.compile(r"JQ_(.*?)_{}"\
                                   .format(common_tags.CALLER_REPORTED_TAG))
 
@@ -190,8 +194,8 @@ class _CallersPassedListTag(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         self.metaheader = self._get_metaheader()
-        self.all_ranges = []
-        self.name = ""
+#         self.all_ranges = []
+#         self.name = ""
         self.pattern = re.compile(r"JQ_(.*?)_{}"\
                                   .format(common_tags.CALLER_PASSED_TAG))
 
@@ -216,8 +220,8 @@ class _CallersPassedTag(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         self.metaheader = self._get_metaheader()
-        self.all_ranges = []
-        self.name = ""
+#         self.all_ranges = []
+#         self.name = ""
         self.pattern = re.compile(r"JQ_(.*?)_{}"\
                                   .format(common_tags.CALLER_PASSED_TAG))
 
@@ -240,8 +244,8 @@ class _SamplesReported(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         self.metaheader = self._get_metaheader()
-        self.all_ranges = []
-        self.name = ""
+#         self.all_ranges = []
+#         self.name = ""
 
     @staticmethod
     def _get_metaheader():
@@ -264,8 +268,8 @@ class _SamplesPassed(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         self.metaheader = self._get_metaheader()
-        self.all_ranges = []
-        self.name = ""
+#         self.all_ranges = []
+#         self.name = ""
 
     @staticmethod
     def _get_metaheader():
@@ -283,6 +287,8 @@ class _SamplesPassed(object):
     def add_tag_values(vcf_record):
         _add_sample_count_values(vcf_record, JQ_PASSED, JQ_SAMPLES_PASSED)
 
+#TODO (cgates): Split into separate two separate classes and simplify 
+# how ranges are calculated  
 class _AlleleFreqTag(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
@@ -324,12 +330,13 @@ class _AlleleFreqTag(object):
         tag_summary, tag_range = _get_tag_summary_and_range(vcf_record,
                                                             tags,
                                                             self.all_ranges)
-
         vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + "AF_AVERAGE",
                                         tag_summary)
         vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + "AF_RANGE",
                                         tag_range)
 
+#TODO (cgates): Split into separate two separate classes and simplify 
+# how ranges are calculated  
 class _DepthTag(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
@@ -381,8 +388,8 @@ class _SomaticTag(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         self.metaheader = self._get_metaheader()
-        self.all_ranges = []
-        self.name = "SOM"
+#         self.all_ranges = []
+#         self.name = "SOM"
 
     @staticmethod
     def _get_metaheader():
@@ -413,6 +420,7 @@ class _SomaticTag(object):
                                         somatic_count)
 
 class SummarizeCaller(object):
+    """Provides metaheaders for VcfReader; adds summary tags to VcfRecord."""
     def __init__(self):
         self.tags = [_CallersReportedTag(),
                      _CallersPassedTag(),
@@ -421,12 +429,12 @@ class SummarizeCaller(object):
                      _AlleleFreqTag(),
                      _DepthTag(),
                      _SomaticTag()]
-        self.ranges = {}
+        #self.ranges = {}
 
     def add_tags(self, vcf_record):
         for tag in self.tags:
             tag.add_tag_values(vcf_record)
-            self.ranges[tag.name] = tag.all_ranges
+#             self.ranges[tag.name] = tag.all_ranges
         return vcf_record
 
     def get_metaheaders(self):

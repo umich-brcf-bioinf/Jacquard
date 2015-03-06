@@ -1,4 +1,14 @@
-#pylint: disable=too-few-public-methods, unused-argument
+"""Interprets Strelka VCF files adding Jacquard standard information.
+
+* Strelka produces a separate file for SNVs and indels. Jacquard can process 
+    either or both.
+* Jacquard standard tags are based on tier 2 data and use different source tags
+    based on whether the file is indel or snp.
+* Strelka VCFs are assumed to have a ".vcf" extension and have a
+    "##source=strelka" metaheader.
+
+See tag definitions for more info.
+"""
 from __future__ import print_function, absolute_import
 import jacquard.vcf as vcf
 import jacquard.variant_callers.common_tags as common_tags
@@ -8,6 +18,7 @@ from jacquard import __version__
 JQ_STRELKA_TAG = "JQ_SK_"
 
 class _AlleleFreqTag(object):
+    #pylint: disable=too-few-public-methods
     def __init__(self):
         #pylint: disable=line-too-long
         self.metaheader = ('##FORMAT=<ID={0}AF,'
@@ -84,6 +95,7 @@ class _AlleleFreqTag(object):
         return utils.round_two_digits(value)
 
 class _DepthTag(object):
+    #pylint: disable=too-few-public-methods
     REQUIRED_TAGS = set(["DP2", "AU"])
     NUCLEOTIDE_DEPTH_TAGS = ["AU", "CU", "TU", "GU"]
 
@@ -117,7 +129,10 @@ class _DepthTag(object):
             sample_values[sample] = _DepthTag._get_tier2_base_depth(sample_tags)
         vcf_record.add_sample_tag_value(JQ_STRELKA_TAG + "DP", sample_values)
 
+
+##TODO (cgates): Make this robust to sample order changes
 class _SomaticTag(object):
+    #pylint: disable=too-few-public-methods
     def __init__(self):
         #pylint: disable=line-too-long
         self.metaheader = ('##FORMAT=<ID={0}HC_SOM,'
@@ -143,13 +158,22 @@ class _SomaticTag(object):
             return "0"
 
 class Strelka(object):
+    """Recognize and transform Strelka VCFs to standard Jacquard format.
+    
+    Note that Strelka sometimes reports variants which fail the filter as
+    having an ALT of "."; this seems to be Strelka's shorthand for saying,
+    "I couldn't be sure there was an ALT". Unfortunately, that's not a valid
+    ALT value so these rows are flagged and (in a typical workflow) excluded.
+    """
+
     def __init__(self):
         self.name = "Strelka"
         self.abbr = "SK"
         self.meta_header = "##jacquard.normalize_strelka.sources={0},{1}\n"
 
+    ##TODO (cgates): deprecated; remove
     @staticmethod
-    def validate_input_file(meta_headers, column_header):
+    def validate_input_file(meta_headers, dummy_column_header):
         return "##source=strelka" in meta_headers
 
     @staticmethod
@@ -160,6 +184,17 @@ class Strelka(object):
         return False
 
     def claim(self, file_readers):
+        """Recognizes and claims Strelka VCFs form the set of all input VCFs.
+
+        Each defined caller has a chance to evaluate and claim all the incoming
+        files as something that it can process.
+        
+        Args:
+            file_readers: the collection of currently unclaimed files
+        
+        Returns:
+            A tuple of unclaimed readers and StrelkaVcfReaders.
+        """
         unclaimed_readers = []
         vcf_readers = []
         for file_reader in file_readers:
@@ -171,6 +206,14 @@ class Strelka(object):
         return (unclaimed_readers, vcf_readers)
 
 class _StrelkaVcfReader(object):
+    """Adapter that presents a Strelka VCF as a VcfReader.
+
+    This follows the VcfReader interface, delegating calls to the base
+    VcfReader, adjusting metaheaders, and individual
+    variants as appropriate.
+
+    See VcfReader for more info.
+    """
     def __init__(self, vcf_reader):
         self._vcf_reader = vcf_reader
         self._caller = Strelka()

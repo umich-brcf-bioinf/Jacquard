@@ -6,6 +6,7 @@
 from __future__ import absolute_import, print_function
 
 
+#TODO (cgates): Why does this need a string? Seems like it should take a number?
 def round_two_digits(val):
     if len(val.split(".")[1]) > 2:
         return "{0:.2f}".format(float(val))

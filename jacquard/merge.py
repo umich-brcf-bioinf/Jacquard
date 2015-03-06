@@ -1,12 +1,28 @@
 """Merges a set of VCF files into a single VCF file.
 
-Each incoming VCF record is joined with other VCF records that share the same
-"coordinate", where coordinate is the (chrom, pos, ref, and alt).
-The merged file will have as many records as the distinct set of
-(chrom, pos, ref, alt) across all input files.
-The FORMAT tags from all incoming VCFs are aggregated to a single merged list.
-Each variant record will be the merged set of incoming format tags.
-Incoming fixed fields (e.g. QUAL, FILTER, INFO) are ignored.
+* Merge assumes the incoming VCFs are aligned to the same set of contigs.
+* Merge assumes incoming VCFs names follow this pattern:
+    patientIdentifier.*.vcf
+    Specifically, the first element of the VCF file name should be the patient
+    name; for example you mihght have this:
+        patientA.mutect.vcf, patientA.strelka.vcf, patientA.varscan.vcf,
+        patientB.mutect.vcf, patientB.strelka.vcf, patientB.varscan.vcf,
+        etc.
+* Merge assumes the sample names (i.e. the VCF sample column headers, typically 
+    TUMOR and NORMAL) are consistent across the input VCFs. (The preceding
+    Jacquard command "translate" ensures this is true.)
+* Each incoming VCF record is joined with other VCF records that share the same
+    "coordinate", where coordinate is the (chrom, pos, ref, and alt).
+* Calls for the same patient/sample are joined into a single column. Each output
+    column is the patient name (prefix of the file name) plus the sample name
+    from the column header.
+* The merged file will have as many records as the distinct set of
+    (chrom, pos, ref, alt) across all input files.
+* Each variant record will have the minimal set of incoming format tags for
+    that variant (i.e. the list of format tags is specific to each record).
+* Incoming QUAL and INFO fields are ignored.
+* By default, merge only includes "Jacqaurd" FORMAT tags, but other tags can be
+    included through and optional a command line arg.
 """
 from __future__ import print_function, absolute_import
 from collections import defaultdict, OrderedDict

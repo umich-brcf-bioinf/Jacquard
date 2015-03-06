@@ -1,8 +1,14 @@
 """Translates a set of VCF files by adding standardized tags.
 
-Reads incoming VCF files determining appropriate origin caller (e.g. MuTect);
-emits a new file with additional translated versions of incoming FORMAT tags
-(e.g. JQ_MT_AF).
+Reads incoming VCF files determining appropriate "origin caller" (e.g. MuTect);
+emits a new translated file. The translated file is similar to the input
+file, with these exceptions:
+    * translate will add a filter flag anomalous VCF records, i.e. records
+        that don't conform to the standard; for example both Strelka and
+        Varscan emit VCF records with invalid ALT values.
+    * translate will add new Jacquard-standard FORMAT tags that augment the
+        caller specific tags (e.g. a Varscan FREQ tag would generates a new
+        JQ_VS_AF tag).
 
 There will typically be a translated VCF file for each input VCF file.
 Unrecognized VCFs are not copied to output.
@@ -141,6 +147,10 @@ def _log_unclaimed_readers(unclaimed_readers):
         msg = unclaimed_log_messgae.format(reader.file_name)
         logger.warning(msg)
 
+
+#TODO (cgates): This module is both a command and also manipulates VcfRecords
+# like a caller. This is the only body of code that does both these things.
+# Does this bother anyone else?
 def execute(args, execution_context):
     validate_args(args)
 

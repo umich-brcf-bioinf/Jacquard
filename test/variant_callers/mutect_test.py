@@ -51,25 +51,6 @@ class MockReader(object):
     def close(self):
         self.closed = True
 
-class CommonTagTestCase(test_case.JacquardBaseTestCase):
-    def setUp(self):
-        global ORIGINAL_REPORTED_TAG
-        global ORIGINAL_PASSED_TAG
-        ORIGINAL_REPORTED_TAG = common_tags.ReportedTag
-        ORIGINAL_PASSED_TAG = common_tags.PassedTag
-        common_tags.ReportedTag = MockCommonTag
-        common_tags.PassedTag = MockCommonTag
-
-    def tearDown(self):
-        common_tags.ReportedTag = ORIGINAL_REPORTED_TAG
-        common_tags.PassedTag = ORIGINAL_PASSED_TAG
-
-    def test_reported_tag(self):
-        mutect_instance = mutect.Mutect()
-        reported_tag = mutect_instance.tags[0]
-        passed_tag = mutect_instance.tags[1]
-        self.assertEquals("JQ_MT_", reported_tag.input_caller_name)
-        self.assertEquals("JQ_MT_", passed_tag.input_caller_name)
 
 class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
@@ -169,7 +150,7 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
         self.assertIsInstance(vcf_readers[0], mutect._MutectVcfReader)
         self.assertEquals(reader2.file_name, vcf_readers[0]._vcf_reader.file_name)
 
-    def test_claim_ignores_non_vcf_files(self):
+    def test_claim_ignoresNonVcfExtensions(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
         content1 = ["##foo", "##MuTect=123", "#chrom", record1]
         reader1 = MockFileReader("fileA.txt", content1)
@@ -181,6 +162,18 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(1, len(unrecognized_readers))
         self.assertEquals([reader1], unrecognized_readers)
         self.assertEquals(0, len(vcf_readers))
+
+    def test_claim_vcfExtensionCaseInsensitive(self):
+        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
+        content1 = ["##foo", "##MuTect=123", "#chrom", record1]
+        reader1 = MockFileReader("fileA.VcF", content1)
+        file_readers = [reader1]
+
+        caller = mutect.Mutect()
+        unrecognized_readers, vcf_readers = caller.claim(file_readers)
+
+        self.assertEquals(0, len(unrecognized_readers))
+        self.assertEquals(1, len(vcf_readers))
 
 class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
     def test_metaheaders(self):
@@ -218,6 +211,12 @@ class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
                       vcf_records[0].sample_tag_values["sampleA"])
         self.assertIn(mutect.JQ_MUTECT_TAG + "DP",
                       vcf_records[1].sample_tag_values["sampleA"])
+        self.assertIn("DP", vcf_records[0].format_tags)
+        self.assertIn(mutect.JQ_MUTECT_TAG + "DP", vcf_records[0].format_tags)
+        self.assertIn(mutect.JQ_MUTECT_TAG + "HC_SOM", vcf_records[0].format_tags)
+        self.assertIn(mutect.JQ_MUTECT_TAG + "CALLER_REPORTED", vcf_records[0].format_tags)
+        self.assertIn(mutect.JQ_MUTECT_TAG + "CALLER_PASSED", vcf_records[0].format_tags)
+
 
     def test_open_and_close(self):
         vcf_reader = MockVcfReader(metaheaders=["##foo", "##MuTect=123"])
