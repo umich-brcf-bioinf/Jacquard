@@ -1,55 +1,10 @@
 # pylint: disable=line-too-long,too-many-public-methods,too-few-public-methods
 # pylint: disable=invalid-name,global-statement
 from jacquard import __version__
-import jacquard.variant_callers.common_tags as common_tags
 import jacquard.variant_callers.mutect as mutect
 import jacquard.vcf as vcf
 import test.test_case as test_case
 from test.vcf_test import MockFileReader, MockVcfReader
-
-
-ORIGINAL_REPORTED_TAG = None
-ORIGINAL_PASSED_TAG = None
-
-class MockCommonTag(object):
-    def __init__(self, input_caller_name):
-        self.input_caller_name = input_caller_name
-
-class MockWriter(object):
-    def __init__(self):
-        self._content = []
-        self.opened = False
-        self.closed = False
-
-    def open(self):
-        self.opened = True
-
-    def write(self, content):
-        self._content.extend(content.splitlines())
-
-    def lines(self):
-        return self._content
-
-    def close(self):
-        self.closed = True
-
-class MockReader(object):
-    def __init__(self, lines=None):
-        if not lines:
-            lines = []
-        self._lines_iter = iter(lines)
-        self.opened = False
-        self.closed = False
-        self.input_filepath = "foo"
-
-    def open(self):
-        self.opened = True
-
-    def read_lines(self):
-        return self._lines_iter
-
-    def close(self):
-        self.closed = True
 
 
 class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
@@ -199,23 +154,26 @@ class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
                                 pos="22",
                                 ref="A",
                                 alt="G",
-                                sample_tag_values={"sampleA": {"DP": "46"},
-                                                   "sampleB": {"DP": "68"}})
+                                sample_tag_values={"sampleA": {"FA": "0.54"},
+                                                   "sampleB": {"FA": "0.76"}})
         vcf_reader = MockVcfReader(records=[record1, record2])
 
         mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
         vcf_records = [record for record in mutect_vcf_reader.vcf_records()]
 
         self.assertEquals(2, len(vcf_records))
-        self.assertIn(mutect.JQ_MUTECT_TAG + "DP",
-                      vcf_records[0].sample_tag_values["sampleA"])
-        self.assertIn(mutect.JQ_MUTECT_TAG + "DP",
-                      vcf_records[1].sample_tag_values["sampleA"])
+
         self.assertIn("DP", vcf_records[0].format_tags)
         self.assertIn(mutect.JQ_MUTECT_TAG + "DP", vcf_records[0].format_tags)
         self.assertIn(mutect.JQ_MUTECT_TAG + "HC_SOM", vcf_records[0].format_tags)
         self.assertIn(mutect.JQ_MUTECT_TAG + "CALLER_REPORTED", vcf_records[0].format_tags)
         self.assertIn(mutect.JQ_MUTECT_TAG + "CALLER_PASSED", vcf_records[0].format_tags)
+
+        self.assertIn("FA", vcf_records[1].format_tags)
+        self.assertIn(mutect.JQ_MUTECT_TAG + "AF", vcf_records[1].format_tags)
+        self.assertIn(mutect.JQ_MUTECT_TAG + "HC_SOM", vcf_records[1].format_tags)
+        self.assertIn(mutect.JQ_MUTECT_TAG + "CALLER_REPORTED", vcf_records[1].format_tags)
+        self.assertIn(mutect.JQ_MUTECT_TAG + "CALLER_PASSED", vcf_records[1].format_tags)
 
 
     def test_open_and_close(self):

@@ -1,11 +1,11 @@
 """Interprets Strelka VCF files adding Jacquard standard information.
 
+* Strelka VCFs are assumed to have a ".vcf" extension and have a
+    "##source=strelka" metaheader.
 * Strelka produces a separate file for SNVs and indels. Jacquard can process 
     either or both.
 * Jacquard standard tags are based on tier 2 data and use different source tags
     based on whether the file is indel or snp.
-* Strelka VCFs are assumed to have a ".vcf" extension and have a
-    "##source=strelka" metaheader.
 
 See tag definitions for more info.
 """

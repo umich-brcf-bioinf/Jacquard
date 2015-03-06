@@ -1,7 +1,7 @@
 """Classes to summarize data for a sample-variant or variant as a whole.
 
 A collection of individual Tag classes hold the metaheader and logic to
-transform incoming VcfRecords.
+transform Jacquard-standardized VcfRecords.
 """
 #pylint: disable=missing-docstring
 from __future__ import print_function, absolute_import
@@ -420,7 +420,7 @@ class _SomaticTag(object):
                                         somatic_count)
 
 class SummarizeCaller(object):
-    """Provides metaheaders for VcfReader; adds summary tags to VcfRecord."""
+    """Provides metaheaders for VcfReader; adds summary tags to VcfRecords."""
     def __init__(self):
         self.tags = [_CallersReportedTag(),
                      _CallersPassedTag(),

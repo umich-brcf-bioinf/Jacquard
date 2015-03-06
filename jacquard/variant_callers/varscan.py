@@ -1,3 +1,22 @@
+"""Interprets VarScan2 VCF files adding Jacquard standard information.
+
+* VarScan VCFs are assumed to have a ".vcf" extension and have a
+    "##source=VarScan2" metaheader.
+* VarScan produces a separate file for SNPs and indels. Jacquard can process
+    either or both.
+* Jacquard requires the VarScan VCF outputs. The VarScan workflow has optional
+    extra steps to:
+    a) partition the results into Germline, LOH, and Somatic files
+    b) filter to a subset of high-confidence variants
+    If these files are provided in the input, Jacquard will use them to
+    flag variants not found in the high-confidence files so that they can be
+    optionally filtered out.
+* If provided, high-confidence files should follow the naming convention of
+    patientName.*.fpfilter.pass
+    The high-confidence file suffix can be supplied as a command line arg.
+
+See tag definitions for more info.
+"""
 from __future__ import print_function, absolute_import
 from collections import defaultdict, OrderedDict
 from jacquard import __version__
@@ -7,7 +26,7 @@ import jacquard.vcf as vcf
 import os
 
 
-VARSCAN_SOMATIC_HEADER = ("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"
+_VARSCAN_SOMATIC_HEADER = ("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"
                           "NORMAL|TUMOR").replace("|", "\t")
 JQ_VARSCAN_TAG = "JQ_VS_"
 
@@ -147,6 +166,7 @@ class _HCTag(object):
 
 
 class Varscan(object):
+    """Recognize and transform VarScan VCFs to standard Jacquard format."""
     _HC_FILE_SUFFIX = "fpfilter.pass"
 
     def __init__(self):
@@ -154,13 +174,13 @@ class Varscan(object):
         self.abbr = "VS"
         self.meta_header = "##jacquard.normalize_varscan.sources={0},{1}\n"
 
-    ##TODO (cgates): deprecated
+    ##TODO (cgates): deprecated; remove
     @staticmethod
     def validate_input_file(meta_headers, column_header):
         if "##source=VarScan2" not in meta_headers:
             return 0
 
-        if VARSCAN_SOMATIC_HEADER == column_header:
+        if _VARSCAN_SOMATIC_HEADER == column_header:
             return 1
         else:
             raise utils.JQException("Unexpected VarScan VCF structure - "
@@ -173,7 +193,7 @@ class Varscan(object):
             return "##source=VarScan2" in vcf_reader.metaheaders
         return False
 
-    #TODO: (cgates): Add check of header line (extract constant from HCTag)
+    #TODO: (cgates): Add check of header line (extract constant from HCTag?)
     def _is_varscan_hc_file(self, file_reader):
         return file_reader.file_name.endswith(self._HC_FILE_SUFFIX)
 
@@ -188,6 +208,19 @@ class Varscan(object):
         return patient_to_files
 
     def claim(self, file_readers):
+        """Recognizes and claims MuTect VCFs form the set of all input VCFs.
+
+        Each defined caller has a chance to evaluate and claim all the incoming
+        files as something that it can process. Since VarScan can claim
+        high-confidence files as well, this process is significantly more
+        complex than for other callers.
+        
+        Args:
+            file_readers: the collection of currently unclaimed files
+        
+        Returns:
+            A tuple of unclaimed readers and MuTectVcfReaders.
+        """
         files_per_patient = self._get_files_per_patient(file_readers)
 
         unclaimed_set = set()
@@ -222,6 +255,14 @@ class Varscan(object):
 #TODO: (cgates): If we can, I would rather inflate the high confidence set when
 # we open and not on construction. There is a pretty safe/clean way to do this.
 class _VarscanVcfReader(object):
+    """Adapter that presents a VarScan VCF as a VcfReader.
+
+    This follows the VcfReader interface, delegating calls to the base
+    VcfReader, adjusting metaheaders and individual
+    variants as appropriate.
+
+    See VcfReader for more info.
+    """
     def __init__(self, vcf_reader, som_hc_file_reader=None):
         self._vcf_reader = vcf_reader
         self._som_hc_file_reader = som_hc_file_reader

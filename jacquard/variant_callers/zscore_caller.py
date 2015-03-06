@@ -1,4 +1,14 @@
-#pylint: disable=too-few-public-methods, unused-argument
+"""Classes to summarize zscore data for a sample-variant.
+
+A collection of individual Tag classes hold the metaheader and logic to
+transform Jacquard-standardized VcfRecords.
+
+These transforms combine info from a single sample-variant tag with aggregate
+info about all sample-variants in the VCF. For example, the zscore of a 
+sample-variant depth is:
+    (my_depth - average of all depths) / stddev of all depths
+For this reason, zscore values require the full VCF as one of the inputs.
+"""
 from __future__ import print_function, absolute_import
 import math
 from jacquard import __version__
@@ -11,11 +21,11 @@ _JQ_SUMMARY_TAG = "JQ_SUMMARY_"
 class _AlleleFreqZScoreTag(object):
     TAG_ID = "{0}AF_ZSCORE".format(_JQ_SUMMARY_TAG)
     _RANGE_TAG = "{0}AF_RANGE".format(_JQ_SUMMARY_TAG)
-    _METAHEADER_DESCRIPTION = ('''
-Concordance of reported allele frequencies across callers: 
-[(this AF range - mean AF range)/standard dev(all AF ranges)]. 
-Values with null or missing AF range will be assigned zscore of \'.\'; 
-for multi-valued ranges, zscore is of largest range.''').replace("\n", "")
+    _METAHEADER_DESCRIPTION = (\
+'''Concordance of reported allele frequencies across callers:
+ [(this AF range - mean AF range)/standard dev(all AF ranges)].
+ Values with null or missing AF range will be assigned zscore of \'.\';
+ for multi-valued ranges, zscore is of largest range.''').replace("\n", "")
 
     def __init__(self, vcf_reader):
         self.tag_id = self.TAG_ID
@@ -175,6 +185,7 @@ class _ZScoreTag(object):
 
 
 class ZScoreCaller(object):
+    """Provides metaheaders for VcfReader; adds summary tags to VcfRecords."""
     def __init__(self, vcf_reader):
         self._tags = [_AlleleFreqZScoreTag(vcf_reader),
                       _DepthZScoreTag(vcf_reader)]

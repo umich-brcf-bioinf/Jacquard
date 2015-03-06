@@ -59,6 +59,10 @@ class MockFileReader(object):
         self.close_was_called = True
         self.lines_to_iterate = None
 
+    def __cmp__(self, other):
+        return cmp(self.file_name, other.file_name)
+
+
 class MockWriter(object):
     def __init__(self):
         self._content = []

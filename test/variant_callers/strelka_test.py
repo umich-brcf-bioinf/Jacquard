@@ -2,60 +2,9 @@
 # pylint: disable=invalid-name,global-statement,too-many-format-args
 from jacquard import __version__
 from test.vcf_test import MockFileReader, MockVcfReader
-import jacquard.variant_callers.common_tags as common_tags
 import jacquard.variant_callers.strelka as strelka
 import jacquard.vcf as vcf
 import test.test_case as test_case
-
-
-#TODO: (cgates): Lots of PEP8 cleanup in this class
-ORIGINAL_REPORTED_TAG = None
-ORIGINAL_PASSED_TAG = None
-
-
-class MockCommonTag(object):
-    def __init__(self, input_caller_name):
-        self.input_caller_name = input_caller_name
-
-
-class MockWriter(object):
-    def __init__(self):
-        self._content = []
-        self.opened = False
-        self.closed = False
-
-    def open(self):
-        self.opened = True
-
-    def write(self, content):
-        self._content.extend(content.splitlines())
-
-    def lines(self):
-        return self._content
-
-    def close(self):
-        self.closed = True
-
-
-class CommonTagTestCase(test_case.JacquardBaseTestCase):
-    def setUp(self):
-        global ORIGINAL_REPORTED_TAG
-        global ORIGINAL_PASSED_TAG
-        ORIGINAL_REPORTED_TAG = common_tags.ReportedTag
-        ORIGINAL_PASSED_TAG = common_tags.PassedTag
-        common_tags.ReportedTag = MockCommonTag
-        common_tags.PassedTag = MockCommonTag
-
-    def tearDown(self):
-        common_tags.ReportedTag = ORIGINAL_REPORTED_TAG
-        common_tags.PassedTag = ORIGINAL_PASSED_TAG
-
-    def test_reported_tag(self):
-        strelka_instance = strelka._StrelkaVcfReader(MockVcfReader())
-        reported_tag = strelka_instance.tags[0]
-        passed_tag = strelka_instance.tags[1]
-        self.assertEquals("JQ_SK_", reported_tag.input_caller_name)
-        self.assertEquals("JQ_SK_", passed_tag.input_caller_name)
 
 
 class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
@@ -71,7 +20,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(originalVcfRecord.text(), processedVcfRecord.text())
 
-    def test_format_AUTag(self):
+    def test_format_AUTagWhenMultAlt(self):
         tag = strelka._AlleleFreqTag()
         line = "CHROM|POS|ID|REF|A,C|QUAL|FILTER|INFO|AU:CU:GU:TU|1,2:3,4:5,6:7,8|9,10:11,12:13,14:15,16\n".replace('|', "\t")
         expected = "CHROM|POS|ID|REF|A,C|QUAL|FILTER|INFO|AU:CU:GU:TU:{0}AF|1,2:3,4:5,6:7,8:0.1,0.2|9,10:11,12:13,14:15,16:0.19,0.23\n".format(strelka.JQ_STRELKA_TAG).replace('|', "\t")
@@ -207,18 +156,26 @@ class StrelkaVcfReaderTestCase(test_case.JacquardBaseTestCase):
                                 pos="22",
                                 ref="A",
                                 alt="G",
-                                sample_tag_values={"sampleA": {"DP2": "46"},
-                                                   "sampleB": {"DP2": "68"}})
+                                sample_tag_values={"sampleA": {"TIR": "10,20", "DP2":"100"},
+                                                   "sampleB": {"TIR": "15,25", "DP2":"100"}})
         vcf_reader = MockVcfReader(records=[record1, record2])
 
         strelka_vcf_reader = strelka._StrelkaVcfReader(vcf_reader)
         vcf_records = [record for record in strelka_vcf_reader.vcf_records()]
 
         self.assertEquals(2, len(vcf_records))
-        self.assertIn(strelka.JQ_STRELKA_TAG + "DP",
-                      vcf_records[0].sample_tag_values["sampleA"])
-        self.assertIn(strelka.JQ_STRELKA_TAG + "DP",
-                      vcf_records[1].sample_tag_values["sampleA"])
+
+        self.assertIn("DP2", vcf_records[0].format_tags)
+        self.assertIn(strelka.JQ_STRELKA_TAG + "DP", vcf_records[0].format_tags)
+        self.assertIn(strelka.JQ_STRELKA_TAG + "HC_SOM", vcf_records[0].format_tags)
+        self.assertIn(strelka.JQ_STRELKA_TAG + "CALLER_REPORTED", vcf_records[0].format_tags)
+        self.assertIn(strelka.JQ_STRELKA_TAG + "CALLER_PASSED", vcf_records[0].format_tags)
+
+        self.assertIn("TIR", vcf_records[1].format_tags)
+        self.assertIn(strelka.JQ_STRELKA_TAG + "AF", vcf_records[1].format_tags)
+        self.assertIn(strelka.JQ_STRELKA_TAG + "HC_SOM", vcf_records[1].format_tags)
+        self.assertIn(strelka.JQ_STRELKA_TAG + "CALLER_REPORTED", vcf_records[1].format_tags)
+        self.assertIn(strelka.JQ_STRELKA_TAG + "CALLER_PASSED", vcf_records[1].format_tags)
 
     def test_open_and_close(self):
         vcf_reader = MockVcfReader(metaheaders=["##foo", "##source=strelka"])

@@ -3,87 +3,9 @@
 from jacquard import __version__
 from jacquard.variant_callers import varscan
 from jacquard.variant_callers.varscan import _HCTag
-from test.vcf_test import MockVcfReader
-import jacquard.variant_callers.common_tags as common_tags
+from test.vcf_test import MockFileReader, MockVcfReader
 import jacquard.vcf as vcf
-import os
 import test.test_case as test_case
-
-
-ORIGINAL_REPORTED_TAG = None
-ORIGINAL_PASSED_TAG = None
-
-
-class MockCommonTag(object):
-    def __init__(self, input_caller_name):
-        self.input_caller_name = input_caller_name
-
-
-class MockWriter(object):
-    def __init__(self):
-        self._content = []
-        self.opened = False
-        self.closed = False
-
-    def open(self):
-        self.opened = True
-
-    def write(self, content):
-        self._content.extend(content.splitlines())
-
-    def lines(self):
-        return self._content
-
-    def close(self):
-        self.closed = True
-
-
-class MockFileReader(object):
-    def __init__(self, input_filepath="/foo/mockFileReader.txt", content=None):
-        self.input_filepath = input_filepath
-        self.file_name = os.path.basename(input_filepath)
-        if content:
-            self._content = content
-        else:
-            self._content = []
-        self.open_was_called = False
-        self.close_was_called = False
-
-    def open(self):
-        self.open_was_called = True
-
-    def read_lines(self):
-        for line in self._content:
-            yield line
-
-    def close(self):
-        self.close_was_called = True
-
-    def __cmp__(self, other):
-        return cmp(self.file_name, other.file_name)
-
-
-class CommonTagTestCase(test_case.JacquardBaseTestCase):
-    def setUp(self):
-        super(CommonTagTestCase, self).setUp()
-        global ORIGINAL_REPORTED_TAG
-        global ORIGINAL_PASSED_TAG
-        ORIGINAL_REPORTED_TAG = common_tags.ReportedTag
-        ORIGINAL_PASSED_TAG = common_tags.PassedTag
-        common_tags.ReportedTag = MockCommonTag
-        common_tags.PassedTag = MockCommonTag
-
-    def tearDown(self):
-        common_tags.ReportedTag = ORIGINAL_REPORTED_TAG
-        common_tags.PassedTag = ORIGINAL_PASSED_TAG
-        super(CommonTagTestCase, self).tearDown()
-
-    def test_reported_tag(self):
-        varscan_instance = varscan._VarscanVcfReader(MockVcfReader())
-        reported_tag = varscan_instance.tags[0]
-        passed_tag = varscan_instance.tags[1]
-        self.assertEquals("JQ_VS_", reported_tag.input_caller_name)
-        self.assertEquals("JQ_VS_", passed_tag.input_caller_name)
 
 
 class HCTagTestCase(test_case.JacquardBaseTestCase):
@@ -368,45 +290,36 @@ class VarscanVcfReaderTestCase(test_case.JacquardBaseTestCase):
                                 pos="22",
                                 ref="A",
                                 alt="G",
-                                sample_tag_values={"sampleA": {"DP": "46"},
-                                                   "sampleB": {"DP": "68"}})
+                                sample_tag_values={"sampleA": {"FREQ": "46%"},
+                                                   "sampleB": {"FREQ": "68%"}})
         vcf_reader = MockVcfReader(records=[record1, record2])
 
         varscan_vcf_reader = varscan._VarscanVcfReader(vcf_reader)
         vcf_records = [record for record in varscan_vcf_reader.vcf_records()]
 
         self.assertEquals(2, len(vcf_records))
-        self.assertIn(varscan.JQ_VARSCAN_TAG + "DP",
-                      vcf_records[0].sample_tag_values["sampleA"])
-        self.assertIn(varscan.JQ_VARSCAN_TAG + "DP",
-                      vcf_records[1].sample_tag_values["sampleA"])
 
-#TODO: jebene - this isn't an accurate reflection of a match - MAKE PASS
-    def Xtest_vcf_records_SomHcFileIndel(self):
-        record1 = vcf.VcfRecord(chrom="chr1", pos="21", ref="A", alt="G", vcf_filter="PASS")
-        record2 = vcf.VcfRecord(chrom="chr1", pos="22", ref="A", alt="TT", vcf_filter="PASS")
-        vcf_reader = MockVcfReader(records=[record1, record2])
+        self.assertIn("DP", vcf_records[0].format_tags)
+        self.assertIn(varscan.JQ_VARSCAN_TAG + "DP", vcf_records[0].format_tags)
+        self.assertIn(varscan.JQ_VARSCAN_TAG + "HC_SOM", vcf_records[0].format_tags)
+        self.assertIn(varscan.JQ_VARSCAN_TAG + "CALLER_REPORTED", vcf_records[0].format_tags)
+        self.assertIn(varscan.JQ_VARSCAN_TAG + "CALLER_PASSED", vcf_records[0].format_tags)
 
-        content1 = ["chrom\tposition\tref\tvar",
-                    "chr1\t21\tT\t-C",
-                    "chr1\t22\tA\t+TT"]
-        somatic_hc_reader = MockFileReader("fileA.Somatic.hc.fpfilter.pass", content1)
+        self.assertIn("FREQ", vcf_records[1].format_tags)
+        self.assertIn(varscan.JQ_VARSCAN_TAG + "AF", vcf_records[1].format_tags)
+        self.assertIn(varscan.JQ_VARSCAN_TAG + "HC_SOM", vcf_records[1].format_tags)
+        self.assertIn(varscan.JQ_VARSCAN_TAG + "CALLER_REPORTED", vcf_records[1].format_tags)
+        self.assertIn(varscan.JQ_VARSCAN_TAG + "CALLER_PASSED", vcf_records[1].format_tags)
 
-        varscan_vcf_reader = varscan._VarscanVcfReader(vcf_reader, somatic_hc_reader)
-        vcf_records = [record for record in varscan_vcf_reader.vcf_records()]
-
-        self.assertEquals(2, len(vcf_records))
-        self.assertIn(varscan._HCTag._TAG_ID, vcf_records[0].filter)
-        self.assertIn("PASS", vcf_records[1].filter)
 
     def test_vcf_records_SomHcFileSNP(self):
         record1 = vcf.VcfRecord(chrom="chr1", pos="21", ref="A", alt="G", vcf_filter="PASS")
         record2 = vcf.VcfRecord(chrom="chr1", pos="22", ref="A", alt="T", vcf_filter="PASS")
         vcf_reader = MockVcfReader(records=[record1, record2])
 
-        content1 = ["chrom\tposition\tref\tvar",
-                    "chr1\t21\tA\tG",
-                    "chr1\t22\tA\tT"]
+        content1 = ["chrom\tposition",
+                    "chr1\t21",
+                    "chr1\t22"]
         somatic_hc_reader = MockFileReader("fileA.Somatic.hc.fpfilter.pass", content1)
 
         varscan_vcf_reader = varscan._VarscanVcfReader(vcf_reader, somatic_hc_reader)
