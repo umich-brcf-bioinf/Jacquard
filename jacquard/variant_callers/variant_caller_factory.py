@@ -31,7 +31,7 @@ def get_caller(metaheaders, column_header, name):
 
 def claim(unclaimed_file_readers):
     """Allows each caller to claim incoming files as they are recognized.
-    
+
     Args:
         unclaimed_file_readers: Usually, all files in the input dir.
 

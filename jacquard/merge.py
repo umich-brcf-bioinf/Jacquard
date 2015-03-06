@@ -8,7 +8,7 @@
         patientA.mutect.vcf, patientA.strelka.vcf, patientA.varscan.vcf,
         patientB.mutect.vcf, patientB.strelka.vcf, patientB.varscan.vcf,
         etc.
-* Merge assumes the sample names (i.e. the VCF sample column headers, typically 
+* Merge assumes the sample names (i.e. the VCF sample column headers, typically
     TUMOR and NORMAL) are consistent across the input VCFs. (The preceding
     Jacquard command "translate" ensures this is true.)
 * Each incoming VCF record is joined with other VCF records that share the same
@@ -67,6 +67,7 @@ class _BufferedReader(object):
     but suspect there may be a more pythonic way to curry iterator in a
     partial function. Uncertain if that would be clearer/simpler. [cgates]
     """
+    #pylint: disable=too-few-public-methods
     def __init__(self, iterator):
         self._iterator = iterator
         self._current_element = self._iterator.next()

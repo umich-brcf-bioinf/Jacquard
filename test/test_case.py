@@ -26,6 +26,10 @@ class JacquardBaseTestCase(unittest.TestCase):
     def assertStartsWith(self, full_text, search_text):
         self.assertTrue(full_text.startswith(search_text))
 
+    def ok(self):
+        #pylint: disable=redundant-unittest-assert
+        self.assertTrue(True)
+
     def move_files(self, source_dirs, dest_dir):
         try:
             os.mkdir(dest_dir)

@@ -66,7 +66,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
                              output_path=output_file,
                              required_output_type="file")
             command_validator._check_output_exists(None, args)
-            self.assertTrue(True)
+            self.ok()
 
     def test_check_output_exists_fileExistsIncorrectType(self):
         with TempDirectory() as output_dir:
@@ -88,7 +88,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
                              output_path=output_file,
                              required_output_type="x")
             command_validator._check_output_exists(None, args)
-            self.assertTrue(True)
+            self.ok()
 
     def test_check_output_exists_directoryExistsCorrectType(self):
         with TempDirectory() as output_dir:
@@ -98,7 +98,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
                              output_path=expected_output_dir,
                              required_output_type="directory")
             command_validator._check_output_exists(None, args)
-            self.assertTrue(True)
+            self.ok()
 
     def test_check_output_exists_directoryExistsIncorrectType(self):
         with TempDirectory() as output_dir:
@@ -414,7 +414,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
                              required_output_type="directory")
 
             command_validator._create_temp_working_dir(None, args)
-            self.assertTrue(True)
+            self.ok()
 
     def test_check_overwrite_existing_files_whenNotOverwriteWillNotRaise(self):
         with TempDirectory() as output_dir:
@@ -423,7 +423,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
             mock_module.predicted_output = "foo.vcf"
             command_validator._check_overwrite_existing_files(mock_module,
                                                               args)
-            self.assertTrue(True)
+            self.ok()
 
     def test_check_overwrite_existing_files_whenOverwriteSingleFileWillRaise(self):
         with TempDirectory() as output_dir:
@@ -493,7 +493,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
                                                 "output_file2.vcf"])
             command_validator._check_overwrite_existing_files(mock_module,
                                                               args)
-            self.assertTrue(True)
+            self.ok()
 
     def test_check_overwrite_whenForcedOnExistingFileDoesNotRaise(self):
         with TempDirectory() as output_dir:
@@ -506,13 +506,13 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
                                                 "output_file2.vcf"])
             command_validator._check_overwrite_existing_files(mock_module,
                                                               args)
-            self.assertTrue(True)
+            self.ok()
 
     def test_check_there_will_be_output(self):
         mock_module.predicted_output = ["out1", "out2"]
         args = Namespace(subparser_name="awesomeCommand", input="input_dir")
         command_validator._check_there_will_be_output(mock_module, args)
-        self.assertTrue(True)
+        self.ok()
 
     def test_check_there_will_be_output_raisesIfNoPredictedOutput(self):
         mock_module.predicted_output = []

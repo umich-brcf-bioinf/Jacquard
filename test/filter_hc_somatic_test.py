@@ -1,4 +1,4 @@
-# pylint: disable=line-too-long, invalid-name, global-statement, star-args, too-many-public-methods
+# pylint: disable=line-too-long, invalid-name, global-statement, star-args, too-many-public-methods, too-few-public-methods
 from __future__ import absolute_import
 from argparse import Namespace
 from testfixtures import TempDirectory
@@ -196,6 +196,7 @@ class MockWriter(object):
 
     def close(self):
         self.wasClosed = True
+
 class FilterHCSomaticFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_filter_hc_somatic(self):
         with TempDirectory() as output_file:

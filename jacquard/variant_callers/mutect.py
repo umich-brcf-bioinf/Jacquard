@@ -1,6 +1,6 @@
 """Interprets MuTect VCF files adding Jacquard standard information.
 
-MuTect VCFs are assumed to have a ".vcf" extension and have a valid 
+MuTect VCFs are assumed to have a ".vcf" extension and have a valid
 "##MuTect=..." metaheader.
 """
 from __future__ import print_function, absolute_import
@@ -91,7 +91,7 @@ class _SomaticTag(object):
 
 class Mutect(object):
     """Recognize and transform MuTect VCFs to standard Jacquard format.
-    
+
     MuTect VCFs are blessedly compliant and straightforward to translate, with
     the following exception. The incoming header has the sample name values
     (derived from the input alignments). To play well with other callers like
@@ -127,10 +127,10 @@ class Mutect(object):
 
         Each defined caller has a chance to evaluate and claim all the incoming
         files as something that it can process.
-        
+
         Args:
             file_readers: the collection of currently unclaimed files
-        
+
         Returns:
             A tuple of unclaimed readers and MuTectVcfReaders.
         """

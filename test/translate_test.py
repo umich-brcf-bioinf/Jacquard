@@ -73,7 +73,7 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
             translate.variant_caller_factory = MockVariantCallerFactory([],
                                                                         [claimed])
             translate.validate_args(args)
-            self.assertTrue(True)
+            self.ok()
 
     def test_validate_args_oneUnclaimed(self):
         with TempDirectory() as input_dir:
@@ -97,7 +97,7 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
             translate.variant_caller_factory = MockVariantCallerFactory([unclaimed],
                                                                         [claimed])
             translate.validate_args(args)
-            self.assertTrue(True)
+            self.ok()
 
     def test_validate_args_allUnclaimedThrowsException(self):
         with TempDirectory() as input_dir:

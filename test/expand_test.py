@@ -239,7 +239,7 @@ chr2|1|.|A|C|.|.|SOMATIC|GT|0/1|0/1
                              column_specification=col_spec_file)
 
             expand.execute(args, ["extra_header1", "extra_header2"])
-            self.assertTrue(True)
+            self.ok()
 
     def test_execute_colSpecInvalid(self):
         with TempDirectory() as input_dir,\

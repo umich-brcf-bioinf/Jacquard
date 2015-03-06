@@ -89,7 +89,7 @@ class VcfReader(object):
 
         return column_header, tuple(metaheaders)
 
-    #TODO (cgates): qualified is used by ONE invocation in merge. Can we 
+    #TODO (cgates): qualified is used by ONE invocation in merge. Can we
     #somehow make merge do this instead of universally complicating the method?
     def vcf_records(self, qualified=False):
         """Generates parsed VcfRecord objects.

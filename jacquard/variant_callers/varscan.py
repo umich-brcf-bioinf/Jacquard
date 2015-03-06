@@ -27,7 +27,7 @@ import os
 
 
 _VARSCAN_SOMATIC_HEADER = ("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"
-                          "NORMAL|TUMOR").replace("|", "\t")
+                           "NORMAL|TUMOR").replace("|", "\t")
 JQ_VARSCAN_TAG = "JQ_VS_"
 
 
@@ -214,10 +214,10 @@ class Varscan(object):
         files as something that it can process. Since VarScan can claim
         high-confidence files as well, this process is significantly more
         complex than for other callers.
-        
+
         Args:
             file_readers: the collection of currently unclaimed files
-        
+
         Returns:
             A tuple of unclaimed readers and MuTectVcfReaders.
         """

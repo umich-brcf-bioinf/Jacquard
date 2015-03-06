@@ -2,7 +2,7 @@
 
 * Strelka VCFs are assumed to have a ".vcf" extension and have a
     "##source=strelka" metaheader.
-* Strelka produces a separate file for SNVs and indels. Jacquard can process 
+* Strelka produces a separate file for SNVs and indels. Jacquard can process
     either or both.
 * Jacquard standard tags are based on tier 2 data and use different source tags
     based on whether the file is indel or snp.
@@ -159,7 +159,7 @@ class _SomaticTag(object):
 
 class Strelka(object):
     """Recognize and transform Strelka VCFs to standard Jacquard format.
-    
+
     Note that Strelka sometimes reports variants which fail the filter as
     having an ALT of "."; this seems to be Strelka's shorthand for saying,
     "I couldn't be sure there was an ALT". Unfortunately, that's not a valid
@@ -188,10 +188,10 @@ class Strelka(object):
 
         Each defined caller has a chance to evaluate and claim all the incoming
         files as something that it can process.
-        
+
         Args:
             file_readers: the collection of currently unclaimed files
-        
+
         Returns:
             A tuple of unclaimed readers and StrelkaVcfReaders.
         """

@@ -287,8 +287,8 @@ class _SamplesPassed(object):
     def add_tag_values(vcf_record):
         _add_sample_count_values(vcf_record, JQ_PASSED, JQ_SAMPLES_PASSED)
 
-#TODO (cgates): Split into separate two separate classes and simplify 
-# how ranges are calculated  
+#TODO (cgates): Split into separate two separate classes and simplify
+# how ranges are calculated
 class _AlleleFreqTag(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
@@ -335,8 +335,8 @@ class _AlleleFreqTag(object):
         vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + "AF_RANGE",
                                         tag_range)
 
-#TODO (cgates): Split into separate two separate classes and simplify 
-# how ranges are calculated  
+#TODO (cgates): Split into separate two separate classes and simplify
+# how ranges are calculated
 class _DepthTag(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):

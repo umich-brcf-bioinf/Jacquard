@@ -4,7 +4,7 @@ A collection of individual Tag classes hold the metaheader and logic to
 transform Jacquard-standardized VcfRecords.
 
 These transforms combine info from a single sample-variant tag with aggregate
-info about all sample-variants in the VCF. For example, the zscore of a 
+info about all sample-variants in the VCF. For example, the zscore of a
 sample-variant depth is:
     (my_depth - average of all depths) / stddev of all depths
 For this reason, zscore values require the full VCF as one of the inputs.
