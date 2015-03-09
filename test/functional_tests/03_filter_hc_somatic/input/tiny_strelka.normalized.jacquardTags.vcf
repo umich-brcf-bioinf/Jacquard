@@ -76,13 +76,13 @@
 ##source=strelka
 ##source_version=2.0.15
 ##startTime=Wed Jul  9 13:37:22 2014
-##jacquard.version=0.21
+##jacquard.version=0.3
 ##jacquard.command=tag C:\Users\jebene\git\Jacquard\test\functional_tests\02_tag\input C:\Users\jebene\git\Jacquard\test\functional_tests\02_tag\output
 ##jacquard.cwd=C:\Users\jebene\git
 ##jacquard.tag.caller=Strelka
-##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version=0.21>
-##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version=0.21>
-##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version=0.3>
+##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version=0.3>
+##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",Source="Jacquard",Version=0.3>
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NORMAL	TUMOR
 chr1	14522	.	G	A	.	QSS_ref	NT=ref;QSS=9;QSS_NT=9;SGT=GG->AG;SOMATIC;TQSS=1;TQSS_NT=1	DP:FDP:SDP:SUBDP:AU:CU:GU:TU:JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	20:0:0:0:0,0:1,1:19,23:0,0:0.0:24:0	32:0:0:0:6,6:0,0:26,30:0,0:0.17:36:0
 chr1	14542	.	A	G	.	QSS_ref	NT=ref;QSS=6;QSS_NT=6;SGT=AA->AG;SOMATIC;TQSS=2;TQSS_NT=2	DP:FDP:SDP:SUBDP:AU:CU:GU:TU:JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	23:0:0:0:23,26:0,0:0,0:0,0:0.0:26:0	38:0:0:0:32,36:0,0:6,8:0,0:0.18:44:0

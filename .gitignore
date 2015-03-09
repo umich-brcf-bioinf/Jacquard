@@ -1,5 +1,13 @@
+# Compiled python modules.
 *.pyc
-output/
-files/
+
+# Setuptools distribution folder.
+/dist/
+
+# pip local build.
+/build/
+
+# Python egg metadata, regenerated from source files by setuptools.
+/*.egg-info
+
 jacquard.log
-test/functional_tests/test_output/*

@@ -76,15 +76,15 @@
 ##source=strelka
 ##source_version=2.0.15
 ##startTime=Wed Jul  9 13:37:22 2014
-##jacquard.version=0.21
+##jacquard.version=0.3
 ##jacquard.command=tag C:\Users\jebene\Desktop\tests\tag_input C:\Users\jebene\Desktop\tests\tag_output --force
 ##jacquard.cwd=C:\Users\jebene\git
 ##jacquard.tag.caller=Strelka
-##FORMAT=<ID=JQ_SK_CALLER_REPORTED,Number=1,Type=Integer,Description="1 = variant present in original VCF",Source="Jacquard",Version="0.21">
-##FORMAT=<ID=JQ_SK_CALLER_PASSED,Number=1,Type=Integer,Description="1 = variant FILTER is PASS in original VCF",Version="0.21">
-##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)",Source="Jacquard",Version=0.21>
-##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version=0.21>
-##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_SK_CALLER_REPORTED,Number=1,Type=Integer,Description="1 = variant present in original VCF",Source="Jacquard",Version="0.3">
+##FORMAT=<ID=JQ_SK_CALLER_PASSED,Number=1,Type=Integer,Description="1 = variant FILTER is PASS in original VCF",Version="0.3">
+##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)",Source="Jacquard",Version=0.3>
+##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version=0.3>
+##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",Source="Jacquard",Version=0.3>
 ##FILTER=<ID=JQ_EXCLUDE,Description="This variant record is problematic and will be excluded from downstream Jacquard processing.",Source="Jacquard",Version="">
 ##FILTER=<ID=JQ_MISSING_ALT,Description="The alternate allele is missing for this variant record.",Source="Jacquard",Version="">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NORMAL	TUMOR

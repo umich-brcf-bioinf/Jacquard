@@ -1,31 +1,31 @@
-##jacquard.version=0.21
+##jacquard.version=0.3
 ##jacquard.command=summarize /Users/cgates/workspace/Jacquard/test/functional_tests/05_summarize/input/tiny_strelka.merged.vcf /var/folders/9k/4rq56x0x7qs4__x67rr_nqf00000gn/T/tmp4IJpA0/summarized.vcf --force
 ##jacquard.cwd=/Users/cgates/workspace
-##FORMAT=<ID=JQ_SUMMARY_CALLERS_REPORTED_COUNT,Number=1,Type=Integer,Description="Count of variant callers which listed this variant in the Jacquard tagged VCF",Source="Jacquard",Version="0.21">
-##FORMAT=<ID=JQ_SUMMARY_CALLERS_PASSED_COUNT,Number=1,Type=Integer,Description="Count of variant callers where FILTER = PASS for this variant in the Jacquard tagged VCF",Source="Jacquard",Version="0.21">
-##INFO=<ID=JQ_SUMMARY_SAMPLES_REPORTED_COUNT,Number=1,Type=Integer,Description="Count of samples where this variant appeared in any of the Jacquard tagged VCFs (regardless of quality/filtering)",Source="Jacquard",Version="0.21">
-##INFO=<ID=JQ_SUMMARY_SAMPLES_PASSED_COUNT,Number=1,Type=Integer,Description="Count of samples where a variant caller passed the filter in any of the Jacquard tagged VCFs",Source="Jacquard",Version="0.21">
-##FORMAT=<ID=JQ_SUMMARY_AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].",Source="Jacquard",Version="0.21">
-##FORMAT=<ID=JQ_SUMMARY_AF_RANGE,Number=1,Type=Float,Description="Max(allele frequency) - min (allele frequency) across recognized callers.",Source="Jacquard",Version="0.21>">
-##FORMAT=<ID=JQ_SUMMARY_DP_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].",Source="Jacquard",Version="0.21">
-##FORMAT=<ID=JQ_SUMMARY_DP_RANGE,Number=1,Type=Float,Description="Max(depth) - min (depth) across recognized callers.",Source="Jacquard",Version="0.21>">
-##FORMAT=<ID=JQ_SUMMARY_SOM_COUNT,Number=1,Type=Integer,Description="Count of recognized variant callers that reported confident somatic call for this sample-position.",Source="Jacquard",Version="0.21">
-##jacquard.version=0.21
+##FORMAT=<ID=JQ_SUMMARY_CALLERS_REPORTED_COUNT,Number=1,Type=Integer,Description="Count of variant callers which listed this variant in the Jacquard tagged VCF",Source="Jacquard",Version="0.3">
+##FORMAT=<ID=JQ_SUMMARY_CALLERS_PASSED_COUNT,Number=1,Type=Integer,Description="Count of variant callers where FILTER = PASS for this variant in the Jacquard tagged VCF",Source="Jacquard",Version="0.3">
+##INFO=<ID=JQ_SUMMARY_SAMPLES_REPORTED_COUNT,Number=1,Type=Integer,Description="Count of samples where this variant appeared in any of the Jacquard tagged VCFs (regardless of quality/filtering)",Source="Jacquard",Version="0.3">
+##INFO=<ID=JQ_SUMMARY_SAMPLES_PASSED_COUNT,Number=1,Type=Integer,Description="Count of samples where a variant caller passed the filter in any of the Jacquard tagged VCFs",Source="Jacquard",Version="0.3">
+##FORMAT=<ID=JQ_SUMMARY_AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].",Source="Jacquard",Version="0.3">
+##FORMAT=<ID=JQ_SUMMARY_AF_RANGE,Number=1,Type=Float,Description="Max(allele frequency) - min (allele frequency) across recognized callers.",Source="Jacquard",Version="0.3">
+##FORMAT=<ID=JQ_SUMMARY_DP_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].",Source="Jacquard",Version="0.3">
+##FORMAT=<ID=JQ_SUMMARY_DP_RANGE,Number=1,Type=Float,Description="Max(depth) - min (depth) across recognized callers.",Source="Jacquard",Version="0.3">
+##FORMAT=<ID=JQ_SUMMARY_SOM_COUNT,Number=1,Type=Integer,Description="Count of recognized variant callers that reported confident somatic call for this sample-position.",Source="Jacquard",Version="0.3">
+##jacquard.version=0.3
 ##jacquard.command=merge C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\04_merge\input C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\04_merge\output\tiny_strelka.merged.vcf
 ##jacquard.cwd=C:\Users\kmeng
-##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version=0.21>
-##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version=0.21>
-##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",Source="Jacquard",Version=0.21>
+##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version=0.3>
+##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version=0.3>
+##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",Source="Jacquard",Version=0.3>
 ##fileformat=VCFv4.2
 ##jacquard.merge.file2=tiny_strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf(['NORMAL', 'TUMOR'])
 ##jacquard.merge.sample_column1=Strelka|tiny_strelka|NORMAL(tiny_strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf)
 ##jacquard.merge.sample_column2=Strelka|tiny_strelka|TUMOR(tiny_strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf)
 ##jacquard.summarize.JQ_SUMMARY_AF_ZSCORE.JQ_SUMMARY_AF_RANGE_mean=None
 ##jacquard.summarize.JQ_SUMMARY_AF_ZSCORE.JQ_SUMMARY_AF_RANGE_stdev=None
-##FORMAT=<ID=JQ_SUMMARY_AF_ZSCORE,Number=1,Type=Float,Description="Concordance of reported allele frequencies across callers: [(this AF range - mean AF range)/standard dev(all AF ranges)]. Values with null or missing AF range will be assigned zscore of '.'; for multi-valued ranges, zscore is of largest range.",Source="Jacquard",Version="0.21">
+##FORMAT=<ID=JQ_SUMMARY_AF_ZSCORE,Number=1,Type=Float,Description="Concordance of reported allele frequencies across callers: [(this AF range - mean AF range)/standard dev(all AF ranges)]. Values with null or missing AF range will be assigned zscore of '.'; for multi-valued ranges, zscore is of largest range.",Source="Jacquard",Version="0.3">
 ##jacquard.summarize.JQ_SUMMARY_DP_ZSCORE.JQ_SUMMARY_DP_RANGE_mean=None
 ##jacquard.summarize.JQ_SUMMARY_DP_ZSCORE.JQ_SUMMARY_DP_RANGE_stdev=None
-##FORMAT=<ID=JQ_SUMMARY_DP_ZSCORE,Number=1,Type=Float,Description="Concordance of reported depth across callers: [(this DP range - mean DP range)/standard dev(all DP ranges)]. Values with null or missing DP range will be assigned zscore of '.'.",Source="Jacquard",Version="0.21">
+##FORMAT=<ID=JQ_SUMMARY_DP_ZSCORE,Number=1,Type=Float,Description="Concordance of reported depth across callers: [(this DP range - mean DP range)/standard dev(all DP ranges)]. Values with null or missing DP range will be assigned zscore of '.'.",Source="Jacquard",Version="0.3">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	tiny_strelka|NORMAL	tiny_strelka|TUMOR
 chr1	1147545	.	A	G	.	.	JQ_SUMMARY_SAMPLES_REPORTED_COUNT=2;JQ_SUMMARY_SAMPLES_PASSED_COUNT=0	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_SK_CALLER_REPORTED:JQ_SK_CALLER_PASSED:JQ_SUMMARY_CALLERS_REPORTED_COUNT:JQ_SUMMARY_CALLERS_PASSED_COUNT:JQ_SUMMARY_AF_AVERAGE:JQ_SUMMARY_AF_RANGE:JQ_SUMMARY_DP_AVERAGE:JQ_SUMMARY_DP_RANGE:JQ_SUMMARY_SOM_COUNT	0.0:27:1:1:0:1:0:0.0:.:27.0:.:1	0.31:35:1:1:0:1:0:0.31:.:35.0:.:1
 chr1	1169795	.	C	T		.	JQ_SUMMARY_SAMPLES_REPORTED_COUNT=2;JQ_SUMMARY_SAMPLES_PASSED_COUNT=2	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_SK_CALLER_REPORTED:JQ_SK_CALLER_PASSED:JQ_SUMMARY_CALLERS_REPORTED_COUNT:JQ_SUMMARY_CALLERS_PASSED_COUNT:JQ_SUMMARY_AF_AVERAGE:JQ_SUMMARY_AF_RANGE:JQ_SUMMARY_DP_AVERAGE:JQ_SUMMARY_DP_RANGE:JQ_SUMMARY_SOM_COUNT	0.0:37:0:1:1:1:1:0.0:.:37.0:.:0	0.22:46:1:1:1:1:1:0.22:.:46.0:.:1

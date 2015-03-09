@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Launch-point for suite of sub-commands.
+"""Entry-point for suite of sub-commands.
 
 The only executable module in the project; this module
  * validates command line args

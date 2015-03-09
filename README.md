@@ -8,12 +8,13 @@ Suite of command-line tools to expedite analysis of exome variant data from mult
 
 ## Directory List
 * jacquard-runner.py : Convenience wrapper for running Jacquard directly from source tree.
-* jacquard : Python libraries 
+* jacquard : Python libraries
+* spikes : Unsupported prototypes and other experiements
 * test : Automated unit tests
 
 ## Usage
 
-jacquard-runner.py <subcommand> [options] [arguments]
+jacquard <subcommand> [options] [arguments]
 
 For help on a specific subcommand:
 jacquard-runner.py <subcommand> --help 

@@ -312,8 +312,8 @@ class _AlleleFreqTag(object):
                     ##pylint: disable=line-too-long
                     'Description="Max(allele frequency) - min (allele frequency) across recognized callers.",'
                     'Source="Jacquard",'
-                    'Version="{1}>">').format(JQ_SUMMARY_TAG,
-                                              __version__)
+                    'Version="{1}">').format(JQ_SUMMARY_TAG,
+                                             __version__)
         return "\n".join([af_average, af_range])
 
     @staticmethod
@@ -360,7 +360,7 @@ class _DepthTag(object):
                     ##pylint: disable=line-too-long
                     'Description="Max(depth) - min (depth) across recognized callers.",'
                     'Source="Jacquard",'
-                    'Version="{1}>">').format(JQ_SUMMARY_TAG,
+                    'Version="{1}">').format(JQ_SUMMARY_TAG,
                                               __version__)
         return "\n".join([dp_average, dp_range])
 

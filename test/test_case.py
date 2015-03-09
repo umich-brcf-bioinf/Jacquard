@@ -52,8 +52,6 @@ class JacquardBaseTestCase(unittest.TestCase):
         expected = [line for line in expected_file.read_lines()]
         expected_file.close()
 
-        print(actual)
-
         self.assertEquals(len(expected),
                           len(actual))
 
