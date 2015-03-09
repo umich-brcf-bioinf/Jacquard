@@ -12,7 +12,7 @@ import jacquard.variant_callers.common_tags as common_tags
 import numpy as np
 import re
 
-
+#TODO (cgates): Numpy is not necessary and frankly not pulling its weight.
 JQ_SUMMARY_TAG = "JQ_SUMMARY_"
 JQ_REPORTED = "CALLERS_REPORTED_COUNT"
 JQ_REPORTED_LIST = "CALLERS_REPORTED_LIST"
