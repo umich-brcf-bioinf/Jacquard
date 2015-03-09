@@ -1,11 +1,15 @@
 #pylint: disable=too-few-public-methods, invalid-name, line-too-long
 #pylint: disable=too-many-instance-attributes, too-many-public-methods
 from __future__ import print_function, absolute_import
-from jacquard.vcf import VcfRecord
+
+import re
+
+import jacquard.utils as utils
 import jacquard.variant_callers.common_tags as common_tags
-import jacquard.variant_callers.summarize_caller as summarize_caller
 import jacquard.variant_callers.mutect as mutect
+import jacquard.variant_callers.summarize_caller as summarize_caller
 import jacquard.variant_callers.varscan as varscan
+from jacquard.vcf import VcfRecord
 import test.test_case as test_case
 
 
@@ -118,6 +122,60 @@ class SamplesPassedTestCase(test_case.JacquardBaseTestCase):
         self.assertIn(info_tag, vcf_record.info_dict)
         self.assertEquals("0", vcf_record.info_dict[info_tag])
 
+class AverageAlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
+    def test_metaheader(self):
+        split_meta_header = summarize_caller._AverageAlleleFreqTag().metaheader.split("\n")
+        self.assertEqual('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].">'.format(summarize_caller.JQ_SUMMARY_TAG),
+                         split_meta_header[0])
+
+    def test_add_tag_values(self):
+        tag = summarize_caller._AverageAlleleFreqTag()
+        sample_tag_values = {"SA": {"JQ_foo_AF": "0", "JQ_bar_AF": "0.1", "JQ_baz_AF":"0.2"},
+                             "SB": {"JQ_foo_AF": "0.2", "JQ_bar_AF": "0.3", "JQ_baz_AF":"0.4"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals("0.1", record.sample_tag_values["SA"][tag._TAG_ID])
+        self.assertEquals("0.3", record.sample_tag_values["SB"][tag._TAG_ID])
+
+    def test_add_tag_values_nullsDoNotCount(self):
+        tag = summarize_caller._AverageAlleleFreqTag()
+        sample_tag_values = {"SA": {"JQ_foo_AF": ".", "JQ_bar_AF": ".", "JQ_baz_AF":"0.2"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals("0.2", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_OnlyCountAFTags(self):
+        tag = summarize_caller._AverageAlleleFreqTag()
+        sample_tag_values = {"SA": {"JQ_foo_XX": "0", "JQ_bar_XX": "0.1", "JQ_baz_AF":"0.2"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals("0.2", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_allNulls(self):
+        tag = summarize_caller._AverageAlleleFreqTag()
+        sample_tag_values = {"SA": {"JQ_foo_AF": ".", "JQ_bar_AF": ".", "JQ_baz_AF":"."}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals(".", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_missingTag(self):
+        tag = summarize_caller._AverageAlleleFreqTag()
+        sample_tag_values = {"SA": {"JQ_foo_XX": "."}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals(".", record.sample_tag_values["SA"][tag._TAG_ID])
+
+
 
 class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
@@ -226,6 +284,48 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(expected, processedVcfRecord.text())
 
 class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
+    def test_get_non_null_values(self):
+        sample_tag_values = {"SA": {"JQ_A_AF":"0",
+                                    "JQ_B_AF":"1",
+                                    "JQ_C_AF":"2"}}
+        record = VcfRecord("chr1", "42", "A", "C", sample_tag_values=sample_tag_values)
+        actual_values = summarize_caller._get_non_null_values(record,
+                                                              "SA",
+                                                              re.compile("^JQ_.*_AF$"))
+        self.assertEquals(set(["0", "1", "2"]), actual_values)
+
+    def test_get_non_null_values_hasNulls(self):
+        sample_tag_values = {"SA": {"JQ_A_AF":".",
+                                    "JQ_B_AF":".",
+                                    "JQ_C_AF":"2"}}
+        record = VcfRecord("chr1", "42", "A", "C", sample_tag_values=sample_tag_values)
+        actual_values = summarize_caller._get_non_null_values(record,
+                                                              "SA",
+                                                              re.compile("^JQ_.*_AF$"))
+        self.assertEquals(set(["2"]), actual_values)
+
+    def test_get_non_null_values_invalidSample(self):
+        sample_tag_values = {"SA": {"JQ_A_AF":".",
+                                    "JQ_B_AF":".",
+                                    "JQ_C_AF":"2"}}
+        record = VcfRecord("chr1", "42", "A", "C", sample_tag_values=sample_tag_values)
+        self.assertRaisesRegexp(utils.JQException,
+                                r"Sample \[FOO\] was not recognized",
+                                summarize_caller._get_non_null_values,
+                                record,
+                                "FOO",
+                                re.compile("^JQ_.*_AF$"))
+
+    def test_get_non_null_values_missingTag(self):
+        sample_tag_values = {"SA": {"JQ_A_AF":".",
+                                    "JQ_B_AF":".",
+                                    "JQ_C_AF":"2"}}
+        record = VcfRecord("chr1", "42", "A", "C", sample_tag_values=sample_tag_values)
+        actual_values = summarize_caller._get_non_null_values(record,
+                                                              "SA",
+                                                              re.compile("FOO"))
+        self.assertEquals(set(), actual_values)
+
     def test_summary_tag_prefix(self):
         self.assertEquals("JQ_SUMMARY_", summarize_caller.JQ_SUMMARY_TAG)
 

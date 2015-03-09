@@ -5,13 +5,12 @@ transform Jacquard-standardized VcfRecords.
 """
 #pylint: disable=missing-docstring
 from __future__ import print_function, absolute_import
-from collections import defaultdict
 import jacquard.utils as utils
 import jacquard.variant_callers.common_tags as common_tags
 import numpy as np
 import re
 
-#TODO (cgates): Numpy is not necessary and frankly not pulling its weight.
+#TODO: (cgates): Numpy is not necessary and frankly not pulling its weight.
 JQ_SUMMARY_TAG = "JQ_SUMMARY_"
 JQ_REPORTED = "CALLERS_REPORTED_COUNT"
 JQ_REPORTED_LIST = "CALLERS_REPORTED_LIST"
@@ -19,6 +18,16 @@ JQ_SAMPLES_REPORTED = "SAMPLES_REPORTED_COUNT"
 JQ_PASSED = "CALLERS_PASSED_COUNT"
 JQ_PASSED_LIST = "CALLERS_PASSED_LIST"
 JQ_SAMPLES_PASSED = "SAMPLES_PASSED_COUNT"
+
+def _get_non_null_values(record, sample, tag_name_regex):
+    values = set()
+    try:
+        for tag, value in record.sample_tag_values[sample].items():
+            if tag_name_regex.match(tag) and value != ".":
+                values.add(value)
+    except KeyError:
+        raise utils.JQException("Sample [{}] was not recognized".format(sample))
+    return values
 
 def _build_new_tags(vcf_record, tags, sample):
     desired_tags = []
@@ -272,7 +281,42 @@ class _SamplesPassed(object):
     def add_tag_values(vcf_record):
         _add_sample_count_values(vcf_record, JQ_PASSED, JQ_SAMPLES_PASSED)
 
-#TODO (cgates): Split into separate two separate classes and simplify
+class _AverageAlleleFreqTag(object):
+    #pylint: disable=too-few-public-methods
+    _TAG_ID = "{}AF_AVERAGE".format(JQ_SUMMARY_TAG)
+    _PATTERN = re.compile("^JQ_.*_AF$")
+
+    def __init__(self):
+        self.metaheader = self._get_metaheader()
+
+    @staticmethod
+    def _get_metaheader():
+        return ('##FORMAT=<ID={0},'
+                'Number=1,'
+                'Type=Float,'
+                ##pylint: disable=line-too-long
+                'Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].">')\
+                .format(_AverageAlleleFreqTag._TAG_ID)
+
+    @staticmethod
+    def add_tag_values(record):
+        new_sample_tag_values = {}
+        for sample in record.sample_tag_values:
+            average = "."
+            tag_values = _get_non_null_values(record,
+                                              sample,
+                                              _AverageAlleleFreqTag._PATTERN)
+
+            tag_values_floats = [float(i) for i in tag_values]
+            if tag_values_floats:
+                average = sum(tag_values_floats)/len(tag_values_floats)
+
+            new_sample_tag_values[sample] = average
+
+        record.add_sample_tag_value(_AverageAlleleFreqTag._TAG_ID,
+                                    new_sample_tag_values)
+
+#TODO: (cgates): Split into separate two separate classes and simplify
 # how ranges are calculated
 class _AlleleFreqTag(object):
     #pylint: disable=too-few-public-methods
@@ -316,7 +360,7 @@ class _AlleleFreqTag(object):
         vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + "AF_RANGE",
                                         tag_range)
 
-#TODO (cgates): Split into separate two separate classes and simplify
+#TODO: (cgates): Split into separate two separate classes and simplify
 # how ranges are calculated
 class _DepthTag(object):
     #pylint: disable=too-few-public-methods
