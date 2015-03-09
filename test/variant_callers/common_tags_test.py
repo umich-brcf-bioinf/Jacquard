@@ -1,5 +1,4 @@
 #pylint:disable=line-too-long,too-many-public-methods
-from jacquard import __version__
 from jacquard.vcf import VcfRecord
 import jacquard.variant_callers.common_tags as common_tags
 import test.test_case as test_case

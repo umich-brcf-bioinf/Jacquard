@@ -105,8 +105,9 @@ def _calculate_count(tags):
     return ",".join(counts)
 
 def _add_caller_list_values(pattern, vcf_record, jq_global_variable):
-    sample_tag = defaultdict(list)
+    sample_tag = {}
     for sample, tags in vcf_record.sample_tag_values.items():
+        sample_tag[sample] = []
         for tag in tags:
             pattern_match = pattern.match(tag)
             if pattern_match and tags[tag] != '0':
@@ -114,6 +115,8 @@ def _add_caller_list_values(pattern, vcf_record, jq_global_variable):
 
     for sample in sample_tag:
         sample_tag[sample] = ",".join(sorted(sample_tag[sample]))
+        if not sample_tag[sample]:
+            sample_tag[sample] = "."
     vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + jq_global_variable,
                                     sample_tag)
 
@@ -396,6 +399,8 @@ class SummarizeCaller(object):
     def __init__(self):
         self.tags = [_CallersReportedTag(),
                      _CallersPassedTag(),
+                     _CallersReportedListTag(),
+                     _CallersPassedListTag(),
                      _SamplesReported(),
                      _SamplesPassed(),
                      _AlleleFreqTag(),

@@ -1,7 +1,6 @@
 #pylint: disable=too-few-public-methods, invalid-name, line-too-long
 #pylint: disable=too-many-instance-attributes, too-many-public-methods
 from __future__ import print_function, absolute_import
-from jacquard import __version__
 from jacquard.vcf import VcfRecord
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.variant_callers.summarize_caller as summarize_caller
@@ -53,6 +52,15 @@ class CallersPassedListTagTestCase(test_case.JacquardBaseTestCase):
         tag.add_tag_values(processedVcfRecord)
 
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:MT,VS|Y:1:0:MT\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_PASSED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_PASSED_TAG, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_PASSED_LIST))
+        self.assertEquals(expected, processedVcfRecord.text())
+
+    def test_add_tag_values_NoCallersPassed(self):
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}|X:0:0|Y:0:0\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_PASSED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_PASSED_TAG))
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        tag = summarize_caller._CallersPassedListTag()
+        tag.add_tag_values(processedVcfRecord)
+
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:0:0:.|Y:0:0:.\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_PASSED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_PASSED_TAG, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_PASSED_LIST))
         self.assertEquals(expected, processedVcfRecord.text())
 
 class CallersPassedTagTestCase(test_case.JacquardBaseTestCase):
@@ -222,8 +230,8 @@ class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals("JQ_SUMMARY_", summarize_caller.JQ_SUMMARY_TAG)
 
     def test_add_tags(self):
-        sample_tag_values = {"SA": {"JQ_foo_AF":"0", "JQ_VS_CALLER_REPORTED":"1", 'JQ_MT_CALLER_REPORTED':"1"},
-                             "SB": {"JQ_foo_AF":"0.2", "JQ_VS_CALLER_REPORTED":"1", 'JQ_MT_CALLER_REPORTED':"1"}}
+        sample_tag_values = {"SA": {"JQ_foo_AF":"0", "JQ_VS_CALLER_REPORTED":"1", 'JQ_MT_CALLER_REPORTED':"1", 'JQ_VS_CALLER_PASSED': "0", 'JQ_MT_CALLER_PASSED': "0"},
+                             "SB": {"JQ_foo_AF":"0.2", "JQ_VS_CALLER_REPORTED":"1", 'JQ_MT_CALLER_REPORTED':"1", 'JQ_VS_CALLER_PASSED': "0", 'JQ_MT_CALLER_PASSED': "0"}}
         record = VcfRecord("chr1", "42", "A", "C", sample_tag_values=sample_tag_values)
         actual_record = summarize_caller.SummarizeCaller().add_tags(record)
 
@@ -260,7 +268,7 @@ class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
         first_meta_header = split_actual[0]
 
         self.assertEqual(expected, first_meta_header)
-        self.assertEqual(7, len(actual))
+        self.assertEqual(9, len(actual))
         self.assertEqual(1, len(split_actual))
 
     def test_calculate_average_float(self):

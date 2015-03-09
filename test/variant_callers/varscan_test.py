@@ -1,6 +1,5 @@
 # pylint: disable=line-too-long,too-many-public-methods,too-few-public-methods
 # pylint: disable=invalid-name,global-statement
-from jacquard import __version__
 from jacquard.variant_callers import varscan
 from jacquard.variant_callers.varscan import _HCTag
 from test.vcf_test import MockFileReader, MockVcfReader

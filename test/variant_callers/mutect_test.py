@@ -1,6 +1,5 @@
 # pylint: disable=line-too-long,too-many-public-methods,too-few-public-methods
 # pylint: disable=invalid-name,global-statement
-from jacquard import __version__
 import jacquard.variant_callers.mutect as mutect
 import jacquard.vcf as vcf
 import test.test_case as test_case
