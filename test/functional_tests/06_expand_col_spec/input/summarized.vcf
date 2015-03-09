@@ -9,7 +9,7 @@
 ##reference=rCRS,file:rCRS.fa,ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/human_g1k_v37.fasta.gz,GRCh37
 ##contig=<ID=MT,length=16569,md5=5d155a500975d0115cbea18770554f48>
 ##ALT=<ID=DEL,Description="Deletion">
-##COMMAND=/ccmb/BioinfCore/Common/SOFTWARES/epee/epee_1.5.2/bin/epee_pipeline.pl input output --cosmic --dbnsfp
+##COMMAND=epee_pipeline.pl input output --cosmic --dbnsfp
 ##INFO=<ID=AA,Number=1,Type=String,Description="Ancestral Allele, ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/pilot_data/technical/reference/ancestral_alignments/README
 ##INFO=<ID=AC,Number=.,Type=Integer,Description="Alternate Allele Count">
 ##INFO=<ID=AC1,Number=1,Type=Float,Description="Max-likelihood estimate of the first ALT allele count (no HWE assumption)">

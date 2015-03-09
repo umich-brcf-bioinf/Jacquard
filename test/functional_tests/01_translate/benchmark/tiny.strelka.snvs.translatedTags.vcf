@@ -3,7 +3,7 @@
 ##source=strelka
 ##source_version=2.0.15
 ##startTime=Wed Jul  9 13:37:22 2014
-##reference=file:///ccmb/BioinfCore/Common/SOFTWARES/hg19bundle/ucsc.hg19.fasta
+##reference=file:ucsc.hg19.fasta
 ##contig=<ID=chr1,length=249250621>
 ##contig=<ID=chr2,length=243199373>
 ##contig=<ID=chr3,length=198022430>
@@ -50,7 +50,6 @@
 ##FILTER=<ID=BCNoise,Description="Fraction of basecalls filtered at this site in either sample is at or above 0.4">
 ##FILTER=<ID=SpanDel,Description="Fraction of reads crossing site with spanning deletions in either sample exceeeds 0.75">
 ##FILTER=<ID=QSS_ref,Description="Normal sample is not homozygous ref or ssnv Q-score < 15, ie calls with NT!=ref or QSS_NT < 15">
-##cmdline=/ccmb/BioinfCore/SoftwareDev/tools/strelka/libexec/consolidateResults.pl --config=/ccmb/BioinfCore/Projects/Hardiman_746_747_kmha_pulintz_abhasi_EX5_2/Strelka/p11/results1/config/run.config.ini
 ##FORMAT=<ID=JQ_SK_CALLER_REPORTED,Number=1,Type=Integer,Description="1 = variant present in original VCF",Source="Jacquard",Version="0.3">
 ##FORMAT=<ID=JQ_SK_CALLER_PASSED,Number=1,Type=Integer,Description="1 = variant FILTER is PASS in original VCF",Version="0.3">
 ##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)",Source="Jacquard",Version=0.3>

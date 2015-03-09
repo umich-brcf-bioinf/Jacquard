@@ -38,7 +38,6 @@
 ##INFO=<ID=TQSI_NT,Number=1,Type=Integer,Description="Data tier used to compute QSI_NT">
 ##INFO=<ID=TQSS,Number=1,Type=Integer,Description="Data tier used to compute QSS">
 ##INFO=<ID=TQSS_NT,Number=1,Type=Integer,Description="Data tier used to compute QSS_NT">
-##cmdline=/ccmb/BioinfCore/SoftwareDev/tools/strelka/libexec/consolidateResults.pl --config=/ccmb/BioinfCore/Projects/Hardiman_746_747_kmha_pulintz_abhasi_EX5_2/Strelka/p11/results1/config/run.config.ini
 ##content=strelka somatic indel calls
 ##content=strelka somatic snv calls
 ##contig=<ID=chr1,length=249250621>
@@ -72,7 +71,7 @@
 ##germlineSnvTheta=0.001
 ##priorSomaticIndelRate=1e-06
 ##priorSomaticSnvRate=1e-06
-##reference=file:///ccmb/BioinfCore/Common/SOFTWARES/hg19bundle/ucsc.hg19.fasta
+##reference=file:ucsc.hg19.fasta
 ##source=strelka
 ##source_version=2.0.15
 ##startTime=Wed Jul  9 13:37:22 2014

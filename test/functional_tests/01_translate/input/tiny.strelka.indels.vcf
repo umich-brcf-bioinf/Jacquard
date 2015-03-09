@@ -3,7 +3,7 @@
 ##source=strelka
 ##source_version=2.0.15
 ##startTime=Wed Jul  9 13:37:22 2014
-##reference=file:///ccmb/BioinfCore/Common/SOFTWARES/hg19bundle/ucsc.hg19.fasta
+##reference=file:ucsc.hg19.fasta
 ##contig=<ID=chr1,length=249250621>
 ##contig=<ID=chr2,length=243199373>
 ##contig=<ID=chr3,length=198022430>
@@ -57,7 +57,6 @@
 ##FILTER=<ID=iHpol,Description="Indel overlaps an interupted homopolymer longer than 14x in the reference sequence">
 ##FILTER=<ID=BCNoise,Description="Average fraction of filtered basecalls within 50 bases of the indel exceeds 0.3">
 ##FILTER=<ID=QSI_ref,Description="Normal sample is not homozygous ref or sindel Q-score < 30, ie calls with NT!=ref or QSI_NT < 30">
-##cmdline=/ccmb/BioinfCore/SoftwareDev/tools/strelka/libexec/consolidateResults.pl --config=/ccmb/BioinfCore/Projects/Hardiman_746_747_kmha_pulintz_abhasi_EX5_2/Strelka/p11/results1/config/run.config.ini
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NORMAL	TUMOR
 chr1	721104	.	TA	T	.	QSI_ref;Repeat	IC=8;IHP=11;NT=ref;QSI=6;QSI_NT=6;RC=9;RU=A;SGT=het->het;SOMATIC;TQSI=1;TQSI_NT=1	DP:DP2:TAR:TIR:TOR:DP50:FDP50:SUBDP50	9:9:10,10:0,0:0,0:10.21:0.00:0.00	11:11:4,4:4,4:4,4:12.07:0.01:0.00
 chr1	894535	.	G	GC	.	QSI_ref	IC=6;IHP=5;NT=ref;QSI=8;QSI_NT=8;RC=5;RU=C;SGT=ref->het;SOMATIC;TQSI=1;TQSI_NT=1	DP:DP2:TAR:TIR:TOR:DP50:FDP50:SUBDP50	12:12:10,10:0,0:2,2:10.57:0.00:0.00	13:13:7,7:3,3:3,3:11.37:0.33:0.00
