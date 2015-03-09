@@ -42,7 +42,7 @@ class ZScoreTagTest(test_case.JacquardBaseTestCase):
         it = iter(tag.metaheaders)
         self.assertEquals(it.next(), '##jacquard.summarize.ZScoreX.X_mean=' + str(tag._mean))
         self.assertEquals(it.next(), '##jacquard.summarize.ZScoreX.X_stdev=' + str(tag._stdev))
-        self.assertRegexpMatches(it.next(), '##FORMAT=<ID=ZScoreX,Number=1,Type=Float,Description="ZScore for X",Source="Jacquard",Version=".*">')
+        self.assertRegexpMatches(it.next(), '##FORMAT=<ID=ZScoreX,Number=1,Type=Float,Description="ZScore for X">')
 
     def test_init_setsPopulationStatistics(self):
         rec1 = vcf.VcfRecord("1", "42", "A", "C",
@@ -242,7 +242,7 @@ class AlleleFreqZScoreTagTest(test_case.JacquardBaseTestCase):
         it = iter(tag.metaheaders)
         self.assertRegexpMatches(it.next(), '##jacquard.summarize.JQ_SUMMARY_AF_ZSCORE.JQ_SUMMARY_AF_RANGE_mean=')
         self.assertRegexpMatches(it.next(), '##jacquard.summarize.JQ_SUMMARY_AF_ZSCORE.JQ_SUMMARY_AF_RANGE_stdev=')
-        self.assertRegexpMatches(it.next(), '##FORMAT=<ID=JQ_SUMMARY_AF_ZSCORE,Number=1,Type=Float,Description="Concordance of reported allele frequencies.*",Source="Jacquard",Version=".*">')
+        self.assertRegexpMatches(it.next(), '##FORMAT=<ID=JQ_SUMMARY_AF_ZSCORE,Number=1,Type=Float,Description="Concordance of reported allele frequencies.*">')
 
     def test_add_tag(self):
         rec1 = vcf.VcfRecord("1", "42", "A", "C",
@@ -276,7 +276,7 @@ class DepthZScoreTagTest(test_case.JacquardBaseTestCase):
         it = iter(tag.metaheaders)
         self.assertRegexpMatches(it.next(), '##jacquard.summarize.JQ_SUMMARY_DP_ZSCORE.JQ_SUMMARY_DP_RANGE_mean=')
         self.assertRegexpMatches(it.next(), '##jacquard.summarize.JQ_SUMMARY_DP_ZSCORE.JQ_SUMMARY_DP_RANGE_stdev=')
-        self.assertRegexpMatches(it.next(), '##FORMAT=<ID=JQ_SUMMARY_DP_ZSCORE,Number=1,Type=Float,Description="Concordance of reported depth.*",Source="Jacquard",Version=".*">')
+        self.assertRegexpMatches(it.next(), '##FORMAT=<ID=JQ_SUMMARY_DP_ZSCORE,Number=1,Type=Float,Description="Concordance of reported depth.*">')
 
     def test_add_tag(self):
         rec1 = vcf.VcfRecord("1", "42", "A", "C",

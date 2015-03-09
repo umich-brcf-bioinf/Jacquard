@@ -13,7 +13,6 @@ from __future__ import print_function, absolute_import
 import jacquard.vcf as vcf
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.utils as utils
-from jacquard import __version__
 
 JQ_STRELKA_TAG = "JQ_SK_"
 
@@ -24,10 +23,8 @@ class _AlleleFreqTag(object):
         self.metaheader = ('##FORMAT=<ID={0}AF,'
                            'Number=A,'
                            'Type=Float,'
-                           'Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)",'
-                           'Source="Jacquard",'
-                           'Version={1}>').format(JQ_STRELKA_TAG,
-                                                  __version__)
+                           'Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)">')\
+                           .format(JQ_STRELKA_TAG)
 
     @staticmethod
     def _get_tier2_base_depth(sample_format_dict, alt_allele):
@@ -114,10 +111,8 @@ class _DepthTag(object):
         self.metaheader = ('##FORMAT=<ID={0}DP,'
                            'Number=1,'
                            'Type=Float,'
-                           'Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",'
-                           'Source="Jacquard",'
-                           'Version={1}>').format(JQ_STRELKA_TAG,
-                                                  __version__)
+                           'Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)">')\
+                           .format(JQ_STRELKA_TAG)
 
     @staticmethod
     def add_tag_values(vcf_record):
@@ -137,10 +132,8 @@ class _SomaticTag(object):
         #pylint: disable=line-too-long
         self.metaheader = ('##FORMAT=<ID={0}HC_SOM,'
                            'Number=1,Type=Integer,'
-                           'Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",'
-                           'Source="Jacquard",'
-                           'Version={1}>').format(JQ_STRELKA_TAG,
-                                                  __version__)
+                           'Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)">')\
+                           .format(JQ_STRELKA_TAG)
 
     @staticmethod
     def add_tag_values(vcf_record):

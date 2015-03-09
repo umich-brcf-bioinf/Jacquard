@@ -10,7 +10,7 @@ import test.test_case as test_case
 class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
 
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)",Source="Jacquard",Version=0.3>'.format(strelka.JQ_STRELKA_TAG, __version__), strelka._AlleleFreqTag().metaheader)
+        self.assertEqual('##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)">'.format(strelka.JQ_STRELKA_TAG), strelka._AlleleFreqTag().metaheader)
 
     def test_format_missingAFTag(self):
         tag = strelka._AlleleFreqTag()
@@ -48,7 +48,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
 class DepthTagTestCase(test_case.JacquardBaseTestCase):
 
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version={1}>'.format(strelka.JQ_STRELKA_TAG, __version__), strelka._DepthTag().metaheader)
+        self.assertEqual('##FORMAT=<ID={0}DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)">'.format(strelka.JQ_STRELKA_TAG), strelka._DepthTag().metaheader)
 
     def test_format_missingTag(self):
         tag = strelka._DepthTag()
@@ -77,7 +77,7 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
 
 class SomaticTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",Source="Jacquard",Version={1}>'.format(strelka.JQ_STRELKA_TAG, __version__), strelka._SomaticTag().metaheader)
+        self.assertEqual('##FORMAT=<ID={0}HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)">'.format(strelka.JQ_STRELKA_TAG), strelka._SomaticTag().metaheader)
 
     def test_format_missingPASS(self):
         tag = strelka._SomaticTag()

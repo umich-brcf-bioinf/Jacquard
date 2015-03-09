@@ -11,11 +11,9 @@ class ReportedTagTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(('##FORMAT=<ID={}{},'
                            'Number=1,'
                            'Type=Integer,'
-                           'Description="1 = variant present in original VCF",'
-                           'Source="Jacquard",'
-                           'Version="{}">').format("foo_",
-                                                   common_tags.CALLER_REPORTED_TAG,
-                                                   __version__),
+                           'Description="1 = variant present in original VCF">')\
+                          .format("foo_",
+                                  common_tags.CALLER_REPORTED_TAG),
                           reported_tag.metaheader)
 
     def test_reported_tag_format(self):
@@ -34,10 +32,8 @@ class ReportedTagTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(('##FORMAT=<ID={}{},'
                            'Number=1,Type=Integer,'
                            'Description="1 = variant FILTER is PASS in '
-                           'original VCF",'
-                           'Version="{}">').format("foo_",
-                                                   common_tags.CALLER_PASSED_TAG,
-                                                   __version__),
+                           'original VCF">').format("foo_",
+                                                    common_tags.CALLER_PASSED_TAG),
                           passed_tag.metaheader)
 
     def test_passed_tag_format(self):

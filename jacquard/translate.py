@@ -16,7 +16,6 @@ The origin caller of a VCFs is recognized in part by the content of metaheaders,
 so it's imperative that VCF metaheaders be present and accurate.
 """
 from __future__ import absolute_import
-from jacquard import __version__
 from jacquard.variant_callers import variant_caller_factory
 from jacquard.vcf import FileReader, FileWriter
 import glob
@@ -37,9 +36,8 @@ class _ExcludeMalformedRef(object):
         self.metaheader = ('##FILTER=<'
                            'ID={},'
                            #pylint: disable=line-too-long
-                           'Description="The format of the reference value for this variant record does not comply with VCF standard.",'
-                           'Source="Jacquard",'
-                           'Version="{}">').format(self._TAG_ID, __version__)
+                           'Description="The format of the reference value for this variant record does not comply with VCF standard.">')\
+                           .format(self._TAG_ID)
 
     def _is_valid_ref(self, record):
         return set(list(record.ref)).issubset(self._VALID_REF)
@@ -57,9 +55,8 @@ class _ExcludeMalformedAlt(object):
         self.metaheader = ('##FILTER=<'
                            'ID={},'
                            #pylint: disable=line-too-long
-                           'Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.",'
-                           'Source="Jacquard",'
-                           'Version={}>').format(self._TAG_ID, __version__)
+                           'Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.">')\
+                           .format(self._TAG_ID)
 
     def _is_valid_alt(self, record):
         valid_characters = set(list(record.alt)).issubset(self._VALID_ALT)
@@ -80,9 +77,8 @@ class _ExcludeMissingAlt(object):
         self.metaheader = ('##FILTER='
                            '<ID={},'
                            #pylint: disable=line-too-long
-                           'Description="The alternate allele is missing for this variant record.",'
-                           'Source="Jacquard",'
-                           'Version={}>').format(self._TAG_ID, __version__)
+                           'Description="The alternate allele is missing for this variant record.">')\
+                           .format(self._TAG_ID)
 
     def add_tag_values(self, record):
         if record.alt == self._MISSING_ALT:

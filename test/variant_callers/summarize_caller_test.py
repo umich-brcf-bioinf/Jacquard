@@ -13,7 +13,7 @@ import test.test_case as test_case
 class CallersReportedListTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         split_metaheader = summarize_caller._CallersReportedListTag().metaheader.split("\n")
-        self.assertEquals('##FORMAT=<ID={}{},Number=.,Type=String,Description="Comma-separated list variant callers which listed this variant in the Jacquard tagged VCF",Source="Jacquard",Version="{}">'.format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_REPORTED_LIST, __version__),
+        self.assertEquals('##FORMAT=<ID={}{},Number=.,Type=String,Description="Comma-separated list variant callers which listed this variant in the Jacquard tagged VCF">'.format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_REPORTED_LIST),
                           split_metaheader[0])
 
     def test_add_tag_values(self):
@@ -28,7 +28,7 @@ class CallersReportedListTagTestCase(test_case.JacquardBaseTestCase):
 class CallersReportedTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         split_metaheader = summarize_caller._CallersReportedTag().metaheader.split("\n")
-        self.assertEquals('##FORMAT=<ID={}{},Number=1,Type=Integer,Description="Count of variant callers which listed this variant in the Jacquard tagged VCF",Source="Jacquard",Version="{}">'.format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_REPORTED, __version__),
+        self.assertEquals('##FORMAT=<ID={}{},Number=1,Type=Integer,Description="Count of variant callers which listed this variant in the Jacquard tagged VCF">'.format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_REPORTED),
                           split_metaheader[0])
 
     def test_add_tag_values(self):
@@ -43,7 +43,7 @@ class CallersReportedTagTestCase(test_case.JacquardBaseTestCase):
 class CallersPassedListTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         split_metaheader = summarize_caller._CallersPassedListTag().metaheader.split("\n")
-        self.assertEquals('##FORMAT=<ID={}{},Number=.,Type=String,Description="Comma-separated list of variant caller short-names where FILTER = PASS for this variant in the Jacquard tagged VCF",Source="Jacquard",Version="{}">'.format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_PASSED_LIST, __version__),
+        self.assertEquals('##FORMAT=<ID={}{},Number=.,Type=String,Description="Comma-separated list of variant caller short-names where FILTER = PASS for this variant in the Jacquard tagged VCF">'.format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_PASSED_LIST),
                           split_metaheader[0])
 
     def test_add_tag_values(self):
@@ -58,7 +58,7 @@ class CallersPassedListTagTestCase(test_case.JacquardBaseTestCase):
 class CallersPassedTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         split_metaheader = summarize_caller._CallersPassedTag().metaheader.split("\n")
-        self.assertEquals('##FORMAT=<ID={}{},Number=1,Type=Integer,Description="Count of variant callers where FILTER = PASS for this variant in the Jacquard tagged VCF",Source="Jacquard",Version="{}">'.format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_PASSED, __version__),
+        self.assertEquals('##FORMAT=<ID={}{},Number=1,Type=Integer,Description="Count of variant callers where FILTER = PASS for this variant in the Jacquard tagged VCF">'.format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_PASSED),
                           split_metaheader[0])
 
     def test_add_tag_values(self):
@@ -73,7 +73,7 @@ class CallersPassedTagTestCase(test_case.JacquardBaseTestCase):
 class SamplesReportedTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         split_metaheader = summarize_caller._SamplesReported().metaheader.split("\n")
-        self.assertEquals('##INFO=<ID={}{},Number=1,Type=Integer,Description="Count of samples where this variant appeared in any of the Jacquard tagged VCFs (regardless of quality/filtering)",Source="Jacquard",Version="{}">'.format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_SAMPLES_REPORTED, __version__),
+        self.assertEquals('##INFO=<ID={}{},Number=1,Type=Integer,Description="Count of samples where this variant appeared in any of the Jacquard tagged VCFs (regardless of quality/filtering)">'.format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_SAMPLES_REPORTED),
                           split_metaheader[0])
 
     def test_add_tag_values(self):
@@ -88,7 +88,7 @@ class SamplesReportedTestCase(test_case.JacquardBaseTestCase):
 class SamplesPassedTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         split_metaheader = summarize_caller._SamplesPassed().metaheader.split("\n")
-        self.assertEquals('##INFO=<ID={}{},Number=1,Type=Integer,Description="Count of samples where a variant caller passed the filter in any of the Jacquard tagged VCFs",Source="Jacquard",Version="{}">'.format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_SAMPLES_PASSED, __version__),
+        self.assertEquals('##INFO=<ID={}{},Number=1,Type=Integer,Description="Count of samples where a variant caller passed the filter in any of the Jacquard tagged VCFs">'.format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_SAMPLES_PASSED),
                           split_metaheader[0])
 
     def test_add_tag_values_onePassed(self):
@@ -114,7 +114,7 @@ class SamplesPassedTestCase(test_case.JacquardBaseTestCase):
 class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         split_meta_header = summarize_caller._AlleleFreqTag().metaheader.split("\n")
-        self.assertEqual('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].",Source="Jacquard",Version="{1}">'.format(summarize_caller.JQ_SUMMARY_TAG, __version__),
+        self.assertEqual('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].">'.format(summarize_caller.JQ_SUMMARY_TAG),
                          split_meta_header[0])
 
     def test_add_tag_values(self):
@@ -156,10 +156,9 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
                       'Description="Average allele frequency across ' \
                       'recognized variant callers that reported ' \
                       'frequency for this position; rounded to integer '\
-                      '[round(average(JQ_*_DP))].",' \
-                      'Source="Jacquard",Version="{1}">'\
-                      .format(summarize_caller.JQ_SUMMARY_TAG, \
-                              __version__), split_meta_header[0])
+                      '[round(average(JQ_*_DP))].">'\
+                      .format(summarize_caller.JQ_SUMMARY_TAG),
+                      split_meta_header[0])
 
     def test_add_tag_values(self):
         tag = summarize_caller._DepthTag()
@@ -191,9 +190,8 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         self.assertEqual('##FORMAT=<ID={0}SOM_COUNT,Number=1,Type=Integer,' \
                       'Description="Count of recognized variant callers ' \
                       'that reported confident somatic call for this '\
-                      'sample-position.",Source="Jacquard",Version="{1}">'\
-                      .format(summarize_caller.JQ_SUMMARY_TAG, \
-                              __version__), split_meta_header[0])
+                      'sample-position.">'\
+                      .format(summarize_caller.JQ_SUMMARY_TAG), split_meta_header[0])
 
     def test_add_tag_values(self):
         tag = summarize_caller._SomaticTag()
@@ -252,11 +250,9 @@ class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
         expected = ('##FORMAT=<ID={}{},'
                     'Number=1,'
                     'Type=Integer,'
-                    'Description="Count of variant callers which listed this variant in the Jacquard tagged VCF",'
-                    'Source="Jacquard",'
-                    'Version="{}">').format(summarize_caller.JQ_SUMMARY_TAG,
-                                            summarize_caller.JQ_REPORTED,
-                                            __version__)
+                    'Description="Count of variant callers which listed this variant in the Jacquard tagged VCF">')\
+                    .format(summarize_caller.JQ_SUMMARY_TAG,
+                                            summarize_caller.JQ_REPORTED)
 
         actual = summarize_caller.SummarizeCaller().get_metaheaders()
 

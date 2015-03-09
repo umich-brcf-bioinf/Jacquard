@@ -69,9 +69,7 @@ class _ZScoreTag(object):
     _METAHEADER_FORMAT = ('##FORMAT=<ID={0},'
                           'Number=1,'
                           'Type=Float,'
-                          'Description="{1}",'
-                          'Source="Jacquard",'
-                          'Version="{2}">')
+                          'Description="{1}">')
 
     def __init__(self,
                  tag_id,

@@ -26,7 +26,6 @@
 """
 from __future__ import print_function, absolute_import
 from collections import defaultdict, OrderedDict
-from jacquard import __version__
 from jacquard.vcf import FileWriter
 import glob
 import jacquard.logger as logger
@@ -38,9 +37,8 @@ import re
 _DEFAULT_INCLUDED_FORMAT_TAGS = ["JQ_.*"]
 _MULT_ALT_TAG = "JQ_MULT_ALT_LOCUS"
 _MULT_ALT_HEADER = ('##INFO=<ID={},Number=0,Type=Flag,'
-                    'Description="dbSNP Membership",Source="Jacquard",'
-                    'Version="{}">').format(_MULT_ALT_TAG, __version__)
-_FILE_FORMAT = ["##fileformat=VCFv4.2"]
+                    'Description="dbSNP Membership">').format(_MULT_ALT_TAG)
+_FILE_FORMAT = ["##fileformat=VCFv4.1"]
 _FILE_OUTPUT_SUFFIX = "merged"
 
 class _BufferedReader(object):

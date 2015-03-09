@@ -31,7 +31,7 @@ class HCTagTestCase(test_case.JacquardBaseTestCase):
 
 class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}AF,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)",Source="Jacquard",Version={1}>'.format(varscan.JQ_VARSCAN_TAG, __version__),
+        self.assertEqual('##FORMAT=<ID={0}AF,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)">'.format(varscan.JQ_VARSCAN_TAG),
                          varscan._AlleleFreqTag().metaheader)
 
     def test_format_missingAFTag(self):
@@ -61,7 +61,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
 
 class DepthTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}DP,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)",Source="Jacquard",Version={1}>'.format(varscan.JQ_VARSCAN_TAG, __version__),
+        self.assertEqual('##FORMAT=<ID={0}DP,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)">'.format(varscan.JQ_VARSCAN_TAG),
                          varscan._DepthTag().metaheader)
 
     def test_format_missingDPTag(self):
@@ -83,7 +83,7 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
 
 class SomaticTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)",Source="Jacquard",Version={1}>'.format(varscan.JQ_VARSCAN_TAG, __version__),
+        self.assertEqual('##FORMAT=<ID={0}HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)">'.format(varscan.JQ_VARSCAN_TAG),
                          varscan._SomaticTag().metaheader)
 
     def test_format_missingSSTag(self):

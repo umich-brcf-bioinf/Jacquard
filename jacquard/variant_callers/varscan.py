@@ -19,7 +19,6 @@ See tag definitions for more info.
 """
 from __future__ import print_function, absolute_import
 from collections import defaultdict, OrderedDict
-from jacquard import __version__
 import jacquard.utils as utils
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.vcf as vcf
@@ -46,10 +45,8 @@ class _AlleleFreqTag(object):
         self.metaheader = ('##FORMAT=<ID={0}AF,'
                            'Number=A,'
                            'Type=Float,'
-                           'Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)",'
-                           'Source="Jacquard",'
-                           'Version={1}>').format(JQ_VARSCAN_TAG,
-                                                  __version__)
+                           'Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)">')\
+                           .format(JQ_VARSCAN_TAG)
 
     @staticmethod
     def add_tag_values(vcf_record):
@@ -69,10 +66,8 @@ class _DepthTag(object):
         self.metaheader = ('##FORMAT=<ID={0}DP,'
                            'Number=1,'
                            'Type=Float,'
-                           'Description="Jacquard depth for VarScan (based on DP)",'
-                           'Source="Jacquard",'
-                           'Version={1}>').format(JQ_VARSCAN_TAG,
-                                                  __version__)
+                           'Description="Jacquard depth for VarScan (based on DP)">')\
+                           .format(JQ_VARSCAN_TAG)
 
     @staticmethod
     def add_tag_values(vcf_record):
@@ -100,10 +95,8 @@ class _SomaticTag(object):
         self.metaheader = ('##FORMAT=<ID={0}HC_SOM,'
                            'Number=1,'
                            'Type=Integer,'
-                           'Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)",'
-                           'Source="Jacquard",'
-                           'Version={1}>').format(JQ_VARSCAN_TAG,
-                                                  __version__)
+                           'Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)">')\
+                           .format(JQ_VARSCAN_TAG)
 
     @staticmethod
     def add_tag_values(vcf_record):
@@ -132,10 +125,8 @@ class _HCTag(object):
         self.metaheader = ('##FILTER=<ID={},'
                            'Number=1,'
                            'Type=Flag,'
-                           'Description="Jacquard high-confidence somatic flag for VarScan. Based on intersection with filtered VarScan variants"'
-                           'Source="Jacquard",'
-                           'Version={}>').format(self._TAG_ID,
-                                                 __version__)
+                           'Description="Jacquard high-confidence somatic flag for VarScan. Based on intersection with filtered VarScan variants">')\
+                           .format(self._TAG_ID)
         self._hc_loci = self._parse_file_reader(file_reader)
 
     @staticmethod

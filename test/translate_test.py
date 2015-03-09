@@ -221,7 +221,7 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
 
 class ExcludeMalformedRefTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
-        self.assertEquals('##FILTER=<ID=JQ_EXCLUDE_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.",Source="Jacquard",Version="{}">'.format(__version__),
+        self.assertEquals('##FILTER=<ID=JQ_EXCLUDE_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.">',
                           translate._ExcludeMalformedRef().metaheader)
 
     def test_add_tag_value_validRefNoFilter(self):
@@ -251,7 +251,7 @@ class ExcludeMalformedRefTestCase(test_case.JacquardBaseTestCase):
 
 class ExcludeMalformedAltTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
-        self.assertEquals('##FILTER=<ID=JQ_EXCLUDE_MALFORMED_ALT,Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.",Source="Jacquard",Version={}>'.format(__version__),
+        self.assertEquals('##FILTER=<ID=JQ_EXCLUDE_MALFORMED_ALT,Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.">',
                           translate._ExcludeMalformedAlt().metaheader)
 
     def test_add_tag_value_validAltNoFilter(self):
@@ -286,7 +286,7 @@ class ExcludeMalformedAltTestCase(test_case.JacquardBaseTestCase):
 
 class ExcludeMissingAltTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
-        self.assertEquals('##FILTER=<ID=JQ_EXCLUDE_MISSING_ALT,Description="The alternate allele is missing for this variant record.",Source="Jacquard",Version={}>'.format(__version__),
+        self.assertEquals('##FILTER=<ID=JQ_EXCLUDE_MISSING_ALT,Description="The alternate allele is missing for this variant record.">',
                           translate._ExcludeMissingAlt().metaheader)
 
     def test_add_tag_value_validAltNoFilter(self):

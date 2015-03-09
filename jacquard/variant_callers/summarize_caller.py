@@ -6,7 +6,6 @@ transform Jacquard-standardized VcfRecords.
 #pylint: disable=missing-docstring
 from __future__ import print_function, absolute_import
 from collections import defaultdict
-from jacquard import __version__
 import jacquard.utils as utils
 import jacquard.variant_callers.common_tags as common_tags
 import numpy as np
@@ -151,16 +150,13 @@ class _CallersReportedListTag(object):
 
     @staticmethod
     def _get_metaheader():
-        return ('##FORMAT=<ID={}{},'\
-                'Number=.,'\
-                'Type=String,'\
-                'Description="Comma-separated list variant callers '\
-                'which listed this variant in the Jacquard tagged VCF",'\
-                'Source="Jacquard",'\
-                'Version="{}">'\
+        return ('##FORMAT=<ID={}{},'
+                'Number=.,'
+                'Type=String,'
+                #pylint: disable=line-too-long
+                'Description="Comma-separated list variant callers which listed this variant in the Jacquard tagged VCF">')\
                 .format(JQ_SUMMARY_TAG,
-                        JQ_REPORTED_LIST,
-                        __version__))
+                        JQ_REPORTED_LIST)
 
     def add_tag_values(self, vcf_record):
         _add_caller_list_values(self.pattern, vcf_record, JQ_REPORTED_LIST)
@@ -176,16 +172,13 @@ class _CallersReportedTag(object):
 
     @staticmethod
     def _get_metaheader():
-        return ('##FORMAT=<ID={}{},'\
-                'Number=1,'\
-                'Type=Integer,'\
-                'Description="Count of variant callers which listed '\
-                'this variant in the Jacquard tagged VCF",'\
-                'Source="Jacquard",'\
-                'Version="{}">')\
+        return ('##FORMAT=<ID={}{},'
+                'Number=1,'
+                'Type=Integer,'
+                #pylint: disable=line-too-long
+                'Description="Count of variant callers which listed this variant in the Jacquard tagged VCF">')\
                 .format(JQ_SUMMARY_TAG,
-                        JQ_REPORTED,
-                        __version__)
+                        JQ_REPORTED)
 
     def add_tag_values(self, vcf_record):
         _add_caller_count_values(self.pattern, vcf_record, JQ_REPORTED)
@@ -201,17 +194,13 @@ class _CallersPassedListTag(object):
 
     @staticmethod
     def _get_metaheader():
-        return ('##FORMAT=<ID={}{},'\
-                'Number=.,'\
-                'Type=String,'\
-                'Description="Comma-separated list of variant caller '\
-                'short-names where FILTER = PASS for this variant in '\
-                'the Jacquard tagged VCF",'\
-                'Source="Jacquard",'\
-                'Version="{}">'\
+        return ('##FORMAT=<ID={}{},'
+                'Number=.,'
+                'Type=String,'
+                #pylint: disable=line-too-long
+                'Description="Comma-separated list of variant caller short-names where FILTER = PASS for this variant in the Jacquard tagged VCF">')\
                 .format(JQ_SUMMARY_TAG,
-                        JQ_PASSED_LIST,
-                        __version__))
+                        JQ_PASSED_LIST)
 
     def add_tag_values(self, vcf_record):
         _add_caller_list_values(self.pattern, vcf_record, JQ_PASSED_LIST)
@@ -227,15 +216,13 @@ class _CallersPassedTag(object):
 
     @staticmethod
     def _get_metaheader():
-        return ('##FORMAT=<ID={}{},'\
-                'Number=1,Type=Integer,'\
-                'Description="Count of variant callers where FILTER = PASS '\
-                'for this variant in the Jacquard tagged VCF",'\
-                'Source="Jacquard",'\
-                'Version="{}">')\
+        return ('##FORMAT=<ID={}{},'
+                'Number=1,'
+                'Type=Integer,'
+                #pylint: disable=line-too-long
+                'Description="Count of variant callers where FILTER = PASS for this variant in the Jacquard tagged VCF">')\
                 .format(JQ_SUMMARY_TAG,
-                        JQ_PASSED,
-                        __version__)
+                        JQ_PASSED)
 
     def add_tag_values(self, vcf_record):
         _add_caller_count_values(self.pattern, vcf_record, JQ_PASSED)
@@ -249,16 +236,13 @@ class _SamplesReported(object):
 
     @staticmethod
     def _get_metaheader():
-        return ('##INFO=<ID={}{},'\
-                'Number=1,Type=Integer,' \
-                'Description="Count of samples where this variant appeared '\
-                'in any of the Jacquard tagged VCFs (regardless of '\
-                'quality/filtering)",'\
-                'Source="Jacquard",'\
-                'Version="{}">')\
+        return ('##INFO=<ID={}{},'
+                'Number=1,'
+                'Type=Integer,'
+                #pylint: disable=line-too-long
+                'Description="Count of samples where this variant appeared in any of the Jacquard tagged VCFs (regardless of quality/filtering)">')\
                 .format(JQ_SUMMARY_TAG,
-                        JQ_SAMPLES_REPORTED,
-                        __version__)
+                        JQ_SAMPLES_REPORTED)
 
     @staticmethod
     def add_tag_values(vcf_record):
@@ -273,15 +257,13 @@ class _SamplesPassed(object):
 
     @staticmethod
     def _get_metaheader():
-        return ('##INFO=<ID={}{},'\
-                'Number=1,Type=Integer,' \
-                'Description="Count of samples where a variant caller passed '\
-                'the filter in any of the Jacquard tagged VCFs",'\
-                'Source="Jacquard",'\
-                'Version="{}">')\
+        return ('##INFO=<ID={}{},'
+                'Number=1,'
+                'Type=Integer,'
+                #pylint: disable=line-too-long
+                'Description="Count of samples where a variant caller passed the filter in any of the Jacquard tagged VCFs">')\
                 .format(JQ_SUMMARY_TAG,
-                        JQ_SAMPLES_PASSED,
-                        __version__)
+                        JQ_SAMPLES_PASSED)
 
     @staticmethod
     def add_tag_values(vcf_record):
@@ -302,18 +284,14 @@ class _AlleleFreqTag(object):
                       'Number=1,'
                       'Type=Float,'
                       ##pylint: disable=line-too-long
-                      'Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].",'
-                      'Source="Jacquard",'
-                      'Version="{1}">').format(JQ_SUMMARY_TAG,
-                                               __version__)
+                      'Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].">')\
+                      .format(JQ_SUMMARY_TAG)
         af_range = ('##FORMAT=<ID={0}AF_RANGE,'
                     'Number=1,'
                     'Type=Float,'
                     ##pylint: disable=line-too-long
-                    'Description="Max(allele frequency) - min (allele frequency) across recognized callers.",'
-                    'Source="Jacquard",'
-                    'Version="{1}">').format(JQ_SUMMARY_TAG,
-                                             __version__)
+                    'Description="Max(allele frequency) - min (allele frequency) across recognized callers.">')\
+                    .format(JQ_SUMMARY_TAG)
         return "\n".join([af_average, af_range])
 
     @staticmethod
@@ -350,18 +328,14 @@ class _DepthTag(object):
                       'Number=1,'
                       'Type=Float,'
                       ##pylint: disable=line-too-long
-                      'Description="Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].",'
-                      'Source="Jacquard",'
-                      'Version="{1}">').format(JQ_SUMMARY_TAG,
-                                               __version__)
+                      'Description="Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].">')\
+                      .format(JQ_SUMMARY_TAG)
         dp_range = ('##FORMAT=<ID={0}DP_RANGE,'
                     'Number=1,'
                     'Type=Float,'
                     ##pylint: disable=line-too-long
-                    'Description="Max(depth) - min (depth) across recognized callers.",'
-                    'Source="Jacquard",'
-                    'Version="{1}">').format(JQ_SUMMARY_TAG,
-                                              __version__)
+                    'Description="Max(depth) - min (depth) across recognized callers.">')\
+                    .format(JQ_SUMMARY_TAG)
         return "\n".join([dp_average, dp_range])
 
     @staticmethod
@@ -397,10 +371,8 @@ class _SomaticTag(object):
                      'Number=1,'
                      'Type=Integer,'
                      ##pylint: disable=line-too-long
-                     'Description="Count of recognized variant callers that reported confident somatic call for this sample-position.",'
-                     'Source="Jacquard",'
-                     'Version="{1}">').format(JQ_SUMMARY_TAG,
-                                              __version__)
+                     'Description="Count of recognized variant callers that reported confident somatic call for this sample-position.">')\
+                     .format(JQ_SUMMARY_TAG)
         return som_count
 
     @staticmethod

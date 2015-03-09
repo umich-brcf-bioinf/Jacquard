@@ -4,7 +4,6 @@ MuTect VCFs are assumed to have a ".vcf" extension and have a valid
 "##MuTect=..." metaheader.
 """
 from __future__ import print_function, absolute_import
-from jacquard import __version__
 import jacquard.utils as utils
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.vcf as vcf
@@ -18,10 +17,8 @@ class _AlleleFreqTag(object):
                            'Number=A,'
                            'Type=Float,'
                            #pylint: disable=line-too-long
-                           'Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)",'
-                           'Source="Jacquard",'
-                           'Version={1}>').format(JQ_MUTECT_TAG,
-                                                  __version__)
+                           'Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)">')\
+                           .format(JQ_MUTECT_TAG)
 
     def add_tag_values(self, vcf_record):
         if "FA" in vcf_record.format_tags:
@@ -45,10 +42,8 @@ class _DepthTag(object):
                            'Number=1,'
                            'Type=Float,'
                            #pylint: disable=line-too-long
-                           'Description="Jacquard depth for MuTect (based on DP)",'
-                           'Source="Jacquard",'
-                           'Version={1}>').format(JQ_MUTECT_TAG,
-                                                  __version__)
+                           'Description="Jacquard depth for MuTect (based on DP)">')\
+                           .format(JQ_MUTECT_TAG)
 
     @staticmethod
     def add_tag_values(vcf_record):
@@ -65,10 +60,8 @@ class _SomaticTag(object):
                            'Number=1,'
                            'Type=Integer,'
                            #pylint: disable=line-too-long
-                           'Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)",'
-                           'Source="Jacquard",'
-                           'Version={1}>').format(JQ_MUTECT_TAG,
-                                                  __version__)
+                           'Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)">')\
+                           .format(JQ_MUTECT_TAG)
 
     def add_tag_values(self, vcf_record):
         mutect_tag = JQ_MUTECT_TAG + "HC_SOM"
