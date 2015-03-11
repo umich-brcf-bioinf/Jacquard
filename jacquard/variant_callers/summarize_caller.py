@@ -83,6 +83,7 @@ def _get_somatic_count(vcf_record, tags):
 
     return somatic_count
 
+#TODO: (jebene) - simplify this so that numpy is not used
 def _calculate_count(tags):
     #pylint: disable=no-member
     tag_array = np.array(tags)
