@@ -19,7 +19,7 @@ JQ_PASSED = "CALLERS_PASSED_COUNT"
 JQ_PASSED_LIST = "CALLERS_PASSED_LIST"
 JQ_SAMPLES_PASSED = "SAMPLES_PASSED_COUNT"
 
-def _aggregate_values(values, function):
+def _aggregate_numeric_values(values, function):
     def _number(string):
         try:
             return int(string)
@@ -27,10 +27,14 @@ def _aggregate_values(values, function):
             return float(string)
 
     split_values = [x.split(",") for x in values]
+    lengths = set([len(x) for x in split_values])
+    if len(lengths) > 1:
+        return 0
+
     transposed_values = [list(x) for x in zip(*split_values)]
     string_values = []
-    for t_values in transposed_values:
-        string_values.append(str(function([_number(i) for i in t_values])))
+    for group in transposed_values:
+        string_values.append(function([_number(i) for i in group]))
 
     return ",".join(string_values)
 
@@ -44,6 +48,16 @@ def _get_non_null_values(record, sample, tag_name_regex):
         raise utils.JQException("Sample [{}] was not recognized".format(sample))
     return values
 
+def _average(numeric_values):
+    average = str(sum(numeric_values)/float(len(numeric_values)))
+    return utils.round_two_digits(average)
+
+def _range(numeric_values):
+    if len(numeric_values) > 1:
+        value_range = str(max(numeric_values) - min(numeric_values))
+        return utils.round_two_digits(value_range)
+    return "."
+
 def _build_new_tags(vcf_record, tags, sample):
     desired_tags = []
     for tag in tags:
@@ -55,53 +69,6 @@ def _build_new_tags(vcf_record, tags, sample):
             desired_tags.append(altered_tag)
 
     return desired_tags
-
-def _get_tag_summary_and_range(vcf_record, tags, all_ranges):
-    tag_summary = {}
-    tag_range = {}
-
-    for sample in vcf_record.sample_tag_values.keys():
-        desired_tags = _build_new_tags(vcf_record, tags, sample)
-
-        if len(desired_tags) == 0:
-            tag_summary[sample] = "."
-        else:
-            tag_summary[sample] = _calculate_average(desired_tags)
-
-        tag_range[sample] = _calculate_range(desired_tags, all_ranges)
-
-    return tag_summary, tag_range
-
-def _calculate_average(tags):
-    #pylint: disable=no-member
-    tag_array = np.array(tags)
-    rounded_tags = []
-
-    for i in xrange(len(tag_array[0,])):
-        tag_values = tag_array.astype(float)[:, i]
-        rounded_tag = utils.round_two_digits(str(np.mean(tag_values)))
-        rounded_tags.append(rounded_tag)
-
-    return ",".join(rounded_tags)
-
-def _calculate_range(tags, all_ranges):
-    #don't calculate range if only called by one caller
-    if len(tags) > 1:
-        #pylint: disable=no-member
-        summary_tag_array = np.array(tags)
-        tag_range = []
-
-        for i in xrange(len(summary_tag_array[0,])):
-            tag_values = summary_tag_array.astype(float)[:, i]
-            this_tag_range = np.max(tag_values) - np.min(tag_values)
-            rounded_tag_range = utils.round_two_digits(str(this_tag_range))
-            tag_range.append(rounded_tag_range)
-
-            all_ranges.append(float(rounded_tag_range))
-        return ",".join(tag_range)
-
-    else:
-        return "."
 
 def _get_somatic_count(vcf_record, tags):
     somatic_count = {}
@@ -170,8 +137,6 @@ class _CallersReportedListTag(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         self.metaheader = self._get_metaheader()
-#         self.all_ranges = []
-#         self.name = ""
         self.pattern = re.compile(r"JQ_(.*?)_{}"\
                                   .format(common_tags.CALLER_REPORTED_TAG))
 
@@ -192,8 +157,6 @@ class _CallersReportedTag(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         self.metaheader = self._get_metaheader()
-#         self.all_ranges = []
-#         self.name = ""
         self.pattern = re.compile(r"JQ_(.*?)_{}"\
                                   .format(common_tags.CALLER_REPORTED_TAG))
 
@@ -214,8 +177,6 @@ class _CallersPassedListTag(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         self.metaheader = self._get_metaheader()
-#         self.all_ranges = []
-#         self.name = ""
         self.pattern = re.compile(r"JQ_(.*?)_{}"\
                                   .format(common_tags.CALLER_PASSED_TAG))
 
@@ -236,8 +197,6 @@ class _CallersPassedTag(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         self.metaheader = self._get_metaheader()
-#         self.all_ranges = []
-#         self.name = ""
         self.pattern = re.compile(r"JQ_(.*?)_{}"\
                                   .format(common_tags.CALLER_PASSED_TAG))
 
@@ -258,8 +217,6 @@ class _SamplesReported(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         self.metaheader = self._get_metaheader()
-#         self.all_ranges = []
-#         self.name = ""
 
     @staticmethod
     def _get_metaheader():
@@ -279,8 +236,6 @@ class _SamplesPassed(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         self.metaheader = self._get_metaheader()
-#         self.all_ranges = []
-#         self.name = ""
 
     @staticmethod
     def _get_metaheader():
@@ -296,7 +251,49 @@ class _SamplesPassed(object):
     def add_tag_values(vcf_record):
         _add_sample_count_values(vcf_record, JQ_PASSED, JQ_SAMPLES_PASSED)
 
-class _AverageAlleleFreqTag(object):
+class _AlleleFreqRangeTag(object):
+    #pylint: disable=too-few-public-methods
+    _TAG_ID = "{}AF_RANGE".format(JQ_SUMMARY_TAG)
+    _PATTERN = re.compile("^JQ_.*_AF$")
+
+    def __init__(self):
+        self.metaheader = self._get_metaheader()
+
+    @staticmethod
+    def _get_metaheader():
+        return ('##FORMAT=<ID={},'
+                'Number=1,'
+                'Type=Float,'
+                ##pylint: disable=line-too-long
+                'Description="Max(allele frequency) - min (allele frequency) across recognized callers.">')\
+                .format(_AlleleFreqRangeTag._TAG_ID)
+
+    @staticmethod
+    def add_tag_values(record):
+        new_sample_tag_values = {}
+        for sample in record.sample_tag_values:
+            tag_values = _get_non_null_values(record,
+                                              sample,
+                                              _AlleleFreqRangeTag._PATTERN)
+
+            aggregated_values= "."
+            if tag_values:
+                aggregated_values = _aggregate_numeric_values(tag_values,
+                                                              _range)
+            if not aggregated_values:
+                #pylint: disable=line-too-long
+                raise utils.JQException("Error summarizing values {} at record [{}:{} {}]",
+                                        list(tag_values),
+                                        record.chrom,
+                                        record.pos,
+                                        sample)
+
+            new_sample_tag_values[sample] = aggregated_values
+
+        record.add_sample_tag_value(_AlleleFreqRangeTag._TAG_ID,
+                                    new_sample_tag_values)
+
+class _AlleleFreqAverageTag(object):
     #pylint: disable=too-few-public-methods
     _TAG_ID = "{}AF_AVERAGE".format(JQ_SUMMARY_TAG)
     _PATTERN = re.compile("^JQ_.*_AF$")
@@ -311,121 +308,121 @@ class _AverageAlleleFreqTag(object):
                 'Type=Float,'
                 ##pylint: disable=line-too-long
                 'Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].">')\
-                .format(_AverageAlleleFreqTag._TAG_ID)
+                .format(_AlleleFreqAverageTag._TAG_ID)
 
     @staticmethod
     def add_tag_values(record):
         new_sample_tag_values = {}
         for sample in record.sample_tag_values:
-            average = "."
             tag_values = _get_non_null_values(record,
                                               sample,
-                                              _AverageAlleleFreqTag._PATTERN)
+                                              _AlleleFreqAverageTag._PATTERN)
 
-            tag_values_floats = [float(i) for i in tag_values]
-            if tag_values_floats:
-                average = sum(tag_values_floats)/len(tag_values_floats)
+            aggregated_values= "."
+            if tag_values:
+                aggregated_values = _aggregate_numeric_values(tag_values,
+                                                              _average)
+            if not aggregated_values:
+                #pylint: disable=line-too-long
+                raise utils.JQException("Error summarizing values {} at record [{}:{} {}]",
+                                        list(tag_values),
+                                        record.chrom,
+                                        record.pos,
+                                        sample)
 
-            new_sample_tag_values[sample] = average
+            new_sample_tag_values[sample] = aggregated_values
 
-        record.add_sample_tag_value(_AverageAlleleFreqTag._TAG_ID,
+        record.add_sample_tag_value(_AlleleFreqAverageTag._TAG_ID,
                                     new_sample_tag_values)
 
-#TODO: (cgates): Split into separate two separate classes and simplify
-# how ranges are calculated
-class _AlleleFreqTag(object):
+class _DepthRangeTag(object):
     #pylint: disable=too-few-public-methods
+    _TAG_ID = "{}DP_RANGE".format(JQ_SUMMARY_TAG)
+    _PATTERN = re.compile("^JQ_.*_DP$")
+
     def __init__(self):
         self.metaheader = self._get_metaheader()
-        self.all_ranges = []
-        self.name = "AF"
 
     @staticmethod
     def _get_metaheader():
-        af_average = ('##FORMAT=<ID={0}AF_AVERAGE,'
-                      'Number=1,'
-                      'Type=Float,'
-                      ##pylint: disable=line-too-long
-                      'Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].">')\
-                      .format(JQ_SUMMARY_TAG)
-        af_range = ('##FORMAT=<ID={0}AF_RANGE,'
-                    'Number=1,'
-                    'Type=Float,'
-                    ##pylint: disable=line-too-long
-                    'Description="Max(allele frequency) - min (allele frequency) across recognized callers.">')\
-                    .format(JQ_SUMMARY_TAG)
-        return "\n".join([af_average, af_range])
+        return ('##FORMAT=<ID={},'
+                'Number=1,'
+                'Type=Float,'
+                ##pylint: disable=line-too-long
+                'Description="Max(depth) - min (depth) across recognized callers.">'
+                .format(_DepthRangeTag._TAG_ID))
 
     @staticmethod
-    def _get_allele_freq_tags(vcf_record):
-        tags = []
-        for tag in vcf_record.format_tags:
-            if tag.startswith("JQ_") and tag.endswith("_AF"):
-                tags.append(tag)
+    def add_tag_values(record):
+        new_sample_tag_values = {}
+        for sample in record.sample_tag_values:
+            tag_values = _get_non_null_values(record,
+                                              sample,
+                                              _DepthRangeTag._PATTERN)
 
-        return tags
+            aggregated_values= "."
+            if tag_values:
+                aggregated_values = _aggregate_numeric_values(tag_values,
+                                                              _range)
+            if not aggregated_values:
+                #pylint: disable=line-too-long
+                raise utils.JQException("Error summarizing values {} at record [{}:{} {}]",
+                                        list(tag_values),
+                                        record.chrom,
+                                        record.pos,
+                                        sample)
 
-    def add_tag_values(self, vcf_record):
-        tags = self._get_allele_freq_tags(vcf_record)
-        tag_summary, tag_range = _get_tag_summary_and_range(vcf_record,
-                                                            tags,
-                                                            self.all_ranges)
-        vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + "AF_AVERAGE",
-                                        tag_summary)
-        vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + "AF_RANGE",
-                                        tag_range)
+            new_sample_tag_values[sample] = aggregated_values
 
-#TODO: (cgates): Split into separate two separate classes and simplify
-# how ranges are calculated
-class _DepthTag(object):
+        record.add_sample_tag_value(_DepthRangeTag._TAG_ID,
+                                    new_sample_tag_values)
+
+class _DepthAverageTag(object):
     #pylint: disable=too-few-public-methods
+    _TAG_ID = "{}DP_AVERAGE".format(JQ_SUMMARY_TAG)
+    _PATTERN = re.compile("^JQ_.*_DP$")
+
     def __init__(self):
         self.metaheader = self._get_metaheader()
-        self.all_ranges = []
-        self.name = "DP"
 
     @staticmethod
     def _get_metaheader():
-        dp_average = ('##FORMAT=<ID={0}DP_AVERAGE,'
-                      'Number=1,'
-                      'Type=Float,'
-                      ##pylint: disable=line-too-long
-                      'Description="Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].">')\
-                      .format(JQ_SUMMARY_TAG)
-        dp_range = ('##FORMAT=<ID={0}DP_RANGE,'
-                    'Number=1,'
-                    'Type=Float,'
-                    ##pylint: disable=line-too-long
-                    'Description="Max(depth) - min (depth) across recognized callers.">')\
-                    .format(JQ_SUMMARY_TAG)
-        return "\n".join([dp_average, dp_range])
+        return ('##FORMAT=<ID={},'
+                'Number=1,'
+                'Type=Float,'
+                ##pylint: disable=line-too-long
+                'Description="Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].">'
+                .format(_DepthAverageTag._TAG_ID))
 
     @staticmethod
-    def _get_depth_tags(vcf_record):
-        tags = []
-        for tag in vcf_record.format_tags:
-            if tag.startswith("JQ_") and tag.endswith("_DP"):
-                tags.append(tag)
+    def add_tag_values(record):
+        new_sample_tag_values = {}
+        for sample in record.sample_tag_values:
+            tag_values = _get_non_null_values(record,
+                                              sample,
+                                              _DepthAverageTag._PATTERN)
 
-        return tags
+            aggregated_values= "."
+            if tag_values:
+                aggregated_values = _aggregate_numeric_values(tag_values,
+                                                              _average)
+            if not aggregated_values:
+                #pylint: disable=line-too-long
+                raise utils.JQException("Error summarizing values {} at record [{}:{} {}]",
+                                        list(tag_values),
+                                        record.chrom,
+                                        record.pos,
+                                        sample)
 
-    def add_tag_values(self, vcf_record):
-        tags = self._get_depth_tags(vcf_record)
-        tag_summary, tag_range = _get_tag_summary_and_range(vcf_record,
-                                                            tags,
-                                                            self.all_ranges)
+            new_sample_tag_values[sample] = aggregated_values
 
-        vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + "DP_AVERAGE",
-                                        tag_summary)
-        vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + "DP_RANGE",
-                                        tag_range)
+        record.add_sample_tag_value(_DepthAverageTag._TAG_ID,
+                                    new_sample_tag_values)
 
 class _SomaticTag(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         self.metaheader = self._get_metaheader()
-#         self.all_ranges = []
-#         self.name = "SOM"
 
     @staticmethod
     def _get_metaheader():
@@ -462,15 +459,15 @@ class SummarizeCaller(object):
                      _CallersPassedListTag(),
                      _SamplesReported(),
                      _SamplesPassed(),
-                     _AlleleFreqTag(),
-                     _DepthTag(),
+                     _AlleleFreqAverageTag(),
+                     _AlleleFreqRangeTag(),
+                     _DepthAverageTag(),
+                     _DepthRangeTag(),
                      _SomaticTag()]
-        #self.ranges = {}
 
     def add_tags(self, vcf_record):
         for tag in self.tags:
             tag.add_tag_values(vcf_record)
-#             self.ranges[tag.name] = tag.all_ranges
         return vcf_record
 
     def get_metaheaders(self):

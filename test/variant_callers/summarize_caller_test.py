@@ -11,6 +11,7 @@ import jacquard.variant_callers.summarize_caller as summarize_caller
 import jacquard.variant_callers.varscan as varscan
 from jacquard.vcf import VcfRecord
 import test.test_case as test_case
+from jacquard.utils import JQException
 
 
 class CallersReportedListTagTestCase(test_case.JacquardBaseTestCase):
@@ -122,14 +123,103 @@ class SamplesPassedTestCase(test_case.JacquardBaseTestCase):
         self.assertIn(info_tag, vcf_record.info_dict)
         self.assertEquals("0", vcf_record.info_dict[info_tag])
 
-class AverageAlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
+class AlleleFreqRangeTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
-        split_meta_header = summarize_caller._AverageAlleleFreqTag().metaheader.split("\n")
+        split_meta_header = summarize_caller._AlleleFreqRangeTag().metaheader.split("\n")
+        self.assertEqual('##FORMAT=<ID={0}AF_RANGE,Number=1,Type=Float,Description="Max(allele frequency) - min (allele frequency) across recognized callers.">'.format(summarize_caller.JQ_SUMMARY_TAG),
+                         split_meta_header[0])
+
+    def test_add_tag_values(self):
+        tag = summarize_caller._AlleleFreqRangeTag()
+        sample_tag_values = {"SA": {"JQ_foo_AF": "0", "JQ_bar_AF": "0.1", "JQ_baz_AF":"0.2"},
+                             "SB": {"JQ_foo_AF": "0.2", "JQ_bar_AF": "0.3", "JQ_baz_AF":"0.4"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals("0.2", record.sample_tag_values["SA"][tag._TAG_ID])
+        self.assertEquals("0.2", record.sample_tag_values["SB"][tag._TAG_ID])
+
+    def test_add_tag_values_nullsDoNotCount(self):
+        tag = summarize_caller._AlleleFreqRangeTag()
+        sample_tag_values = {"SA": {"JQ_foo_AF": ".", "JQ_bar_AF": "0.1", "JQ_baz_AF":"0.2"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+        self.assertEquals("0.1", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_oneValueReturnsNull(self):
+        tag = summarize_caller._AlleleFreqRangeTag()
+        sample_tag_values = {"SA": {"JQ_foo_AF": "."}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+        self.assertEquals(".", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_OnlyCountAFTags(self):
+        tag = summarize_caller._AlleleFreqRangeTag()
+        sample_tag_values = {"SA": {"JQ_foo_XX": "0", "JQ_bar_AF": "0.1", "JQ_baz_AF":"0.2"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals("0.1", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_allNulls(self):
+        tag = summarize_caller._AlleleFreqRangeTag()
+        sample_tag_values = {"SA": {"JQ_foo_AF": ".", "JQ_bar_AF": ".", "JQ_baz_AF":"."}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals(".", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_missingTag(self):
+        tag = summarize_caller._AlleleFreqRangeTag()
+        sample_tag_values = {"SA": {"JQ_foo_XX": "."}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals(".", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_multAlts(self):
+        tag = summarize_caller._AlleleFreqRangeTag()
+        sample_tag_values = {"SA": {"JQ_foo_AF": "0,0.1", "JQ_bar_AF": "0.1,0.2"},
+                             "SB": {"JQ_foo_AF": "0.2", "JQ_bar_AF": "0.3"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals("0.1,0.1", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_rounds(self):
+        tag = summarize_caller._AlleleFreqRangeTag()
+        sample_tag_values = {"SA": {"JQ_foo_AF": "0", "JQ_bar_AF": "0.666666"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals("0.67", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_inconsistentMultAlt(self):
+        tag = summarize_caller._AlleleFreqRangeTag()
+        sample_tag_values = {"SA": {"JQ_foo_AF": "0,0.1", "JQ_bar_AF": "0.2"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        self.assertRaisesRegexp(JQException,
+                                r"Error summarizing values \[.*\] at record \[.*\]",
+                                tag.add_tag_values,
+                                record)
+
+class AlleleFreqAverageTagTestCase(test_case.JacquardBaseTestCase):
+    def test_metaheader(self):
+        split_meta_header = summarize_caller._AlleleFreqAverageTag().metaheader.split("\n")
         self.assertEqual('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].">'.format(summarize_caller.JQ_SUMMARY_TAG),
                          split_meta_header[0])
 
     def test_add_tag_values(self):
-        tag = summarize_caller._AverageAlleleFreqTag()
+        tag = summarize_caller._AlleleFreqAverageTag()
         sample_tag_values = {"SA": {"JQ_foo_AF": "0", "JQ_bar_AF": "0.1", "JQ_baz_AF":"0.2"},
                              "SB": {"JQ_foo_AF": "0.2", "JQ_bar_AF": "0.3", "JQ_baz_AF":"0.4"}}
         record = VcfRecord("CHROM", "POS", "REF", "ALT",
@@ -140,7 +230,7 @@ class AverageAlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals("0.3", record.sample_tag_values["SB"][tag._TAG_ID])
 
     def test_add_tag_values_nullsDoNotCount(self):
-        tag = summarize_caller._AverageAlleleFreqTag()
+        tag = summarize_caller._AlleleFreqAverageTag()
         sample_tag_values = {"SA": {"JQ_foo_AF": ".", "JQ_bar_AF": ".", "JQ_baz_AF":"0.2"}}
         record = VcfRecord("CHROM", "POS", "REF", "ALT",
                            sample_tag_values=sample_tag_values)
@@ -149,7 +239,7 @@ class AverageAlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals("0.2", record.sample_tag_values["SA"][tag._TAG_ID])
 
     def test_add_tag_values_OnlyCountAFTags(self):
-        tag = summarize_caller._AverageAlleleFreqTag()
+        tag = summarize_caller._AlleleFreqAverageTag()
         sample_tag_values = {"SA": {"JQ_foo_XX": "0", "JQ_bar_XX": "0.1", "JQ_baz_AF":"0.2"}}
         record = VcfRecord("CHROM", "POS", "REF", "ALT",
                            sample_tag_values=sample_tag_values)
@@ -158,7 +248,7 @@ class AverageAlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals("0.2", record.sample_tag_values["SA"][tag._TAG_ID])
 
     def test_add_tag_values_allNulls(self):
-        tag = summarize_caller._AverageAlleleFreqTag()
+        tag = summarize_caller._AlleleFreqAverageTag()
         sample_tag_values = {"SA": {"JQ_foo_AF": ".", "JQ_bar_AF": ".", "JQ_baz_AF":"."}}
         record = VcfRecord("CHROM", "POS", "REF", "ALT",
                            sample_tag_values=sample_tag_values)
@@ -167,7 +257,7 @@ class AverageAlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(".", record.sample_tag_values["SA"][tag._TAG_ID])
 
     def test_add_tag_values_missingTag(self):
-        tag = summarize_caller._AverageAlleleFreqTag()
+        tag = summarize_caller._AlleleFreqAverageTag()
         sample_tag_values = {"SA": {"JQ_foo_XX": "."}}
         record = VcfRecord("CHROM", "POS", "REF", "ALT",
                            sample_tag_values=sample_tag_values)
@@ -175,80 +265,212 @@ class AverageAlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEquals(".", record.sample_tag_values["SA"][tag._TAG_ID])
 
+    def test_add_tag_values_multAlts(self):
+        tag = summarize_caller._AlleleFreqAverageTag()
+        sample_tag_values = {"SA": {"JQ_foo_AF": "0,0.1", "JQ_bar_AF": "0.1,0.2"},
+                             "SB": {"JQ_foo_AF": "0.2", "JQ_bar_AF": "0.3"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
 
+        self.assertEquals("0.05,0.15", record.sample_tag_values["SA"][tag._TAG_ID])
 
-class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
+    def test_add_tag_values_rounds(self):
+        tag = summarize_caller._AlleleFreqAverageTag()
+        sample_tag_values = {"SA": {"JQ_foo_AF": "0", "JQ_bar_AF": "0.666666"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals("0.33", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_inconsistentMultAlt(self):
+        tag = summarize_caller._AlleleFreqAverageTag()
+        sample_tag_values = {"SA": {"JQ_foo_AF": "0,0.1", "JQ_bar_AF": "0.2"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        self.assertRaisesRegexp(JQException,
+                                r"Error summarizing values \[.*\] at record \[.*\]",
+                                tag.add_tag_values,
+                                record)
+
+class DepthRangeTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
-        split_meta_header = summarize_caller._AlleleFreqTag().metaheader.split("\n")
-        self.assertEqual('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].">'.format(summarize_caller.JQ_SUMMARY_TAG),
-                         split_meta_header[0])
+        split_meta_header = summarize_caller._DepthRangeTag().metaheader.split("\n")
+        self.assertEquals('##FORMAT=<ID={0}DP_RANGE,Number=1,Type=Float,Description="Max(depth) - min (depth) across recognized callers.">'.format(summarize_caller.JQ_SUMMARY_TAG),
+                          split_meta_header[0])
 
     def test_add_tag_values(self):
-        tag = summarize_caller._AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|X:0:0.1:0.2|Y:0.2:0.3:0.4\n".replace('|', "\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE|X:0:0.1:0.2:0.1:0.2|Y:0.2:0.3:0.4:0.3:0.2\n".format(summarize_caller.JQ_SUMMARY_TAG).replace('|', "\t")
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
-        tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.text())
+        tag = summarize_caller._DepthRangeTag()
+        sample_tag_values = {"SA": {"JQ_foo_DP": "0", "JQ_bar_DP": "1", "JQ_baz_DP":"2"},
+                             "SB": {"JQ_foo_DP": "2", "JQ_bar_DP": "3", "JQ_baz_DP":"4"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals("2", record.sample_tag_values["SA"][tag._TAG_ID])
+        self.assertEquals("2", record.sample_tag_values["SB"][tag._TAG_ID])
+
+    def test_add_tag_values_oneValueReturnsNull(self):
+        tag = summarize_caller._DepthRangeTag()
+        sample_tag_values = {"SA": {"JQ_foo_DP": "."}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+        self.assertEquals(".", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_nullsDoNotCount(self):
+        tag = summarize_caller._DepthRangeTag()
+        sample_tag_values = {"SA": {"JQ_foo_DP": ".", "JQ_bar_DP": "1", "JQ_baz_DP":"2"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals("1", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_OnlyCountDPTags(self):
+        tag = summarize_caller._DepthRangeTag()
+        sample_tag_values = {"SA": {"JQ_foo_XX": "0", "JQ_bar_DP": "1", "JQ_baz_DP":"2"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals("1", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_allNulls(self):
+        tag = summarize_caller._DepthRangeTag()
+        sample_tag_values = {"SA": {"JQ_foo_DP": ".", "JQ_bar_DP": ".", "JQ_baz_DP":"."}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals(".", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_missingTag(self):
+        tag = summarize_caller._DepthRangeTag()
+        sample_tag_values = {"SA": {"JQ_foo_XX": "."}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals(".", record.sample_tag_values["SA"][tag._TAG_ID])
 
     def test_add_tag_values_multAlts(self):
-        tag = summarize_caller._AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF|0,0:0.2,0.4|0,0:0.1,0.3\n".replace('|', "\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_bar_AF:{0}AF_AVERAGE:{0}AF_RANGE|0,0:0.2,0.4:0.1,0.2:0.2,0.4|0,0:0.1,0.3:0.05,0.15:0.1,0.3\n".format(summarize_caller.JQ_SUMMARY_TAG).replace('|', "\t")
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
-        tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.text())
+        tag = summarize_caller._DepthRangeTag()
+        sample_tag_values = {"SA": {"JQ_foo_DP": "0,1", "JQ_bar_DP": "2,3"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
 
-    def test_add_tag_values_noJQ_AFTags(self):
-        tag = summarize_caller._AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP|X|Y\n".replace('|', "\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{0}AF_AVERAGE:{0}AF_RANGE|X:.:.|Y:.:.\n".format(summarize_caller.JQ_SUMMARY_TAG).replace('|', "\t")
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
-        tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.text())
+        self.assertEquals("2,2", record.sample_tag_values["SA"][tag._TAG_ID])
 
-    def test_add_tag_values_noNullValuesInAvgCalculation(self):
-        tag = summarize_caller._AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF|X:0:0.1:.|Y:0.2:0.3:.\n".replace('|', "\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:JQ_foo_AF:JQ_bar_AF:JQ_baz_AF:{0}AF_AVERAGE:{0}AF_RANGE|X:0:0.1:.:0.05:0.1|Y:0.2:0.3:.:0.25:0.1\n".format(summarize_caller.JQ_SUMMARY_TAG).replace('|', "\t")
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
-        tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.text())
+    def test_add_tag_values_rounds(self):
+        tag = summarize_caller._DepthRangeTag()
+        sample_tag_values = {"SA": {"JQ_foo_DP": "0", "JQ_bar_DP": "42.666666"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
 
-class DepthTagTestCase(test_case.JacquardBaseTestCase):
+        self.assertEquals("42.67", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_inconsistentMultAlt(self):
+        tag = summarize_caller._DepthRangeTag()
+        sample_tag_values = {"SA": {"JQ_foo_DP": "0,0.1", "JQ_bar_DP": "0.2"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        self.assertRaisesRegexp(JQException,
+                                r"Error summarizing values \[.*\] at record \[.*\]",
+                                tag.add_tag_values,
+                                record)
+
+class DepthAverageTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
-        split_meta_header = summarize_caller._DepthTag().metaheader.split("\n")
-        self.assertEqual('##FORMAT=<ID={0}DP_AVERAGE,Number=1,Type=Float,' \
-                      'Description="Average allele frequency across ' \
-                      'recognized variant callers that reported ' \
-                      'frequency for this position; rounded to integer '\
-                      '[round(average(JQ_*_DP))].">'\
-                      .format(summarize_caller.JQ_SUMMARY_TAG),
-                      split_meta_header[0])
+        split_meta_header = summarize_caller._DepthAverageTag().metaheader.split("\n")
+        self.assertEquals('##FORMAT=<ID={}DP_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].">'.format(summarize_caller.JQ_SUMMARY_TAG),
+                          split_meta_header[0])
 
     def test_add_tag_values(self):
-        tag = summarize_caller._DepthTag()
-        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF:JQ_foo_DP:JQ_bar_DP:JQ_baz_DP|X:1:2:3|Y:4:5:6\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF:JQ_foo_DP:JQ_bar_DP:JQ_baz_DP:{0}DP_AVERAGE:{0}DP_RANGE|X:1:2:3:2.0:2.0|Y:4:5:6:5.0:2.0\n").format(summarize_caller.JQ_SUMMARY_TAG)
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
-        tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.text())
+        tag = summarize_caller._DepthAverageTag()
+        sample_tag_values = {"SA": {"JQ_foo_DP": "0", "JQ_bar_DP": "1", "JQ_baz_DP":"2"},
+                             "SB": {"JQ_foo_DP": "2", "JQ_bar_DP": "3", "JQ_baz_DP":"4"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals("1.0", record.sample_tag_values["SA"][tag._TAG_ID])
+        self.assertEquals("3.0", record.sample_tag_values["SB"][tag._TAG_ID])
+
+    def test_add_tag_values_oneValueReturnsNull(self):
+        tag = summarize_caller._DepthAverageTag()
+        sample_tag_values = {"SA": {"JQ_foo_DP": "."}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+        self.assertEquals(".", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_nullsDoNotCount(self):
+        tag = summarize_caller._DepthAverageTag()
+        sample_tag_values = {"SA": {"JQ_foo_DP": ".", "JQ_bar_DP": "1", "JQ_baz_DP":"2"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals("1.5", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_OnlyCountDPTags(self):
+        tag = summarize_caller._DepthAverageTag()
+        sample_tag_values = {"SA": {"JQ_foo_XX": "0", "JQ_bar_DP": "1", "JQ_baz_DP":"2"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals("1.5", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_allNulls(self):
+        tag = summarize_caller._DepthAverageTag()
+        sample_tag_values = {"SA": {"JQ_foo_DP": ".", "JQ_bar_DP": ".", "JQ_baz_DP":"."}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals(".", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_missingTag(self):
+        tag = summarize_caller._DepthAverageTag()
+        sample_tag_values = {"SA": {"JQ_foo_XX": "."}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals(".", record.sample_tag_values["SA"][tag._TAG_ID])
 
     def test_add_tag_values_multAlts(self):
-        tag = summarize_caller._DepthTag()
-        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_DP:JQ_bar_DP|0,0:1,2|0,0:3,4\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_DP:JQ_bar_DP:{0}DP_AVERAGE:{0}DP_RANGE|0,0:1,2:0.5,1.0:1.0,2.0|0,0:3,4:1.5,2.0:3.0,4.0\n").format(summarize_caller.JQ_SUMMARY_TAG)
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
-        tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.text())
+        tag = summarize_caller._DepthAverageTag()
+        sample_tag_values = {"SA": {"JQ_foo_DP": "0,1", "JQ_bar_DP": "2,3"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
 
-    def test_add_tag_values_noJQ_DPTags(self):
-        tag = summarize_caller._DepthTag()
-        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF|X|Y\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_AF:{0}DP_AVERAGE:{0}DP_RANGE|X:.:.|Y:.:.\n").format(summarize_caller.JQ_SUMMARY_TAG)
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
-        tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.text())
+        self.assertEquals("1.0,2.0", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_rounds(self):
+        tag = summarize_caller._DepthAverageTag()
+        sample_tag_values = {"SA": {"JQ_foo_DP": "0", "JQ_bar_DP": "3"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals("1.5", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_inconsistentMultAlt(self):
+        tag = summarize_caller._DepthAverageTag()
+        sample_tag_values = {"SA": {"JQ_foo_DP": "0,0.1", "JQ_bar_DP": "0.2"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        self.assertRaisesRegexp(JQException,
+                                r"Error summarizing values \[.*\] at record \[.*\]",
+                                tag.add_tag_values,
+                                record)
 
 class SomaticTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
@@ -284,25 +506,39 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(expected, processedVcfRecord.text())
 
 class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
-    def test_aggregate_values_ints(self):
+    @staticmethod
+    def _sum_to_string(collection_of_numbers):
+        return str(sum(collection_of_numbers))
+
+    def test_aggregate_numeric_values_ints(self):
         input_values = ["0", "1", "2", "4"]
-        actual_value = summarize_caller._aggregate_values(input_values, sum)
+        actual_value = summarize_caller._aggregate_numeric_values(input_values,
+                                                                  self._sum_to_string)
         self.assertEquals("7", actual_value)
 
-    def test_aggregate_values_floats(self):
+    def test_aggregate_numeric_values_floats(self):
         input_values = ["0.0", "0.1", "0.2", "0.4"]
-        actual_value = summarize_caller._aggregate_values(input_values, sum)
+        actual_value = summarize_caller._aggregate_numeric_values(input_values,
+                                                                  self._sum_to_string)
         self.assertEquals("0.7", actual_value)
 
-    def test_aggregate_values_listsOfInts(self):
+    def test_aggregate_numeric_values_listsOfInts(self):
         input_values = ["0,1", "2,4"]
-        actual_value = summarize_caller._aggregate_values(input_values, sum)
+        actual_value = summarize_caller._aggregate_numeric_values(input_values,
+                                                                  self._sum_to_string)
         self.assertEquals("2,5", actual_value)
 
-    def test_aggregate_values_listsOfFloats(self):
+    def test_aggregate_numeric_values_listsOfFloats(self):
         input_values = ["0.0,0.1", "0.2,0.4"]
-        actual_value = summarize_caller._aggregate_values(input_values, sum)
+        actual_value = summarize_caller._aggregate_numeric_values(input_values,
+                                                                  self._sum_to_string)
         self.assertEquals("0.2,0.5", actual_value)
+
+    def test_aggregate_numeric_values_listsOf3(self):
+        input_values = ["0,1,3", "4,5,6"]
+        actual_value = summarize_caller._aggregate_numeric_values(input_values,
+                                                                  self._sum_to_string)
+        self.assertEquals("4,6,9", actual_value)
 
     def test_get_non_null_values(self):
         sample_tag_values = {"SA": {"JQ_A_AF":"0",
@@ -388,40 +624,6 @@ class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
         first_meta_header = split_actual[0]
 
         self.assertEqual(expected, first_meta_header)
-        self.assertEqual(9, len(actual))
+        self.assertEqual(11, len(actual))
         self.assertEqual(1, len(split_actual))
-
-    def test_calculate_average_float(self):
-        new_tags = [[0.2], [0.3], [0.5]]
-        actual_tags = summarize_caller._calculate_average(new_tags)
-        self.assertEquals("0.33", actual_tags)
-
-    def test_calculate_average_int(self):
-        new_tags = [[2], [3], [5]]
-        actual_tags = summarize_caller._calculate_average(new_tags)
-        self.assertEquals("3.33", actual_tags)
-
-    def test_calculate_range(self):
-        tag = summarize_caller._AlleleFreqTag()
-        freqs = [[0.2], [0.4], [0.5]]
-        actual_af_range = summarize_caller._calculate_range(freqs, tag.all_ranges)
-
-        self.assertEquals("0.3", actual_af_range)
-        self.assertEquals([0.3], tag.all_ranges)
-
-    def test_calculate_range_oneCaller(self):
-        tag = summarize_caller._AlleleFreqTag()
-        freqs = [[0.2]]
-        actual_af_range = summarize_caller._calculate_range(freqs, tag.all_ranges)
-
-        self.assertEquals(".", actual_af_range)
-        self.assertEquals([], tag.all_ranges)
-
-    def test_calculate_range_multAlts(self):
-        tag = summarize_caller._AlleleFreqTag()
-        freqs = [[0.2, 0.3], [0.5, 0.7], [0.2, 0.4]]
-        actual_af_range = summarize_caller._calculate_range(freqs, tag.all_ranges)
-
-        self.assertEquals("0.3,0.4", actual_af_range)
-        self.assertEquals([0.3, 0.4], tag.all_ranges)
 
