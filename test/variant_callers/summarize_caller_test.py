@@ -284,6 +284,26 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(expected, processedVcfRecord.text())
 
 class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
+    def test_aggregate_values_ints(self):
+        input_values = ["0", "1", "2", "4"]
+        actual_value = summarize_caller._aggregate_values(input_values, sum)
+        self.assertEquals("7", actual_value)
+
+    def test_aggregate_values_floats(self):
+        input_values = ["0.0", "0.1", "0.2", "0.4"]
+        actual_value = summarize_caller._aggregate_values(input_values, sum)
+        self.assertEquals("0.7", actual_value)
+
+    def test_aggregate_values_listsOfInts(self):
+        input_values = ["0,1", "2,4"]
+        actual_value = summarize_caller._aggregate_values(input_values, sum)
+        self.assertEquals("2,5", actual_value)
+
+    def test_aggregate_values_listsOfFloats(self):
+        input_values = ["0.0,0.1", "0.2,0.4"]
+        actual_value = summarize_caller._aggregate_values(input_values, sum)
+        self.assertEquals("0.2,0.5", actual_value)
+
     def test_get_non_null_values(self):
         sample_tag_values = {"SA": {"JQ_A_AF":"0",
                                     "JQ_B_AF":"1",
