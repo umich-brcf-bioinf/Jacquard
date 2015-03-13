@@ -7,7 +7,6 @@ transform Jacquard-standardized VcfRecords.
 from __future__ import print_function, absolute_import
 import jacquard.utils as utils
 import jacquard.variant_callers.common_tags as common_tags
-import numpy as np
 import re
 
 #TODO: (cgates): Numpy is not necessary and frankly not pulling its weight.
@@ -31,6 +30,7 @@ def _aggregate_numeric_values(values, function):
     if len(lengths) > 1:
         return 0
 
+    #pylint: disable=star-args
     transposed_values = [list(x) for x in zip(*split_values)]
     string_values = []
     for group in transposed_values:
@@ -39,13 +39,14 @@ def _aggregate_numeric_values(values, function):
     return ",".join(string_values)
 
 def _get_non_null_values(record, sample, tag_name_regex):
-    values = set()
+    values = []
     try:
         for tag, value in record.sample_tag_values[sample].items():
             if tag_name_regex.match(tag) and value != ".":
-                values.add(value)
+                values.append(value)
     except KeyError:
         raise utils.JQException("Sample [{}] was not recognized".format(sample))
+
     return values
 
 def _average(numeric_values):
@@ -58,6 +59,9 @@ def _range(numeric_values):
         return utils.round_two_digits(value_range)
     return "."
 
+def _count(numeric_values):
+    return str(sum(i == 1 for i in numeric_values))
+
 def _build_new_tags(vcf_record, tags, sample):
     desired_tags = []
     for tag in tags:
@@ -69,32 +73,6 @@ def _build_new_tags(vcf_record, tags, sample):
             desired_tags.append(altered_tag)
 
     return desired_tags
-
-def _get_somatic_count(vcf_record, tags):
-    somatic_count = {}
-
-    for sample in vcf_record.sample_tag_values.keys():
-        desired_tags = _build_new_tags(vcf_record, tags, sample)
-
-        if len(desired_tags) == 0:
-            somatic_count[sample] = "."
-        else:
-            somatic_count[sample] = _calculate_count(desired_tags)
-
-    return somatic_count
-
-#TODO: (jebene) - simplify this so that numpy is not used
-def _calculate_count(tags):
-    #pylint: disable=no-member
-    tag_array = np.array(tags)
-    counts = []
-
-    for i in xrange(len(tag_array[0,])):
-        tag_values = tag_array.astype(int)[:, i]
-        count = sum(i == 1 for i in tag_values)
-        counts.append(str(count))
-
-    return ",".join(counts)
 
 def _add_caller_list_values(pattern, vcf_record, jq_global_variable):
     sample_tag = {}
@@ -422,34 +400,45 @@ class _DepthAverageTag(object):
 
 class _SomaticTag(object):
     #pylint: disable=too-few-public-methods
+    _TAG_ID = "{}SOM_COUNT".format(JQ_SUMMARY_TAG)
+    _PATTERN = re.compile("^JQ_.*_HC_SOM$")
+
     def __init__(self):
         self.metaheader = self._get_metaheader()
 
     @staticmethod
     def _get_metaheader():
-        som_count = ('##FORMAT=<ID={0}SOM_COUNT,'
+        som_count = ('##FORMAT=<ID={},'
                      'Number=1,'
                      'Type=Integer,'
                      ##pylint: disable=line-too-long
                      'Description="Count of recognized variant callers that reported confident somatic call for this sample-position.">')\
-                     .format(JQ_SUMMARY_TAG)
+                     .format(_SomaticTag._TAG_ID)
         return som_count
 
     @staticmethod
-    def _get_somatic_tags(vcf_record):
-        tags = []
-        for tag in vcf_record.format_tags:
-            if tag.startswith("JQ_") and tag.endswith("_HC_SOM"):
-                tags.append(tag)
+    def add_tag_values(record):
+        new_sample_tag_values = {}
+        for sample in record.sample_tag_values:
+            tag_values = _get_non_null_values(record,
+                                              sample,
+                                              _SomaticTag._PATTERN)
+            aggregated_values= "."
+            if tag_values:
+                aggregated_values = _aggregate_numeric_values(tag_values,
+                                                              _count)
+            if not aggregated_values:
+                #pylint: disable=line-too-long
+                raise utils.JQException("Error summarizing values {} at record [{}:{} {}]",
+                                        list(tag_values),
+                                        record.chrom,
+                                        record.pos,
+                                        sample)
 
-        return tags
+            new_sample_tag_values[sample] = aggregated_values
 
-    def add_tag_values(self, vcf_record):
-        tags = self._get_somatic_tags(vcf_record)
-        somatic_count = _get_somatic_count(vcf_record, tags)
-
-        vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + "SOM_COUNT",
-                                        somatic_count)
+        record.add_sample_tag_value(_SomaticTag._TAG_ID,
+                                    new_sample_tag_values)
 
 class SummarizeCaller(object):
     """Provides metaheaders for VcfReader; adds summary tags to VcfRecords."""

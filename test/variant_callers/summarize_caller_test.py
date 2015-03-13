@@ -483,27 +483,70 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
 
     def test_add_tag_values(self):
         tag = summarize_caller._SomaticTag()
-        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:JQ_bar_HC_SOM:JQ_baz_HC_SOM|X:2:0:1|Y:4:1:1\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:JQ_bar_HC_SOM:JQ_baz_HC_SOM:{0}SOM_COUNT|X:2:0:1:1|Y:4:1:1:2\n").format(summarize_caller.JQ_SUMMARY_TAG)
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
-        tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.text())
+        sample_tag_values = {"SA": {"JQ_foo_HC_SOM": "1", "JQ_bar_HC_SOM": "1"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+        self.assertEquals("2", record.sample_tag_values["SA"][tag._TAG_ID])
 
     def test_add_tag_values_allZero(self):
         tag = summarize_caller._SomaticTag()
-        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:JQ_bar_HC_SOM:JQ_baz_HC_SOM|X:2:0:0|Y:4:0:0\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:JQ_bar_HC_SOM:JQ_baz_HC_SOM:{0}SOM_COUNT|X:2:0:0:0|Y:4:0:0:0\n").format(summarize_caller.JQ_SUMMARY_TAG)
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
-        tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.text())
+        sample_tag_values = {"SA": {"JQ_foo_HC_SOM": "0", "JQ_bar_HC_SOM": "0"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+        self.assertEquals("0", record.sample_tag_values["SA"][tag._TAG_ID])
 
-    def test_add_tag_values_noJQ_HC_SOMTags(self):
+    def test_add_tag_values_nullsDoNotCount(self):
         tag = summarize_caller._SomaticTag()
-        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP|X:2|Y:4\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_foo_AF:JQ_foo_DP:{0}SOM_COUNT|X:2:.|Y:4:.\n").format(summarize_caller.JQ_SUMMARY_TAG)
-        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
-        tag.add_tag_values(processedVcfRecord)
-        self.assertEquals(expected, processedVcfRecord.text())
+        sample_tag_values = {"SA": {"JQ_foo_HC_SOM": "1", "JQ_bar_HC_SOM": "."}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+        self.assertEquals("1", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_OnlyCountHCSOMTags(self):
+        tag = summarize_caller._SomaticTag()
+        sample_tag_values = {"SA": {"JQ_foo": "1", "JQ_foo_HC_SOM": "1", "JQ_bar_HC_SOM": "1"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+        self.assertEquals("2", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_allNulls(self):
+        tag = summarize_caller._SomaticTag()
+        sample_tag_values = {"SA": {"JQ_foo_HC_SOM": ".", "JQ_bar_HC_SOM": "."}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+        self.assertEquals(".", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_missingTag(self):
+        tag = summarize_caller._SomaticTag()
+        sample_tag_values = {"SA": {"JQ_foo": "1",}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+        self.assertEquals(".", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_multAlts(self):
+        tag = summarize_caller._SomaticTag()
+        sample_tag_values = {"SA": {"JQ_foo_HC_SOM": "0,1", "JQ_bar_HC_SOM": "1,1"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals("1,2", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_inconsistentMultAlt(self):
+        tag = summarize_caller._SomaticTag()
+        sample_tag_values = {"SA": {"JQ_foo_HC_SOM": "0,0.1", "JQ_bar_HC_SOM": "0.2"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        self.assertRaisesRegexp(JQException,
+                                r"Error summarizing values \[.*\] at record \[.*\]",
+                                tag.add_tag_values,
+                                record)
 
 class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
     @staticmethod
@@ -548,7 +591,7 @@ class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
         actual_values = summarize_caller._get_non_null_values(record,
                                                               "SA",
                                                               re.compile("^JQ_.*_AF$"))
-        self.assertEquals(set(["0", "1", "2"]), actual_values)
+        self.assertEquals(["1", "2", "0"], actual_values)
 
     def test_get_non_null_values_hasNulls(self):
         sample_tag_values = {"SA": {"JQ_A_AF":".",
@@ -558,7 +601,7 @@ class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
         actual_values = summarize_caller._get_non_null_values(record,
                                                               "SA",
                                                               re.compile("^JQ_.*_AF$"))
-        self.assertEquals(set(["2"]), actual_values)
+        self.assertEquals(["2"], actual_values)
 
     def test_get_non_null_values_invalidSample(self):
         sample_tag_values = {"SA": {"JQ_A_AF":".",
@@ -580,7 +623,7 @@ class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
         actual_values = summarize_caller._get_non_null_values(record,
                                                               "SA",
                                                               re.compile("FOO"))
-        self.assertEquals(set(), actual_values)
+        self.assertEquals([], actual_values)
 
     def test_summary_tag_prefix(self):
         self.assertEquals("JQ_SUMMARY_", summarize_caller.JQ_SUMMARY_TAG)
