@@ -218,13 +218,13 @@ class Varscan(object):
                             .format(len(invalid_filter_files[5:]))
         else:
             omitted_files = ""
-        invalid_file_names = [i.file_name for i in invalid_filter_files[:5]]
+        first_five_fnames = [i.file_name for i in invalid_filter_files[:5]]
         raise utils.JQException("The [{}] input files [{}{}] match "
                                 "high-confidence file names, but the "
                                 "file header is invalid or missing. "
                                 "Review inputs and try again.",
                                 len(invalid_filter_files),
-                                invalid_file_names,
+                                first_five_fnames,
                                 omitted_files)
 
 #pylint: disable=too-many-locals
