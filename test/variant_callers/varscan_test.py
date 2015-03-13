@@ -2,6 +2,7 @@
 # pylint: disable=invalid-name,global-statement
 import re
 
+import jacquard.utils as utils
 from jacquard.variant_callers import varscan
 from jacquard.variant_callers.varscan import _HCTag
 import jacquard.vcf as vcf
@@ -146,6 +147,19 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
     def _get_tag_class_names(vcf_reader):
         return [tag.__class__.__name__ for tag in vcf_reader.tags]
 
+    def test_validate_filter_file_validFile(self):
+        file_reader = MockFileReader("p1.hc.fpfilter.pass", ["chrom\tposition"])
+        caller = varscan.Varscan()
+        invalid_reader = caller._validate_filter_file(file_reader)
+        self.assertEquals(0, invalid_reader)
+
+    def test_validate_filter_file_invalidFile(self):
+        file_reader = MockFileReader("p1.hc.fpfilter.pass", ["chrom\tpos\tref"])
+        caller = varscan.Varscan()
+        invalid_reader = caller._validate_filter_file(file_reader)
+
+        self.assertEquals("p1.hc.fpfilter.pass", invalid_reader.file_name)
+
     def test_claim_multiplePatients(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
         content1 = ["##foo", "##source=VarScan2", "#chrom", record1]
@@ -238,6 +252,51 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         self.assertIsInstance(vcf_readers[1], varscan._VarscanVcfReader)
         self.assertEquals(reader4.file_name, vcf_readers[1]._vcf_reader.file_name)
         self.assertEquals(reader3.file_name, vcf_readers[1]._som_hc_file_reader.file_name)
+
+    def test_claim_vcfAndInvalidFilterFile(self):
+        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
+        content1 = [self.entab("chrom|pos|ref|alt"),
+                    record1]
+        content2 = ["##foo", "##source=VarScan2", "#chrom", record1]
+        reader1 = MockFileReader("patientA.indel.Somatic.hc.fpfilter.pass", content1)
+        reader2 = MockFileReader("patientA.indel.vcf", content2)
+        reader3 = MockFileReader("patientA.snp.Somatic.hc.fpfilter.pass", content1)
+        reader4 = MockFileReader("patientA.snp.vcf", content2)
+        reader5 = MockFileReader("patientA.readme", ["foo"])
+        file_readers = [reader1, reader2, reader3, reader4, reader5]
+
+        caller = varscan.Varscan()
+        self.assertRaisesRegexp(utils.JQException,
+                                r"The \[2\] input files \[.*\] match high-confidence file names, but the file header is invalid or missing. Review inputs and try again.",
+                                caller.claim,
+                                file_readers)
+
+    def test_claim_vcfAnd6InvalidFilterFiles(self):
+        #pylint: disable=too-many-locals
+        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
+        content1 = [self.entab("chrom|pos|ref|alt"),
+                    record1]
+        content2 = ["##foo", "##source=VarScan2", "#chrom", record1]
+        reader1 = MockFileReader("patientA.snp.Somatic.hc.fpfilter.pass", content1)
+        reader2 = MockFileReader("patientA.vcf", content2)
+        reader3 = MockFileReader("patientB.snp.Somatic.hc.fpfilter.pass", content1)
+        reader4 = MockFileReader("patientB.vcf", content2)
+        reader5 = MockFileReader("patientC.snp.Somatic.hc.fpfilter.pass", content1)
+        reader6 = MockFileReader("patientC.vcf", content2)
+        reader7 = MockFileReader("patientD.snp.Somatic.hc.fpfilter.pass", content1)
+        reader8 = MockFileReader("patientD.vcf", content2)
+        reader9 = MockFileReader("patientE.snp.Somatic.hc.fpfilter.pass", content1)
+        reader10 = MockFileReader("patientE.vcf", content2)
+        reader11 = MockFileReader("patientF.snp.Somatic.hc.fpfilter.pass", content1)
+        reader12 = MockFileReader("patientF.vcf", content2)
+        file_readers = [reader1, reader2, reader3, reader4, reader5, reader6,
+                        reader7, reader8, reader9, reader10, reader11, reader12]
+
+        caller = varscan.Varscan()
+        self.assertRaisesRegexp(utils.JQException,
+                                r"The \[6\] input files \[.*\(1 file\(s\) omitted\)\] match high-confidence file names, but the file header is invalid or missing. Review inputs and try again.",
+                                caller.claim,
+                                file_readers)
 
     def test_claim_heterogeneousVcfsAndFilterFiles(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."

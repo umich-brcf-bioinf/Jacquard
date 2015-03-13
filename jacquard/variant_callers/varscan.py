@@ -32,7 +32,6 @@ _VARSCAN_SOMATIC_HEADER = ("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"
                            "NORMAL|TUMOR").replace("|", "\t")
 JQ_VARSCAN_TAG = "JQ_VS_"
 
-
 class _AlleleFreqTag(object):
     #pylint: disable=too-few-public-methods
     @classmethod
@@ -60,7 +59,6 @@ class _AlleleFreqTag(object):
                 sample_values[sample] = _AlleleFreqTag._standardize_af(freq)
             vcf_record.add_sample_tag_value(JQ_VARSCAN_TAG + "AF",
                                             sample_values)
-
 
 class _DepthTag(object):
     #pylint: disable=too-few-public-methods
@@ -116,7 +114,6 @@ class _SomaticTag(object):
 
         vcf_record.add_sample_tag_value(varscan_tag, sample_values)
 
-
 #TODO: (cgates/jebene): All tags should have _TAG_ID as implemented below
 class _HCTag(object):
     #pylint: disable=too-few-public-methods
@@ -158,7 +155,6 @@ class _HCTag(object):
             vcf_record.add_or_replace_filter(self._TAG_ID)
         return vcf_record
 
-
 class Varscan(object):
     """Recognize and transform VarScan VCFs to standard Jacquard format."""
 
@@ -181,6 +177,20 @@ class Varscan(object):
                                     "missing NORMAL and TUMOR headers.")
 
     @staticmethod
+    def _validate_filter_file(file_reader):
+        column_header = 0
+        file_reader.open()
+        for line in file_reader.read_lines():
+            if line.startswith("chrom\tposition"):
+                column_header = line
+                break
+        file_reader.close()
+
+        if not column_header:
+            return file_reader
+        return 0
+
+    @staticmethod
     def _is_varscan_vcf(file_reader):
         if file_reader.file_name.endswith(".vcf"):
             vcf_reader = vcf.VcfReader(file_reader)
@@ -201,6 +211,23 @@ class Varscan(object):
 
         return patient_to_files
 
+    @staticmethod
+    def _raise_invalid_filter_exception(invalid_filter_files):
+        if invalid_filter_files[5:]:
+            omitted_files = ("...({} file(s) omitted)")\
+                            .format(len(invalid_filter_files[5:]))
+        else:
+            omitted_files = ""
+        invalid_file_names = [i.file_name for i in invalid_filter_files[:5]]
+        raise utils.JQException("The [{}] input files [{}{}] match "
+                                "high-confidence file names, but the "
+                                "file header is invalid or missing. "
+                                "Review inputs and try again.",
+                                len(invalid_filter_files),
+                                invalid_file_names,
+                                omitted_files)
+
+#pylint: disable=too-many-locals
     def claim(self, file_readers):
         """Recognizes and claims MuTect VCFs form the set of all input VCFs.
 
@@ -220,6 +247,7 @@ class Varscan(object):
         unclaimed_set = set()
         trans_vcf_readers = []
 
+        invalid_filter_files = []
         for patient in files_per_patient:
             prefix_reader = OrderedDict()
             filter_files = set()
@@ -233,21 +261,24 @@ class Varscan(object):
                     unclaimed_set.add(file_reader)
 
             for prefix, reader in prefix_reader.items():
-                vcf_reader = _VarscanVcfReader(vcf.VcfReader(reader))
+                vcfreader = _VarscanVcfReader(vcf.VcfReader(reader))
                 for filter_file in list(filter_files):
                     if filter_file.file_name.startswith(prefix):
-                        vcf_reader = _VarscanVcfReader(vcf.VcfReader(reader),
-                                                       filter_file)
+                        invalid_filter = self._validate_filter_file(filter_file)
+                        if invalid_filter:
+                            invalid_filter_files.append(invalid_filter)
+                        else:
+                            vcfreader = _VarscanVcfReader(vcf.VcfReader(reader),
+                                                           filter_file)
                         filter_files.remove(filter_file)
-
-                trans_vcf_readers.append(vcf_reader)
+                trans_vcf_readers.append(vcfreader)
             unclaimed_set.update(filter_files)
+
+        if invalid_filter_files:
+            self._raise_invalid_filter_exception(invalid_filter_files)
 
         return list(unclaimed_set), trans_vcf_readers
 
-
-#TODO: (cgates): If we can, I would rather inflate the high confidence set when
-# we open and not on construction. There is a pretty safe/clean way to do this.
 class _VarscanVcfReader(object):
     """Adapter that presents a VarScan VCF as a VcfReader.
 
