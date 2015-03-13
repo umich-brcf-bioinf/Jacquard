@@ -2,21 +2,33 @@
 #pylint: disable=missing-docstring,protected-access,too-few-public-methods
 #pylint: disable=too-many-arguments,too-many-instance-attributes
 from argparse import Namespace
-from jacquard import __version__, vcf
-from test import vcf_test
-from test.vcf_test import MockVcfReader, MockTag, MockWriter
+import os
+
 from testfixtures import TempDirectory
+
+from jacquard import vcf
 import jacquard.logger
 import jacquard.translate as translate
 import jacquard.utils as utils
-import os
+import jacquard.variant_callers.variant_caller_factory as variant_caller_factory
+from test import vcf_test
 import test.mock_logger
 import test.test_case as test_case
+from test.vcf_test import MockVcfReader, MockTag, MockWriter, MockCaller
+
 
 class MockVariantCallerFactory(object):
-    def __init__(self, unclaimed, claimed):
-        self.unclaimed = unclaimed
-        self.claimed = claimed
+    _CALLERS = [MockCaller()]
+
+    def __init__(self, unclaimed=None, claimed=None):
+        if unclaimed:
+            self.unclaimed = unclaimed
+        else:
+            self.unclaimed = []
+        if claimed:
+            self.claimed = claimed
+        else:
+            self.claimed = []
 
     def claim(self, dummy):
         return self.unclaimed, self.claimed
@@ -41,7 +53,8 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
             translate.validate_args = lambda x: x
             args = Namespace(input=temp_dir.path,
                              output=temp_dir.path,
-                             force=True)
+                             force=True,
+                             varscan_hc_filter_filename=None)
             unclaimed1 = vcf_test.MockFileReader("unclaimed1.vcf")
             unclaimed2 = vcf_test.MockFileReader("unclaimed2.vcf")
             unclaimed3 = vcf_test.MockFileReader("unclaimed3.vcf")
@@ -64,7 +77,6 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
                                  r"input file \[unclaimed1.vcf\] will not be translated")
         self.assertRegexpMatches(actual_log_warnings[5],
                                  r"input file \[unclaimed6.vcf\] will not be translated")
-
 
     def test_validate_args_ok(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
@@ -218,6 +230,15 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
                             "#CHROM\tPOS\tREF\tALT\tStuff"]
         self.assertEquals(expected_headers, writer._content)
 
+    def test_store_hc_file(self):
+        with TempDirectory() as temp_dir:
+            args = Namespace(input=temp_dir.path,
+                                 output=temp_dir.path,
+                                 force=True,
+                                 varscan_hc_filter_filename="pass$")
+            translate._store_hc_file(args)
+
+        self.assertEquals("pass$", variant_caller_factory._CALLERS[0].hc_file_pattern)
 
 class ExcludeMalformedRefTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):

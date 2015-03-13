@@ -1,10 +1,12 @@
 # pylint: disable=line-too-long,too-many-public-methods,too-few-public-methods
 # pylint: disable=invalid-name,global-statement
+import re
+
 from jacquard.variant_callers import varscan
 from jacquard.variant_callers.varscan import _HCTag
-from test.vcf_test import MockFileReader, MockVcfReader
 import jacquard.vcf as vcf
 import test.test_case as test_case
+from test.vcf_test import MockFileReader, MockVcfReader
 
 
 class HCTagTestCase(test_case.JacquardBaseTestCase):
@@ -144,7 +146,7 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
     def _get_tag_class_names(vcf_reader):
         return [tag.__class__.__name__ for tag in vcf_reader.tags]
 
-    def test_claim_multiple_patients(self):
+    def test_claim_multiplePatients(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
         content1 = ["##foo", "##source=VarScan2", "#chrom", record1]
         content2 = ["chrom\tposition", "1\t23"]
@@ -168,7 +170,7 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
                          self._get_tag_class_names(vcf_readers[2]))
         self.assertEquals(reader1.file_name, vcf_readers[0]._vcf_reader.file_name)
 
-    def test_claim_varscan_vcf_only(self):
+    def test_claim_varscanVcfOnly(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
         content1 = ["##foo", "##MuTect=123", "#chrom", record1]
         content2 = ["##foo", "##source=VarScan2", "#chrom", record1]
@@ -186,7 +188,7 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEquals(reader2.file_name, vcf_readers[0]._vcf_reader.file_name)
 
-    def test_claim_vcf_and_filter_file(self):
+    def test_claim_vcfAndFilterFile(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
         content1 = [self.entab("chrom|position|ref|var"),
                     record1]
@@ -211,7 +213,33 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(reader4.file_name, vcf_readers[1]._vcf_reader.file_name)
         self.assertEquals(reader3.file_name, vcf_readers[1]._som_hc_file_reader.file_name)
 
-    def test_claim_heterogeneous_vcfs_and_filter_files(self):
+    def test_claim_vcfAndFilterFileNameGiven(self):
+        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
+        content1 = [self.entab("chrom|position|ref|var"),
+                    record1]
+        content2 = ["##foo", "##source=VarScan2", "#chrom", record1]
+        reader1 = MockFileReader("patientA.indel.Somatic.foo.bar", content1)
+        reader2 = MockFileReader("patientA.indel.vcf", content2)
+        reader3 = MockFileReader("patientA.snp.Somatic.foo.bar", content1)
+        reader4 = MockFileReader("patientA.snp.vcf", content2)
+        reader5 = MockFileReader("patientA.readme", ["foo"])
+        file_readers = [reader1, reader2, reader3, reader4, reader5]
+
+        caller = varscan.Varscan()
+        caller.hc_file_pattern = re.compile("foo.bar$")
+        unrecognized_readers, vcf_readers = caller.claim(file_readers)
+
+        self.assertEquals(1, len(unrecognized_readers))
+        self.assertEquals([reader5], unrecognized_readers)
+        self.assertEquals(2, len(vcf_readers))
+        self.assertIsInstance(vcf_readers[0], varscan._VarscanVcfReader)
+        self.assertEquals(reader2.file_name, vcf_readers[0]._vcf_reader.file_name)
+        self.assertEquals(reader1.file_name, vcf_readers[0]._som_hc_file_reader.file_name)
+        self.assertIsInstance(vcf_readers[1], varscan._VarscanVcfReader)
+        self.assertEquals(reader4.file_name, vcf_readers[1]._vcf_reader.file_name)
+        self.assertEquals(reader3.file_name, vcf_readers[1]._som_hc_file_reader.file_name)
+
+    def test_claim_heterogeneousVcfsAndFilterFiles(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
         content1 = [self.entab("chrom|position|ref|var"),
                     record1]
@@ -236,7 +264,7 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(reader4.file_name, vcf_readers[1]._vcf_reader.file_name)
         self.assertEquals(None, vcf_readers[1]._som_hc_file_reader)
 
-    def test_claim_ignores_unpaired_non_vcf_files(self):
+    def test_claim_ignoresUnpairedNonVcfFiles(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
         content1 = ["##foo", "##source=VarScan2", "#chrom", record1]
         reader1 = MockFileReader("fileA.txt", content1)

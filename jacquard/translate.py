@@ -84,18 +84,6 @@ class _ExcludeMissingAlt(object):
         if record.alt == self._MISSING_ALT:
             record.add_or_replace_filter(self._TAG_ID)
 
-def _mangle_output_filename(input_file):
-    basename, extension = os.path.splitext(os.path.basename(input_file))
-    return ".".join([basename, _FILE_OUTPUT_SUFFIX, extension.strip(".")])
-
-def _write_headers(reader, new_tags, execution_context, file_writer):
-    headers = reader.metaheaders
-    headers.extend(execution_context)
-    for tag in new_tags:
-        headers.append(tag.metaheader)
-    headers.append(reader.column_header)
-
-    file_writer.write("\n".join(headers) + "\n")
 
 def _build_file_readers(input_dir):
     in_files = glob.glob(os.path.join(input_dir, "*"))
@@ -106,94 +94,9 @@ def _build_file_readers(input_dir):
 
     return file_readers
 
-def _translate_files(trans_vcf_reader,
-                     new_tags,
-                     execution_context,
-                     file_writer):
-    try:
-        trans_vcf_reader.open()
-        file_writer.open()
-
-        _write_headers(trans_vcf_reader,
-                       new_tags,
-                       execution_context,
-                       file_writer)
-
-        for record in trans_vcf_reader.vcf_records():
-            for tag in new_tags:
-                tag.add_tag_values(record)
-            file_writer.write(record.text())
-
-    finally:
-        trans_vcf_reader.close()
-        file_writer.close()
-
-def add_subparser(subparser):
-    #pylint: disable=line-too-long
-    parser = subparser.add_parser("translate", help="Accepts a directory of VCF results (and VarScan high confidence files). Creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
-    parser.add_argument("input", help="Path to directory containing VCFs (and VarScan high confidence files). Other file types ignored")
-    parser.add_argument("output", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
-    parser.add_argument("-v", "--verbose", action='store_true')
-    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
-
-
-def _log_unclaimed_readers(unclaimed_readers):
-    unclaimed_log_messgae = "The input file [{}] will not be translated"
-    for reader in unclaimed_readers:
-        msg = unclaimed_log_messgae.format(reader.file_name)
-        logger.warning(msg)
-
-
-#TODO (cgates): This module is both a command and also manipulates VcfRecords
-# like a caller. This is the only body of code that does both these things.
-# Does this bother anyone else?
-def execute(args, execution_context):
-    validate_args(args)
-
-    output_dir = os.path.abspath(args.output)
-    unclaimed_readers, trans_vcf_readers = _claim_readers(args)
-
-    _log_unclaimed_readers(unclaimed_readers)
-
-    logger.info("Processing [{}] VCF file(s) from [{}]",
-                len(trans_vcf_readers),
-                args.input)
-
-    new_tags = [_ExcludeMalformedRef(),
-                _ExcludeMalformedAlt(),
-                _ExcludeMissingAlt()]
-
-    for trans_vcf_reader in trans_vcf_readers:
-        new_filename = _mangle_output_filename(trans_vcf_reader.file_name)
-        output_filepath = os.path.join(output_dir, new_filename)
-        file_writer = FileWriter(output_filepath)
-        _translate_files(trans_vcf_reader,
-                         new_tags,
-                         execution_context,
-                         file_writer,)
-
-    logger.info("Wrote [{}] VCF file(s)", len(trans_vcf_readers))
-
-def report_prediction(args):
-    input_dir = os.path.abspath(args.input)
-    file_readers = _build_file_readers(input_dir)
-    output_file_names = set()
-
-    for reader in file_readers:
-        mangled_fname = _mangle_output_filename(reader.file_name)
-        extension = os.path.splitext(os.path.basename(mangled_fname))[1]
-        if extension == ".vcf":
-            output_file_names.add(mangled_fname)
-
-    return output_file_names
-
-def get_required_input_output_types():
-    return ("directory", "directory")
-
-def _claim_readers(args):
-    input_dir = os.path.abspath(args.input)
-    file_readers = _build_file_readers(input_dir)
-    return variant_caller_factory.claim(file_readers)
+def _mangle_output_filename(input_file):
+    basename, extension = os.path.splitext(os.path.basename(input_file))
+    return ".".join([basename, _FILE_OUTPUT_SUFFIX, extension.strip(".")])
 
 def validate_args(args):
     unclaimed_readers, trans_vcf_readers = _claim_readers(args)
@@ -222,3 +125,110 @@ def _build_validation_message(unclaimed_readers):
             "use '--force' to ignore these files.").format(total_unclaimed,
                                                            unclaimed_details)
 
+def _claim_readers(args):
+    input_dir = os.path.abspath(args.input)
+    file_readers = _build_file_readers(input_dir)
+
+    return variant_caller_factory.claim(file_readers)
+
+def _log_unclaimed_readers(unclaimed_readers):
+    unclaimed_log_messgae = "The input file [{}] will not be translated"
+    for reader in unclaimed_readers:
+        msg = unclaimed_log_messgae.format(reader.file_name)
+        logger.warning(msg)
+
+def _translate_files(trans_vcf_reader,
+                     new_tags,
+                     execution_context,
+                     file_writer):
+    try:
+        trans_vcf_reader.open()
+        file_writer.open()
+
+        _write_headers(trans_vcf_reader,
+                       new_tags,
+                       execution_context,
+                       file_writer)
+
+        for record in trans_vcf_reader.vcf_records():
+            for tag in new_tags:
+                tag.add_tag_values(record)
+            file_writer.write(record.text())
+
+    finally:
+        trans_vcf_reader.close()
+        file_writer.close()
+
+def _write_headers(reader, new_tags, execution_context, file_writer):
+    headers = reader.metaheaders
+    headers.extend(execution_context)
+    for tag in new_tags:
+        headers.append(tag.metaheader)
+    headers.append(reader.column_header)
+
+    file_writer.write("\n".join(headers) + "\n")
+
+def _store_hc_file(args):
+    if args.varscan_hc_filter_filename:
+        for caller in variant_caller_factory._CALLERS:
+            try:
+                caller.hc_file_pattern
+            except AttributeError:
+                continue
+            caller.hc_file_pattern = args.varscan_hc_filter_filename
+
+def get_required_input_output_types():
+    return ("directory", "directory")
+
+def report_prediction(args):
+    input_dir = os.path.abspath(args.input)
+    file_readers = _build_file_readers(input_dir)
+    output_file_names = set()
+
+    for reader in file_readers:
+        mangled_fname = _mangle_output_filename(reader.file_name)
+        extension = os.path.splitext(os.path.basename(mangled_fname))[1]
+        if extension == ".vcf":
+            output_file_names.add(mangled_fname)
+
+    return output_file_names
+
+def add_subparser(subparser):
+    #pylint: disable=line-too-long
+    parser = subparser.add_parser("translate", help="Accepts a directory of VCF results (and VarScan high confidence files). Creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
+    parser.add_argument("input", help="Path to directory containing VCFs (and VarScan high confidence files). Other file types ignored")
+    parser.add_argument("output", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
+    parser.add_argument("-v", "--verbose", action='store_true')
+    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+    parser.add_argument("--varscan_hc_filter_filename", help="Regex pattern that identifies optional VarScan high-confidence filter files. The VCF, high-confidence file pairs should share the same prefix. For expample, given patientA.snp.vcf, patientA.indel.vcf, patientA.snp.fpfilter.pass, patientA.indel.fpfilter.pass, you could enable this option as varscan_hc_filter_filename='.fpfilter.pass$'")
+
+#TODO (cgates): This module is both a command and also manipulates VcfRecords
+# like a caller. This is the only body of code that does both these things.
+# Does this bother anyone else?
+def execute(args, execution_context):
+    validate_args(args)
+
+    output_dir = os.path.abspath(args.output)
+    unclaimed_readers, trans_vcf_readers = _claim_readers(args)
+    _store_hc_file(args)
+
+    _log_unclaimed_readers(unclaimed_readers)
+
+    logger.info("Processing [{}] VCF file(s) from [{}]",
+                len(trans_vcf_readers),
+                args.input)
+
+    new_tags = [_ExcludeMalformedRef(),
+                _ExcludeMalformedAlt(),
+                _ExcludeMissingAlt()]
+
+    for trans_vcf_reader in trans_vcf_readers:
+        new_filename = _mangle_output_filename(trans_vcf_reader.file_name)
+        output_filepath = os.path.join(output_dir, new_filename)
+        file_writer = FileWriter(output_filepath)
+        _translate_files(trans_vcf_reader,
+                         new_tags,
+                         execution_context,
+                         file_writer,)
+
+    logger.info("Wrote [{}] VCF file(s)", len(trans_vcf_readers))

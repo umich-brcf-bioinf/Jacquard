@@ -18,11 +18,14 @@
 See tag definitions for more info.
 """
 from __future__ import print_function, absolute_import
+
 from collections import defaultdict, OrderedDict
+import os
+import re
+
 import jacquard.utils as utils
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.vcf as vcf
-import os
 
 
 _VARSCAN_SOMATIC_HEADER = ("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"
@@ -158,12 +161,12 @@ class _HCTag(object):
 
 class Varscan(object):
     """Recognize and transform VarScan VCFs to standard Jacquard format."""
-    _HC_FILE_SUFFIX = "fpfilter.pass"
 
     def __init__(self):
         self.name = "VarScan"
         self.abbr = "VS"
         self.meta_header = "##jacquard.normalize_varscan.sources={0},{1}\n"
+        self.hc_file_pattern = re.compile("fpfilter.pass")
 
     ##TODO (cgates): deprecated; remove
     @staticmethod
@@ -186,7 +189,7 @@ class Varscan(object):
 
     #TODO: (cgates): Add check of header line (extract constant from HCTag?)
     def _is_varscan_hc_file(self, file_reader):
-        return file_reader.file_name.endswith(self._HC_FILE_SUFFIX)
+        return self.hc_file_pattern.search(file_reader.file_name)
 
     @staticmethod
     def _get_files_per_patient(file_readers):
