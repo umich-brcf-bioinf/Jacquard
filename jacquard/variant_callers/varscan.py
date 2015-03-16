@@ -326,7 +326,7 @@ class Varscan(object):
             if vcf_file_reader and hc_file_reader:
                 vcf_reader = _VarscanVcfReader(vcf.VcfReader(vcf_file_reader),
                                                hc_file_reader)
-            elif vcf_file_reader:
+            elif vcf_file_reader and not hc_file_reader:
                 vcf_reader = _VarscanVcfReader(vcf.VcfReader(vcf_file_reader))
             vcf_readers.append(vcf_reader)
 
