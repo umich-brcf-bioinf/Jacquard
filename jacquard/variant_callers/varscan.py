@@ -19,7 +19,7 @@ See tag definitions for more info.
 """
 from __future__ import print_function, absolute_import
 
-from collections import OrderedDict
+from collections import defaultdict, OrderedDict
 import os
 import re
 
@@ -32,6 +32,7 @@ import jacquard.vcf as vcf
 _VARSCAN_SOMATIC_HEADER = ("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"
                            "NORMAL|TUMOR").replace("|", "\t")
 JQ_VARSCAN_TAG = "JQ_VS_"
+VERSION = "v2.3"
 
 class _AlleleFreqTag(object):
     #pylint: disable=too-few-public-methods
@@ -199,7 +200,7 @@ class Varscan(object):
             return "##source=VarScan2" in vcf_reader.metaheaders
         return False
 
-    #TODO: (cgates): Add check of header line (extract constant from HCTag?)
+#TODO: (cgates) Add check of header line (extract constant from HCTag?)
     def _is_varscan_hc_file(self, file_reader):
         return self.hc_file_pattern.search(file_reader.file_name)
 
@@ -221,12 +222,11 @@ class Varscan(object):
 
     @staticmethod
     def _validate_file_pairing(unpaired_hc_files, unpaired_vcf_files):
-        logger.initialize_logger("")
         if unpaired_hc_files:
             for unpaired_hc_file in unpaired_hc_files[:5]:
                 msg = ("The VarScan high-confidence file [{}] has no matching "
                        "VCF file.")
-                logger.warning(msg, unpaired_hc_file.file_name)
+                logger.error(msg, unpaired_hc_file.file_name)
 
             msg = ("[{}] VarScan high-confidence file(s) did not have a "
                    "matching VCF file. See log for more details. Review inputs "
@@ -237,7 +237,7 @@ class Varscan(object):
             for unpaired_vcf_file in unpaired_vcf_files[:5]:
                 msg = ("The VarScan VCF file [{}] has no matching "
                        "high-confidence file.")
-                logger.warning(msg, unpaired_vcf_file.file_name)
+                logger.error(msg, unpaired_vcf_file.file_name)
 
             msg = ("[{}] VarScan VCF file(s) did not have a matching "
                    "high-confidence file. See log for more details. Review "
@@ -266,6 +266,36 @@ class Varscan(object):
                 raise utils.JQException(msg, self.hc_file_pattern)
 
         return prefix_vcf_readers, filter_files, unclaimed_set
+
+    @staticmethod
+    def _split_prefix_by_patient(prefix_vcf_readers):
+        prefix_by_patients = defaultdict(list)
+        snp_indel = ["snp", "indel"]
+        for prefix in prefix_vcf_readers:
+            patient_names = [i for i in prefix.split(".") if i not in snp_indel]
+            patient_name = ".".join(patient_names)
+            prefix_by_patients[patient_name].append(prefix)
+
+        return prefix_by_patients
+
+    @staticmethod
+    def _validate_vcf_readers(prefix_by_patients):
+        number_of_files = set()
+        for file_names in prefix_by_patients.values():
+            if len(file_names) == 1:
+                for file_name in file_names:
+                    if re.search("snp", file_name):
+                        msg = "VarScan VCF [{}] has no indel file."
+                        logger.error(msg, file_name)
+                    elif re.search("indel", file_name):
+                        msg = "VarScan VCF [{}] has no snp file."
+                        logger.error(msg, file_name)
+            number_of_files.add(len(file_names))
+
+        if len(number_of_files) > 1:
+            msg = ("Some Varscan VCFs were missing either a snp or indel file. "
+                   "Review inputs/command options and try again.")
+            raise utils.JQException(msg)
 
     @staticmethod
     def _remove_paired_filters(vcf_dict, filter_dict):
@@ -349,11 +379,14 @@ class Varscan(object):
         """
 
         (prefix_vcf_readers,
-            filter_files,
-            unclaimed_set) = self._find_varscan_files(file_readers)
-        tuples = self._pair_files(prefix_vcf_readers, filter_files)
-        self._validate_file_pairs(tuples)
-        vcf_readers = self._create_vcf_readers(tuples)
+         filter_files,
+         unclaimed_set) = self._find_varscan_files(file_readers)
+
+        prefix_by_patients = self._split_prefix_by_patient(prefix_vcf_readers)
+        self._validate_vcf_readers(prefix_by_patients)
+        vcf_filter_tuples = self._pair_files(prefix_vcf_readers, filter_files)
+        self._validate_file_pairs(vcf_filter_tuples)
+        vcf_readers = self._create_vcf_readers(vcf_filter_tuples)
 
         return list(unclaimed_set), vcf_readers
 

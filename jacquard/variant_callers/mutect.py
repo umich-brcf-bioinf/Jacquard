@@ -9,6 +9,7 @@ import jacquard.variant_callers.common_tags as common_tags
 import jacquard.vcf as vcf
 
 JQ_MUTECT_TAG = "JQ_MT_"
+VERSION = "v1.1.4"
 
 class _AlleleFreqTag(object):
     #pylint: disable=too-few-public-methods

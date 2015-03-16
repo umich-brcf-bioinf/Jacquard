@@ -5,17 +5,19 @@ callers through this module; likewise, don't directly reference individual
 variant callers outside of this module.
 """
 from __future__ import print_function, absolute_import
-from jacquard.variant_callers.mutect import Mutect
-from jacquard.variant_callers.strelka import Strelka
-from jacquard.variant_callers.varscan import Varscan
+
 import jacquard.logger as logger
 import jacquard.utils as utils
+import jacquard.variant_callers.mutect as mutect
+import jacquard.variant_callers.strelka as strelka
+import jacquard.variant_callers.varscan as varscan
 
-#TODO: cgates: These should be defined by the caller modules themselves.
-SUPPORTED_CALLER_VERSIONS = {"VarScan":"v2.3",
-                             "MuTect": "v1.1.4",
-                             "Strelka": "v2.0.15"}
-_CALLERS = [Varscan(), Strelka(), Mutect()]
+
+SUPPORTED_CALLER_VERSIONS = {"VarScan": varscan.VERSION,
+                             "MuTect": mutect.VERSION,
+                             "Strelka": strelka.VERSION}
+
+_CALLERS = [varscan.Varscan(), strelka.Strelka(), mutect.Mutect()]
 
 #TODO: (cgates): Filter uses this, but only for logging; adjust filter and drop
 # method. Then consider renaming the module.

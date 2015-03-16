@@ -41,6 +41,7 @@ import jacquard.vcf as vcf
 
 _DEFAULT_INCLUDED_FORMAT_TAGS = ["JQ_.*"]
 _MULT_ALT_TAG = "JQ_MULT_ALT_LOCUS"
+#TODO: (jebene) is the description of this really accurate?
 _MULT_ALT_HEADER = ('##INFO=<ID={},Number=0,Type=Flag,'
                     'Description="dbSNP Membership">').format(_MULT_ALT_TAG)
 _FILE_FORMAT = ["##fileformat=VCFv4.1"]
@@ -311,6 +312,7 @@ def _merge_records(coordinates,
 def _build_sample_list(vcf_readers):
     def _column(patient, sample):
         return "|".join([patient, sample])
+
     all_sample_patients = set()
     patient_to_file = defaultdict(list)
 

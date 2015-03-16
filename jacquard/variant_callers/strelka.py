@@ -15,6 +15,7 @@ import jacquard.variant_callers.common_tags as common_tags
 import jacquard.utils as utils
 
 JQ_STRELKA_TAG = "JQ_SK_"
+VERSION = "v2.0.15"
 
 class _AlleleFreqTag(object):
     #pylint: disable=too-few-public-methods
