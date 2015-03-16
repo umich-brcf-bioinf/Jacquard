@@ -132,9 +132,9 @@ def _claim_readers(args):
     return variant_caller_factory.claim(file_readers)
 
 def _log_unclaimed_readers(unclaimed_readers):
-    unclaimed_log_messgae = "The input file [{}] will not be translated"
+    unclaimed_log_message = "The input file [{}] will not be translated"
     for reader in unclaimed_readers:
-        msg = unclaimed_log_messgae.format(reader.file_name)
+        msg = unclaimed_log_message.format(reader.file_name)
         logger.warning(msg)
 
 def _translate_files(trans_vcf_reader,

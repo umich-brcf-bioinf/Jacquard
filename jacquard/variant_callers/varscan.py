@@ -23,6 +23,7 @@ from collections import defaultdict, OrderedDict
 import os
 import re
 
+import jacquard.logger as logger
 import jacquard.utils as utils
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.vcf as vcf
@@ -158,11 +159,13 @@ class _HCTag(object):
 class Varscan(object):
     """Recognize and transform VarScan VCFs to standard Jacquard format."""
 
+    _DEFAULT_REGEX = "Somatic.hc.fpfilter.pass"
+
     def __init__(self):
         self.name = "VarScan"
         self.abbr = "VS"
         self.meta_header = "##jacquard.normalize_varscan.sources={0},{1}\n"
-        self.hc_file_pattern = re.compile("fpfilter.pass")
+        self.hc_file_pattern = re.compile(Varscan._DEFAULT_REGEX)
 
     ##TODO (cgates): deprecated; remove
     @staticmethod
@@ -186,9 +189,8 @@ class Varscan(object):
                 break
         file_reader.close()
 
-        if not column_header:
+        if column_header:
             return file_reader
-        return 0
 
     @staticmethod
     def _is_varscan_vcf(file_reader):
@@ -200,16 +202,6 @@ class Varscan(object):
     #TODO: (cgates): Add check of header line (extract constant from HCTag?)
     def _is_varscan_hc_file(self, file_reader):
         return self.hc_file_pattern.search(file_reader.file_name)
-
-    @staticmethod
-    def _get_files_per_patient(file_readers):
-        patient_to_files = defaultdict(list)
-        for file_reader in sorted(file_readers):
-            filename = file_reader.file_name
-            patient = filename.split(".")[0]
-            patient_to_files[patient].append(file_reader)
-
-        return patient_to_files
 
     @staticmethod
     def _raise_invalid_filter_exception(invalid_filter_files):
@@ -227,6 +219,119 @@ class Varscan(object):
                                 first_five_fnames,
                                 omitted_files)
 
+    @staticmethod
+    def _validate_file_pairing(unpaired_hc_files, unpaired_vcf_files):
+        logger.initialize_logger("")
+        if unpaired_hc_files:
+            for unpaired_hc_file in unpaired_hc_files[:5]:
+                msg = ("The VarScan high-confidence file [{}] has no matching "
+                       "VCF file.")
+                logger.warning(msg, unpaired_hc_file.file_name)
+
+            msg = ("[{}] VarScan high-confidence file(s) did not have a "
+                   "matching VCF file. See log for more details. Review inputs "
+                   "and try again.")
+            raise utils.JQException(msg, len(unpaired_hc_files))
+
+        if unpaired_vcf_files:
+            for unpaired_vcf_file in unpaired_vcf_files[:5]:
+                msg = ("The VarScan VCF file [{}] has no matching "
+                       "high-confidence file.")
+                logger.warning(msg, unpaired_vcf_file.file_name)
+
+            msg = ("[{}] VarScan VCF file(s) did not have a matching "
+                   "high-confidence file. See log for more details. Review "
+                   "inputs and try again.")
+            raise utils.JQException(msg, len(unpaired_vcf_files))
+
+    def _find_varscan_files(self, file_readers):
+        unclaimed_set = set()
+        prefix_vcf_readers = OrderedDict()
+        filter_files = set()
+
+        for file_reader in file_readers:
+            if self._is_varscan_vcf(file_reader):
+                prefix, _ = os.path.splitext(file_reader.file_name)
+                prefix_vcf_readers[prefix] = file_reader
+            elif self._is_varscan_hc_file(file_reader):
+                filter_files.add(file_reader)
+            else:
+                unclaimed_set.add(file_reader)
+
+        if not filter_files:
+            if not self.hc_file_pattern.match(Varscan._DEFAULT_REGEX):
+                msg = ("The VarScan high-confidence filename regex [{}] "
+                       "didn't match any files in the input directory. "
+                       "Review inputs/command options and try again.")
+                raise utils.JQException(msg, self.hc_file_pattern)
+
+        return prefix_vcf_readers, filter_files, unclaimed_set
+
+    @staticmethod
+    def _remove_paired_filters(vcf_dict, filter_dict):
+        for filter_file in vcf_dict.values():
+            try:
+                filter_dict.pop(filter_file)
+            except KeyError:
+                pass
+        return filter_dict
+
+    @staticmethod
+    def _dictionaries_to_tuples(vcf_dict, filter_dict):
+        flipped_filter = OrderedDict((y, x) for x, y in filter_dict.iteritems())
+        pairs = vcf_dict.copy()
+        pairs.update(flipped_filter)
+        return [(k, v) for k, v in pairs.iteritems()]
+
+    def _pair_files(self, prefixes, filter_files):
+        vcf_dict = OrderedDict()
+        filter_dict = OrderedDict()
+        invalid_filter_files = []
+
+        for prefix, file_reader in prefixes.items():
+            vcf_dict[file_reader] = None
+            for filter_reader in filter_files:
+                filter_dict[filter_reader] = None
+
+                if filter_reader.file_name.startswith(prefix):
+                    if self._validate_filter_file(filter_reader):
+                        vcf_dict[file_reader] = filter_reader
+                    else:
+                        invalid_filter_files.append(filter_reader)
+
+        if invalid_filter_files:
+            self._raise_invalid_filter_exception(invalid_filter_files)
+        filter_dict = self._remove_paired_filters(vcf_dict, filter_dict)
+
+        return self._dictionaries_to_tuples(vcf_dict, filter_dict)
+
+    def _validate_file_pairs(self, tuples):
+        unpaired_vcf_files = []
+        unpaired_hc_files = []
+
+        hc_values = set([i[1] for i in tuples])
+        if len(hc_values) != 1:
+            for vcf_file_reader, hc_file_reader in tuples:
+                if vcf_file_reader and not hc_file_reader:
+                    unpaired_vcf_files.append(vcf_file_reader)
+                if hc_file_reader and not vcf_file_reader:
+                    unpaired_hc_files.append(hc_file_reader)
+
+        self._validate_file_pairing(unpaired_hc_files, unpaired_vcf_files)
+
+    @staticmethod
+    def _create_vcf_readers(pair_tuples):
+        vcf_readers = []
+        for vcf_file_reader, hc_file_reader in pair_tuples:
+            if vcf_file_reader and hc_file_reader:
+                vcf_reader = _VarscanVcfReader(vcf.VcfReader(vcf_file_reader),
+                                               hc_file_reader)
+            elif vcf_file_reader:
+                vcf_reader = _VarscanVcfReader(vcf.VcfReader(vcf_file_reader))
+            vcf_readers.append(vcf_reader)
+
+        return vcf_readers
+
 #pylint: disable=too-many-locals
     def claim(self, file_readers):
         """Recognizes and claims MuTect VCFs form the set of all input VCFs.
@@ -242,42 +347,15 @@ class Varscan(object):
         Returns:
             A tuple of unclaimed readers and MuTectVcfReaders.
         """
-        files_per_patient = self._get_files_per_patient(file_readers)
 
-        unclaimed_set = set()
-        trans_vcf_readers = []
+        (prefix_vcf_readers,
+            filter_files,
+            unclaimed_set) = self._find_varscan_files(file_readers)
+        tuples = self._pair_files(prefix_vcf_readers, filter_files)
+        self._validate_file_pairs(tuples)
+        vcf_readers = self._create_vcf_readers(tuples)
 
-        invalid_filter_files = []
-        for patient in files_per_patient:
-            prefix_reader = OrderedDict()
-            filter_files = set()
-            for file_reader in files_per_patient[patient]:
-                if self._is_varscan_vcf(file_reader):
-                    prefix, _ = os.path.splitext(file_reader.file_name)
-                    prefix_reader[prefix] = file_reader
-                elif self._is_varscan_hc_file(file_reader):
-                    filter_files.add(file_reader)
-                else:
-                    unclaimed_set.add(file_reader)
-
-            for prefix, reader in prefix_reader.items():
-                vcfreader = _VarscanVcfReader(vcf.VcfReader(reader))
-                for filter_file in list(filter_files):
-                    if filter_file.file_name.startswith(prefix):
-                        invalid_filter = self._validate_filter_file(filter_file)
-                        if invalid_filter:
-                            invalid_filter_files.append(invalid_filter)
-                        else:
-                            vcfreader = _VarscanVcfReader(vcf.VcfReader(reader),
-                                                           filter_file)
-                        filter_files.remove(filter_file)
-                trans_vcf_readers.append(vcfreader)
-            unclaimed_set.update(filter_files)
-
-        if invalid_filter_files:
-            self._raise_invalid_filter_exception(invalid_filter_files)
-
-        return list(unclaimed_set), trans_vcf_readers
+        return list(unclaimed_set), vcf_readers
 
 class _VarscanVcfReader(object):
     """Adapter that presents a VarScan VCF as a VcfReader.
