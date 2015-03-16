@@ -25,14 +25,19 @@
     included through and optional a command line arg.
 """
 from __future__ import print_function, absolute_import
+
 from collections import defaultdict, OrderedDict
-from jacquard.vcf import FileWriter
 import glob
-import jacquard.logger as logger
-import jacquard.vcf as vcf
-import natsort
 import os
 import re
+
+import natsort
+
+import jacquard.logger as logger
+import jacquard.utils as utils
+from jacquard.vcf import FileWriter
+import jacquard.vcf as vcf
+
 
 _DEFAULT_INCLUDED_FORMAT_TAGS = ["JQ_.*"]
 _MULT_ALT_TAG = "JQ_MULT_ALT_LOCUS"
@@ -85,12 +90,26 @@ class _BufferedReader(object):
 
 def _build_format_tags(format_tag_regex, vcf_readers):
     retained_tags = set()
-
+    regexes_used = set()
     for vcf_reader in vcf_readers:
         for tag_regex in format_tag_regex:
             for tag in vcf_reader.format_metaheaders:
                 if re.match(tag_regex + "$", tag):
                     retained_tags.add(tag)
+                    regexes_used.add(tag_regex)
+
+    if len(retained_tags) == 0:
+        msg = ("The specified format tag regex [{}] would exclude all format "
+               "tags. Review inputs/usage and try again")
+        raise utils.JQException(msg, format_tag_regex)
+
+    unused_regexes = set(format_tag_regex).difference(regexes_used)
+    if unused_regexes:
+        for unused_regex in unused_regexes:
+            msg = ("In the specified list of regexes {}, the regex [{}] does "
+                   "not match any format tags; this expression may be "
+                   "irrelevant.")
+            logger.warning(msg, format_tag_regex, unused_regex)
 
     return sorted(list(retained_tags))
 
@@ -100,6 +119,7 @@ def _compile_metaheaders(incoming_headers,
                          contigs_to_keep,
                          format_tags_to_keep,
                          info_tags_to_keep):
+    #pylint: disable=too-many-arguments
     ordered_metaheaders = list(incoming_headers)
     all_info_metaheaders = {}
     all_format_metaheaders = {}
@@ -170,14 +190,11 @@ def _build_coordinates(vcf_readers):
 
     return sorted(list(coordinate_set))
 
-
 def _write_headers(reader, file_writer):
     headers = reader.metaheaders
     headers.append(reader.column_header)
 
     file_writer.write("\n".join(headers) + "\n")
-
-
 
 def _sort_vcf(reader, temp_dir):
     logger.info("Sorting vcf [{}]", reader.file_name)
@@ -359,23 +376,6 @@ def add_subparser(subparser):
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
     parser.add_argument("--include_format_tags", dest='tags', help="Comma-separated list of regexs for format tags to include in output. Defaults to all JQ tags.")
-
-def _validate_arguments(args):
-    input_path = os.path.abspath(args.input)
-    output_path = os.path.abspath(args.output)
-    if args.tags:
-        format_tag_regex = args.tags.split(",")
-    else:
-        format_tag_regex = _DEFAULT_INCLUDED_FORMAT_TAGS
-
-    input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
-    output_file = os.path.dirname(output_path)
-    out_files = sorted(glob.glob(os.path.join(output_file, "*")))
-    buffered_readers, vcf_readers = _create_reader_lists(input_files)
-
-    writers_to_readers = _build_writers_to_readers(vcf_readers, output_path)
-
-    return writers_to_readers, out_files, buffered_readers, format_tag_regex
 
 def _predict_output(args):
     desired_output_files = set([os.path.basename(args.output)])

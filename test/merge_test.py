@@ -2,17 +2,21 @@
 #pylint: disable=too-few-public-methods,too-many-instance-attributes
 #pylint: disable=too-many-arguments,invalid-name,protected-access,global-statement
 from __future__ import absolute_import
+
 from argparse import Namespace
 from collections import OrderedDict
-from jacquard.vcf import VcfRecord
-from test.vcf_test import MockVcfReader, MockFileWriter
+import os
+
 from testfixtures import TempDirectory
+
 import jacquard.logger
 import jacquard.merge as merge
+import jacquard.utils as utils
+from jacquard.vcf import VcfRecord
 import jacquard.vcf as vcf
-import os
 import test.mock_logger
 import test.test_case as test_case
+from test.vcf_test import MockVcfReader, MockFileWriter
 
 
 class MockBufferedReader(object):
@@ -31,32 +35,6 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         test.mock_logger.reset()
         merge.logger = jacquard.logger
         super(MergeTestCase, self).tearDown()
-
-    def test_validate_arguments(self):
-        with TempDirectory() as input_file, TempDirectory() as output_file:
-            input_file.write("fileA.vcf",
-                             "##source=strelka\n"
-                             "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_A\tSample_B\n"
-                             "chr1\t31\t.\tA\tT\t.\t.\t.\tDP\t23\t52\n")
-            input_file.write("fileB.vcf",
-                             "##source=strelka\n"
-                             "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_C\tSample_D\n"
-                             "chr2\t32\t.\tA\tT\t.\t.\t.\tDP\t24\t53\n")
-
-            args = Namespace(input=input_file.path,
-                             output=os.path.join(output_file.path, "output.vcf"),
-                             tags=None)
-            actual_readers_to_writers, out_files, buffered_readers, format_tag_regex = merge._validate_arguments(args)
-
-            for values in actual_readers_to_writers.values():
-                for vcf_reader in values:
-                    vcf_reader.close()
-
-            self.assertEquals(1, len(actual_readers_to_writers))
-            self.assertEquals(0, len(out_files))
-            self.assertEquals(2, len(buffered_readers))
-            self.assertEquals(merge._DEFAULT_INCLUDED_FORMAT_TAGS, format_tag_regex)
-            self.assertRegexpMatches(actual_readers_to_writers.keys()[0].output_filepath, ".merged.vcf")
 
     def test_predict_output(self):
         with TempDirectory() as input_file, TempDirectory() as output_file:
@@ -405,7 +383,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         actual_tags = merge._build_info_tags(records)
         self.assertEquals([], actual_tags)
 
-    def test_build_format_tags_to_keep_filtersAndSorts(self):
+    def test_build_format_tags_filtersAndSorts(self):
         meta_headers = ['##FORMAT=<ID=JQ1>',
                         '##FORMAT=<ID=JQ2>',
                         '##FORMAT=<ID=JQ3>']
@@ -414,7 +392,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEquals(["JQ1", "JQ2"], format_tags)
 
-    def test_build_format_tags_to_keep_uniqueSetAcrossMultipleReaders(self):
+    def test_build_format_tags_uniqueSetAcrossMultipleReaders(self):
         reader1 = MockVcfReader(metaheaders=['##FORMAT=<ID=JQ1>'])
         reader2 = MockVcfReader(metaheaders=['##FORMAT=<ID=JQ1>', '##FORMAT=<ID=JQ2>'])
         reader3 = MockVcfReader(metaheaders=['##INFO=<ID=JQ3>'])
@@ -423,6 +401,24 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEquals(["JQ1", "JQ2"], format_tags)
 
+    def test_build_format_tags_errorIfExcludesAllTags(self):
+        reader1 = MockVcfReader(metaheaders=['##FORMAT=<ID=JQ1>'])
+        reader2 = MockVcfReader(metaheaders=['##FORMAT=<ID=JQ2>'])
+
+        self.assertRaisesRegexp(utils.JQException,
+                                r"The specified format tag regex \[.*\] would exclude all format tags. Review inputs/usage and try again",
+                                merge._build_format_tags,
+                                ["foo"],
+                                [reader1, reader2])
+
+    def test_build_format_tags_warnIfRegexNotFoundInFile(self):
+        reader1 = MockVcfReader(metaheaders=['##FORMAT=<ID=JQ1>'])
+        reader2 = MockVcfReader(metaheaders=['##FORMAT=<ID=JQ2>'])
+
+        dummy = merge._build_format_tags(["JQ[123]", "foo"], [reader1, reader2])
+        actual_log_warnings = test.mock_logger.messages["WARNING"]
+        expected_log_warnings = "In the specified list of regexes \[.*\], the regex \[.*\] does not match any format tags; this expression may be irrelevant."
+        self.assertRegexpMatches(actual_log_warnings[0], expected_log_warnings)
 
     def test_build_contigs(self):
         records = [VcfRecord("1", "42", "A", "C"),
