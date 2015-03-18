@@ -600,7 +600,6 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
             command_validator._check_input_snp_indel_pairing(None, args)
             self.assertTrue(1, 1)
 
-
 class MockTask(object):
     def __init__(self, error_message=None):
         self.error_message = error_message
