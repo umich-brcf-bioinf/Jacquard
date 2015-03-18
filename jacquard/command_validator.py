@@ -28,7 +28,6 @@ def _actual_type(path):
     else:
         return "file"
 
-
 def _build_collision_message(command, collisions):
     total_collisions = len(collisions)
     if total_collisions == 1:
@@ -49,7 +48,6 @@ def _build_collision_message(command, collisions):
                                               total_collisions,
                                               collision_list)
 
-
 def _check_input_correct_type(dummy, args):
     module_name = args.subparser_name
     input_path = args.input
@@ -64,12 +62,10 @@ def _check_input_correct_type(dummy, args):
                                          input_path,
                                          actual_type))
 
-
 def _check_input_exists(dummy, args):
     if not os.path.exists(args.input):
         raise utils.UsageError(("Specified input [{}] does not exist. Review "\
                                  "inputs and try again.").format(args.input))
-
 
 def _check_input_readable(dummy, args):
     try:
@@ -81,7 +77,6 @@ def _check_input_readable(dummy, args):
         raise utils.UsageError(("Specified input [{}] cannot be read. Review "
                                 "inputs and try again.").format(args.input))
 
-
 def _check_output_correct_type(module_name, output_path, required_type):
     actual_type = _actual_type(output_path)
     if required_type != actual_type:
@@ -92,7 +87,6 @@ def _check_output_correct_type(module_name, output_path, required_type):
                                          required_type,
                                          output_path,
                                          actual_type))
-
 
 def _check_output_exists(dummy, args):
     if os.path.exists(args.output_path):
@@ -111,7 +105,6 @@ def _check_overwrite_existing_files(module, args):
     if collisions and not args.force:
         message = _build_collision_message(args.subparser_name, collisions)
         raise utils.UsageError(message)
-
 
 def _check_there_will_be_output(module, args):
     predicted_output = module.report_prediction(args)
@@ -135,7 +128,6 @@ def _create_temp_working_dir(dummy, args):
         raise utils.UsageError(("Jacquard cannot write to output directory "
                                 "[{}]. Review inputs and try again.")\
                                 .format(parent_dir))
-
 
 def _set_temp_working_dir(dummy, args):
     original_output = args.original_output
@@ -165,7 +157,6 @@ def _set_temp_working_dir(dummy, args):
     args.temp_working_dir = temp_working_dir
     args.output = new_output
 
-
 def _makepath(path):
     try:
         os.makedirs(path)
@@ -177,7 +168,6 @@ def _makepath(path):
 def _set_required_types(module, args):
     (args.required_input_type,
      args.required_output_type) = module.get_required_input_output_types()
-
 
 def _set_output_paths(dummy, args):
     args.original_output = args.output

@@ -10,9 +10,16 @@
 See tag definitions for more info.
 """
 from __future__ import print_function, absolute_import
-import jacquard.vcf as vcf
-import jacquard.variant_callers.common_tags as common_tags
+
+from collections import defaultdict, OrderedDict
+import os
+import re
+
+import jacquard.logger as logger
 import jacquard.utils as utils
+import jacquard.variant_callers.common_tags as common_tags
+import jacquard.vcf as vcf
+
 
 JQ_STRELKA_TAG = "JQ_SK_"
 VERSION = "v2.0.15"
@@ -177,6 +184,58 @@ class Strelka(object):
             return "##source=strelka" in vcf_reader.metaheaders
         return False
 
+    def _find_strelka_files(self, file_readers):
+        prefix_dict = OrderedDict()
+        unclaimed_readers = []
+        for file_reader in file_readers:
+            if self._is_strelka_vcf(file_reader):
+                prefix, _ = os.path.splitext(file_reader.file_name)
+                prefix_dict[prefix] = file_reader
+            else:
+                unclaimed_readers.append(file_reader)
+
+        return prefix_dict, unclaimed_readers
+
+    @staticmethod
+    def _split_prefix_by_patient(prefix_dict):
+        prefix_by_patients = defaultdict(list)
+        snv_indel = ["snvs", "indels"]
+
+        for prefix in prefix_dict:
+            patient_names = [i for i in prefix.split(".") if i not in snv_indel]
+            patient_name = ".".join(patient_names)
+            prefix_by_patients[patient_name].append(prefix)
+
+        return prefix_by_patients
+
+    @staticmethod
+    def _validate_vcf_readers(prefix_by_patients):
+        number_of_files = set()
+        for file_names in prefix_by_patients.values():
+            if len(file_names) == 1:
+                for file_name in file_names:
+                    if re.search("snvs", file_name):
+                        msg = "Strelka VCF [{}] has no indels file."
+                        logger.error(msg, file_name)
+                    elif re.search("indels", file_name):
+                        msg = "Strelka VCF [{}] has no snvs file."
+                        logger.error(msg, file_name)
+            number_of_files.add(len(file_names))
+
+        if len(number_of_files) > 1:
+            msg = ("Some Strelka VCFs were missing either a snvs or indels "
+                   "file. Review inputs/command options and try again.")
+            raise utils.JQException(msg)
+
+    @staticmethod
+    def _create_vcf_readers(prefix_to_readers):
+        vcf_readers = []
+        for file_reader in prefix_to_readers.values():
+            vcf_reader = vcf.VcfReader(file_reader)
+            vcf_readers.append(_StrelkaVcfReader(vcf_reader))
+
+        return vcf_readers
+
     def claim(self, file_readers):
         """Recognizes and claims Strelka VCFs form the set of all input VCFs.
 
@@ -189,14 +248,12 @@ class Strelka(object):
         Returns:
             A tuple of unclaimed readers and StrelkaVcfReaders.
         """
-        unclaimed_readers = []
-        vcf_readers = []
-        for file_reader in file_readers:
-            if self._is_strelka_vcf(file_reader):
-                vcf_reader = vcf.VcfReader(file_reader)
-                vcf_readers.append(_StrelkaVcfReader(vcf_reader))
-            else:
-                unclaimed_readers.append(file_reader)
+        (prefix_to_reader,
+         unclaimed_readers) = self._find_strelka_files(file_readers)
+        prefix_by_patients = self._split_prefix_by_patient(prefix_to_reader)
+        self._validate_vcf_readers(prefix_by_patients)
+        vcf_readers = self._create_vcf_readers(prefix_to_reader)
+
         return (unclaimed_readers, vcf_readers)
 
 class _StrelkaVcfReader(object):

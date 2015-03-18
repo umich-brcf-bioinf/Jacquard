@@ -1,14 +1,15 @@
 # pylint: disable=line-too-long,too-many-public-methods,too-few-public-methods
 # pylint: disable=invalid-name,global-statement,too-many-format-args
-from jacquard import __version__
-from test.vcf_test import MockFileReader, MockVcfReader
+import jacquard.logger
+import jacquard.utils as utils
 import jacquard.variant_callers.strelka as strelka
 import jacquard.vcf as vcf
+import test.mock_logger
 import test.test_case as test_case
+from test.vcf_test import MockFileReader, MockVcfReader
 
 
 class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
-
     def test_metaheader(self):
         self.assertEqual('##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)">'.format(strelka.JQ_STRELKA_TAG), strelka._AlleleFreqTag().metaheader)
 
@@ -44,9 +45,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.text())
 
-
 class DepthTagTestCase(test_case.JacquardBaseTestCase):
-
     def test_metaheader(self):
         self.assertEqual('##FORMAT=<ID={0}DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)">'.format(strelka.JQ_STRELKA_TAG), strelka._DepthTag().metaheader)
 
@@ -74,7 +73,6 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.text())
 
-
 class SomaticTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         self.assertEqual('##FORMAT=<ID={0}HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)">'.format(strelka.JQ_STRELKA_TAG), strelka._SomaticTag().metaheader)
@@ -95,11 +93,16 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.text())
 
-
 class StrelkaTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         super(StrelkaTestCase, self).setUp()
         self.caller = strelka.Strelka()
+        strelka.logger = test.mock_logger
+
+    def tearDown(self):
+        test.mock_logger.reset()
+        strelka.logger = jacquard.logger
+        super(StrelkaTestCase, self).tearDown()
 
     def test_claim(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
@@ -131,6 +134,35 @@ class StrelkaTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals([reader1], unrecognized_readers)
         self.assertEquals(0, len(vcf_readers))
 
+    def test_claim_mismatchingSnpIndelFiles(self):
+        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
+        content1 = ["##foo", "##source=strelka", "#chrom", record1]
+        reader1 = MockFileReader("fileA.snvs.vcf", content1)
+        reader2 = MockFileReader("fileA.indels.vcf", content1)
+        reader3 = MockFileReader("fileB.indels.vcf", content1)
+        file_readers = [reader1, reader2, reader3]
+
+        caller = strelka.Strelka()
+        self.assertRaisesRegexp(utils.JQException,
+                                r"Some Strelka VCFs were missing either a snvs or indels file. Review inputs/command options and try again.",
+                                caller.claim,
+                                file_readers)
+        actual_log_errors = test.mock_logger.messages["ERROR"]
+        expected_log_errors = ["Strelka VCF [fileB.indels] has no snvs file."]
+        self.assertEquals(expected_log_errors, actual_log_errors)
+
+    def test_claim_allSnpOrIndelOkay(self):
+        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
+        content1 = ["##foo", "##source=strelka", "#chrom", record1]
+        reader1 = MockFileReader("fileA.indels.vcf", content1)
+        reader2 = MockFileReader("fileB.indels.vcf", content1)
+        file_readers = [reader1, reader2]
+
+        caller = strelka.Strelka()
+        unrecognized_readers, vcf_readers = caller.claim(file_readers)
+
+        self.assertEquals(0, len(unrecognized_readers))
+        self.assertEquals(2, len(vcf_readers))
 
 class StrelkaVcfReaderTestCase(test_case.JacquardBaseTestCase):
     def test_metaheaders(self):

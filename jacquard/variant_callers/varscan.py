@@ -246,13 +246,13 @@ class Varscan(object):
 
     def _find_varscan_files(self, file_readers):
         unclaimed_set = set()
-        prefix_vcf_readers = OrderedDict()
+        prefix_file_readers = OrderedDict()
         filter_files = set()
 
         for file_reader in file_readers:
             if self._is_varscan_vcf(file_reader):
                 prefix, _ = os.path.splitext(file_reader.file_name)
-                prefix_vcf_readers[prefix] = file_reader
+                prefix_file_readers[prefix] = file_reader
             elif self._is_varscan_hc_file(file_reader):
                 filter_files.add(file_reader)
             else:
@@ -265,7 +265,7 @@ class Varscan(object):
                        "Review inputs/command options and try again.")
                 raise utils.JQException(msg, self.hc_file_pattern)
 
-        return prefix_vcf_readers, filter_files, unclaimed_set
+        return prefix_file_readers, filter_files, unclaimed_set
 
     @staticmethod
     def _split_prefix_by_patient(prefix_vcf_readers):
@@ -378,13 +378,13 @@ class Varscan(object):
             A tuple of unclaimed readers and MuTectVcfReaders.
         """
 
-        (prefix_vcf_readers,
+        (prefix_to_readers,
          filter_files,
          unclaimed_set) = self._find_varscan_files(file_readers)
 
-        prefix_by_patients = self._split_prefix_by_patient(prefix_vcf_readers)
+        prefix_by_patients = self._split_prefix_by_patient(prefix_to_readers)
         self._validate_vcf_readers(prefix_by_patients)
-        vcf_filter_tuples = self._pair_files(prefix_vcf_readers, filter_files)
+        vcf_filter_tuples = self._pair_files(prefix_to_readers, filter_files)
         self._validate_file_pairs(vcf_filter_tuples)
         vcf_readers = self._create_vcf_readers(vcf_filter_tuples)
 
