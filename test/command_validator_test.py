@@ -2,18 +2,21 @@
 #pylint: disable=global-statement, unused-argument, too-few-public-methods
 #pylint: disable=too-many-instance-attributes, no-member
 from __future__ import absolute_import
+
 from argparse import Namespace
-from testfixtures import TempDirectory
-import jacquard.command_validator as command_validator
-import jacquard.utils as utils
 import os
 import re
 import shutil
 import subprocess
 import sys
+import time
+
+from testfixtures import TempDirectory
+
+import jacquard.command_validator as command_validator
+import jacquard.utils as utils
 import test.mock_module as mock_module
 import test.test_case as test_case
-import time
 
 
 class MakeDirTestCase(test_case.JacquardBaseTestCase):
@@ -56,7 +59,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
         super(CommandValidatorTestCase, self).tearDown()
 
     def test_validation_tasks(self):
-        self.assertEquals(11, len(command_validator._VALIDATION_TASKS))
+        self.assertEquals(12, len(command_validator._VALIDATION_TASKS))
 
     def test_check_output_exists_fileExistsCorrectType(self):
         with TempDirectory() as output_dir:
@@ -461,7 +464,6 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
                                     mock_module,
                                     args)
 
-
     def test_check_overwrite_existing_files_whenOverwriteMoreThanFiveFilesWillRaiseAbbreviatedUsageError(self):
         with TempDirectory() as output_dir:
             args = Namespace(output_path=output_dir.path,
@@ -482,7 +484,6 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
                                     command_validator._check_overwrite_existing_files,
                                     mock_module,
                                     args)
-
 
     def test_check_overwrite_existing_files_whenNotOverwriteDirectoryWillNotRaise(self):
         with TempDirectory() as output_dir:
@@ -530,6 +531,62 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
         args = Namespace()
         command_validator._check_valid_args(mock_module, args)
         self.assertTrue(mock_module.validate_args_called)
+
+    def test_check_snp_indel_pairing_missingIndel(self):
+        with TempDirectory() as input_dir:
+            input_dir.write("patientA.snp.vcf", "foo")
+            input_dir.write("patientA.indel.vcf", "foo")
+            input_dir.write("patientB.snp.vcf", "foo")
+            args = Namespace(input=input_dir.path,
+                             subparser_name="awesomeCommand",
+                             force=0)
+
+            self.assertRaisesRegexp(utils.UsageError,
+                                    "Some VCFs were missing either a snp/snvs or an indel/indels file. Review inputs/command options and try again.",
+                                    command_validator._check_input_snp_indel_pairing,
+                                    None,
+                                    args)
+
+    def test_check_snp_indel_pairing_missingSnvs(self):
+        with TempDirectory() as input_dir:
+            input_dir.write("patientA.snp.vcf", "foo")
+            input_dir.write("patientA.indel.vcf", "foo")
+            input_dir.write("patientB.indels.vcf", "foo")
+            args = Namespace(input=input_dir.path,
+                             subparser_name="awesomeCommand",
+                             force=0)
+
+            self.assertRaisesRegexp(utils.UsageError,
+                                    "Some VCFs were missing either a snp/snvs or an indel/indels file. Review inputs/command options and try again.",
+                                    command_validator._check_input_snp_indel_pairing,
+                                    None,
+                                    args)
+
+    def test_check_snp_indel_pairing_missingSnvsSamePatient(self):
+        with TempDirectory() as input_dir:
+            input_dir.write("patientA.snp.vcf", "foo")
+            input_dir.write("patientA.indel.vcf", "foo")
+            input_dir.write("patientA.indels.vcf", "foo")
+            args = Namespace(input=input_dir.path,
+                             subparser_name="awesomeCommand",
+                             force=0)
+
+            self.assertRaisesRegexp(utils.UsageError,
+                                    "Some VCFs were missing either a snp/snvs or an indel/indels file. Review inputs/command options and try again.",
+                                    command_validator._check_input_snp_indel_pairing,
+                                    None,
+                                    args)
+
+    def test_check_snp_indel_pairing_allSnpOkay(self):
+        with TempDirectory() as input_dir:
+            input_dir.write("patientA.snp.vcf", "foo")
+            input_dir.write("patientB.snp.vcf", "foo")
+            args = Namespace(input=input_dir.path,
+                             subparser_name="awesomeCommand",
+                             force=0)
+
+            command_validator._check_input_snp_indel_pairing(None, args)
+            self.assertTrue(1, 1)
 
 
 class MockTask(object):

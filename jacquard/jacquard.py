@@ -37,10 +37,17 @@ Then architecture of Jacquard modules can be divided into:
 ##   See the License for the specific language governing permissions and
 ##   limitations under the License.
 from __future__ import absolute_import, print_function
-from jacquard import __version__
-from jacquard.variant_callers import variant_caller_factory
+
 import argparse
 import distutils.dir_util
+import os
+import re
+import shutil
+import signal
+import sys
+import traceback
+
+from jacquard import __version__
 import jacquard.command_validator as command_validator
 import jacquard.expand as expand
 import jacquard.filter_hc_somatic as filter_hc_somatic
@@ -49,12 +56,7 @@ import jacquard.merge as merge
 import jacquard.summarize as summarize
 import jacquard.translate as translate
 import jacquard.utils as utils
-import os
-import re
-import shutil
-import signal
-import sys
-import traceback
+from jacquard.variant_callers import variant_caller_factory
 
 
 _SUBCOMMANDS = [translate,
