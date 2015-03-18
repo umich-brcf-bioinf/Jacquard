@@ -539,10 +539,10 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
             input_dir.write("patientB.snp.vcf", "foo")
             args = Namespace(input=input_dir.path,
                              subparser_name="awesomeCommand",
-                             force=0)
+                             allow_inconsistent_sample_sets=0)
 
             self.assertRaisesRegexp(utils.UsageError,
-                                    "Some VCFs were missing either a snp/snvs or an indel/indels file. Review inputs/command options and try again.",
+                                    "Some VCFs were missing either a snp/snvs or an indel/indels file. Review inputs/command options to align file pairings or use the flag --allow_inconsistent_sample_sets.",
                                     command_validator._check_input_snp_indel_pairing,
                                     None,
                                     args)
@@ -554,10 +554,10 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
             input_dir.write("patientB.indels.vcf", "foo")
             args = Namespace(input=input_dir.path,
                              subparser_name="awesomeCommand",
-                             force=0)
+                             allow_inconsistent_sample_sets=0)
 
             self.assertRaisesRegexp(utils.UsageError,
-                                    "Some VCFs were missing either a snp/snvs or an indel/indels file. Review inputs/command options and try again.",
+                                    "Some VCFs were missing either a snp/snvs or an indel/indels file. Review inputs/command options to align file pairings or use the flag --allow_inconsistent_sample_sets.",
                                     command_validator._check_input_snp_indel_pairing,
                                     None,
                                     args)
@@ -569,10 +569,10 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
             input_dir.write("patientA.indels.vcf", "foo")
             args = Namespace(input=input_dir.path,
                              subparser_name="awesomeCommand",
-                             force=0)
+                             allow_inconsistent_sample_sets=0)
 
             self.assertRaisesRegexp(utils.UsageError,
-                                    "Some VCFs were missing either a snp/snvs or an indel/indels file. Review inputs/command options and try again.",
+                                    "Some VCFs were missing either a snp/snvs or an indel/indels file. Review inputs/command options to align file pairings or use the flag --allow_inconsistent_sample_sets.",
                                     command_validator._check_input_snp_indel_pairing,
                                     None,
                                     args)
@@ -583,7 +583,19 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
             input_dir.write("patientB.snp.vcf", "foo")
             args = Namespace(input=input_dir.path,
                              subparser_name="awesomeCommand",
-                             force=0)
+                             allow_inconsistent_sample_sets=0)
+
+            command_validator._check_input_snp_indel_pairing(None, args)
+            self.assertTrue(1, 1)
+
+    def test_check_snp_indel_pairing_withFlag(self):
+        with TempDirectory() as input_dir:
+            input_dir.write("patientA.snp.vcf", "foo")
+            input_dir.write("patientA.indel.vcf", "foo")
+            input_dir.write("patientB.indel.vcf", "foo")
+            args = Namespace(input=input_dir.path,
+                             subparser_name="awesomeCommand",
+                             allow_inconsistent_sample_sets=1)
 
             command_validator._check_input_snp_indel_pairing(None, args)
             self.assertTrue(1, 1)

@@ -131,12 +131,18 @@ def _check_input_snp_indel_pairing(dummy, args):
                 altered_file_names[joined_file_names].append(basename)
 
     if not set([len(i) for i in altered_file_names.values()]) == set([1]):
-        for file_names in altered_file_names.values():
-            if len(file_names) % 2 != 0:
-                message = ("Some VCFs were missing either a snp/snvs or an "
-                           "indel/indels file. Review inputs/command options "
-                           "and try again.")
-                raise utils.UsageError(message)
+        try:
+            if not args.allow_inconsistent_sample_sets:
+                for file_names in altered_file_names.values():
+                    if len(file_names) % 2 != 0:
+                        message = ("Some VCFs were missing either a snp/snvs "
+                                   "or an indel/indels file. Review "
+                                   "inputs/command options to align file "
+                                   "pairings or use the flag "
+                                   "--allow_inconsistent_sample_sets.")
+                        raise utils.UsageError(message)
+        except AttributeError:
+            pass
 
 def _check_there_will_be_output(module, args):
     predicted_output = module.report_prediction(args)

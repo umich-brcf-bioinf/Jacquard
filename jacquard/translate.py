@@ -201,6 +201,7 @@ def add_subparser(subparser):
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
     parser.add_argument("--varscan_hc_filter_filename", help="Regex pattern that identifies optional VarScan high-confidence filter files. The VCF, high-confidence file pairs should share the same prefix. For example, given patientA.snp.vcf, patientA.indel.vcf, patientA.snp.fpfilter.pass, patientA.indel.fpfilter.pass, you could enable this option as varscan_hc_filter_filename='.fpfilter.pass$'")
+    parser.add_argument("--allow_inconsistent_sample_sets", help="Allow inconsistent sample sets to be used")
 
 #TODO (cgates): This module is both a command and also manipulates VcfRecords
 # like a caller. This is the only body of code that does both these things.
