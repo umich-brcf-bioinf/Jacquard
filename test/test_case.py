@@ -60,6 +60,8 @@ class JacquardBaseTestCase(unittest.TestCase):
                 self.assertStartsWith(actual[i], "##jacquard.cwd=")
             elif expected[i].startswith("##jacquard.command="):
                 self.assertStartsWith(actual[i], "##jacquard.command=")
+            elif expected[i].startswith("##jacquard.version="):
+                self.assertStartsWith(actual[i], "##jacquard.version=")
             else:
                 self.assertEquals(expected[i].rstrip(),
                                   actual[i].rstrip())

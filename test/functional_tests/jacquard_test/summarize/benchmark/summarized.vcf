@@ -1,4 +1,4 @@
-##jacquard.version=0.3
+##jacquard.version=X
 ##jacquard.command=summarize C:\Users\jebene\git\jacquard\test\functional_tests\jacquard_test\merge\benchmark\merged.vcf C:\Users\jebene\Desktop\jacquard_test\summarized\summarized.vcf --force
 ##jacquard.cwd=C:\Users\jebene\git
 ##FORMAT=<ID=JQ_SUMMARY_CALLERS_REPORTED_COUNT,Number=1,Type=Integer,Description="Count of variant callers which listed this variant in the Jacquard tagged VCF">
@@ -13,7 +13,7 @@
 ##FORMAT=<ID=JQ_SUMMARY_DP_RANGE,Number=1,Type=Float,Description="Max(depth) - min (depth) across recognized callers.">
 ##FORMAT=<ID=JQ_SUMMARY_SOM_COUNT,Number=1,Type=Integer,Description="Count of recognized variant callers that reported confident somatic call for this sample-position.">
 ##fileformat=VCFv4.1
-##jacquard.version=0.3
+##jacquard.version=X
 ##jacquard.command=merge C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\jacquard_test\filter_hc_somatic\benchmark C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\merge\benchmark\merged.vcf
 ##jacquard.cwd=C:\Users\kmeng
 ##jacquard.merge.sample=<Column=1,Name=tiny|NORMAL,Source=tiny.mutect.translatedTags.HCsomatic.vcf|tiny.strelka.indels.translatedTags.HCsomatic.vcf|tiny.strelka.snvs.translatedTags.HCsomatic.vcf|tiny.varscan.indel.translatedTags.HCsomatic.vcf|tiny.varscan.snp.translatedTags.HCsomatic.vcf>

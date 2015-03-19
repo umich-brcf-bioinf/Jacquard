@@ -233,9 +233,9 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
     def test_store_hc_file(self):
         with TempDirectory() as temp_dir:
             args = Namespace(input=temp_dir.path,
-                                 output=temp_dir.path,
-                                 force=True,
-                                 varscan_hc_filter_filename="pass$")
+                             output=temp_dir.path,
+                             force=True,
+                             varscan_hc_filter_filename="pass$")
             translate._store_hc_file(args)
 
         self.assertEquals("pass$", variant_caller_factory._CALLERS[0].hc_file_pattern)

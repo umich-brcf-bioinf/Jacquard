@@ -349,8 +349,8 @@ class Varscan(object):
         """
 
         (prefix_vcf_readers,
-            filter_files,
-            unclaimed_set) = self._find_varscan_files(file_readers)
+         filter_files,
+         unclaimed_set) = self._find_varscan_files(file_readers)
         tuples = self._pair_files(prefix_vcf_readers, filter_files)
         self._validate_file_pairs(tuples)
         vcf_readers = self._create_vcf_readers(tuples)

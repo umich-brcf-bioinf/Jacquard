@@ -1,7 +1,14 @@
 Changelog
 ================
 
-## 0.3 (3/2014)
+## 0.31 (3/17/2015)
+ * Downgraded VCF format from 4.2 to 4.1
+ * Fixed a bug that omitted CALLERS_REPORTED_LIST summary tag
+ * Simplified summary tags; removed dependency on numpy
+ * Adjusted VarScan translation to accept a file pattern to identify high-confidence files 
+
+
+## 0.3 (3/9/2015)
  * Replaced [normalize], [tag] commands with [translate]; relaxed constraints on incoming data.
  * Renamed [consensus] to [summarize]
  * More consistent behavior in [expand]

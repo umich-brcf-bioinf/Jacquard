@@ -1,5 +1,5 @@
 ##fileformat=VCFv4.1
-##jacquard.version=0.3
+##jacquard.version=X
 ##jacquard.command=merge C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\jacquard_test\filter_hc_somatic\benchmark C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\merge\benchmark\merged.vcf
 ##jacquard.cwd=C:\Users\kmeng
 ##jacquard.merge.sample=<Column=1,Name=tiny|NORMAL,Source=tiny.mutect.translatedTags.HCsomatic.vcf|tiny.strelka.indels.translatedTags.HCsomatic.vcf|tiny.strelka.snvs.translatedTags.HCsomatic.vcf|tiny.varscan.indel.translatedTags.HCsomatic.vcf|tiny.varscan.snp.translatedTags.HCsomatic.vcf>

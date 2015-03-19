@@ -75,7 +75,7 @@
 ##source=strelka
 ##source_version=2.0.15
 ##startTime=Wed Jul  9 13:37:22 2014
-##jacquard.version=0.3
+##jacquard.version=X
 ##jacquard.command=tag C:\Users\jebene\git\Jacquard\test\functional_tests\02_tag\input C:\Users\jebene\git\Jacquard\test\functional_tests\02_tag\output
 ##jacquard.cwd=C:\Users\jebene\git
 ##jacquard.tag.caller=Strelka
@@ -83,7 +83,7 @@
 ##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",Source="Jacquard",Version=0.3>
 ##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",Source="Jacquard",Version=0.3>
 ##jacquard.filterHCSomatic.excluded_variants=35
-##jacquard.version=0.3
+##jacquard.version=X
 ##jacquard.command=filter_hc_somatic C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\03_filter_hc_somatic\input C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\03_filter_hc_somatic\benchmark
 ##jacquard.cwd=C:\Users\kmeng
 ##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=10

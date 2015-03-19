@@ -178,7 +178,7 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         self.assertIn("_HCTag",
                       self._get_tag_class_names(vcf_readers[0]))
         self.assertIn("_HCTag",
-                         self._get_tag_class_names(vcf_readers[1]))
+                      self._get_tag_class_names(vcf_readers[1]))
         self.assertEquals(reader1.file_name, vcf_readers[0]._vcf_reader.file_name)
 
     def test_claim_varscanVcfOnly(self):

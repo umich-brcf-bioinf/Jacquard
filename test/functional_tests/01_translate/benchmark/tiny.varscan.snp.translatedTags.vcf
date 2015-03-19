@@ -22,7 +22,7 @@
 ##FORMAT=<ID=JQ_VS_DP,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)">
 ##FORMAT=<ID=JQ_VS_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)">
 ##jacquard.translate.caller=VarScan
-##jacquard.version=0.3
+##jacquard.version=X
 ##jacquard.command=translate C:\Users\jebene\git\Jacquard\test\functional_tests\01_translate\input C:\Users\jebene\Desktop\translate_test --force
 ##jacquard.cwd=C:\Users\jebene\git
 ##FILTER=<ID=JQ_EXCLUDE_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.">

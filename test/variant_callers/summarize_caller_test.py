@@ -659,7 +659,7 @@ class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
                     'Type=Integer,'
                     'Description="Count of variant callers which listed this variant in the Jacquard tagged VCF">')\
                     .format(summarize_caller.JQ_SUMMARY_TAG,
-                                            summarize_caller.JQ_REPORTED)
+                            summarize_caller.JQ_REPORTED)
 
         actual = summarize_caller.SummarizeCaller().get_metaheaders()
 
