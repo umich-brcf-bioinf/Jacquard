@@ -16,12 +16,14 @@ The origin caller of a VCFs is recognized in part by the content of metaheaders,
 so it's imperative that VCF metaheaders be present and accurate.
 """
 from __future__ import absolute_import
-from jacquard.variant_callers import variant_caller_factory
-from jacquard.vcf import FileReader, FileWriter
+
 import glob
+import os
+
 import jacquard.logger as logger
 import jacquard.utils as utils
-import os
+from jacquard.variant_callers import variant_caller_factory
+from jacquard.vcf import FileReader, FileWriter
 
 
 _FILE_OUTPUT_SUFFIX = "translatedTags"
@@ -128,8 +130,9 @@ def _build_validation_message(unclaimed_readers):
 def _claim_readers(args):
     input_dir = os.path.abspath(args.input)
     file_readers = _build_file_readers(input_dir)
+    factory = variant_caller_factory.VariantCallerFactory(args)
 
-    return variant_caller_factory.claim(file_readers)
+    return factory.claim(file_readers)
 
 def _log_unclaimed_readers(unclaimed_readers):
     unclaimed_log_message = "The input file [{}] will not be translated"
@@ -168,15 +171,6 @@ def _write_headers(reader, new_tags, execution_context, file_writer):
 
     file_writer.write("\n".join(headers) + "\n")
 
-def _store_hc_file(args):
-    if args.varscan_hc_filter_filename:
-        for caller in variant_caller_factory._CALLERS:
-            try:
-                caller.hc_file_pattern
-            except AttributeError:
-                continue
-            caller.hc_file_pattern = args.varscan_hc_filter_filename
-
 def get_required_input_output_types():
     return ("directory", "directory")
 
@@ -211,7 +205,6 @@ def execute(args, execution_context):
 
     output_dir = os.path.abspath(args.output)
     unclaimed_readers, trans_vcf_readers = _claim_readers(args)
-    _store_hc_file(args)
 
     _log_unclaimed_readers(unclaimed_readers)
 

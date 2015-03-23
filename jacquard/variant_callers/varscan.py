@@ -162,11 +162,15 @@ class Varscan(object):
 
     _DEFAULT_REGEX = "Somatic.hc.fpfilter.pass"
 
-    def __init__(self):
+    def __init__(self, args=None):
         self.name = "VarScan"
         self.abbr = "VS"
         self.meta_header = "##jacquard.normalize_varscan.sources={0},{1}\n"
-        self.hc_file_pattern = re.compile(Varscan._DEFAULT_REGEX)
+
+        if args and args.varscan_hc_filter_filename:
+            self.hc_file_pattern = re.compile(args.varscan_hc_filter_filename)
+        else:
+            self.hc_file_pattern = re.compile(Varscan._DEFAULT_REGEX)
 
     ##TODO (cgates): deprecated; remove
     @staticmethod

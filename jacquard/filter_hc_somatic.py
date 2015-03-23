@@ -58,9 +58,10 @@ def _find_somatic_positions(in_files):
         somatic = 0
         vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
         #TODO: (jebene) - this is old. have this use claim() instead of get_caller()
-        caller = variant_caller_factory.get_caller(vcf_reader.metaheaders,
-                                                   vcf_reader.column_header,
-                                                   vcf_reader.file_name)
+        factory = variant_caller_factory.VariantCallerFactory()
+        caller = factory.get_caller(vcf_reader.metaheaders,
+                                    vcf_reader.column_header,
+                                    vcf_reader.file_name)
 
         (filtered_records,
          num_records,

@@ -17,45 +17,15 @@ SUPPORTED_CALLER_VERSIONS = {"VarScan": varscan.VERSION,
                              "MuTect": mutect.VERSION,
                              "Strelka": strelka.VERSION}
 
-_CALLERS = [varscan.Varscan(), strelka.Strelka(), mutect.Mutect()]
-
-#TODO: (cgates): Filter uses this, but only for logging; adjust filter and drop
-# method. Then consider renaming the module.
-def get_caller(metaheaders, column_header, name):
-    for caller in _CALLERS:
-        if caller.validate_input_file(metaheaders, column_header):
-            logger.debug("VCF [{}] recognized by caller [{}]",
-                         name,
-                         caller.name)
-            return caller
-    raise utils.JQException(("VCF [{}] was not in the set of "
-                             "recognized callers.").format(name))
-
-def claim(unclaimed_file_readers):
-    """Allows each caller to claim incoming files as they are recognized.
-
-    Args:
-        unclaimed_file_readers: Usually, all files in the input dir.
-
-    Returns:
-        A tuple of unclaimed file readers and claimed VcfReaders. The presence
-        of any unclaimed file readers could indicate stray files in the input
-        dir.
-    """
-    claimed_vcf_readers = []
-    for caller in _CALLERS:
-        (unclaimed_file_readers,
-         translated_vcf_readers) = caller.claim(unclaimed_file_readers)
-        claimed_vcf_readers.extend(translated_vcf_readers)
-    return unclaimed_file_readers, claimed_vcf_readers
-
-
 class VariantCallerFactory(object):
-    def __init__(self, args):
+    def __init__(self, args=None):
         self.hc_filter_filename = None
         self.allow_inconsistent_sample_sets = None
-        self._handle_arguments(args)
-        self._callers = [varscan.Varscan(), strelka.Strelka(), mutect.Mutect()]
+        if args:
+            self._handle_arguments(args)
+        self._callers = [varscan.Varscan(args),
+                         strelka.Strelka(),
+                         mutect.Mutect()]
 
     def _handle_arguments(self, args):
         try:
