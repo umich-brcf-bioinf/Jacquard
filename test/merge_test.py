@@ -16,7 +16,7 @@ from jacquard.vcf import VcfRecord
 import jacquard.vcf as vcf
 import test.mock_logger
 import test.test_case as test_case
-from test.vcf_test import MockVcfReader, MockFileWriter
+from test.vcf_test import MockVcfReader, MockFileWriter, MockFileReader
 
 
 class MockBufferedReader(object):
@@ -36,13 +36,50 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         merge.logger = jacquard.logger
         super(MergeTestCase, self).tearDown()
 
+    def test_validate_consistent_samples_missingCaller(self):
+        input_files = [MockFileReader("A.mutect.vcf",
+                                      ["##jacquard.translate.caller=MuTect"]),
+                       MockFileReader("A.strelka.vcf",
+                                      ["##jacquard.translate.caller=Strelka"]),
+                       MockFileReader("A.varscan.vcf",
+                                      ["##jacquard.translate.caller=VarScan"]),
+                       MockFileReader("B.strelka.vcf",
+                                      ["##jacquard.translate.caller=Strelka"]),
+                       MockFileReader("B.varscan.vcf",
+                                      ["##jacquard.translate.caller=VarScan"]),
+                       MockFileReader("C.varscan.vcf",
+                                      ["##jacquard.translate.caller=VarScan"])]
+        merge._validate_consistent_samples(input_files)
+
+        actual_log_warnings = test.mock_logger.messages["WARNING"]
+        expected_log_warnings = ["Sample [B] is missing VCF(s): ['MuTect']",
+                                 "Sample [C] is missing VCF(s): ['MuTect', 'Strelka']",
+                                 "Some samples appear to be missing VCF(s)"]
+        self.assertEquals(expected_log_warnings, actual_log_warnings)
+
+    def test_validate_consistent_samples_allMissingCallers(self):
+        input_files = [MockFileReader("A.mutect.vcf",
+                                      ["##jacquard.translate.caller=MuTect"]),
+                       MockFileReader("B.strelka.vcf",
+                                      ["##jacquard.translate.caller=Strelka"]),
+                       MockFileReader("C.varscan.vcf",
+                                      ["##jacquard.translate.caller=VarScan"])]
+        merge._validate_consistent_samples(input_files)
+
+        actual_log_warnings = test.mock_logger.messages["WARNING"]
+        expected_log_warnings = ["Sample [A] is missing VCF(s): ['Strelka', 'VarScan']",
+                                 "Sample [B] is missing VCF(s): ['MuTect', 'VarScan']",
+                                 "Sample [C] is missing VCF(s): ['MuTect', 'Strelka']",
+                                 "Some samples appear to be missing VCF(s)"]
+        self.assertEquals(expected_log_warnings, actual_log_warnings)
+
     def test_predict_output(self):
-        with TempDirectory() as input_file, TempDirectory() as output_file:
-            input_file.write("A.normalized.jacquardTags.HCsomatic.vcf", "##source=strelka\n#colHeader")
-            input_file.write("B.normalized.jacquardTags.HCsomatic.vcf", "##source=strelka\n#colHeader")
-            output_file.write("merged.vcf", "##source=strelka\n#colHeader")
-            args = Namespace(input=input_file.path,
-                             output=os.path.join(output_file.path, "merged.vcf"))
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            input_dir.write("A.normalized.jacquardTags.HCsomatic.vcf", "##source=strelka\n#colHeader")
+            input_dir.write("B.normalized.jacquardTags.HCsomatic.vcf", "##source=strelka\n#colHeader")
+            output_dir.write("merged.vcf", "##source=strelka\n#colHeader")
+            args = Namespace(input=input_dir.path,
+                             output=os.path.join(output_dir.path, "merged.vcf"))
 
             desired_output_files = merge._predict_output(args)
             expected_desired_output_files = set(["merged.vcf"])
@@ -417,6 +454,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
 
         dummy = merge._build_format_tags(["JQ[123]", "foo"], [reader1, reader2])
         actual_log_warnings = test.mock_logger.messages["WARNING"]
+        #pylint: disable=anomalous-backslash-in-string
         expected_log_warnings = "In the specified list of regexes \[.*\], the regex \[.*\] does not match any format tags; this expression may be irrelevant."
         self.assertRegexpMatches(actual_log_warnings[0], expected_log_warnings)
 

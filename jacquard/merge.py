@@ -37,6 +37,7 @@ import jacquard.logger as logger
 import jacquard.utils as utils
 from jacquard.vcf import FileWriter
 import jacquard.vcf as vcf
+import jacquard.variant_callers.variant_caller_factory as variant_caller_factory
 
 
 _DEFAULT_INCLUDED_FORMAT_TAGS = ["JQ_.*"]
@@ -369,6 +370,37 @@ def _build_writers_to_readers(vcf_readers, output_path):
     writers_to_readers[file_writer] = vcf_readers
 
     return writers_to_readers
+
+def _get_readers_per_patient(file_readers):
+    readers_per_patient = defaultdict(list)
+    for file_reader in file_readers:
+        file_reader.open()
+        patient = file_reader.file_name.split(".")[0]
+        for line in file_reader.read_lines():
+            caller_meta_header = "##jacquard.translate.caller"
+            if line.startswith(caller_meta_header):
+                readers_per_patient[patient].append(line.split("=")[1])
+        file_reader.close()
+
+    return OrderedDict(sorted(readers_per_patient.iteritems()))
+
+def _validate_consistent_samples(file_readers):
+    readers_per_patient = _get_readers_per_patient(file_readers)
+    callers = variant_caller_factory.VariantCallerFactory()._callers
+    all_callers = [i.name for i in callers]
+
+    warning = 0
+    for patient, callers in readers_per_patient.items():
+        missing_callers = set(all_callers).difference(set(callers))
+        if missing_callers:
+            warning = 1
+            msg = "Sample [{}] is missing VCF(s): {}"
+            logger.warning(msg,
+                           patient,
+                           sorted(list(missing_callers)))
+    if warning:
+        msg = "Some samples appear to be missing VCF(s)"
+        logger.warning(msg)
 
 def add_subparser(subparser):
     #pylint: disable=line-too-long
