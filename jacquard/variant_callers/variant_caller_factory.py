@@ -19,23 +19,9 @@ SUPPORTED_CALLER_VERSIONS = {"VarScan": varscan.VERSION,
 
 class VariantCallerFactory(object):
     def __init__(self, args=None):
-        self.hc_filter_filename = None
-        self.allow_inconsistent_sample_sets = None
-        if args:
-            self._handle_arguments(args)
         self._callers = [varscan.Varscan(args),
                          strelka.Strelka(),
                          mutect.Mutect()]
-
-    def _handle_arguments(self, args):
-        try:
-            if args.varscan_hc_filter_filename:
-                self.hc_filter_filename = args.varscan_hc_filter_filename
-            if args.allow_inconsistent_sample_sets:
-                #pylint: disable=line-too-long
-                self.allow_inconsistent_sample_sets = args.allow_inconsistent_sample_sets
-        except AttributeError:
-            pass
 
 #TODO: (cgates): Filter uses this, but only for logging; adjust filter and drop
 # method. Then consider renaming the module.
