@@ -9,7 +9,6 @@ import jacquard.utils as utils
 import jacquard.variant_callers.common_tags as common_tags
 import re
 
-#TODO: (cgates): Numpy is not necessary and frankly not pulling its weight.
 JQ_SUMMARY_TAG = "JQ_SUMMARY_"
 JQ_REPORTED = "CALLERS_REPORTED_COUNT"
 JQ_REPORTED_LIST = "CALLERS_REPORTED_LIST"
@@ -255,7 +254,7 @@ class _AlleleFreqRangeTag(object):
                                               sample,
                                               _AlleleFreqRangeTag._PATTERN)
 
-            aggregated_values= "."
+            aggregated_values = "."
             if tag_values:
                 aggregated_values = _aggregate_numeric_values(tag_values,
                                                               _range)
@@ -297,7 +296,7 @@ class _AlleleFreqAverageTag(object):
                                               sample,
                                               _AlleleFreqAverageTag._PATTERN)
 
-            aggregated_values= "."
+            aggregated_values = "."
             if tag_values:
                 aggregated_values = _aggregate_numeric_values(tag_values,
                                                               _average)
@@ -339,7 +338,7 @@ class _DepthRangeTag(object):
                                               sample,
                                               _DepthRangeTag._PATTERN)
 
-            aggregated_values= "."
+            aggregated_values = "."
             if tag_values:
                 aggregated_values = _aggregate_numeric_values(tag_values,
                                                               _range)
@@ -381,7 +380,7 @@ class _DepthAverageTag(object):
                                               sample,
                                               _DepthAverageTag._PATTERN)
 
-            aggregated_values= "."
+            aggregated_values = "."
             if tag_values:
                 aggregated_values = _aggregate_numeric_values(tag_values,
                                                               _average)
@@ -423,7 +422,7 @@ class _SomaticTag(object):
             tag_values = _get_non_null_values(record,
                                               sample,
                                               _SomaticTag._PATTERN)
-            aggregated_values= "."
+            aggregated_values = "."
             if tag_values:
                 aggregated_values = _aggregate_numeric_values(tag_values,
                                                               _count)

@@ -16,7 +16,7 @@
 ##INFO=<ID=SSC,Number=1,Type=String,Description="Somatic score in Phred scale (0-255) derived from somatic p-value">
 ##fileformat=VCFv4.1
 ##source=VarScan2
-##jacquard.version=0.3
+##jacquard.version=X
 ##jacquard.command=tag c:\\users\\jebene\\appdata\\local\\temp\\tmpfuwrpl\\normalize c:\\users\\jebene\\appdata\\local\\temp\\tmpfuwrpl\\tag --force
 ##jacquard.cwd=C:\\Users\\jebene\\git
 ##jacquard.tag.caller=VarScan
@@ -24,7 +24,7 @@
 ##FORMAT=<ID=JQ_VS_DP,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)">
 ##FORMAT=<ID=JQ_VS_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)">
 ##jacquard.filterHCSomatic.excluded_variants=43
-##jacquard.version=0.3
+##jacquard.version=X
 ##jacquard.command=filter_hc_somatic c:\\users\\jebene\\appdata\\local\\temp\\tmpfuwrpl\\tag c:\\users\\jebene\\appdata\\local\\temp\\tmpfuwrpl\\filter_hc_somatic --force
 ##jacquard.cwd=C:\\Users\\jebene\\git
 ##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=12

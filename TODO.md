@@ -8,6 +8,7 @@ TODO
 * Extend [expand] to parse SnpEff/Annovar annotated results
 * Extend [expand] to generate formatted results
 * Improve command validation (check source tags, check "shape" of inputs)
+* Enable 4.2 VCF support
 * Add support for new somatic callers
 * Add support for Germline workflows
 * Add support for Python 3

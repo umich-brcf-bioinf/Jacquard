@@ -1,4 +1,4 @@
-##jacquard.version=0.3
+##jacquard.version=X
 ##jacquard.command=summarize C:\Users\jebene\git\Jacquard\test\functional_tests\05_summarize\input\tiny_strelka.merged.vcf C:\Users\jebene\Desktop\summarized\summarized.vcf --force
 ##jacquard.cwd=C:\Users\jebene\git
 ##FORMAT=<ID=JQ_SUMMARY_CALLERS_REPORTED_COUNT,Number=1,Type=Integer,Description="Count of variant callers which listed this variant in the Jacquard tagged VCF">
@@ -12,7 +12,7 @@
 ##FORMAT=<ID=JQ_SUMMARY_DP_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].">
 ##FORMAT=<ID=JQ_SUMMARY_DP_RANGE,Number=1,Type=Float,Description="Max(depth) - min (depth) across recognized callers.">
 ##FORMAT=<ID=JQ_SUMMARY_SOM_COUNT,Number=1,Type=Integer,Description="Count of recognized variant callers that reported confident somatic call for this sample-position.">
-##jacquard.version=0.3
+##jacquard.version=X
 ##jacquard.command=merge C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\04_merge\input C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\04_merge\output\tiny_strelka.merged.vcf
 ##jacquard.cwd=C:\Users\kmeng
 ##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)">

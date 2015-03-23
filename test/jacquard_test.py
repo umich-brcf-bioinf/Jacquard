@@ -51,6 +51,9 @@ class JacquardArgumentParserTestCase(test_case.JacquardBaseTestCase):
 
 
 class JacquardTestCase(test_case.JacquardBaseTestCase):
+    def test_version(self):
+        self.assertEquals(0.31, jacquard.__version__)
+
     def test_set_interrupt_handler(self):
         mock_signal_dispatcher = MockSignalDispatcher()
 
@@ -73,8 +76,8 @@ class JacquardTestCase(test_case.JacquardBaseTestCase):
 
             with self.assertRaises(SystemExit) as exit_code:
                 jacquard._dispatch([mock_module], ["mock_module",
-                                                  input_dir.path,
-                                                  output_dir.path])
+                                                   input_dir.path,
+                                                   output_dir.path])
             self.assertEqual(1, exit_code.exception.code)
 
             actual_messages = self.output.getvalue().rstrip().split("\n")
@@ -145,8 +148,8 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             mock_module.my_exception_string = ""
             jacquard._dispatch([mock_module], ["mock_module",
-                                              input_dir.path,
-                                              output_dir.path])
+                                               input_dir.path,
+                                               output_dir.path])
             self.assertTrue(mock_module.execute_called)
             self.assertTrue(mock_module.report_called)
             self.assertTrue(MOCK_MOVE_TEMP_CONTENTS_CALLED)
@@ -156,8 +159,8 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
             mock_module.my_exception_string = ""
             with self.assertRaises(SystemExit) as exit_code:
                 jacquard._dispatch([mock_module], ["foo_command",
-                                                  input_dir.path,
-                                                  output_dir.path])
+                                                   input_dir.path,
+                                                   output_dir.path])
             self.assertEquals(1, exit_code.exception.code)
             self.assertRegexpMatches(self.output.getvalue(),
                                      r"'foo_command' is not a Jacquard command; choose from 'mock_module'")
@@ -171,8 +174,8 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
             mock_module.predicted_output = set(["file1.vcf"])
             with self.assertRaises(SystemExit) as exit_code:
                 jacquard._dispatch([mock_module], ["mock_module",
-                                                  input_dir.path,
-                                                  output_file])
+                                                   input_dir.path,
+                                                   output_file])
 
             self.assertEqual(1, exit_code.exception.code)
 
@@ -182,9 +185,9 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
             mock_module.my_exception_string = ""
 
             jacquard._dispatch([mock_module], ["mock_module",
-                                              input_dir.path,
-                                              output_dir.path,
-                                              "--force"])
+                                               input_dir.path,
+                                               output_dir.path,
+                                               "--force"])
 
             self.assertTrue(1 == 1, "Force does not result in premature exit.")
 
@@ -192,8 +195,8 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             mock_module.my_exception_string = ""
             jacquard._dispatch([mock_module], ["mock_module",
-                                              input_dir.path,
-                                              output_dir.path])
+                                               input_dir.path,
+                                               output_dir.path])
             actual_messages = self.output.getvalue().rstrip().split("\n")
             self.assertRegexpMatches(actual_messages[-1], "Done")
 
@@ -202,8 +205,8 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
             mock_module.my_exception_string = ""
             logger.WARNING_OCCURRED = True
             jacquard._dispatch([mock_module], ["mock_module",
-                                              input_dir.path,
-                                              output_dir.path])
+                                               input_dir.path,
+                                               output_dir.path])
             actual_messages = self.output.getvalue().rstrip().split("\n")
             self.assertRegexpMatches(actual_messages[-1], r"Done. \(See warnings above\)")
             logger.WARNING_OCCURRED = False

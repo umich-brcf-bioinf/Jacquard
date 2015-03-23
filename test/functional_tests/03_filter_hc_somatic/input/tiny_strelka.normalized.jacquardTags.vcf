@@ -75,7 +75,7 @@
 ##source=strelka
 ##source_version=2.0.15
 ##startTime=Wed Jul  9 13:37:22 2014
-##jacquard.version=0.3
+##jacquard.version=X
 ##jacquard.command=tag C:\Users\jebene\git\Jacquard\test\functional_tests\02_tag\input C:\Users\jebene\git\Jacquard\test\functional_tests\02_tag\output
 ##jacquard.cwd=C:\Users\jebene\git
 ##jacquard.tag.caller=Strelka

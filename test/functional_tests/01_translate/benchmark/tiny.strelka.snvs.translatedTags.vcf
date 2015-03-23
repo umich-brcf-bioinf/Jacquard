@@ -56,7 +56,7 @@
 ##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)">
 ##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)">
 ##jacquard.translate.caller=Strelka
-##jacquard.version=0.3
+##jacquard.version=X
 ##jacquard.command=translate C:\Users\jebene\git\Jacquard\test\functional_tests\01_translate\input C:\Users\jebene\Desktop\translate_test --force
 ##jacquard.cwd=C:\Users\jebene\git
 ##FILTER=<ID=JQ_EXCLUDE_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.">

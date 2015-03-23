@@ -114,7 +114,7 @@
 ##FORMAT=<ID=JQ_MT_DP,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP)">
 ##FORMAT=<ID=JQ_MT_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)">
 ##jacquard.translate.caller=MuTect
-##jacquard.version=0.3
+##jacquard.version=X
 ##jacquard.command=translate C:\Users\jebene\git\Jacquard\test\functional_tests\01_translate\input C:\Users\jebene\Desktop\translate_test --force
 ##jacquard.cwd=C:\Users\jebene\git
 ##FILTER=<ID=JQ_EXCLUDE_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.">

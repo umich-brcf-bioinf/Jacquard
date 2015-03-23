@@ -43,7 +43,7 @@ class PassedTag(object):
                            'Number=1,Type=Integer,'
                            'Description="1 = variant FILTER is PASS in '
                            'original VCF">').format(self.tag_name,
-                                                   CALLER_PASSED_TAG)
+                                                    CALLER_PASSED_TAG)
 
     def add_tag_values(self, vcf_record):
         sample_values = {}

@@ -75,7 +75,7 @@
 ##source=strelka
 ##source_version=2.0.15
 ##startTime=Wed Jul  9 13:37:22 2014
-##jacquard.version=0.3
+##jacquard.version=X
 ##jacquard.command=tag c:\\users\\jebene\\appdata\\local\\temp\\tmpfyxdri\\normalize c:\\users\\jebene\\appdata\\local\\temp\\tmpfyxdri\\tag --force
 ##jacquard.cwd=C:\\Users\\jebene\\git
 ##jacquard.tag.caller=Strelka
@@ -85,7 +85,7 @@
 ##FILTER=<ID=JQ_EXCLUDE,Description="This variant record is problematic and will be excluded from downstream Jacquard processing.">
 ##FILTER=<ID=JQ_MISSING_ALT,Description="The alternate allele is missing for this variant record.">
 ##jacquard.filterHCSomatic.excluded_variants=33
-##jacquard.version=0.3
+##jacquard.version=X
 ##jacquard.command=filter_hc_somatic c:\\users\\jebene\\appdata\\local\\temp\\tmpfyxdri\\tag c:\\users\\jebene\\appdata\\local\\temp\\tmpfyxdri\\filter_hc_somatic --force
 ##jacquard.cwd=C:\\Users\\jebene\\git
 ##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=12

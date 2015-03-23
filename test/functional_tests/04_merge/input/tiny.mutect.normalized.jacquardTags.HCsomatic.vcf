@@ -108,7 +108,7 @@
 ##contig=<ID=chrUn_gl000248,length=39786,assembly=hg19>
 ##contig=<ID=chrUn_gl000249,length=38502,assembly=hg19>
 ##reference=file:ucsc.hg19.fasta
-##jacquard.version=0.3
+##jacquard.version=X
 ##jacquard.command=tag c:\\users\\jebene\\appdata\\local\\temp\\tmptivahf\\normalize c:\\users\\jebene\\appdata\\local\\temp\\tmptivahf\\tag --force
 ##jacquard.cwd=C:\\Users\\jebene\\git
 ##jacquard.tag.caller=MuTect
@@ -116,7 +116,7 @@
 ##FORMAT=<ID=JQ_MT_DP,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP)">
 ##FORMAT=<ID=JQ_MT_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)">
 ##jacquard.filterHCSomatic.excluded_variants=37
-##jacquard.version=0.3
+##jacquard.version=X
 ##jacquard.command=filter_hc_somatic c:\\users\\jebene\\appdata\\local\\temp\\tmptivahf\\tag c:\\users\\jebene\\appdata\\local\\temp\\tmptivahf\\filter_hc_somatic --force
 ##jacquard.cwd=C:\\Users\\jebene\\git
 ##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=12
