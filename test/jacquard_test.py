@@ -228,7 +228,7 @@ class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
             expanded_output = os.path.join(output_dir.path, "expand", "expanded.tsv")
 
             commands = [["translate", initial_input, translate_output, "--force"],
-                        ["filter_hc_somatic", translate_output, filter_output, "--force"],
+                        ["filter", translate_output, filter_output, "--force"],
                         ["merge", filter_output, merge_output, "--force"],
                         ["summarize", merge_output, summarize_output, "--force"],
                         ["expand", summarize_output, expanded_output, "--force"]]

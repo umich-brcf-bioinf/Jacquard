@@ -252,11 +252,19 @@ def get_required_input_output_types():
 
 def add_subparser(subparser):
     # pylint: disable=line-too-long
-    parser = subparser.add_parser("filter_hc_somatic", help="Accepts a directory of Jacquard-tagged VCF results from one or more callers and creates a new directory of VCFs, where rows have been filtered to contain only positions that were called high-confidence somatic in any VCF.")
+    parser = subparser.add_parser("filter", help="Accepts a directory of Jacquard-tagged VCF results from one or more callers and creates a new directory of VCFs, where rows have been filtered to contain only positions that were called high-confidence somatic in any VCF.")
     parser.add_argument("input", help="Path to directory containing VCFs. All VCFs in this directory must have Jacquard-specific tags (see jacquard.py tag for more info")
     parser.add_argument("output", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+    parser.add_argument("--include_variants", choices=["passed", "somatic"], help=("passed: Only include variants which passed their respective filter\n"
+                                                                                   "somatic: Only include somatic variants"))
+
+    parser.add_argument("--include_loci", choices=["any_passed", "all_passed", "any_soamtic", "all_somatic"], help=("any_passed: Include all variants at loci where at least one variant passed\n"
+    # pylint: disable=line-too-long
+                                                                                                                        "all_passed: Include all variants at loci where all variants passed\n"
+                                                                                                                        "any_somatic: Include all variants at loci where at least one variant was somatic\n"
+                                                                                                                        "all_somatic: Include all variants at loci where all variants were somatic"))
 
 def _validate_arguments(args):
     input_dir = os.path.abspath(args.input)

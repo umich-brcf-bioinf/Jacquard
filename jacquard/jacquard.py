@@ -50,7 +50,7 @@ import traceback
 from jacquard import __version__
 import jacquard.command_validator as command_validator
 import jacquard.expand as expand
-import jacquard.filter_hc_somatic as filter_hc_somatic
+import jacquard.filter as filter
 import jacquard.logger as logger
 import jacquard.merge as merge
 import jacquard.summarize as summarize
@@ -60,7 +60,7 @@ from jacquard.variant_callers import variant_caller_factory
 
 
 _SUBCOMMANDS = [translate,
-                filter_hc_somatic,
+                filter,
                 merge,
                 summarize,
                 expand]
