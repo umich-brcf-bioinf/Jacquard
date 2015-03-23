@@ -389,7 +389,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
                                      "##source=strelka\n"
                                      "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_C\tSample_D\n"
                                      "chr2\t32\t.\tA\tT\t.\t.\t.\tDP\t24\t53\n")
-            input_files = [fileA, fileB]
+            input_files = [vcf.FileReader(fileA), vcf.FileReader(fileB)]
             buffered_readers, vcf_readers = merge._create_reader_lists(input_files)
 
             for vcf_reader in vcf_readers:

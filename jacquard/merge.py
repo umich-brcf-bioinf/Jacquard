@@ -151,12 +151,12 @@ def _compile_metaheaders(incoming_headers,
 def _write_metaheaders(file_writer, all_headers):
     file_writer.write("\n".join(all_headers) + "\n")
 
-def _create_reader_lists(input_files):
+def _create_reader_lists(file_readers):
     buffered_readers = []
     vcf_readers = []
 
-    for input_file in input_files:
-        vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
+    for file_reader in file_readers:
+        vcf_reader = vcf.VcfReader(file_reader)
         vcf_readers.append(vcf_reader)
         vcf_reader.open()
 
@@ -435,13 +435,14 @@ def execute(args, execution_context):
         format_tag_regex = _DEFAULT_INCLUDED_FORMAT_TAGS
 
     input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
+    file_readers = [vcf.FileReader(i) for i in input_files]
+    _validate_consistent_samples(file_readers)
 
     try:
         file_writer = vcf.FileWriter(output_path)
         file_writer.open()
 
-        buffered_readers, vcf_readers = _create_reader_lists(input_files)
-
+        buffered_readers, vcf_readers = _create_reader_lists(file_readers)
         vcf_readers = _sort_readers(vcf_readers, output_path)
         all_sample_names, merge_metaheaders = _build_sample_list(vcf_readers)
         coordinates = _build_coordinates(vcf_readers)
