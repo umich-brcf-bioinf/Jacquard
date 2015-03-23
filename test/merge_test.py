@@ -62,14 +62,14 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
                                       ["##jacquard.translate.caller=MuTect"]),
                        MockFileReader("B.strelka.vcf",
                                       ["##jacquard.translate.caller=Strelka"]),
-                       MockFileReader("C.varscan.vcf",
-                                      ["##jacquard.translate.caller=VarScan"])]
+                       MockFileReader("C.mutect.vcf",
+                                      ["##jacquard.translate.caller=MuTect"])]
         merge._validate_consistent_samples(input_files)
 
         actual_log_warnings = test.mock_logger.messages["WARNING"]
-        expected_log_warnings = ["Sample [A] is missing VCF(s): ['Strelka', 'VarScan']",
-                                 "Sample [B] is missing VCF(s): ['MuTect', 'VarScan']",
-                                 "Sample [C] is missing VCF(s): ['MuTect', 'Strelka']",
+        expected_log_warnings = ["Sample [A] is missing VCF(s): ['Strelka']",
+                                 "Sample [B] is missing VCF(s): ['MuTect']",
+                                 "Sample [C] is missing VCF(s): ['Strelka']",
                                  "Some samples appear to be missing VCF(s)"]
         self.assertEquals(expected_log_warnings, actual_log_warnings)
 

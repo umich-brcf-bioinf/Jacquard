@@ -386,9 +386,10 @@ def _get_readers_per_patient(file_readers):
 
 def _validate_consistent_samples(file_readers):
     readers_per_patient = _get_readers_per_patient(file_readers)
-    callers = variant_caller_factory.VariantCallerFactory()._callers
-    all_callers = [i.name for i in callers]
 
+    all_callers = set()
+    for callers in readers_per_patient.values():
+        all_callers.update(callers)
     warning = 0
     for patient, callers in readers_per_patient.items():
         missing_callers = set(all_callers).difference(set(callers))
