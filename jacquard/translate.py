@@ -216,7 +216,11 @@ def execute(args, execution_context):
                 _ExcludeMalformedAlt(),
                 _ExcludeMissingAlt()]
 
-    for trans_vcf_reader in trans_vcf_readers:
+    for i, trans_vcf_reader in enumerate(trans_vcf_readers):
+        logger.info("Translating file {}/{} [{}]",
+                    i + 1,
+                    len(trans_vcf_readers),
+                    trans_vcf_reader.file_name)
         new_filename = _mangle_output_filename(trans_vcf_reader.file_name)
         output_filepath = os.path.join(output_dir, new_filename)
         file_writer = FileWriter(output_filepath)

@@ -46,15 +46,15 @@ def _find_somatic_positions(in_files):
     somatic_positions = {}
     no_jq_tags = []
 
-    total_number_of_files = len(in_files)
-    count = 1
-
     num_records = 0
 
     callers = defaultdict(int)
-    for input_file in in_files:
-        logger.info("Reading [{}] ({}/{})", os.path.basename(input_file), count,
-                    total_number_of_files)
+    for i, input_file in enumerate(in_files):
+        logger.info("Filtering file {}/{} [{}]",
+            i + 1,
+            len(in_files),
+            os.path.basename(input_file))
+
         somatic = 0
         vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
 
@@ -80,8 +80,6 @@ def _find_somatic_positions(in_files):
                            "variants.", os.path.basename(input_file))
 
 #        in_file.close()
-
-        count += 1
 
     total_filtered_records = 0
 
