@@ -17,6 +17,7 @@ so it's imperative that VCF metaheaders be present and accurate.
 """
 from __future__ import absolute_import
 
+from collections import defaultdict
 import glob
 import os
 
@@ -100,6 +101,42 @@ def _mangle_output_filename(input_file):
     basename, extension = os.path.splitext(os.path.basename(input_file))
     return ".".join([basename, _FILE_OUTPUT_SUFFIX, extension.strip(".")])
 
+def _validate_snp_indel_pairings(args):
+    input_path = args.input
+    if not os.path.isdir(input_path):
+        input_path = os.path.dirname(input_path)
+
+#TODO: (jebene) - make this caller agnostic somehow
+    keywords_per_caller = {"varscan": ["snp", "indel"],
+                           "strelka": ["snvs", "indels"]}
+    input_vcfs = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
+    altered_file_names = defaultdict(list)
+
+    for keywords in keywords_per_caller.values():
+        for input_vcf in input_vcfs:
+            basename = os.path.basename(input_vcf)
+            file_names = [i for i in basename.split(".") if i not in keywords]
+            joined_file_names = ".".join(file_names)
+            if len(joined_file_names) != len(basename):
+                altered_file_names[joined_file_names].append(basename)
+
+    if not set([len(i) for i in altered_file_names.values()]) == set([1]):
+        if not args.allow_inconsistent_sample_sets:
+            error = 0
+            for file_names in altered_file_names.values():
+                if len(file_names) % 2 != 0:
+                    message = ("File {} was missing a "
+                               "corresponding snp/indel file.")
+                    logger.error(message, file_names)
+                    error = 1
+            if error:
+                message = ("Some VCFs were missing either a snp/snvs "
+                            "or an indel/indels file. Review "
+                            "inputs/command options to align file "
+                            "pairings or use the flag "
+                            "--allow_inconsistent_sample_sets.")
+                raise utils.UsageError(message)
+
 def validate_args(args):
     unclaimed_readers, trans_vcf_readers = _claim_readers(args)
     if unclaimed_readers and not args.force:
@@ -107,6 +144,7 @@ def validate_args(args):
     elif not trans_vcf_readers:
         raise utils.UsageError(("no vcfs in input dir "
                                 "[{}] can be translated.").format(args.input))
+    _validate_snp_indel_pairings(args)
 
 def _build_validation_message(unclaimed_readers):
     total_unclaimed = len(unclaimed_readers)
