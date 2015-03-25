@@ -79,7 +79,7 @@ def _add_caller_list_values(pattern, vcf_record, jq_global_variable):
         sample_tag[sample] = []
         for tag in tags:
             pattern_match = pattern.match(tag)
-            if pattern_match and tags[tag] != '0':
+            if pattern_match and tags[tag] != "0" and tags[tag] != ".":
                 sample_tag[sample].append(pattern_match.group(1))
 
     for sample in sample_tag:
@@ -94,7 +94,7 @@ def _add_caller_count_values(pattern, vcf_record, jq_global_variable):
     for sample, tags in vcf_record.sample_tag_values.items():
         sample_tag[sample] = 0
         for tag in tags:
-            if pattern.match(tag) and tags[tag] != '0':
+            if pattern.match(tag) and tags[tag] != "0" and tags[tag] != ".":
                 sample_tag[sample] += int(tags[tag])
     vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + jq_global_variable,
                                     sample_tag)
@@ -105,7 +105,7 @@ def _add_sample_count_values(vcf_record,
     count = 0
     for tags in vcf_record.sample_tag_values.values():
         tag_key = JQ_SUMMARY_TAG + jq_callers_global_variable
-        if tag_key in tags and tags[tag_key] != "0":
+        if tag_key in tags and tags[tag_key] != "0" and tags[tag_key] != ".":
             count += 1
 
     info_key = JQ_SUMMARY_TAG + jq_samples_global_variable
