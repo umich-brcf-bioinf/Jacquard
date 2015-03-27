@@ -28,10 +28,18 @@ class MockVariantCallerFactory(object):
             unclaimed = []
             for reader in file_readers:
                 if re.search(r"^claimed.*\.vcf", reader.file_name):
-                    claimed.append(reader)
+                    claimed.append(MockCallerVcfReader(reader))
                 else:
                     unclaimed.append(reader)
             return unclaimed, claimed
+
+class MockCallerVcfReader(object):
+    def __init__(self, file_reader):
+        self._file_reader = file_reader
+
+    @staticmethod
+    def expected_file_format():
+        return ["foo", "bar"]
 
 class TranslateTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
@@ -73,7 +81,8 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             args = Namespace(input=input_dir.path,
                              output=output_dir.path,
-                             allow_inconsistent_sample_sets=0)
+                             allow_inconsistent_sample_sets=0,
+                             varscan_hc_filter_filename=None)
             input_dir.write("claimed.vcf", "foo")
             translate.variant_caller_factory = MockVariantCallerFactory()
             translate.validate_args(args)
@@ -83,7 +92,8 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
         with TempDirectory() as input_dir:
             args = Namespace(input=input_dir.path,
                              force=False,
-                             allow_inconsistent_sample_sets=0)
+                             allow_inconsistent_sample_sets=0,
+                             varscan_hc_filter_filename=None)
             input_dir.write("unclaimed.vcf", "foo")
             input_dir.write("claimed.vcf", "foo")
             translate.variant_caller_factory = MockVariantCallerFactory()
@@ -96,7 +106,8 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
         with TempDirectory() as input_dir:
             args = Namespace(input=input_dir.path,
                              force=True,
-                             allow_inconsistent_sample_sets=0)
+                             allow_inconsistent_sample_sets=0,
+                             varscan_hc_filter_filename=None)
             input_dir.write("unclaimed.vcf", "foo")
             input_dir.write("claimed.vcf", "foo")
             translate.variant_caller_factory = MockVariantCallerFactory()
@@ -106,7 +117,8 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
     def test_validate_args_allUnclaimedThrowsException(self):
         with TempDirectory() as input_dir:
             args = Namespace(input=input_dir.path,
-                             allow_inconsistent_sample_sets=0)
+                             allow_inconsistent_sample_sets=0,
+                             varscan_hc_filter_filename=None)
             translate.variant_caller_factory = MockVariantCallerFactory()
             self.assertRaisesRegexp(utils.UsageError,
                                     "no vcfs in input dir .* can be translated",
@@ -116,7 +128,8 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
     def test_validate_args_fiveUnclaimed(self):
         with TempDirectory() as input_dir:
             args = Namespace(input=input_dir.path,
-                             force=False)
+                             force=False,
+                             varscan_hc_filter_filename=None)
             input_dir.write("unclaimed1.vcf", "foo")
             input_dir.write("unclaimed2.vcf", "foo")
             input_dir.write("unclaimed3.vcf", "foo")
@@ -132,7 +145,8 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
     def test_validate_args_sixUnclaimed(self):
         with TempDirectory() as input_dir:
             args = Namespace(input=input_dir.path,
-                             force=False)
+                             force=False,
+                             varscan_hc_filter_filename=None)
             input_dir.write("unclaimed1.vcf", "foo")
             input_dir.write("unclaimed2.vcf", "foo")
             input_dir.write("unclaimed3.vcf", "foo")
@@ -151,7 +165,8 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
             args = Namespace(input=input_dir.path,
                              output=output_dir.path,
                              force=False,
-                             allow_inconsistent_sample_sets=0)
+                             allow_inconsistent_sample_sets=0,
+                             varscan_hc_filter_filename=None)
             input_dir.write("claimed.snp.vcf", "foo")
             input_dir.write("claimed.indel.vcf", "foo")
             translate.variant_caller_factory = MockVariantCallerFactory()
@@ -163,15 +178,30 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
             args = Namespace(input=input_dir.path,
                              output=output_dir.path,
                              force=False,
-                             allow_inconsistent_sample_sets=0)
-            input_dir.write("claimed.snp.vcf", "foo")
-            input_dir.write("claimed2.snp.vcf", "foo")
-            input_dir.write("claimed2.indel.vcf", "foo")
+                             allow_inconsistent_sample_sets=0,
+                             varscan_hc_filter_filename=None)
+            input_dir.write("claimed.foo.vcf", "foo")
+            input_dir.write("claimed2.foo.vcf", "foo")
+            input_dir.write("claimed2.bar.vcf", "foo")
             translate.variant_caller_factory = MockVariantCallerFactory()
             self.assertRaisesRegexp(utils.UsageError,
                                     "Some VCFs were missing either a snp/snvs or an indel/indels file. Review inputs/command options to align file pairings or use the flag --allow_inconsistent_sample_sets.",
                                     translate.validate_args,
                                     args)
+
+    def test_validate_args_snpIndelPairingAllowInconsistentSampleSetsOK(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path,
+                             force=False,
+                             allow_inconsistent_sample_sets=1,
+                             varscan_hc_filter_filename=None)
+            input_dir.write("claimed.foo.vcf", "foo")
+            input_dir.write("claimed2.foo.vcf", "foo")
+            input_dir.write("claimed2.bar.vcf", "foo")
+            translate.variant_caller_factory = MockVariantCallerFactory()
+            translate.validate_args(args)
+            self.ok()
 
     def test_get_required_input_output_types(self):
         self.assertEquals(("directory", "directory"),

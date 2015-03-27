@@ -59,7 +59,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
         super(CommandValidatorTestCase, self).tearDown()
 
     def test_validation_tasks(self):
-        self.assertEquals(12, len(command_validator._VALIDATION_TASKS))
+        self.assertEquals(11, len(command_validator._VALIDATION_TASKS))
 
     def test_check_output_exists_fileExistsCorrectType(self):
         with TempDirectory() as output_dir:
@@ -531,74 +531,6 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
         args = Namespace()
         command_validator._check_valid_args(mock_module, args)
         self.assertTrue(mock_module.validate_args_called)
-
-    def test_check_snp_indel_pairing_missingIndel(self):
-        with TempDirectory() as input_dir:
-            input_dir.write("patientA.snp.vcf", "foo")
-            input_dir.write("patientA.indel.vcf", "foo")
-            input_dir.write("patientB.snp.vcf", "foo")
-            args = Namespace(input=input_dir.path,
-                             subparser_name="awesomeCommand",
-                             allow_inconsistent_sample_sets=0)
-
-            self.assertRaisesRegexp(utils.UsageError,
-                                    "Some VCFs were missing either a snp/snvs or an indel/indels file. Review inputs/command options to align file pairings or use the flag --allow_inconsistent_sample_sets.",
-                                    command_validator._check_input_snp_indel_pairing,
-                                    None,
-                                    args)
-
-    def test_check_snp_indel_pairing_missingSnvs(self):
-        with TempDirectory() as input_dir:
-            input_dir.write("patientA.snp.vcf", "foo")
-            input_dir.write("patientA.indel.vcf", "foo")
-            input_dir.write("patientB.indels.vcf", "foo")
-            args = Namespace(input=input_dir.path,
-                             subparser_name="awesomeCommand",
-                             allow_inconsistent_sample_sets=0)
-
-            self.assertRaisesRegexp(utils.UsageError,
-                                    "Some VCFs were missing either a snp/snvs or an indel/indels file. Review inputs/command options to align file pairings or use the flag --allow_inconsistent_sample_sets.",
-                                    command_validator._check_input_snp_indel_pairing,
-                                    None,
-                                    args)
-
-    def test_check_snp_indel_pairing_missingSnvsSamePatient(self):
-        with TempDirectory() as input_dir:
-            input_dir.write("patientA.snp.vcf", "foo")
-            input_dir.write("patientA.indel.vcf", "foo")
-            input_dir.write("patientA.indels.vcf", "foo")
-            args = Namespace(input=input_dir.path,
-                             subparser_name="awesomeCommand",
-                             allow_inconsistent_sample_sets=0)
-
-            self.assertRaisesRegexp(utils.UsageError,
-                                    "Some VCFs were missing either a snp/snvs or an indel/indels file. Review inputs/command options to align file pairings or use the flag --allow_inconsistent_sample_sets.",
-                                    command_validator._check_input_snp_indel_pairing,
-                                    None,
-                                    args)
-
-    def test_check_snp_indel_pairing_allSnpOkay(self):
-        with TempDirectory() as input_dir:
-            input_dir.write("patientA.snp.vcf", "foo")
-            input_dir.write("patientB.snp.vcf", "foo")
-            args = Namespace(input=input_dir.path,
-                             subparser_name="awesomeCommand",
-                             allow_inconsistent_sample_sets=0)
-
-            command_validator._check_input_snp_indel_pairing(None, args)
-            self.assertTrue(1, 1)
-
-    def test_check_snp_indel_pairing_withFlag(self):
-        with TempDirectory() as input_dir:
-            input_dir.write("patientA.snp.vcf", "foo")
-            input_dir.write("patientA.indel.vcf", "foo")
-            input_dir.write("patientB.indel.vcf", "foo")
-            args = Namespace(input=input_dir.path,
-                             subparser_name="awesomeCommand",
-                             allow_inconsistent_sample_sets=1)
-
-            command_validator._check_input_snp_indel_pairing(None, args)
-            self.assertTrue(1, 1)
 
 class MockTask(object):
     def __init__(self, error_message=None):

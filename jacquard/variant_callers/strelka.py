@@ -291,6 +291,10 @@ class _StrelkaVcfReader(object):
     def close(self):
         return self._vcf_reader.close()
 
+    @staticmethod
+    def expected_file_format():
+        return ["snvs", "indels"]
+
     @property
     def metaheaders(self):
         new_metaheaders = list(self._vcf_reader.metaheaders)
