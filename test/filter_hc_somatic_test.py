@@ -201,7 +201,7 @@ class FilterHCSomaticFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_filter_hc_somatic(self):
         with TempDirectory() as output_file:
             test_dir = os.path.dirname(os.path.realpath(__file__))
-            module_testdir = os.path.join(test_dir, "functional_tests", "03_filter_hc_somatic")
+            module_testdir = os.path.join(test_dir, "functional_tests", "02_filter_hc_somatic")
             input_file = os.path.join(module_testdir, "input")
 
             command = ["filter_hc_somatic", input_file, output_file.path, "--force"]

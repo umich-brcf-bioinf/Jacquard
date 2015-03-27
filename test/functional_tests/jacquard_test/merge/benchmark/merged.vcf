@@ -1,7 +1,5 @@
 ##fileformat=VCFv4.1
-##jacquard.version=X
-##jacquard.command=merge C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\jacquard_test\filter_hc_somatic\benchmark C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\merge\benchmark\merged.vcf
-##jacquard.cwd=C:\Users\kmeng
+##jacquard=<Timestamp="2015-03-27 10:34:28",Command="<module 'jacquard.merge' from 'C:\Users\jebene\git\Jacquard\jacquard\merge.pyc'>",Cwd="C:\Users\jebene\git">
 ##jacquard.merge.sample=<Column=1,Name=tiny|NORMAL,Source=tiny.mutect.translatedTags.HCsomatic.vcf|tiny.strelka.indels.translatedTags.HCsomatic.vcf|tiny.strelka.snvs.translatedTags.HCsomatic.vcf|tiny.varscan.indel.translatedTags.HCsomatic.vcf|tiny.varscan.snp.translatedTags.HCsomatic.vcf>
 ##jacquard.merge.sample=<Column=2,Name=tiny|TUMOR,Source=tiny.mutect.translatedTags.HCsomatic.vcf|tiny.strelka.indels.translatedTags.HCsomatic.vcf|tiny.strelka.snvs.translatedTags.HCsomatic.vcf|tiny.varscan.indel.translatedTags.HCsomatic.vcf|tiny.varscan.snp.translatedTags.HCsomatic.vcf>
 ##contig=<ID=chr1,length=249250621>

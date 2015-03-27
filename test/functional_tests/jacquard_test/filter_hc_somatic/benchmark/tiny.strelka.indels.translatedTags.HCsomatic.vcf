@@ -63,16 +63,12 @@
 ##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)">
 ##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)">
 ##jacquard.translate.caller=Strelka
-##jacquard.version=X
-##jacquard.command=translate C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\jacquard_test\input\ C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\jacquard_test\translate\benchmark --force
-##jacquard.cwd=C:\Users\kmeng
+##jacquard=<Timestamp="2015-03-27 10:31:37",Command="<module 'jacquard.translate' from 'C:\Users\jebene\git\Jacquard\jacquard\translate.pyc'>",Cwd="C:\Users\jebene\git">
 ##FILTER=<ID=JQ_EXCLUDE_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.">
 ##FILTER=<ID=JQ_EXCLUDE_MALFORMED_ALT,Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.">
 ##FILTER=<ID=JQ_EXCLUDE_MISSING_ALT,Description="The alternate allele is missing for this variant record.">
 ##jacquard.filterHCSomatic.excluded_variants=18
-##jacquard.version=X
-##jacquard.command=filter_hc_somatic C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\jacquard_test\translate\benchmark C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\jacquard_test\filter_hc_somatic\benchmark --force
-##jacquard.cwd=C:\Users\kmeng
+##jacquard=<Timestamp="2015-03-27 10:32:37",Command="<module 'jacquard.filter_hc_somatic' from 'C:\Users\jebene\git\Jacquard\jacquard\filter_hc_somatic.pyc'>",Cwd="C:\Users\jebene\git">
 ##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=13
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NORMAL	TUMOR
 chr1	1696633	.	GA	G	.	PASS	IC=7;IHP=9;NT=ref;QSI=33;QSI_NT=33;RC=8;RU=A;SGT=ref->het;SOMATIC;TQSI=2;TQSI_NT=2	DP:DP2:TAR:TIR:TOR:DP50:FDP50:SUBDP50:JQ_SK_CALLER_REPORTED:JQ_SK_CALLER_PASSED:JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	48:48:46,46:0,0:2,2:44.73:0.00:0.00:1:1:0.0:48:0	45:45:28,28:12,12:6,6:47.86:0.00:0.00:1:1:0.27:45:1

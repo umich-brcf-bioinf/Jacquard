@@ -776,7 +776,7 @@ class MergeFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_merge(self):
         with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
-            module_testdir = os.path.join(test_dir, "functional_tests", "04_merge")
+            module_testdir = os.path.join(test_dir, "functional_tests", "03_merge")
             input_file = os.path.join(module_testdir, "input")
             output_file = os.path.join(output_dir.path, "merged.vcf")
 

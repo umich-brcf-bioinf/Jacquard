@@ -39,6 +39,7 @@ Then architecture of Jacquard modules can be divided into:
 from __future__ import absolute_import, print_function
 
 import argparse
+from datetime import datetime
 import distutils.dir_util
 import os
 import re
@@ -149,16 +150,18 @@ def _version_text():
     return "Jacquard v{0}\nSupported variant callers:\n\t{1}".\
         format(__version__, caller_version_string)
 
+def _get_execution_context(command):
+    cwd = os.path.dirname(os.getcwd())
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    return ['##jacquard=<Timestamp="{}",Command="{}",Cwd="{}">'.format(now,
+                                                                       command,
+                                                                       cwd)]
 
 def _dispatch(modules, arguments):
     try:
         command, args = _parse_command_line_args(modules, arguments)
-
-        cwd = os.path.dirname(os.getcwd())
-        execution_context = [\
-            "##jacquard.version={0}".format(__version__),
-            "##jacquard.command={0}".format(" ".join(arguments)),
-            "##jacquard.cwd={0}".format(cwd)]
+        execution_context = _get_execution_context(command)
 
         logger.initialize_logger(args.subparser_name)
         logger.debug("Jacquard run begins")
