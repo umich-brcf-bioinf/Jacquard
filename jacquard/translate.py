@@ -173,8 +173,9 @@ def _claim_readers(args):
     return factory.claim(file_readers)
 
 def _log_unclaimed_readers(unclaimed_readers):
+    sorted_readers = sorted(unclaimed_readers)
     unclaimed_log_message = "The input file [{}] will not be translated"
-    for reader in unclaimed_readers:
+    for reader in sorted_readers:
         msg = unclaimed_log_message.format(reader.file_name)
         logger.warning(msg)
 
