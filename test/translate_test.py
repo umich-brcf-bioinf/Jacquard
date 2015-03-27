@@ -138,7 +138,7 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
             input_dir.write("claimed.vcf", "foo")
             translate.variant_caller_factory = MockVariantCallerFactory()
             self.assertRaisesRegexp(utils.UsageError,
-                                    r"5 input files \[unclaimed1.vcf, unclaimed2.vcf, unclaimed3.vcf, unclaimed4.vcf, unclaimed5.vcf\] cannot be translated",
+                                    r"5 input files \[.*\] cannot be translated",
                                     translate.validate_args,
                                     args)
 
@@ -156,7 +156,7 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
             input_dir.write("claimed.vcf", "foo")
             translate.variant_caller_factory = MockVariantCallerFactory()
             self.assertRaisesRegexp(utils.UsageError,
-                                    r"6 input files \[unclaimed1.vcf, unclaimed2.vcf, unclaimed3.vcf, unclaimed4.vcf, unclaimed5.vcf, ...\(1 file\(s\) omitted\)\] cannot be translated",
+                                    r"6 input files \[.*, ...\(1 file\(s\) omitted\)\] cannot be translated",
                                     translate.validate_args,
                                     args)
 
