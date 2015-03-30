@@ -15,6 +15,19 @@ def round_two_digits(val):
         return val
     return val
 
+def sort_metaheaders(metaheaders):
+    metaheader_dict = {"##fileformat": 1,
+                       "##jacquard": 2,
+                       "##contig": 3,
+                       "##ALT": 4,
+                       "##FILTER": 5,
+                       "##INFO": 6,
+                       "##FORMAT": 7,
+                       "#CHROM": 8}
+
+    #pylint: disable=line-too-long
+    return sorted(metaheaders, key=lambda metaheader: metaheader_dict[metaheader.split("=")[0].split(".")[0]])
+
 class JQException(Exception):
     """Base class for all run-time exceptions in this module."""
     def __init__(self, msg, *args):
