@@ -52,7 +52,7 @@ def _validate_log_file(log_file):
         raise utils.UsageError(("Jacquard cannot create specified log file "
                                "[{}]. Review inputs and try again."), log_file)
 
-def initialize_logger(args, verbose=False):
+def initialize_logger(args):
     """Sets command name and formatting for subsequent calls to logger"""
 
     global log_filename
@@ -67,7 +67,8 @@ def initialize_logger(args, verbose=False):
                         filename=log_filename)
 
     global _verbose
-    _verbose = verbose
+    if args.verbose:
+        _verbose = args.verbose
 
     start_time = datetime.now().strftime(_DATE_FORMAT)
     global _logging_dict
