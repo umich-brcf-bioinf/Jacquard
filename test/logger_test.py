@@ -38,15 +38,19 @@ class LoggerTestCase(unittest.TestCase):
         self.assertEquals("jacquard.log", os.path.basename(logger.log_filename))
 
     def test_initialize_logger_suppliedFilename(self):
-        tool = "foo"
-        log_filename = "tmp/log.foo"
-        args = Namespace(subparser_name=tool,
-                         log_file=log_filename,
-                         verbose=None)
-        logger.initialize_logger(args)
-        self.assertEquals(['host', 'tool', 'start_time', 'user'],
-                          logger._logging_dict.keys())
-        self.assertEquals(log_filename, logger.log_filename)
+        try:
+            tool = "foo"
+            log_filename = "tmp/log.foo"
+            args = Namespace(subparser_name=tool,
+                             log_file=log_filename,
+                             verbose=None)
+            logger.initialize_logger(args)
+            self.assertEquals(['host', 'tool', 'start_time', 'user'],
+                              logger._logging_dict.keys())
+            self.assertEquals(log_filename, logger.log_filename)
+
+        finally:
+            shutil.rmtree(os.path.dirname(log_filename))
 
     def test_initialize_logger_createsParentDirs(self):
         try:
