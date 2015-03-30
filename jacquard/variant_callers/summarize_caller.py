@@ -3,8 +3,7 @@
 A collection of individual Tag classes hold the metaheader and logic to
 transform Jacquard-standardized VcfRecords.
 """
-#pylint: disable=missing-docstring
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
 import jacquard.utils as utils
 import jacquard.variant_callers.common_tags as common_tags
 import re

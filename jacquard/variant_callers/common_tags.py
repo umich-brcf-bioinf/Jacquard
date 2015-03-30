@@ -1,5 +1,6 @@
 """Common tags used by several callers."""
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
+
 
 CALLER_REPORTED_TAG = "CALLER_REPORTED"
 CALLER_PASSED_TAG = "CALLER_PASSED"

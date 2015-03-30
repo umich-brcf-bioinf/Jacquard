@@ -1,7 +1,7 @@
 #pylint: disable=line-too-long, too-many-public-methods, invalid-name
 #pylint: disable=global-statement, unused-argument, too-few-public-methods
 #pylint: disable=too-many-instance-attributes, no-member
-from __future__ import absolute_import
+from __future__ import print_function, absolute_import, division
 
 from argparse import Namespace
 import os

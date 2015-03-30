@@ -1,5 +1,7 @@
 # pylint: disable=line-too-long,too-many-public-methods,too-few-public-methods
 # pylint: disable=invalid-name,global-statement,too-many-format-args
+from __future__ import print_function, absolute_import, division
+
 import jacquard.logger
 import jacquard.utils as utils
 import jacquard.variant_callers.strelka as strelka

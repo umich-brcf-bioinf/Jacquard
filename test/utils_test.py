@@ -1,8 +1,10 @@
 #pylint: disable=line-too-long, too-many-public-methods, invalid-name
 #pylint: disable=missing-docstring, protected-access, global-statement, too-few-public-methods
-from __future__ import absolute_import, print_function
-import jacquard.utils as utils
+from __future__ import print_function, absolute_import, division
+
 import natsort
+
+import jacquard.utils as utils
 import test.test_case as test_case
 
 

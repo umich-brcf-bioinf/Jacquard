@@ -9,10 +9,13 @@ sample-variant depth is:
     (my_depth - average of all depths) / stddev of all depths
 For this reason, zscore values require the full VCF as one of the inputs.
 """
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
+
 import math
+
 from jacquard import __version__
 import jacquard.utils as utils
+
 
 _JQ_SUMMARY_TAG = "JQ_SUMMARY_"
 

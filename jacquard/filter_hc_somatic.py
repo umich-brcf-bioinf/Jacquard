@@ -1,15 +1,18 @@
 #pylint: disable=too-many-locals
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
+
 from collections import defaultdict
 import collections
 import glob
+import os
+import re
+
+import natsort
+
 import jacquard.logger as logger
 import jacquard.utils as utils
 import jacquard.variant_callers.variant_caller_factory as variant_caller_factory
 import jacquard.vcf as vcf
-import natsort
-import os
-import re
 
 
 _FILE_OUTPUT_SUFFIX = "HCsomatic"

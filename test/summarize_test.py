@@ -1,13 +1,16 @@
 #pylint: disable=invalid-name, global-statement, line-too-long
 #pylint: disable=too-many-public-methods, too-few-public-methods, unused-argument
-from __future__ import absolute_import
+from __future__ import print_function, absolute_import, division
+
 from argparse import Namespace
-from test.vcf_test import MockFileWriter, MockVcfReader
+import os
+
 from testfixtures import TempDirectory
+
 import jacquard.summarize as summarize
 import jacquard.vcf as vcf
-import os
 import test.test_case as test_case
+from test.vcf_test import MockFileWriter, MockVcfReader
 
 
 #TODO (cgates): The module summarize is not adequately unit-tested

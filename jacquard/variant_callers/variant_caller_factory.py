@@ -4,7 +4,7 @@ To keep things simple, fair, and encapsulated route any requests to variant
 callers through this module; likewise, don't directly reference individual
 variant callers outside of this module.
 """
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
 
 import jacquard.logger as logger
 import jacquard.utils as utils

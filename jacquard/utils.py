@@ -3,8 +3,10 @@
 """
 #By placing common functions here instead of in the jacquard module, we avoid
 #circular dependencies. (e.g. jacquard depends on translate depends on jacquard)
-from __future__ import absolute_import, print_function
+from __future__ import print_function, absolute_import, division
+
 import natsort
+
 
 #TODO (cgates): Why does this need a string? Seems like it should take a number?
 def round_two_digits(val):

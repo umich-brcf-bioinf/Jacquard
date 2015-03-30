@@ -3,7 +3,7 @@
 MuTect VCFs are assumed to have a ".vcf" extension and have a valid
 "##MuTect=..." metaheader.
 """
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
 import jacquard.utils as utils
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.vcf as vcf

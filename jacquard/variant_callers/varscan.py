@@ -17,7 +17,7 @@
 
 See tag definitions for more info.
 """
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
 
 from collections import defaultdict, OrderedDict
 import os
@@ -312,10 +312,10 @@ class Varscan(object):
 
     @staticmethod
     def _dictionaries_to_tuples(vcf_dict, filter_dict):
-        flipped_filter = OrderedDict((y, x) for x, y in filter_dict.iteritems())
+        flipped_filter = OrderedDict((y, x) for x, y in filter_dict.items())
         pairs = vcf_dict.copy()
         pairs.update(flipped_filter)
-        return [(k, v) for k, v in pairs.iteritems()]
+        return [(k, v) for k, v in pairs.items()]
 
     def _pair_files(self, prefixes, filter_files):
         vcf_dict = OrderedDict()

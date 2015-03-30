@@ -1,7 +1,7 @@
 # pylint: disable=line-too-long, global-statement, unused-argument
 # pylint: disable=invalid-name, too-many-locals, too-many-public-methods
 # pylint: disable=too-few-public-methods
-from __future__ import absolute_import
+from __future__ import print_function, absolute_import, division
 
 from argparse import Namespace
 import os
@@ -91,7 +91,6 @@ class JacquardTestCase(test_case.JacquardBaseTestCase):
 
             actual_messages = self.output.getvalue().rstrip().split("\n")
 
-            print actual_messages
             self.assertEquals(2, len(actual_messages))
             self.assertRegexpMatches(actual_messages[0], "I'm feeling angry")
             self.assertRegexpMatches(actual_messages[1], "Jacquard encountered an unanticipated problem.")

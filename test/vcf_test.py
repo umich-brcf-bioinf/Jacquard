@@ -1,6 +1,8 @@
 #pylint: disable=line-too-long,too-many-public-methods,invalid-name
 #pylint: disable=missing-docstring,protected-access,too-few-public-methods
 #pylint: disable=too-many-arguments,too-many-instance-attributes
+from __future__ import print_function, absolute_import, division
+
 from StringIO import StringIO
 from collections import OrderedDict
 import os
@@ -13,6 +15,7 @@ from testfixtures import TempDirectory
 import jacquard.utils as utils
 from jacquard.vcf import VcfRecord, VcfReader, FileWriter, FileReader
 import test.test_case as test_case
+
 
 class MockFileWriter(object):
     def __init__(self):
@@ -59,9 +62,8 @@ class MockFileReader(object):
         self.close_was_called = True
         self.lines_to_iterate = None
 
-    def __cmp__(self, other):
-        return cmp(self.file_name, other.file_name)
-
+    def __lt__(self, other):
+        return self.file_name < other.file_name
 
 class MockWriter(object):
     def __init__(self):
@@ -721,9 +723,10 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
 
         reader.open()
         record_iter = reader.vcf_records()
-        record_iter.next()
+        next(record_iter)
         self.assertRaises(StopIteration,
-                          record_iter.next)
+                          next,
+                          record_iter)
 
     def test_vcf_records_raisesTypeErrorWhenClosed(self):
         file_contents = ["##metaheader1\n",
@@ -734,7 +737,8 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
 
         record_iter = reader.vcf_records()
         self.assertRaises(TypeError,
-                          record_iter.next)
+                          next,
+                          record_iter)
 
     def test_noColumnHeaders(self):
         mock_reader = MockFileReader("my_dir/my_file.txt", ["##metaheader\n"])
@@ -829,7 +833,7 @@ class FileReaderTestCase(unittest.TestCase):
             input_file.write("A.tmp", "1\n2\n3")
             reader = FileReader(os.path.join(input_file.path, "A.tmp"))
             line_iter = reader.read_lines()
-            self.assertRaises(TypeError, line_iter.next)
+            self.assertRaises(TypeError, next, line_iter)
 
 class FileWriterTestCase(unittest.TestCase):
     def test_equality(self):

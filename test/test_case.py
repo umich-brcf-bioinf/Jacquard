@@ -1,14 +1,16 @@
 #pylint: disable=too-many-public-methods, invalid-name, no-self-use
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
+
+from StringIO import StringIO
 import os
 import shutil
-from StringIO import StringIO
 import sys
 import unittest
 
 import jacquard.jacquard as jacquard
 import jacquard.logger as logger
 import jacquard.vcf as vcf
+
 
 class JacquardBaseTestCase(unittest.TestCase):
     def setUp(self):

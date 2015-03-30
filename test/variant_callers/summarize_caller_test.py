@@ -1,9 +1,10 @@
 #pylint: disable=too-few-public-methods, invalid-name, line-too-long
 #pylint: disable=too-many-instance-attributes, too-many-public-methods
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
 
 import re
 
+from jacquard.utils import JQException
 import jacquard.utils as utils
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.variant_callers.mutect as mutect
@@ -11,7 +12,6 @@ import jacquard.variant_callers.summarize_caller as summarize_caller
 import jacquard.variant_callers.varscan as varscan
 from jacquard.vcf import VcfRecord
 import test.test_case as test_case
-from jacquard.utils import JQException
 
 
 class CallersReportedListTagTestCase(test_case.JacquardBaseTestCase):

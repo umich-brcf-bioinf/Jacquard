@@ -11,7 +11,7 @@ Will create a column for each:
 Expand relies on accurate metaheaders; it will not expand any fields absent
 from the metaheaders.
 """
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
 import os
 import re
 
@@ -56,9 +56,10 @@ def _create_row_dict(column_list, vcf_record):
         for format_key, format_value in format_key_values.items():
             row_dict[format_key + "|" + sample_name] = format_value
 
-    row_dict = dict(row_dict.items() + vcf_record.info_dict.items())
+    new_dict = row_dict.copy()
+    new_dict.update(vcf_record.info_dict)
 
-    return row_dict
+    return new_dict
 
 def _create_actual_column_list(column_spec_list,
                                potential_col_list,

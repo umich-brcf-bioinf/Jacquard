@@ -9,7 +9,7 @@
 
 See tag definitions for more info.
 """
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
 
 from collections import defaultdict, OrderedDict
 import os

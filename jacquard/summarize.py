@@ -3,7 +3,7 @@
 Collaborates with two summary "callers" to add INFO and FORMAT tags to each
 variant record based on the presence of previously translated tags.
 """
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
 
 import os
 

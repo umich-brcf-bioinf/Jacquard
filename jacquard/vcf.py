@@ -1,12 +1,15 @@
 """Classes to parse, interpret, and manipulate VCF files and records."""
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
+
 from collections import OrderedDict
-import natsort
 import os
 import re
 import sys
 
+import natsort
+
 import jacquard.utils as utils
+
 
 #TODO: (cgates): add context management to open/close
 class VcfReader(object):
@@ -55,7 +58,7 @@ class VcfReader(object):
     def _init_sample_names(self):
         sample_names = []
         column_fields = self.column_header.split("\t")
-        if column_fields > 8:
+        if len(column_fields) > 8:
             sample_names = column_fields[9:]
 
         return sample_names
@@ -264,7 +267,7 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
         """Returns set of format tags."""
         tags = VcfRecord._EMPTY_SET
         if self.sample_tag_values:
-            first_sample = self.sample_tag_values.keys()[0]
+            first_sample = list(self.sample_tag_values.keys())[0]
             tags = set(self.sample_tag_values[first_sample].keys())
         return tags
 
@@ -328,7 +331,7 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
         """Returns string representation of format field."""
         format_field = "."
         if self.sample_tag_values:
-            first_sample = self.sample_tag_values.keys()[0]
+            first_sample = list(self.sample_tag_values.keys())[0]
             tag_names = self.sample_tag_values[first_sample].keys()
             if tag_names:
                 format_field = ":".join(tag_names)
@@ -396,8 +399,8 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
     def __hash__(self):
         return hash(self._key)
 
-    def __cmp__(self, other):
-        return cmp(self._key, other._key)
+    def __lt__(self, other):
+        return self._key < other._key
 
 
 #TODO cgates: add context management to open/close
@@ -458,6 +461,7 @@ class FileReader(object):
     def __hash__(self):
         return hash(self.input_filepath)
 
-    def __cmp__(self, other):
+    def __lt__(self, other):
         key = natsort.natsort_keygen()
-        return cmp(key(self.file_name), key(other.file_name))
+        return key(self.file_name) < key(other.file_name)
+

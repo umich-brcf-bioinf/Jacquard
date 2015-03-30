@@ -5,7 +5,7 @@ Debug messages are written to file unless logger is initialized as verbose (in
 which case debug is also echoed to console).
 """
 #pylint: disable=invalid-name, global-statement
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
 
 from datetime import datetime
 import errno

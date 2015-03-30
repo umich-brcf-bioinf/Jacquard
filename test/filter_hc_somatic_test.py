@@ -1,15 +1,18 @@
 # pylint: disable=line-too-long, invalid-name, global-statement, star-args, too-many-public-methods, too-few-public-methods
-from __future__ import absolute_import
+from __future__ import print_function, absolute_import, division
+
 from argparse import Namespace
+import os
+
 from testfixtures import TempDirectory
+
 import jacquard.filter_hc_somatic as filter_hc_somatic
 import jacquard.logger
-import os
 import test.mock_logger
 import test.test_case as test_case
 
-#TODO: (cgates): These tests should start using mocked readers/writers and stop using the file system
 
+#TODO: (cgates): These tests should start using mocked readers/writers and stop using the file system
 VCF_HEADER = "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsampleA\tsampleB\n"
 
 class FilterSomaticTestCase(test_case.JacquardBaseTestCase):

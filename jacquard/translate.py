@@ -15,7 +15,7 @@ Unrecognized VCFs are not copied to output.
 The origin caller of a VCFs is recognized in part by the content of metaheaders,
 so it's imperative that VCF metaheaders be present and accurate.
 """
-from __future__ import absolute_import
+from __future__ import print_function, absolute_import, division
 
 from collections import defaultdict
 import glob

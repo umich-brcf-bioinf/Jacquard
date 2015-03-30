@@ -21,10 +21,10 @@
 * Each variant record will have the minimal set of incoming format tags for
     that variant (i.e. the list of format tags is specific to each record).
 * Incoming QUAL and INFO fields are ignored.
-* By default, merge only includes "Jacqaurd" FORMAT tags, but other tags can be
+* By default, merge only includes "Jacquard" FORMAT tags, but other tags can be
     included through and optional a command line arg.
 """
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
 
 from collections import defaultdict, OrderedDict
 import glob
@@ -74,7 +74,10 @@ class _BufferedReader(object):
     #pylint: disable=too-few-public-methods
     def __init__(self, iterator):
         self._iterator = iterator
-        self._current_element = self._iterator.next()
+        try:
+            self._current_element = next(self._iterator)
+        except StopIteration:
+            self._current_element = self._iterator
 
     def next_if_equals(self, requested_element):
         result = None
@@ -85,7 +88,7 @@ class _BufferedReader(object):
 
     def _get_next(self):
         try:
-            return self._iterator.next()
+            return next(self._iterator)
         except StopIteration:
             return None
 
@@ -383,7 +386,7 @@ def _get_readers_per_patient(file_readers):
                 readers_per_patient[patient].append(line.split("=")[1])
         file_reader.close()
 
-    return OrderedDict(sorted(readers_per_patient.iteritems()))
+    return OrderedDict(sorted(readers_per_patient.items()))
 
 def _validate_consistent_samples(file_readers):
     readers_per_patient = _get_readers_per_patient(file_readers)
