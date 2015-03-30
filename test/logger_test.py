@@ -1,7 +1,6 @@
 #pylint: disable=line-too-long, invalid-name, too-many-public-methods
 from __future__ import print_function, absolute_import, division
 
-from StringIO import StringIO
 from argparse import Namespace
 from datetime import datetime
 import os
@@ -10,6 +9,14 @@ import sys
 import unittest
 
 import jacquard.logger as logger
+
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+
+
 
 
 class LoggerTestCase(unittest.TestCase):

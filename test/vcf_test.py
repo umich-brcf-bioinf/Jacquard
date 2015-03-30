@@ -3,7 +3,6 @@
 #pylint: disable=too-many-arguments,too-many-instance-attributes
 from __future__ import print_function, absolute_import, division
 
-from StringIO import StringIO
 from collections import OrderedDict
 import os
 import re
@@ -15,6 +14,14 @@ from testfixtures import TempDirectory
 import jacquard.utils as utils
 from jacquard.vcf import VcfRecord, VcfReader, FileWriter, FileReader
 import test.test_case as test_case
+
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+
+
 
 
 class MockFileWriter(object):
