@@ -189,6 +189,33 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
                                     translate.validate_args,
                                     args)
 
+    def test_validate_args_allSnpsOkay(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path,
+                             force=False,
+                             allow_inconsistent_sample_sets=0,
+                             varscan_hc_filter_filename=None)
+            input_dir.write("claimed.snp.vcf", "foo")
+            input_dir.write("claimed2.snp.vcf", "foo")
+            translate.variant_caller_factory = MockVariantCallerFactory()
+            translate.validate_args(args)
+            self.ok()
+
+    def test_validate_args_allIndelsOkay(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path,
+                             force=False,
+                             allow_inconsistent_sample_sets=0,
+                             varscan_hc_filter_filename=None)
+            input_dir.write("claimed.indels.vcf", "foo")
+            input_dir.write("claimed2.indels.vcf", "foo")
+            input_dir.write("claimed3.indels.vcf", "foo")
+            translate.variant_caller_factory = MockVariantCallerFactory()
+            translate.validate_args(args)
+            self.ok()
+
     def test_validate_args_snpIndelPairingAllowInconsistentSampleSetsOK(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             args = Namespace(input=input_dir.path,
