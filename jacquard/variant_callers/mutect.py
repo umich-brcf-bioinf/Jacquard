@@ -227,6 +227,7 @@ class _MutectVcfReader(object):
         caller_metaheader = "##jacquard.translate.caller={0}".\
                 format(self._caller.name)
         new_metaheaders.append(caller_metaheader)
+
         return new_metaheaders
 
     @property

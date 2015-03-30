@@ -1,31 +1,31 @@
 ##fileformat=VCFv4.1
+##jacquard.translate.caller=VarScan
+##jacquard=<Timestamp="2015-03-30 13:44:08",Command="<module 'jacquard.translate' from 'C:\Users\jebene\git\Jacquard\jacquard\translate.pyc'>",Cwd="C:\Users\jebene\git">
 ##source=VarScan2
+##FILTER=<ID=JQ_EXCLUDE_MALFORMED_ALT,Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.">
+##FILTER=<ID=JQ_EXCLUDE_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.">
+##FILTER=<ID=JQ_EXCLUDE_MISSING_ALT,Description="The alternate allele is missing for this variant record.">
+##FILTER=<ID=JQ_VS_LOW_CONFIDENCE,Number=1,Type=Flag,Description="Jacquard high-confidence somatic flag for VarScan. Based on intersection with filtered VarScan variants">
+##FILTER=<ID=indelError,Description="Likely artifact due to indel reads at this position">
+##FILTER=<ID=str10,Description="Less than 10% or more than 90% of variant supporting reads on one strand">
 ##INFO=<ID=DP,Number=1,Type=Integer,Description="Total depth of quality bases">
+##INFO=<ID=GPV,Number=1,Type=Float,Description="Fisher's Exact Test P-value of tumor+normal versus no variant for Germline calls">
 ##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description="Indicates if record is a somatic mutation">
+##INFO=<ID=SPV,Number=1,Type=Float,Description="Fisher's Exact Test P-value of tumor versus normal for Somatic/LOH calls">
 ##INFO=<ID=SS,Number=1,Type=String,Description="Somatic status of variant (0=Reference,1=Germline,2=Somatic,3=LOH, or 5=Unknown)">
 ##INFO=<ID=SSC,Number=1,Type=String,Description="Somatic score in Phred scale (0-255) derived from somatic p-value">
-##INFO=<ID=GPV,Number=1,Type=Float,Description="Fisher's Exact Test P-value of tumor+normal versus no variant for Germline calls">
-##INFO=<ID=SPV,Number=1,Type=Float,Description="Fisher's Exact Test P-value of tumor versus normal for Somatic/LOH calls">
-##FILTER=<ID=str10,Description="Less than 10% or more than 90% of variant supporting reads on one strand">
-##FILTER=<ID=indelError,Description="Likely artifact due to indel reads at this position">
-##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
-##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
-##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
-##FORMAT=<ID=RD,Number=1,Type=Integer,Description="Depth of reference-supporting bases (reads1)">
 ##FORMAT=<ID=AD,Number=1,Type=Integer,Description="Depth of variant-supporting bases (reads2)">
-##FORMAT=<ID=FREQ,Number=1,Type=String,Description="Variant allele frequency">
 ##FORMAT=<ID=DP4,Number=1,Type=String,Description="Strand read counts: ref/fwd, ref/rev, var/fwd, var/rev">
-##FILTER=<ID=JQ_VS_LOW_CONFIDENCE,Number=1,Type=Flag,Description="Jacquard high-confidence somatic flag for VarScan. Based on intersection with filtered VarScan variants">
-##FORMAT=<ID=JQ_VS_CALLER_REPORTED,Number=1,Type=Integer,Description="1 = variant present in original VCF">
-##FORMAT=<ID=JQ_VS_CALLER_PASSED,Number=1,Type=Integer,Description="1 = variant FILTER is PASS in original VCF">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+##FORMAT=<ID=FREQ,Number=1,Type=String,Description="Variant allele frequency">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
 ##FORMAT=<ID=JQ_VS_AF,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)">
+##FORMAT=<ID=JQ_VS_CALLER_PASSED,Number=1,Type=Integer,Description="1 = variant FILTER is PASS in original VCF">
+##FORMAT=<ID=JQ_VS_CALLER_REPORTED,Number=1,Type=Integer,Description="1 = variant present in original VCF">
 ##FORMAT=<ID=JQ_VS_DP,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)">
 ##FORMAT=<ID=JQ_VS_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)">
-##jacquard.translate.caller=VarScan
-##jacquard=<Timestamp="2015-03-27 10:31:37",Command="<module 'jacquard.translate' from 'C:\Users\jebene\git\Jacquard\jacquard\translate.pyc'>",Cwd="C:\Users\jebene\git">
-##FILTER=<ID=JQ_EXCLUDE_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.">
-##FILTER=<ID=JQ_EXCLUDE_MALFORMED_ALT,Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.">
-##FILTER=<ID=JQ_EXCLUDE_MISSING_ALT,Description="The alternate allele is missing for this variant record.">
+##FORMAT=<ID=RD,Number=1,Type=Integer,Description="Depth of reference-supporting bases (reads1)">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NORMAL	TUMOR
 chr1	13116	.	T	G	.	JQ_VS_LOW_CONFIDENCE	DP=29;SS=1;SSC=14;GPV=1E0;SPV=3.2884E-2	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/1:.:14:12:2:14.29%:8,4,0,2:1:0:0.14:14:0	0/1:.:15:7:8:53.33%:3,4,1,7:1:0:0.53:15:0
 chr1	13118	.	A	G	.	JQ_VS_LOW_CONFIDENCE	DP=28;SS=1;SSC=16;GPV=1E0;SPV=2.3036E-2	GT:GQ:DP:RD:AD:FREQ:DP4:JQ_VS_CALLER_REPORTED:JQ_VS_CALLER_PASSED:JQ_VS_AF:JQ_VS_DP:JQ_VS_HC_SOM	0/1:.:14:12:2:14.29%:8,4,0,2:1:0:0.14:14:0	0/1:.:14:6:8:57.14%:3,3,1,7:1:0:0.57:14:0

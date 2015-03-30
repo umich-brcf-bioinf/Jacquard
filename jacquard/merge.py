@@ -141,11 +141,13 @@ def _compile_metaheaders(incoming_headers,
     for tag in format_tags_to_keep:
         ordered_metaheaders.append(all_format_metaheaders[tag])
 
+    sorted_metaheaders = utils.sort_metaheaders(ordered_metaheaders)
+
     column_header = vcf_readers[0].column_header.split("\t")[0:9]
     column_header.extend(all_sample_names)
-    ordered_metaheaders.append("\t".join(column_header))
+    sorted_metaheaders.append("\t".join(column_header))
 
-    return ordered_metaheaders
+    return sorted_metaheaders
 
 def _write_metaheaders(file_writer, all_headers):
     file_writer.write("\n".join(all_headers) + "\n")

@@ -4,11 +4,14 @@ Collaborates with two summary "callers" to add INFO and FORMAT tags to each
 variant record based on the presence of previously translated tags.
 """
 from __future__ import print_function, absolute_import
+
+import os
+
 import jacquard.logger as logger
+import jacquard.utils as utils
 import jacquard.variant_callers.summarize_caller as summarize_caller
 import jacquard.variant_callers.zscore_caller as zscore_caller
 import jacquard.vcf as vcf
-import os
 
 
 def _write_metaheaders(caller,
@@ -25,8 +28,10 @@ def _write_metaheaders(caller,
     if new_meta_headers:
         new_headers.append(new_meta_headers)
 
-    new_headers.append(vcf_reader.column_header)
-    file_writer.write("\n".join(new_headers) +"\n")
+    sorted_metaheaders = utils.sort_metaheaders(new_headers)
+    sorted_metaheaders.append(vcf_reader.column_header)
+
+    file_writer.write("\n".join(sorted_metaheaders) +"\n")
 
 def _write_to_tmp_file(caller, vcf_reader, tmp_writer):
     vcf_reader.open()
@@ -47,13 +52,15 @@ def _write_zscores(caller,
                    vcf_reader,
                    file_writer):
 
+#TODO: (jebene) make zscores and tmp file follow the same pattern when writing
     try:
         file_writer.open()
         headers = list(metaheaders)
         headers.extend(vcf_reader.metaheaders)
         headers.extend(caller.metaheaders)
-        headers.append(vcf_reader.column_header)
-        file_writer.write("\n".join(headers) +"\n")
+        sorted_metaheaders = utils.sort_metaheaders(headers)
+        sorted_metaheaders.append(vcf_reader.column_header)
+        file_writer.write("\n".join(sorted_metaheaders) +"\n")
 
         vcf_reader.open()
         for vcf_record in vcf_reader.vcf_records():

@@ -165,7 +165,7 @@ class FilterSomaticTestCase(test_case.JacquardBaseTestCase):
     def test_sort_sortHeaders(self):
         headers = ["##foo", "##bar", "#CHROM", "##baz"]
         sorted_headers = filter_hc_somatic._sort_headers(headers)
-        expected_sorted_headers = ["##foo", "##bar", "##baz", "#CHROM"]
+        expected_sorted_headers = ["##bar", "##baz", "##foo", "#CHROM"]
         self.assertEqual(expected_sorted_headers, sorted_headers)
 
 

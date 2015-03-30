@@ -33,9 +33,9 @@ class SummarizeTestCase(test_case.JacquardBaseTestCase):
         summarize._write_metaheaders(caller,
                                      vcf_reader,
                                      file_writer,
-                                     ["execution_context"])
-        expected = ["##metaheaders",
-                    "execution_context",
+                                     ["##execution_context"])
+        expected = ["##execution_context",
+                    "##metaheaders",
                     "##summarize_metaheader",
                     "#header"]
         self.assertEquals(expected, file_writer.lines())

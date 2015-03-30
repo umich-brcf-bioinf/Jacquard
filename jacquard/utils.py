@@ -4,7 +4,7 @@
 #By placing common functions here instead of in the jacquard module, we avoid
 #circular dependencies. (e.g. jacquard depends on translate depends on jacquard)
 from __future__ import absolute_import, print_function
-
+import natsort
 
 #TODO (cgates): Why does this need a string? Seems like it should take a number?
 def round_two_digits(val):
@@ -25,8 +25,16 @@ def sort_metaheaders(metaheaders):
                        "##FORMAT": 7,
                        "#CHROM": 8}
 
-    #pylint: disable=line-too-long
-    return sorted(metaheaders, key=lambda metaheader: metaheader_dict[metaheader.split("=")[0].split(".")[0]])
+    for metaheader in metaheaders:
+        prefix = metaheader.split("=")[0]
+        if prefix not in metaheader_dict:
+            metaheader_dict[prefix] = 2
+
+    nat_sorted_metaheaders = natsort.natsorted(metaheaders)
+
+    return sorted(nat_sorted_metaheaders,
+                  key=lambda metaheader: metaheader_dict[metaheader\
+                                                         .split("=")[0]])
 
 class JQException(Exception):
     """Base class for all run-time exceptions in this module."""

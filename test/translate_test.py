@@ -260,9 +260,9 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
         new_tags = [MockTag(metaheader="##newTag1"),
                     MockTag(metaheader="##newTag2")]
         translate._write_headers(reader, new_tags, execution_context, writer)
-        expected_headers = ["##mockCallerMetaheader1",
-                            "##foo1=bar",
+        expected_headers = ["##foo1=bar",
                             "##foo2=baz",
+                            "##mockCallerMetaheader1",
                             "##newTag1",
                             "##newTag2",
                             "#CHROM\tPOS\tREF\tALT\tStuff"]

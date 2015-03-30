@@ -117,9 +117,7 @@ def _write_somatic(in_files, output_file, somatic_positions, execution_context):
         actual_sorted_variants = []
 
         new_file = _mangle_output_filenames(input_file)
-
         in_file = open(input_file, "r")
-
         out_file = open(os.path.join(output_file, new_file), "w")
 
         for line in in_file:
@@ -193,9 +191,10 @@ def _sort_headers(headers):
         else:
             field_header = header
 
-    meta_headers.append(field_header)
+    sorted_metaheaders = utils.sort_metaheaders(meta_headers)
+    sorted_metaheaders.append(field_header)
 
-    return meta_headers
+    return sorted_metaheaders
 
 def _build_readers(input_files):
     vcf_readers = []

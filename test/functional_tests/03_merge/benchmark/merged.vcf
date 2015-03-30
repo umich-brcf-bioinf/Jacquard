@@ -1,7 +1,7 @@
 ##fileformat=VCFv4.1
-##jacquard=<Timestamp="2015-03-27 10:25:23",Command="<module 'jacquard.merge' from 'C:\Users\jebene\git\Jacquard\jacquard\merge.pyc'>",Cwd="C:\Users\jebene\git">
 ##jacquard.merge.sample=<Column=1,Name=tiny|NORMAL,Source=tiny.mutect.normalized.jacquardTags.HCsomatic.vcf|tiny.strelka.normalized.jacquardTags.HCsomatic.vcf|tiny.varscan.normalized.jacquardTags.HCsomatic.vcf>
 ##jacquard.merge.sample=<Column=2,Name=tiny|TUMOR,Source=tiny.mutect.normalized.jacquardTags.HCsomatic.vcf|tiny.strelka.normalized.jacquardTags.HCsomatic.vcf|tiny.varscan.normalized.jacquardTags.HCsomatic.vcf>
+##jacquard=<Timestamp="2015-03-30 13:37:01",Command="<module 'jacquard.merge' from 'C:\Users\jebene\git\Jacquard\jacquard\merge.pyc'>",Cwd="C:\Users\jebene\git">
 ##contig=<ID=chr1,length=249250621>
 ##contig=<ID=chr2,length=243199373>
 ##contig=<ID=chr3,length=198022430>

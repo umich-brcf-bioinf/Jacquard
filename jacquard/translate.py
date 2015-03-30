@@ -205,9 +205,11 @@ def _write_headers(reader, new_tags, execution_context, file_writer):
     headers.extend(execution_context)
     for tag in new_tags:
         headers.append(tag.metaheader)
-    headers.append(reader.column_header)
 
-    file_writer.write("\n".join(headers) + "\n")
+    sorted_headers = utils.sort_metaheaders(headers)
+    sorted_headers.append(reader.column_header)
+
+    file_writer.write("\n".join(sorted_headers) + "\n")
 
 def get_required_input_output_types():
     return ("directory", "directory")
