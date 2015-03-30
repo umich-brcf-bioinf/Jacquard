@@ -163,7 +163,7 @@ def _dispatch(modules, arguments):
         command, args = _parse_command_line_args(modules, arguments)
         execution_context = _get_execution_context(command)
 
-        logger.initialize_logger(args.subparser_name)
+        logger.initialize_logger(args)
         logger.debug("Jacquard run begins")
         logger.debug("cwd|{}", os.getcwd())
         logger.debug("command|{}", " ".join(arguments))

@@ -75,6 +75,7 @@ def add_subparser(subparser):
     parser.add_argument("output", help="Path to output VCf")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+    parser.add_argument("--log_file", help="Log file destination")
 
 def report_prediction(args):
     return set([os.path.basename(args.output)])

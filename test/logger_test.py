@@ -1,9 +1,12 @@
 #pylint: disable=line-too-long, invalid-name, too-many-public-methods
+from StringIO import StringIO
+from argparse import Namespace
 from datetime import datetime
 import os
+import shutil
 import sys
-from StringIO import StringIO
 import unittest
+
 import jacquard.logger as logger
 
 
@@ -20,15 +23,41 @@ class LoggerTestCase(unittest.TestCase):
         except OSError:
             pass
 
-    def test_initialize_logger(self):
+    def test_initialize_logger_defaultFilename(self):
         tool = "foo"
-        logger.initialize_logger(tool)
+        args = Namespace(subparser_name=tool,
+                         log_file=None)
+        logger.initialize_logger(args)
         self.assertEquals(['host', 'tool', 'start_time', 'user'],
                           logger._logging_dict.keys())
+        self.assertEquals("jacquard.log", os.path.basename(logger.log_filename))
+
+    def test_initialize_logger_suppliedFilename(self):
+        tool = "foo"
+        log_filename = "tmp/log.foo"
+        args = Namespace(subparser_name=tool,
+                         log_file=log_filename)
+        logger.initialize_logger(args)
+        self.assertEquals(['host', 'tool', 'start_time', 'user'],
+                          logger._logging_dict.keys())
+        self.assertEquals(log_filename, logger.log_filename)
+
+    def test_initialize_logger_createsParentDirs(self):
+        try:
+            tool = "foo"
+            log_filename = "tmp/log.foo"
+            args = Namespace(subparser_name=tool,
+                             log_file=log_filename)
+            logger.initialize_logger(args)
+            self.assertTrue(os.path.isdir(os.path.dirname(log_filename)))
+        finally:
+            shutil.rmtree(os.path.dirname(log_filename))
 
     def test_error(self):
         tool = "foo"
-        logger.initialize_logger(tool)
+        args = Namespace(subparser_name=tool,
+                         log_file=None)
+        logger.initialize_logger(args)
         logger.error("bar")
 
         root_logger = logger.logging.getLogger()
@@ -43,7 +72,9 @@ class LoggerTestCase(unittest.TestCase):
 
     def test_warning(self):
         tool = "foo"
-        logger.initialize_logger(tool)
+        args = Namespace(subparser_name=tool,
+                         log_file=None)
+        logger.initialize_logger(args)
         self.assertFalse(logger.WARNING_OCCURRED)
         logger.warning("bar")
         self.assertTrue(logger.WARNING_OCCURRED)
@@ -57,7 +88,9 @@ class LoggerTestCase(unittest.TestCase):
 
     def test_info(self):
         tool = "foo"
-        logger.initialize_logger(tool)
+        args = Namespace(subparser_name=tool,
+                         log_file=None)
+        logger.initialize_logger(args)
         current_time = datetime.now()
 
         logger.info("bar")
@@ -78,7 +111,9 @@ class LoggerTestCase(unittest.TestCase):
 
     def test_info_message_args(self):
         tool = "foo"
-        logger.initialize_logger(tool)
+        args = Namespace(subparser_name=tool,
+                         log_file=None)
+        logger.initialize_logger(args)
         current_time = datetime.now()
 
         logger.info("bar {}/{}", "1", "2")
@@ -99,7 +134,9 @@ class LoggerTestCase(unittest.TestCase):
 
     def test_debug(self):
         tool = "foo"
-        logger.initialize_logger(tool)
+        args = Namespace(subparser_name=tool,
+                         log_file=None)
+        logger.initialize_logger(args)
 
         logger.debug("bar")
 
@@ -110,7 +147,9 @@ class LoggerTestCase(unittest.TestCase):
 
     def test_debug_consoleWhenVerbose(self):
         tool = "foo"
-        logger.initialize_logger(tool, True)
+        args = Namespace(subparser_name=tool,
+                         log_file=None)
+        logger.initialize_logger(args, True)
         logger.debug("bar")
         root_logger = logger.logging.getLogger()
 
@@ -123,7 +162,9 @@ class LoggerTestCase(unittest.TestCase):
 
     def test_debug_noConsoleWhenNotVerbose(self):
         tool = "foo"
-        logger.initialize_logger(tool)
+        args = Namespace(subparser_name=tool,
+                         log_file=None)
+        logger.initialize_logger(args)
 
         logger.debug("bar")
 
@@ -134,7 +175,9 @@ class LoggerTestCase(unittest.TestCase):
 
     def test_noExceptionOnMalformedMessage(self):
         tool = "foo"
-        logger.initialize_logger(tool)
+        args = Namespace(subparser_name=tool,
+                         log_file=None)
+        logger.initialize_logger(args)
 
         logger.info("bar {}/{}/{}", "1", "2")
 

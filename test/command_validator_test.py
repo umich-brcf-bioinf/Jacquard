@@ -393,7 +393,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
             command_validator._create_temp_working_dir(None, args)
             self.assertTrue(os.path.isdir(tmp_dir))
 
-    ## cgates: This test is a good idea, but doesn't work reliably on Windows 7.
+    ##TODO: cgates: This test is a good idea, but doesn't work reliably on Windows 7.
     ## Can we remove it with a clean conscience? What's a better way?
     def xtest_create_temp_working_dir_doesNotExistCannotCreateTmp_directoryGivenAsOutput(self):
         with TempDirectory() as output_dir:

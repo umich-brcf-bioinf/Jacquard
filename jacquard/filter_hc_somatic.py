@@ -255,6 +255,7 @@ def add_subparser(subparser):
     parser.add_argument("output", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+    parser.add_argument("--log_file", help="Log file destination")
 
 def _validate_arguments(args):
     input_dir = os.path.abspath(args.input)

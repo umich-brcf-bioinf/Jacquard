@@ -37,7 +37,6 @@ import jacquard.logger as logger
 import jacquard.utils as utils
 from jacquard.vcf import FileWriter
 import jacquard.vcf as vcf
-import jacquard.variant_callers.variant_caller_factory as variant_caller_factory
 
 
 _DEFAULT_INCLUDED_FORMAT_TAGS = ["JQ_.*"]
@@ -411,6 +410,7 @@ def add_subparser(subparser):
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
     parser.add_argument("--include_format_tags", dest='tags', help="Comma-separated list of regexs for format tags to include in output. Defaults to all JQ tags.")
+    parser.add_argument("--log_file", help="Log file destination")
 
 def _predict_output(args):
     desired_output_files = set([os.path.basename(args.output)])

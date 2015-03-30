@@ -13,7 +13,6 @@ Each function is allowed to:
 """
 from __future__ import absolute_import
 
-from collections import defaultdict
 import errno
 import glob
 import os
