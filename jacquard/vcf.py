@@ -228,7 +228,7 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
         try:
             return int(string)
         except ValueError:
-            return sys.maxint
+            return sys.maxsize
 #TODO: (cgates): Could we make filter an OrderedSet
 #TODO: (cgates) adjust info field to be stored as dict only instead of string
 #pylint: disable=too-many-arguments
