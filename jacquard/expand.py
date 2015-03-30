@@ -25,22 +25,13 @@ UNUSED_REGEX_WARNING_FORMAT = ("The expression [{}] in column specification "
                                "or this expression may be irrelevant.")
 
 def _read_col_spec(col_spec):
-    if not os.path.isfile(col_spec):
-        raise utils.UsageError(("The column specification file [{}] could "
-                                "not be read. "
-                                "Review inputs/usage and try again."),
-                               col_spec)
-
     spec_file = open(col_spec, "r")
     columns = []
-
     for line in spec_file:
         columns.append(line.rstrip())
-
     spec_file.close()
 
     return columns
-
 
 ##TODO: hook this idea up -- change method
 def _disambiguate_column_names(column_header, info_header):
@@ -128,8 +119,15 @@ def get_required_input_output_types():
     return ("file", "file")
 
 #TODO (cgates): Validate should actually validate
-def validate_args(dummy):
-    pass
+def validate_args(args):
+    if args.column_specification:
+        if not os.path.isfile(args.column_specification):
+            raise utils.UsageError(("The column specification file [{}] could "
+                                    "not be read. Review inputs/usage and "
+                                    "try again."),
+                                    args.column_specification)
+
+        _read_col_spec(args.column_specification)
 
 def execute(args, dummy_execution_context):
     #for the moment, there is no good place to put the execution context

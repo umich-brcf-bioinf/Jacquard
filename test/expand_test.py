@@ -2,16 +2,20 @@
 #pylint: disable=global-statement, star-args, too-few-public-methods, invalid-name
 #pylint: disable=too-many-public-methods
 from __future__ import absolute_import
+
 from argparse import Namespace
-from test.vcf_test import MockVcfReader
+import os
+
 from testfixtures import TempDirectory
+
 import jacquard.expand as expand
 import jacquard.logger
 import jacquard.utils as utils
 import jacquard.vcf as vcf
-import os
 import test.mock_logger
 import test.test_case as test_case
+from test.vcf_test import MockVcfReader
+
 
 class ExpandTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
@@ -223,43 +227,28 @@ chr2|1|.|A|C|.|.|SOMATIC|GT|0/1|0/1
             self.assertEquals(expected_desired_output_files,
                               desired_output_files)
 
-
-    def test_execute_colSpecValid(self):
-        with TempDirectory() as input_dir,\
-             TempDirectory() as output_dir,\
-             TempDirectory() as col_spec_dir:
-            col_spec_dir.write("col_spec.txt", "foo\nbar")
+    def test_validate_args_colSpecValid(self):
+        with TempDirectory() as col_spec_dir:
+            col_spec_dir.write("col_spec.txt", "chrom\npos\ninfo")
             col_spec_file = os.path.join(col_spec_dir.path, "col_spec.txt")
-            input_dir.write("summarized.vcf", "##source=strelka\n#foo")
-            input_file = os.path.join(input_dir.path, "summarized.vcf")
-            output_file = os.path.join(output_dir.path, "expanded.txt")
-            args = Namespace(input=input_file,
-                             original_output=output_file,
-                             output=output_file,
-                             column_specification=col_spec_file)
 
-            expand.execute(args, ["extra_header1", "extra_header2"])
+            args = Namespace(input="input.txt",
+                             output="expanded.txt",
+                             column_specification=col_spec_file)
+            expand.validate_args(args)
             self.ok()
 
-    def test_execute_colSpecInvalid(self):
-        with TempDirectory() as input_dir,\
-             TempDirectory() as output_dir,\
-             TempDirectory() as col_spec_dir:
-            col_spec_dir.write("col_spec.txt", "foo\nbar")
-            input_dir.write("summarized.vcf", "##source=strelka\n#foo")
-            input_file = os.path.join(input_dir.path, "summarized.vcf")
-            output_file = os.path.join(output_dir.path, "expanded.txt")
-            args = Namespace(input=input_file,
-                             output=output_file,
-                             column_specification=col_spec_dir.path)
+    def test_validate_args_colSpecInvalid(self):
+        with TempDirectory() as col_spec_dir:
+            col_spec_dir.write("col_spec.txt", "chrom\npos\ninfo")
 
+            args = Namespace(input="input.txt",
+                             output="expanded.txt",
+                             column_specification=col_spec_dir.path)
             self.assertRaisesRegexp(utils.UsageError,
-                                    "The column specification file .* could "
-                                    "not be read. Review inputs/usage and "
-                                    "try again",
-                                    expand.execute,
-                                    args,
-                                    ["extra_header1", "extra_header2"])
+                                    "The column specification file .* could not be read. Review inputs/usage and try again",
+                                    expand.validate_args,
+                                    args)
 
 class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_expand(self):
