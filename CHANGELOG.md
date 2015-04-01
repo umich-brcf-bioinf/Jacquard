@@ -1,14 +1,18 @@
-Changelog
-================
+##Changelog
+__________________
 
-## 0.31 (3/17/2015)
+### 0.3.2 (!/!/2015)
+ * Fixed bug in summarize that caused error if variant was called by subset of callers 
+ * Improved checks for consistent VCF file sets
+
+### 0.3.1 (3/17/2015)
  * Downgraded VCF format from 4.2 to 4.1
  * Fixed a bug that omitted CALLERS_REPORTED_LIST summary tag
  * Simplified summary tags; removed dependency on numpy
  * Adjusted VarScan translation to accept a file pattern to identify high-confidence files 
 
 
-## 0.3 (3/9/2015)
+### 0.3 (3/9/2015)
  * Replaced [normalize], [tag] commands with [translate]; relaxed constraints on incoming data.
  * Renamed [consensus] to [summarize]
  * More consistent behavior in [expand]
@@ -26,7 +30,7 @@ Changelog
  * Removed dependencies on pandas
   
   
-## 0.21 (10/2014)
+### 0.21 (10/2014)
  * Initial public release
 
 

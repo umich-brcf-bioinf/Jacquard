@@ -1,15 +1,17 @@
-Installing Jaquard
-================
+##Installing Jaquard
+__________________
 
 ###Prerequisites
 
 * Jacquard has been tested python 2.7 on Windows7, OSX, and Unix.
-* natsort (3.5.2) and numpy (>=1.7.1) are required 
-* nosetests and testfixtures (3.0.2) are required for running automated tests
+* natsort (3.5.2) and  
+* nosetests, testfixtures (3.0.2), and numpy (>=1.7.1) are required are 
+      required for running automated tests
 * Note that pip installs all required libraries; see [Installing] below.
 
 ###Installing
-The easiest way to install Jacquard is through PyPI system. Get pip if it's not available in your system:
+The easiest way to install Jacquard is through PyPI system. Get pip if it's 
+not available in your system:
 
 `$ pip install jacquard`
 
