@@ -3,12 +3,13 @@
 MuTect VCFs are assumed to have a ".vcf" extension and have a valid
 "##MuTect=..." metaheader.
 """
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
 import jacquard.utils as utils
 import jacquard.variant_callers.common_tags as common_tags
 import jacquard.vcf as vcf
 
 JQ_MUTECT_TAG = "JQ_MT_"
+VERSION = "v1.1.4"
 
 class _AlleleFreqTag(object):
     #pylint: disable=too-few-public-methods
@@ -215,6 +216,10 @@ class _MutectVcfReader(object):
     def close(self):
         return self._vcf_reader.close()
 
+    @staticmethod
+    def expected_file_format():
+        return [""]
+
     @property
     def metaheaders(self):
         new_metaheaders = list(self._vcf_reader.metaheaders)
@@ -222,6 +227,7 @@ class _MutectVcfReader(object):
         caller_metaheader = "##jacquard.translate.caller={0}".\
                 format(self._caller.name)
         new_metaheaders.append(caller_metaheader)
+
         return new_metaheaders
 
     @property

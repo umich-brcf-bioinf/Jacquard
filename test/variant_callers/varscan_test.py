@@ -1,11 +1,15 @@
 # pylint: disable=line-too-long,too-many-public-methods,too-few-public-methods
 # pylint: disable=invalid-name,global-statement
+from __future__ import print_function, absolute_import, division
+
 import re
 
+import jacquard.logger
 import jacquard.utils as utils
 from jacquard.variant_callers import varscan
 from jacquard.variant_callers.varscan import _HCTag
 import jacquard.vcf as vcf
+import test.mock_logger
 import test.test_case as test_case
 from test.vcf_test import MockFileReader, MockVcfReader
 
@@ -133,6 +137,12 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         super(VarscanTestCase, self).setUp()
         self.caller = varscan.Varscan()
+        varscan.logger = test.mock_logger
+
+    def tearDown(self):
+        test.mock_logger.reset()
+        varscan.logger = jacquard.logger
+        super(VarscanTestCase, self).tearDown()
 
     @staticmethod
     def append_hc_files(readers, file1="snp.somatic.hc.fpfilter.pass", file2="indel.somatic.hc.fpfilter.pass", content1=None, content2=None):
@@ -366,6 +376,36 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(1, len(unrecognized_readers))
         self.assertEquals([reader1], unrecognized_readers)
         self.assertEquals(1, len(vcf_readers))
+
+    def test_claim_mismatchingSnpIndelFiles(self):
+        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
+        content1 = ["##foo", "##source=VarScan2", "#chrom", record1]
+        reader1 = MockFileReader("fileA.snp.vcf", content1)
+        reader2 = MockFileReader("fileA.indel.vcf", content1)
+        reader3 = MockFileReader("fileB.indel.vcf", content1)
+        file_readers = [reader1, reader2, reader3]
+
+        caller = varscan.Varscan()
+        self.assertRaisesRegexp(utils.JQException,
+                                r"Some Varscan VCFs were missing either a snp or indel file. Review inputs/command options and try again.",
+                                caller.claim,
+                                file_readers)
+        actual_log_errors = test.mock_logger.messages["ERROR"]
+        expected_log_errors = ["VarScan VCF [fileB.indel] has no snp file."]
+        self.assertEquals(expected_log_errors, actual_log_errors)
+
+    def test_claim_allSnpOrIndelOkay(self):
+        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
+        content1 = ["##foo", "##source=VarScan2", "#chrom", record1]
+        reader1 = MockFileReader("fileA.indel.vcf", content1)
+        reader2 = MockFileReader("fileB.indel.vcf", content1)
+        file_readers = [reader1, reader2]
+
+        caller = varscan.Varscan()
+        unrecognized_readers, vcf_readers = caller.claim(file_readers)
+
+        self.assertEquals(0, len(unrecognized_readers))
+        self.assertEquals(2, len(vcf_readers))
 
 class VarscanVcfReaderTestCase(test_case.JacquardBaseTestCase):
     def test_metaheaders(self):

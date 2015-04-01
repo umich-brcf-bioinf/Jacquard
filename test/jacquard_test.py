@@ -1,16 +1,20 @@
 # pylint: disable=line-too-long, global-statement, unused-argument
 # pylint: disable=invalid-name, too-many-locals, too-many-public-methods
 # pylint: disable=too-few-public-methods
-from __future__ import absolute_import
+from __future__ import print_function, absolute_import, division
+
 from argparse import Namespace
+import os
+import signal
+
 from testfixtures import TempDirectory
+
 import jacquard.jacquard as jacquard
 import jacquard.logger as logger
 import jacquard.utils as utils
-import os
-import signal
 import test.mock_module as mock_module
 import test.test_case as test_case
+
 
 MOCK_MOVE_TEMP_CONTENTS_CALLED = False
 MOCK_PREFLIGHT_CALLED = False
@@ -49,10 +53,15 @@ class JacquardArgumentParserTestCase(test_case.JacquardBaseTestCase):
                                 parser.error,
                                 message)
 
-
 class JacquardTestCase(test_case.JacquardBaseTestCase):
     def test_version(self):
         self.assertEquals(0.31, jacquard.__version__)
+
+    def test_get_execution_context(self):
+        command = "foo input_dir output_dir"
+        actual = jacquard._get_execution_context(command)
+        expected = r'##jacquard=<Timestamp=".*",Command="foo input_dir output_dir",Cwd=".*">'
+        self.assertRegexpMatches(actual[0], expected)
 
     def test_set_interrupt_handler(self):
         mock_signal_dispatcher = MockSignalDispatcher()
@@ -82,7 +91,6 @@ class JacquardTestCase(test_case.JacquardBaseTestCase):
 
             actual_messages = self.output.getvalue().rstrip().split("\n")
 
-            print actual_messages
             self.assertEquals(2, len(actual_messages))
             self.assertRegexpMatches(actual_messages[0], "I'm feeling angry")
             self.assertRegexpMatches(actual_messages[1], "Jacquard encountered an unanticipated problem.")

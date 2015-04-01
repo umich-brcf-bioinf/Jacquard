@@ -1,14 +1,22 @@
 #pylint: disable=too-many-public-methods, invalid-name, no-self-use
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
+
 import os
 import shutil
-from StringIO import StringIO
 import sys
 import unittest
 
 import jacquard.jacquard as jacquard
 import jacquard.logger as logger
 import jacquard.vcf as vcf
+
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+
+
 
 class JacquardBaseTestCase(unittest.TestCase):
     def setUp(self):
@@ -27,7 +35,6 @@ class JacquardBaseTestCase(unittest.TestCase):
         self.assertTrue(full_text.startswith(search_text))
 
     def ok(self):
-        #pylint: disable=redundant-unittest-assert
         self.assertTrue(True)
 
     def move_files(self, source_dirs, dest_dir):
@@ -56,12 +63,8 @@ class JacquardBaseTestCase(unittest.TestCase):
                           len(actual))
 
         for i in xrange(len(expected)):
-            if expected[i].startswith("##jacquard.cwd="):
-                self.assertStartsWith(actual[i], "##jacquard.cwd=")
-            elif expected[i].startswith("##jacquard.command="):
-                self.assertStartsWith(actual[i], "##jacquard.command=")
-            elif expected[i].startswith("##jacquard.version="):
-                self.assertStartsWith(actual[i], "##jacquard.version=")
+            if expected[i].startswith("##jacquard=<Timestamp="):
+                self.assertStartsWith(actual[i], "##jacquard=<Timestamp=")
             else:
                 self.assertEquals(expected[i].rstrip(),
                                   actual[i].rstrip())

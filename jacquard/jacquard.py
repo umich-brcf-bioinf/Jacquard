@@ -36,11 +36,19 @@ Then architecture of Jacquard modules can be divided into:
 ##   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ##   See the License for the specific language governing permissions and
 ##   limitations under the License.
-from __future__ import absolute_import, print_function
-from jacquard import __version__
-from jacquard.variant_callers import variant_caller_factory
+from __future__ import print_function, absolute_import, division
+
 import argparse
+from datetime import datetime
 import distutils.dir_util
+import os
+import re
+import shutil
+import signal
+import sys
+import traceback
+
+from jacquard import __version__
 import jacquard.command_validator as command_validator
 import jacquard.expand as expand
 import jacquard.filter_hc_somatic as filter_hc_somatic
@@ -49,12 +57,7 @@ import jacquard.merge as merge
 import jacquard.summarize as summarize
 import jacquard.translate as translate
 import jacquard.utils as utils
-import os
-import re
-import shutil
-import signal
-import sys
-import traceback
+from jacquard.variant_callers import variant_caller_factory
 
 
 _SUBCOMMANDS = [translate,
@@ -147,18 +150,20 @@ def _version_text():
     return "Jacquard v{0}\nSupported variant callers:\n\t{1}".\
         format(__version__, caller_version_string)
 
+def _get_execution_context(command):
+    cwd = os.path.dirname(os.getcwd())
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    return ['##jacquard=<Timestamp="{}",Command="{}",Cwd="{}">'.format(now,
+                                                                       command,
+                                                                       cwd)]
 
 def _dispatch(modules, arguments):
     try:
         command, args = _parse_command_line_args(modules, arguments)
+        execution_context = _get_execution_context(command)
 
-        cwd = os.path.dirname(os.getcwd())
-        execution_context = [\
-            "##jacquard.version={0}".format(__version__),
-            "##jacquard.command={0}".format(" ".join(arguments)),
-            "##jacquard.cwd={0}".format(cwd)]
-
-        logger.initialize_logger(args.subparser_name)
+        logger.initialize_logger(args)
         logger.debug("Jacquard run begins")
         logger.debug("cwd|{}", os.getcwd())
         logger.debug("command|{}", " ".join(arguments))

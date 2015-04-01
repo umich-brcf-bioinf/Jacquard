@@ -1,13 +1,16 @@
 #pylint: disable=invalid-name, global-statement, line-too-long
 #pylint: disable=too-many-public-methods, too-few-public-methods, unused-argument
-from __future__ import absolute_import
+from __future__ import print_function, absolute_import, division
+
 from argparse import Namespace
-from test.vcf_test import MockFileWriter, MockVcfReader
+import os
+
 from testfixtures import TempDirectory
+
 import jacquard.summarize as summarize
 import jacquard.vcf as vcf
-import os
 import test.test_case as test_case
+from test.vcf_test import MockFileWriter, MockVcfReader
 
 
 #TODO (cgates): The module summarize is not adequately unit-tested
@@ -33,9 +36,9 @@ class SummarizeTestCase(test_case.JacquardBaseTestCase):
         summarize._write_metaheaders(caller,
                                      vcf_reader,
                                      file_writer,
-                                     ["execution_context"])
-        expected = ["##metaheaders",
-                    "execution_context",
+                                     ["##execution_context"])
+        expected = ["##execution_context",
+                    "##metaheaders",
                     "##summarize_metaheader",
                     "#header"]
         self.assertEquals(expected, file_writer.lines())
@@ -68,7 +71,7 @@ class SummarizeFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_summarize(self):
         with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
-            module_testdir = os.path.join(test_dir, "functional_tests", "05_summarize")
+            module_testdir = os.path.join(test_dir, "functional_tests", "04_summarize")
             input_dir = os.path.join(module_testdir, "input", "tiny_strelka.merged.vcf")
             output_file = os.path.join(output_dir.path, "summarized.vcf")
 

@@ -11,12 +11,14 @@ Each function is allowed to:
  * delegate to/interact with a sub-command
  * raise a UsageException if things look problematic
 """
-from __future__ import absolute_import
+from __future__ import print_function, absolute_import, division
+
 import errno
 import glob
-import jacquard.utils as utils
 import os
 import time
+
+import jacquard.utils as utils
 
 
 _TEMP_WORKING_DIR_FORMAT = "jacquard.{}.{}.tmp"
@@ -27,7 +29,6 @@ def _actual_type(path):
         return "directory"
     else:
         return "file"
-
 
 def _build_collision_message(command, collisions):
     total_collisions = len(collisions)
@@ -49,7 +50,6 @@ def _build_collision_message(command, collisions):
                                               total_collisions,
                                               collision_list)
 
-
 def _check_input_correct_type(dummy, args):
     module_name = args.subparser_name
     input_path = args.input
@@ -64,12 +64,10 @@ def _check_input_correct_type(dummy, args):
                                          input_path,
                                          actual_type))
 
-
 def _check_input_exists(dummy, args):
     if not os.path.exists(args.input):
         raise utils.UsageError(("Specified input [{}] does not exist. Review "\
                                  "inputs and try again.").format(args.input))
-
 
 def _check_input_readable(dummy, args):
     try:
@@ -80,7 +78,6 @@ def _check_input_readable(dummy, args):
     except (OSError, IOError):
         raise utils.UsageError(("Specified input [{}] cannot be read. Review "
                                 "inputs and try again.").format(args.input))
-
 
 def _check_output_correct_type(module_name, output_path, required_type):
     actual_type = _actual_type(output_path)
@@ -93,7 +90,6 @@ def _check_output_correct_type(module_name, output_path, required_type):
                                          output_path,
                                          actual_type))
 
-
 def _check_output_exists(dummy, args):
     if os.path.exists(args.output_path):
         _check_output_correct_type(args.subparser_name,
@@ -104,14 +100,15 @@ def _check_overwrite_existing_files(module, args):
     output = args.output_path
     if not os.path.isdir(output):
         output = os.path.dirname(output)
+
     existing_output_paths = sorted(glob.glob(os.path.join(output, "*")))
     existing_output = set([os.path.basename(i) for i in existing_output_paths])
     predicted_output = module.report_prediction(args)
     collisions = sorted(list(existing_output.intersection(predicted_output)))
+
     if collisions and not args.force:
         message = _build_collision_message(args.subparser_name, collisions)
         raise utils.UsageError(message)
-
 
 def _check_there_will_be_output(module, args):
     predicted_output = module.report_prediction(args)
@@ -135,7 +132,6 @@ def _create_temp_working_dir(dummy, args):
         raise utils.UsageError(("Jacquard cannot write to output directory "
                                 "[{}]. Review inputs and try again.")\
                                 .format(parent_dir))
-
 
 def _set_temp_working_dir(dummy, args):
     original_output = args.original_output
@@ -165,7 +161,6 @@ def _set_temp_working_dir(dummy, args):
     args.temp_working_dir = temp_working_dir
     args.output = new_output
 
-
 def _makepath(path):
     try:
         os.makedirs(path)
@@ -177,7 +172,6 @@ def _makepath(path):
 def _set_required_types(module, args):
     (args.required_input_type,
      args.required_output_type) = module.get_required_input_output_types()
-
 
 def _set_output_paths(dummy, args):
     args.original_output = args.output

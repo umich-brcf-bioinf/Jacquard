@@ -5,13 +5,18 @@ Debug messages are written to file unless logger is initialized as verbose (in
 which case debug is also echoed to console).
 """
 #pylint: disable=invalid-name, global-statement
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
+
 from datetime import datetime
+import errno
 import getpass
 import logging
 import os
 import socket
 import sys
+
+import jacquard.utils as utils
+
 
 WARNING_OCCURRED = False
 """Used to vary the Done message to emphasize upstream log warnings"""
@@ -25,25 +30,52 @@ _CONSOLE_LOG_FORMAT = '%(asctime)s|%(levelname)s|%(tool)s|%(message)s'
 _logging_dict = {}
 _verbose = False
 
+def _makepath(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else: raise
 
-def initialize_logger(command, verbose=False):
+def _validate_log_file(log_file):
+    try:
+        _makepath(os.path.dirname(log_file))
+    except OSError:
+        raise utils.UsageError(("Jacquard cannot create specified log file "
+                                "[{}]. Review inputs and try again."), log_file)
+
+    try:
+        log = open(log_file, "w")
+        log.close()
+    except IOError:
+        raise utils.UsageError(("Jacquard cannot create specified log file "
+                               "[{}]. Review inputs and try again."), log_file)
+
+def initialize_logger(args):
     """Sets command name and formatting for subsequent calls to logger"""
+
     global log_filename
     log_filename = os.path.join(os.getcwd(), "jacquard.log")
+    if args.log_file:
+        _validate_log_file(args.log_file)
+        log_filename = args.log_file
+
     logging.basicConfig(format=_FILE_LOG_FORMAT,
                         level="DEBUG",
                         datefmt=_DATE_FORMAT,
                         filename=log_filename)
 
     global _verbose
-    _verbose = verbose
+    if args.verbose:
+        _verbose = args.verbose
 
     start_time = datetime.now().strftime(_DATE_FORMAT)
     global _logging_dict
     _logging_dict = {'user': getpass.getuser(),
                      'host': socket.gethostname(),
                      'start_time': start_time,
-                     'tool': command}
+                     'tool': args.subparser_name}
 
 def error(message, *args):
     _print("ERROR", message, args)

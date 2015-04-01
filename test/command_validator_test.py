@@ -1,19 +1,22 @@
 #pylint: disable=line-too-long, too-many-public-methods, invalid-name
 #pylint: disable=global-statement, unused-argument, too-few-public-methods
 #pylint: disable=too-many-instance-attributes, no-member
-from __future__ import absolute_import
+from __future__ import print_function, absolute_import, division
+
 from argparse import Namespace
-from testfixtures import TempDirectory
-import jacquard.command_validator as command_validator
-import jacquard.utils as utils
 import os
 import re
 import shutil
 import subprocess
 import sys
+import time
+
+from testfixtures import TempDirectory
+
+import jacquard.command_validator as command_validator
+import jacquard.utils as utils
 import test.mock_module as mock_module
 import test.test_case as test_case
-import time
 
 
 class MakeDirTestCase(test_case.JacquardBaseTestCase):
@@ -390,7 +393,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
             command_validator._create_temp_working_dir(None, args)
             self.assertTrue(os.path.isdir(tmp_dir))
 
-    ## cgates: This test is a good idea, but doesn't work reliably on Windows 7.
+    ##TODO: cgates: This test is a good idea, but doesn't work reliably on Windows 7.
     ## Can we remove it with a clean conscience? What's a better way?
     def xtest_create_temp_working_dir_doesNotExistCannotCreateTmp_directoryGivenAsOutput(self):
         with TempDirectory() as output_dir:
@@ -461,7 +464,6 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
                                     mock_module,
                                     args)
 
-
     def test_check_overwrite_existing_files_whenOverwriteMoreThanFiveFilesWillRaiseAbbreviatedUsageError(self):
         with TempDirectory() as output_dir:
             args = Namespace(output_path=output_dir.path,
@@ -482,7 +484,6 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
                                     command_validator._check_overwrite_existing_files,
                                     mock_module,
                                     args)
-
 
     def test_check_overwrite_existing_files_whenNotOverwriteDirectoryWillNotRaise(self):
         with TempDirectory() as output_dir:
@@ -530,7 +531,6 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
         args = Namespace()
         command_validator._check_valid_args(mock_module, args)
         self.assertTrue(mock_module.validate_args_called)
-
 
 class MockTask(object):
     def __init__(self, error_message=None):

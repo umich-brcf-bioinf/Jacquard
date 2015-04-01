@@ -1,10 +1,11 @@
 # pylint: disable=line-too-long,too-many-public-methods,invalid-name,too-few-public-methods
-from __future__ import print_function, absolute_import
-from test.vcf_test import MockVcfReader
+from __future__ import print_function, absolute_import, division
+
 import jacquard.variant_callers.zscore_caller as zscore_caller
 import jacquard.vcf as vcf
 import numpy as np
 import test.test_case as test_case
+from test.vcf_test import MockVcfReader
 
 
 class MockTag(object):
@@ -40,9 +41,9 @@ class ZScoreTagTest(test_case.JacquardBaseTestCase):
 
         self.assertEquals(3, len(tag.metaheaders))
         it = iter(tag.metaheaders)
-        self.assertEquals(it.next(), '##jacquard.summarize.ZScoreX.X_mean=' + str(tag._mean))
-        self.assertEquals(it.next(), '##jacquard.summarize.ZScoreX.X_stdev=' + str(tag._stdev))
-        self.assertRegexpMatches(it.next(), '##FORMAT=<ID=ZScoreX,Number=1,Type=Float,Description="ZScore for X">')
+        self.assertEquals(next(it), '##jacquard.summarize.ZScoreX.X_mean=' + str(tag._mean))
+        self.assertEquals(next(it), '##jacquard.summarize.ZScoreX.X_stdev=' + str(tag._stdev))
+        self.assertRegexpMatches(next(it), '##FORMAT=<ID=ZScoreX,Number=1,Type=Float,Description="ZScore for X">')
 
     def test_init_setsPopulationStatistics(self):
         rec1 = vcf.VcfRecord("1", "42", "A", "C",
@@ -240,9 +241,9 @@ class AlleleFreqZScoreTagTest(test_case.JacquardBaseTestCase):
 
         self.assertEquals(3, len(tag.metaheaders))
         it = iter(tag.metaheaders)
-        self.assertRegexpMatches(it.next(), '##jacquard.summarize.JQ_SUMMARY_AF_ZSCORE.JQ_SUMMARY_AF_RANGE_mean=')
-        self.assertRegexpMatches(it.next(), '##jacquard.summarize.JQ_SUMMARY_AF_ZSCORE.JQ_SUMMARY_AF_RANGE_stdev=')
-        self.assertRegexpMatches(it.next(), '##FORMAT=<ID=JQ_SUMMARY_AF_ZSCORE,Number=1,Type=Float,Description="Concordance of reported allele frequencies.*">')
+        self.assertRegexpMatches(next(it), '##jacquard.summarize.JQ_SUMMARY_AF_ZSCORE.JQ_SUMMARY_AF_RANGE_mean=')
+        self.assertRegexpMatches(next(it), '##jacquard.summarize.JQ_SUMMARY_AF_ZSCORE.JQ_SUMMARY_AF_RANGE_stdev=')
+        self.assertRegexpMatches(next(it), '##FORMAT=<ID=JQ_SUMMARY_AF_ZSCORE,Number=1,Type=Float,Description="Concordance of reported allele frequencies.*">')
 
     def test_add_tag(self):
         rec1 = vcf.VcfRecord("1", "42", "A", "C",
@@ -274,9 +275,9 @@ class DepthZScoreTagTest(test_case.JacquardBaseTestCase):
 
         self.assertEquals(3, len(tag.metaheaders))
         it = iter(tag.metaheaders)
-        self.assertRegexpMatches(it.next(), '##jacquard.summarize.JQ_SUMMARY_DP_ZSCORE.JQ_SUMMARY_DP_RANGE_mean=')
-        self.assertRegexpMatches(it.next(), '##jacquard.summarize.JQ_SUMMARY_DP_ZSCORE.JQ_SUMMARY_DP_RANGE_stdev=')
-        self.assertRegexpMatches(it.next(), '##FORMAT=<ID=JQ_SUMMARY_DP_ZSCORE,Number=1,Type=Float,Description="Concordance of reported depth.*">')
+        self.assertRegexpMatches(next(it), '##jacquard.summarize.JQ_SUMMARY_DP_ZSCORE.JQ_SUMMARY_DP_RANGE_mean=')
+        self.assertRegexpMatches(next(it), '##jacquard.summarize.JQ_SUMMARY_DP_ZSCORE.JQ_SUMMARY_DP_RANGE_stdev=')
+        self.assertRegexpMatches(next(it), '##FORMAT=<ID=JQ_SUMMARY_DP_ZSCORE,Number=1,Type=Float,Description="Concordance of reported depth.*">')
 
     def test_add_tag(self):
         rec1 = vcf.VcfRecord("1", "42", "A", "C",
@@ -325,12 +326,12 @@ class ZScoreCallerTest(test_case.JacquardBaseTestCase):
 
         self.assertEquals(6, len(caller.metaheaders))
         it = iter(caller.metaheaders)
-        self.assertRegexpMatches(it.next(), "JQ_SUMMARY_AF_ZSCORE.JQ_SUMMARY_AF_RANGE_mean")
-        self.assertRegexpMatches(it.next(), "JQ_SUMMARY_AF_ZSCORE.JQ_SUMMARY_AF_RANGE_stdev")
-        self.assertRegexpMatches(it.next(), "FORMAT=<ID=JQ_SUMMARY_AF_ZSCORE")
-        self.assertRegexpMatches(it.next(), "JQ_SUMMARY_DP_ZSCORE.JQ_SUMMARY_DP_RANGE_mean")
-        self.assertRegexpMatches(it.next(), "JQ_SUMMARY_DP_ZSCORE.JQ_SUMMARY_DP_RANGE_stdev")
-        self.assertRegexpMatches(it.next(), "FORMAT=<ID=JQ_SUMMARY_DP_ZSCORE")
+        self.assertRegexpMatches(next(it), "JQ_SUMMARY_AF_ZSCORE.JQ_SUMMARY_AF_RANGE_mean")
+        self.assertRegexpMatches(next(it), "JQ_SUMMARY_AF_ZSCORE.JQ_SUMMARY_AF_RANGE_stdev")
+        self.assertRegexpMatches(next(it), "FORMAT=<ID=JQ_SUMMARY_AF_ZSCORE")
+        self.assertRegexpMatches(next(it), "JQ_SUMMARY_DP_ZSCORE.JQ_SUMMARY_DP_RANGE_mean")
+        self.assertRegexpMatches(next(it), "JQ_SUMMARY_DP_ZSCORE.JQ_SUMMARY_DP_RANGE_stdev")
+        self.assertRegexpMatches(next(it), "FORMAT=<ID=JQ_SUMMARY_DP_ZSCORE")
 
     def test_add_tags(self):
         rec1 = vcf.VcfRecord("1", "42", "A", "C",

@@ -11,7 +11,7 @@ Will create a column for each:
 Expand relies on accurate metaheaders; it will not expand any fields absent
 from the metaheaders.
 """
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
 import os
 import re
 
@@ -25,22 +25,13 @@ UNUSED_REGEX_WARNING_FORMAT = ("The expression [{}] in column specification "
                                "or this expression may be irrelevant.")
 
 def _read_col_spec(col_spec):
-    if not os.path.isfile(col_spec):
-        raise utils.UsageError(("The column specification file [{}] could "
-                                "not be read. "
-                                "Review inputs/usage and try again."),
-                               col_spec)
-
     spec_file = open(col_spec, "r")
     columns = []
-
     for line in spec_file:
         columns.append(line.rstrip())
-
     spec_file.close()
 
     return columns
-
 
 ##TODO: hook this idea up -- change method
 def _disambiguate_column_names(column_header, info_header):
@@ -65,9 +56,10 @@ def _create_row_dict(column_list, vcf_record):
         for format_key, format_value in format_key_values.items():
             row_dict[format_key + "|" + sample_name] = format_value
 
-    row_dict = dict(row_dict.items() + vcf_record.info_dict.items())
+    new_dict = row_dict.copy()
+    new_dict.update(vcf_record.info_dict)
 
-    return row_dict
+    return new_dict
 
 def _create_actual_column_list(column_spec_list,
                                potential_col_list,
@@ -117,6 +109,7 @@ def add_subparser(subparser):
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("-c", "--column_specification", help="Path to text file containing column regular expressions to be included in output file")
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+    parser.add_argument("--log_file", help="Log file destination")
 
 def _predict_output(args):
     return set([os.path.basename(args.output)])
@@ -128,8 +121,15 @@ def get_required_input_output_types():
     return ("file", "file")
 
 #TODO (cgates): Validate should actually validate
-def validate_args(dummy):
-    pass
+def validate_args(args):
+    if args.column_specification:
+        if not os.path.isfile(args.column_specification):
+            raise utils.UsageError(("The column specification file [{}] could "
+                                    "not be read. Review inputs/usage and "
+                                    "try again."),
+                                    args.column_specification)
+
+        _read_col_spec(args.column_specification)
 
 def execute(args, dummy_execution_context):
     #for the moment, there is no good place to put the execution context

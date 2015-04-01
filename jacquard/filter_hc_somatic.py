@@ -1,15 +1,18 @@
 #pylint: disable=too-many-locals
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
+
 from collections import defaultdict
 import collections
 import glob
+import os
+import re
+
+import natsort
+
 import jacquard.logger as logger
 import jacquard.utils as utils
 import jacquard.variant_callers.variant_caller_factory as variant_caller_factory
 import jacquard.vcf as vcf
-import natsort
-import os
-import re
 
 
 _FILE_OUTPUT_SUFFIX = "HCsomatic"
@@ -46,21 +49,23 @@ def _find_somatic_positions(in_files):
     somatic_positions = {}
     no_jq_tags = []
 
-    total_number_of_files = len(in_files)
-    count = 1
-
     num_records = 0
 
     callers = defaultdict(int)
-    for input_file in in_files:
-        logger.info("Reading [{}] ({}/{})", os.path.basename(input_file), count,
-                    total_number_of_files)
+    for i, input_file in enumerate(in_files):
+        logger.info("Filtering file {}/{} [{}]",
+            i + 1,
+            len(in_files),
+            os.path.basename(input_file))
+
         somatic = 0
         vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
-        #TODO: (jebene) - this is old. have this use claim() instead
-        caller = variant_caller_factory.get_caller(vcf_reader.metaheaders,
-                                                   vcf_reader.column_header,
-                                                   vcf_reader.file_name)
+
+        #TODO: (jebene) - this is old. have this use claim() instead of get_caller()
+        factory = variant_caller_factory.VariantCallerFactory()
+        caller = factory.get_caller(vcf_reader.metaheaders,
+                                    vcf_reader.column_header,
+                                    vcf_reader.file_name)
 
         (filtered_records,
          num_records,
@@ -78,8 +83,6 @@ def _find_somatic_positions(in_files):
                            "variants.", os.path.basename(input_file))
 
 #        in_file.close()
-
-        count += 1
 
     total_filtered_records = 0
 
@@ -117,9 +120,7 @@ def _write_somatic(in_files, output_file, somatic_positions, execution_context):
         actual_sorted_variants = []
 
         new_file = _mangle_output_filenames(input_file)
-
         in_file = open(input_file, "r")
-
         out_file = open(os.path.join(output_file, new_file), "w")
 
         for line in in_file:
@@ -193,9 +194,10 @@ def _sort_headers(headers):
         else:
             field_header = header
 
-    meta_headers.append(field_header)
+    sorted_metaheaders = utils.sort_metaheaders(meta_headers)
+    sorted_metaheaders.append(field_header)
 
-    return meta_headers
+    return sorted_metaheaders
 
 def _build_readers(input_files):
     vcf_readers = []
@@ -255,6 +257,7 @@ def add_subparser(subparser):
     parser.add_argument("output", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+    parser.add_argument("--log_file", help="Log file destination")
 
 def _validate_arguments(args):
     input_dir = os.path.abspath(args.input)

@@ -1,15 +1,18 @@
 # pylint: disable=line-too-long, invalid-name, global-statement, star-args, too-many-public-methods, too-few-public-methods
-from __future__ import absolute_import
+from __future__ import print_function, absolute_import, division
+
 from argparse import Namespace
+import os
+
 from testfixtures import TempDirectory
+
 import jacquard.filter_hc_somatic as filter_hc_somatic
 import jacquard.logger
-import os
 import test.mock_logger
 import test.test_case as test_case
 
-#TODO: (cgates): These tests should start using mocked readers/writers and stop using the file system
 
+#TODO: (cgates): These tests should start using mocked readers/writers and stop using the file system
 VCF_HEADER = "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsampleA\tsampleB\n"
 
 class FilterSomaticTestCase(test_case.JacquardBaseTestCase):
@@ -165,7 +168,7 @@ class FilterSomaticTestCase(test_case.JacquardBaseTestCase):
     def test_sort_sortHeaders(self):
         headers = ["##foo", "##bar", "#CHROM", "##baz"]
         sorted_headers = filter_hc_somatic._sort_headers(headers)
-        expected_sorted_headers = ["##foo", "##bar", "##baz", "#CHROM"]
+        expected_sorted_headers = ["##bar", "##baz", "##foo", "#CHROM"]
         self.assertEqual(expected_sorted_headers, sorted_headers)
 
 
@@ -201,7 +204,7 @@ class FilterHCSomaticFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_filter_hc_somatic(self):
         with TempDirectory() as output_file:
             test_dir = os.path.dirname(os.path.realpath(__file__))
-            module_testdir = os.path.join(test_dir, "functional_tests", "03_filter_hc_somatic")
+            module_testdir = os.path.join(test_dir, "functional_tests", "02_filter_hc_somatic")
             input_file = os.path.join(module_testdir, "input")
 
             command = ["filter_hc_somatic", input_file, output_file.path, "--force"]

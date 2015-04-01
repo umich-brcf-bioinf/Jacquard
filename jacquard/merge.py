@@ -21,10 +21,10 @@
 * Each variant record will have the minimal set of incoming format tags for
     that variant (i.e. the list of format tags is specific to each record).
 * Incoming QUAL and INFO fields are ignored.
-* By default, merge only includes "Jacqaurd" FORMAT tags, but other tags can be
+* By default, merge only includes "Jacquard" FORMAT tags, but other tags can be
     included through and optional a command line arg.
 """
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
 
 from collections import defaultdict, OrderedDict
 import glob
@@ -41,6 +41,7 @@ import jacquard.vcf as vcf
 
 _DEFAULT_INCLUDED_FORMAT_TAGS = ["JQ_.*"]
 _MULT_ALT_TAG = "JQ_MULT_ALT_LOCUS"
+#TODO: (jebene) is the description of this really accurate?
 _MULT_ALT_HEADER = ('##INFO=<ID={},Number=0,Type=Flag,'
                     'Description="dbSNP Membership">').format(_MULT_ALT_TAG)
 _FILE_FORMAT = ["##fileformat=VCFv4.1"]
@@ -73,7 +74,10 @@ class _BufferedReader(object):
     #pylint: disable=too-few-public-methods
     def __init__(self, iterator):
         self._iterator = iterator
-        self._current_element = self._iterator.next()
+        try:
+            self._current_element = next(self._iterator)
+        except StopIteration:
+            self._current_element = self._iterator
 
     def next_if_equals(self, requested_element):
         result = None
@@ -84,7 +88,7 @@ class _BufferedReader(object):
 
     def _get_next(self):
         try:
-            return self._iterator.next()
+            return next(self._iterator)
         except StopIteration:
             return None
 
@@ -140,21 +144,23 @@ def _compile_metaheaders(incoming_headers,
     for tag in format_tags_to_keep:
         ordered_metaheaders.append(all_format_metaheaders[tag])
 
+    sorted_metaheaders = utils.sort_metaheaders(ordered_metaheaders)
+
     column_header = vcf_readers[0].column_header.split("\t")[0:9]
     column_header.extend(all_sample_names)
-    ordered_metaheaders.append("\t".join(column_header))
+    sorted_metaheaders.append("\t".join(column_header))
 
-    return ordered_metaheaders
+    return sorted_metaheaders
 
 def _write_metaheaders(file_writer, all_headers):
     file_writer.write("\n".join(all_headers) + "\n")
 
-def _create_reader_lists(input_files):
+def _create_reader_lists(file_readers):
     buffered_readers = []
     vcf_readers = []
 
-    for input_file in input_files:
-        vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
+    for file_reader in file_readers:
+        vcf_reader = vcf.VcfReader(file_reader)
         vcf_readers.append(vcf_reader)
         vcf_reader.open()
 
@@ -311,6 +317,7 @@ def _merge_records(coordinates,
 def _build_sample_list(vcf_readers):
     def _column(patient, sample):
         return "|".join([patient, sample])
+
     all_sample_patients = set()
     patient_to_file = defaultdict(list)
 
@@ -368,6 +375,38 @@ def _build_writers_to_readers(vcf_readers, output_path):
 
     return writers_to_readers
 
+def _get_readers_per_patient(file_readers):
+    readers_per_patient = defaultdict(list)
+    for file_reader in file_readers:
+        file_reader.open()
+        patient = file_reader.file_name.split(".")[0]
+        for line in file_reader.read_lines():
+            caller_meta_header = "##jacquard.translate.caller"
+            if line.startswith(caller_meta_header):
+                readers_per_patient[patient].append(line.split("=")[1])
+        file_reader.close()
+
+    return OrderedDict(sorted(readers_per_patient.items()))
+
+def _validate_consistent_samples(file_readers):
+    readers_per_patient = _get_readers_per_patient(file_readers)
+
+    all_callers = set()
+    for callers in readers_per_patient.values():
+        all_callers.update(callers)
+    warning = 0
+    for patient, callers in readers_per_patient.items():
+        missing_callers = set(all_callers).difference(set(callers))
+        if missing_callers:
+            warning = 1
+            msg = "Sample [{}] is missing VCF(s): {}"
+            logger.warning(msg,
+                           patient,
+                           sorted(list(missing_callers)))
+    if warning:
+        msg = "Some samples appear to be missing VCF(s)"
+        logger.warning(msg)
+
 def add_subparser(subparser):
     #pylint: disable=line-too-long
     parser = subparser.add_parser("merge", help="Accepts a directory of VCFs and returns a single merged VCF file.")
@@ -376,6 +415,7 @@ def add_subparser(subparser):
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
     parser.add_argument("--include_format_tags", dest='tags', help="Comma-separated list of regexs for format tags to include in output. Defaults to all JQ tags.")
+    parser.add_argument("--log_file", help="Log file destination")
 
 def _predict_output(args):
     desired_output_files = set([os.path.basename(args.output)])
@@ -401,13 +441,14 @@ def execute(args, execution_context):
         format_tag_regex = _DEFAULT_INCLUDED_FORMAT_TAGS
 
     input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
+    file_readers = [vcf.FileReader(i) for i in input_files]
+    _validate_consistent_samples(file_readers)
 
     try:
         file_writer = vcf.FileWriter(output_path)
         file_writer.open()
 
-        buffered_readers, vcf_readers = _create_reader_lists(input_files)
-
+        buffered_readers, vcf_readers = _create_reader_lists(file_readers)
         vcf_readers = _sort_readers(vcf_readers, output_path)
         all_sample_names, merge_metaheaders = _build_sample_list(vcf_readers)
         coordinates = _build_coordinates(vcf_readers)
