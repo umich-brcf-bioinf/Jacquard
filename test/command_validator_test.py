@@ -63,7 +63,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
 
     def test_check_output_exists_fileExistsCorrectType(self):
         with TempDirectory() as output_dir:
-            output_dir.write("output_file.vcf", "foo")
+            output_dir.write("output_file.vcf", b"foo")
             output_file = os.path.join(output_dir.path, "output_file.vcf")
             args = Namespace(subparser_name="awesomeCommand",
                              output_path=output_file,
@@ -73,7 +73,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
 
     def test_check_output_exists_fileExistsIncorrectType(self):
         with TempDirectory() as output_dir:
-            output_dir.write("output_file.vcf", "foo")
+            output_dir.write("output_file.vcf", b"foo")
             output_file = os.path.join(output_dir.path, "output_file.vcf")
             args = Namespace(subparser_name="awesomeCommand",
                              output_path=output_file,
@@ -214,7 +214,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
 
     def test_check_input_exists_fileExists(self):
         with TempDirectory() as input_dir:
-            input_dir.write("existing_file.vcf", "foo")
+            input_dir.write("existing_file.vcf", b"foo")
             input_file = os.path.join(input_dir.path, "existing_file.vcf")
             command_validator._check_input_exists(None,
                                                   Namespace(input=input_file))
@@ -248,7 +248,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
 
     def test_check_input_readable_fileReadable(self):
         with TempDirectory() as input_dir:
-            input_dir.write("readable_file.vcf", "foo")
+            input_dir.write("readable_file.vcf", b"foo")
             input_file = os.path.join(input_dir.path, "readable_file.vcf")
             command_validator._check_input_readable(None,
                                                     Namespace(input=input_file))
@@ -257,7 +257,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
 
     def test_check_input_readable_fileNotReadable(self):
         with TempDirectory() as input_dir:
-            input_dir.write("readable_file.vcf", "foo")
+            input_dir.write("readable_file.vcf", b"foo")
             input_file = os.path.join(input_dir.path, "readable_file.vcf")
 
             try:
@@ -305,7 +305,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
                                                         args_requires_dir)
             self.assertTrue(1 == 1)
 
-            input_dir.write("input_file.vcf", "foo")
+            input_dir.write("input_file.vcf", b"foo")
             input_file = os.path.join(input_dir.path, "input_file.vcf")
             args_requires_file = Namespace(subparser_name="awesomeCommand",
                                            input=input_file,
@@ -316,7 +316,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
 
     def test_check_input_correct_type_incorrect(self):
         with TempDirectory() as input_dir:
-            input_dir.write("input_file.vcf", "foo")
+            input_dir.write("input_file.vcf", b"foo")
             input_file = os.path.join(input_dir.path, "input_file.vcf")
             args_requires_dir = Namespace(subparser_name="awesomeCommand",
                                           input=input_file,
@@ -344,7 +344,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
                                                          correct_type)
             self.assertTrue(1 == 1)
 
-            output_dir.write("output_file.vcf", "foo")
+            output_dir.write("output_file.vcf", b"foo")
             correct_type = "file"
             output_file = os.path.join(output_dir.path, "output_file.vcf")
             command_validator._check_output_correct_type("awesomeCommand",
@@ -354,7 +354,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
 
     def test_check_output_correct_type_incorrect(self):
         with TempDirectory() as output_dir:
-            output_dir.write("output_file.vcf", "foo")
+            output_dir.write("output_file.vcf", b"foo")
             output_file = os.path.join(output_dir.path, "output_file.vcf")
             correct_type = "directory"
             self.assertRaisesRegexp(utils.UsageError,
@@ -431,7 +431,7 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
     def test_check_overwrite_existing_files_whenOverwriteSingleFileWillRaise(self):
         with TempDirectory() as output_dir:
             output_file = os.path.join(output_dir.path, "output_file")
-            output_dir.write("output_file", "foo")
+            output_dir.write("output_file", b"foo")
             args = Namespace(output_path=output_file,
                              subparser_name="awesomeCommand",
                              force=0)
@@ -448,8 +448,8 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
 
     def test_check_overwrite_whenOverwriteManyFilesWillRaise(self):
         with TempDirectory() as output_dir:
-            output_dir.write("output_file1.vcf", "foo")
-            output_dir.write("output_file2.vcf", "foo")
+            output_dir.write("output_file1.vcf", b"foo")
+            output_dir.write("output_file2.vcf", b"foo")
             args = Namespace(output_path=output_dir.path,
                              subparser_name="awesomeCommand",
                              force=0)
@@ -470,9 +470,9 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
                              subparser_name="awesomeCommand",
                              force=0)
             predicted_outputs = set()
-            for x in xrange(1, 7):
+            for x in range(1, 7):
                 file_name = "out{}.vcf".format(str(x))
-                output_dir.write(file_name, "foo")
+                output_dir.write(file_name, b"foo")
                 predicted_outputs.add(file_name)
             mock_module.predicted_output = predicted_outputs
             self.assertRaisesRegexp(utils.UsageError,
@@ -498,8 +498,8 @@ class CommandValidatorTestCase(test_case.JacquardBaseTestCase):
 
     def test_check_overwrite_whenForcedOnExistingFileDoesNotRaise(self):
         with TempDirectory() as output_dir:
-            output_dir.write("output_file1.vcf", "foo")
-            output_dir.write("output_file2.vcf", "foo")
+            output_dir.write("output_file1.vcf", b"foo")
+            output_dir.write("output_file2.vcf", b"foo")
             args = Namespace(output_path=output_dir.path,
                              subparser_name="awesomeCommand",
                              force=1)
@@ -593,7 +593,7 @@ def is_windows_os():
     return sys.platform.lower().startswith("win")
 
 def make_unwriteable_dir(unwriteable_dir):
-    os.mkdir(unwriteable_dir, 0555)
+    os.mkdir(unwriteable_dir, 0o555)
 
     if is_windows_os():
         FNULL = open(os.devnull, 'w')
@@ -607,7 +607,7 @@ def cleanup_unwriteable_dir(unwriteable_dir):
     shutil.rmtree(unwriteable_dir)
 
 def make_unreadable(unreadable_dir):
-    os.chmod(unreadable_dir, 0333)
+    os.chmod(unreadable_dir, 0o333)
 
     if is_windows_os():
         FNULL = open(os.devnull, 'r')

@@ -75,9 +75,9 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
 
     def test_predict_output(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("A.normalized.jacquardTags.HCsomatic.vcf", "##source=strelka\n#colHeader")
-            input_dir.write("B.normalized.jacquardTags.HCsomatic.vcf", "##source=strelka\n#colHeader")
-            output_dir.write("merged.vcf", "##source=strelka\n#colHeader")
+            input_dir.write("A.normalized.jacquardTags.HCsomatic.vcf", b"##source=strelka\n#colHeader")
+            input_dir.write("B.normalized.jacquardTags.HCsomatic.vcf", b"##source=strelka\n#colHeader")
+            output_dir.write("merged.vcf", b"##source=strelka\n#colHeader")
             args = Namespace(input=input_dir.path,
                              output=os.path.join(output_dir.path, "merged.vcf"))
 
@@ -215,7 +215,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         tags_to_keep = ["foo"]
         actual_record = merge._build_merged_record(coordinate, [record1, record2], sample_list, tags_to_keep)
 
-        self.assertEquals(sample_list, actual_record.sample_tag_values.keys())
+        self.assertEquals(sample_list, list(actual_record.sample_tag_values.keys()))
 
     def test_build_merged_record_fillsMissingSamples(self):
         OD = OrderedDict
@@ -228,7 +228,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         tags_to_keep = ["foo"]
         actual_record = merge._build_merged_record(coordinate, [record1], sample_list, tags_to_keep)
 
-        self.assertEquals(sample_list, actual_record.sample_tag_values.keys())
+        self.assertEquals(sample_list, list(actual_record.sample_tag_values.keys()))
 
     def test_build_merged_record_baseInfoCopiedFromCoordinate(self):
         OD = OrderedDict
@@ -380,15 +380,15 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(expected_metaheaders, actual_metaheaders)
 
     def test_create_reader_lists(self):
-        with TempDirectory() as input_file:
-            fileA = input_file.write("fileA.vcf",
-                                     "##source=strelka\n"
-                                     "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_A\tSample_B\n"
-                                     "chr1\t31\t.\tA\tT\t.\t.\t.\tDP\t23\t52\n")
-            fileB = input_file.write("fileB.vcf",
-                                     "##source=strelka\n"
-                                     "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_C\tSample_D\n"
-                                     "chr2\t32\t.\tA\tT\t.\t.\t.\tDP\t24\t53\n")
+        with TempDirectory() as input_dir:
+            fileA = input_dir.write("fileA.vcf",
+                                     (b"##source=strelka\n"
+                                      b"#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_A\tSample_B\n"
+                                      b"chr1\t31\t.\tA\tT\t.\t.\t.\tDP\t23\t52\n"))
+            fileB = input_dir.write("fileB.vcf",
+                                     (b"##source=strelka\n"
+                                      b"#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_C\tSample_D\n"
+                                      b"chr2\t32\t.\tA\tT\t.\t.\t.\tDP\t24\t53\n"))
             input_files = [vcf.FileReader(fileA), vcf.FileReader(fileB)]
             buffered_readers, vcf_readers = merge._create_reader_lists(input_files)
 
@@ -642,8 +642,8 @@ chr2|10|.|A|C|.|.|INFO|JQ_Bar2|C_2|D_2
 ''').replace('|', "\t")
 
         with TempDirectory() as input_file, TempDirectory() as output_file:
-            input_file.write("P1.fileA.vcf", vcf_content1)
-            input_file.write("P1.fileB.vcf", vcf_content2)
+            input_file.write("P1.fileA.vcf", vcf_content1.encode("utf8"))
+            input_file.write("P1.fileB.vcf", vcf_content2.encode("utf8"))
             args = Namespace(input=input_file.path,
                              output=os.path.join(output_file.path, "fileC.vcf"),
                              tags=None)
@@ -689,7 +689,7 @@ chr1|1|.|A|T|.|.|INFO|JQ_Foo1|A_2|B_2
 chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
 ''').replace('|', "\t")
         with TempDirectory() as input_file, TempDirectory() as output_file:
-            input_file.write("P1.fileA.vcf", vcf_content1)
+            input_file.write("P1.fileA.vcf", vcf_content1.encode("utf8"))
             args = Namespace(input=input_file.path,
                              output=os.path.join(output_file.path, "fileB.vcf"),
                              tags="JQ_Foo,Bar")

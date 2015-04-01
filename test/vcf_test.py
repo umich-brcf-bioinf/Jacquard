@@ -330,9 +330,12 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         sample_names = ["SampleA", "SampleB"]
         input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
         record = VcfRecord.parse_record(input_line, sample_names)
-        self.assertEquals(["SampleA", "SampleB"], record.sample_tag_values.keys())
-        self.assertEquals({"F1":"SA.1", "F2":"SA.2", "F3":"SA.3"}, record.sample_tag_values["SampleA"])
-        self.assertEquals({"F1":"SB.1", "F2":"SB.2", "F3":"SB.3"}, record.sample_tag_values["SampleB"])
+        self.assertEquals(["SampleA", "SampleB"],
+                          sorted(record.sample_tag_values.keys()))
+        self.assertEquals({"F1":"SA.1", "F2":"SA.2", "F3":"SA.3"},
+                          record.sample_tag_values["SampleA"])
+        self.assertEquals({"F1":"SB.1", "F2":"SB.2", "F3":"SB.3"},
+                          record.sample_tag_values["SampleB"])
 
     def test_sample_tag_values(self):
         sample_tag_values = VcfRecord._sample_tag_values(["sampleA", "sampleB"],
@@ -344,21 +347,27 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
     def test_sample_tag_values_emptyDictWhenExplicitNullSampleData(self):
         input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|.|.|.\n")
         record = VcfRecord.parse_record(input_line, sample_names=["sampleA", "sampleB"])
-        self.assertEquals(["sampleA", "sampleB"], record.sample_tag_values.keys())
+        self.assertEquals(["sampleA", "sampleB"],
+                          sorted(record.sample_tag_values.keys()))
         self.assertEquals({}, record.sample_tag_values["sampleA"])
         self.assertEquals({}, record.sample_tag_values["sampleB"])
 
     def test_sample_tag_values_whenSparseSampleData(self):
         input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FOO|.|.\n")
         record = VcfRecord.parse_record(input_line, sample_names=["sampleA", "sampleB"])
-        self.assertEquals(["sampleA", "sampleB"], record.sample_tag_values.keys())
-        self.assertEquals(OrderedDict({"FOO":"."}), record.sample_tag_values["sampleA"])
-        self.assertEquals(OrderedDict({"FOO":"."}), record.sample_tag_values["sampleB"])
+        self.assertEquals(["sampleA", "sampleB"],
+                          sorted(record.sample_tag_values.keys()))
+        self.assertEquals(OrderedDict({"FOO":"."}),
+                          record.sample_tag_values["sampleA"])
+        self.assertEquals(OrderedDict({"FOO":"."}),
+                          record.sample_tag_values["sampleB"])
 
     def test_sample_tag_values_emptyDictWhenNoSampleData(self):
         input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|||\n")
-        record = VcfRecord.parse_record(input_line, sample_names=["sampleA", "sampleB"])
-        self.assertEquals(["sampleA", "sampleB"], record.sample_tag_values.keys())
+        record = VcfRecord.parse_record(input_line,
+                                        sample_names=["sampleA", "sampleB"])
+        self.assertEquals(["sampleA", "sampleB"],
+                          sorted(record.sample_tag_values.keys()))
         self.assertEquals({}, record.sample_tag_values["sampleA"])
         self.assertEquals({}, record.sample_tag_values["sampleB"])
 
@@ -371,14 +380,16 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         sample_names = ["SampleA", "SampleB"]
         input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
         record = VcfRecord.parse_record(input_line, sample_names)
-        self.assertEquals(["SampleA", "SampleB"], record.sample_tag_values.keys())
+        self.assertEquals(["SampleA", "SampleB"], sorted(record.sample_tag_values.keys()))
         self.assertEquals({"F1":"SA.1", "F2":"SA.2", "F3":"SA.3"}, record.sample_tag_values["SampleA"])
         self.assertEquals({"F1":"SB.1", "F2":"SB.2", "F3":"SB.3"}, record.sample_tag_values["SampleB"])
 
     def test_sample_tag_values_preservesSampleOrder(self):
         input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|||\n")
-        record = VcfRecord.parse_record(input_line, sample_names=["sampleB", "sampleA"])
-        self.assertEquals(["sampleB", "sampleA"], record.sample_tag_values.keys())
+        record = VcfRecord.parse_record(input_line,
+                                        sample_names=["sampleB", "sampleA"])
+        self.assertEquals(["sampleA", "sampleB"],
+                          sorted(record.sample_tag_values.keys()))
 
     def test_add_sample_format_value(self):
         sample_names = ["SampleA", "SampleB"]
@@ -424,13 +435,6 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         vcf_record.add_info_field("foo")
         self.assertEquals({"k1": "v1", "k2": "v2", "baz": "baz", "foo": "foo"}, vcf_record.info_dict)
 
-    def test_join_info_fields(self):
-        sample_names = ["SampleA"]
-        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|k1=v1;k2=v2;baz|F|S\n")
-        vcf_record = VcfRecord.parse_record(input_line, sample_names)
-        vcf_record._join_info_fields()
-        self.assertEquals("k2=v2;k1=v1;baz", vcf_record.info)
-
     def test_join_info_fields_nullValues(self):
         sample_names = ["SampleA"]
         input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|.|F|S\n")
@@ -443,10 +447,15 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         vcf_record._join_info_fields()
         self.assertEquals("foo", vcf_record.info)
 
+    def test_join_info_fields_orderedCorrectly(self):
+        vcf_record = VcfRecord("chr1", "2", "A", "G", info="FOO;BAR;BAZ")
+        vcf_record._join_info_fields()
+        self.assertEquals("FOO;BAR;BAZ", vcf_record.info)
+
     def test_text(self):
-        sampleA = OrderedDict({"F1":"SA.1", "F2":"SA.2", "F3":"SA.3"})
-        sampleB = OrderedDict({"F1":"SB.1", "F2":"SB.2", "F3":"SB.3"})
-        sample_tag_values = OrderedDict({"SampleA":sampleA, "SampleB":sampleB})
+        sampleA = OrderedDict(sorted({"F1":"SA.1", "F2":"SA.2", "F3":"SA.3"}.items()))
+        sampleB = OrderedDict(sorted({"F1":"SB.1", "F2":"SB.2", "F3":"SB.3"}.items()))
+        sample_tag_values = OrderedDict(sorted({"SampleA":sampleA, "SampleB":sampleB}.items()))
         record = VcfRecord("CHROM", "POS", "REF", "ALT", "ID", "QUAL", "FILTER", "INFO", sample_tag_values)
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
         self.assertEquals(expected, record.text())
@@ -673,7 +682,7 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
         mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
         reader = VcfReader(mock_reader)
 
-        self.assertEquals(["AF"], reader.format_metaheaders.keys())
+        self.assertEquals(["AF"], sorted(reader.format_metaheaders.keys()))
         self.assertEquals("##FORMAT=<ID=AF,Description='Allele Frequency 2'>", reader.format_metaheaders["AF"])
 
     def test_format_tag_ids_emptyWhenNoFormatTags(self):
@@ -696,9 +705,9 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
         mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
         reader = VcfReader(mock_reader)
 
-        self.assertEquals(["DP"], reader.format_metaheaders.keys())
+        self.assertEquals(["DP"], sorted(reader.format_metaheaders.keys()))
         del reader.format_metaheaders["DP"]
-        self.assertEquals(["DP"], reader.format_metaheaders.keys())
+        self.assertEquals(["DP"], sorted(reader.format_metaheaders.keys()))
 
     def test_vcf_records(self):
         file_contents = ["##metaheader1\n",
@@ -765,9 +774,7 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
 
         vcf_reader = VcfReader(mock_file_reader)
         actual_format_set = vcf_reader.format_metaheaders
-        expected_format_set = ["GT", "GQ"]
-
-        self.assertEquals(expected_format_set, actual_format_set.keys())
+        self.assertEquals(["GQ", "GT"], sorted(actual_format_set.keys()))
 
     def test_get_info_field_list(self):
         file_contents = ['##INFO=<ID=AF,Number=1>\n',
@@ -782,7 +789,7 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
         actual_format_set = vcf_reader.info_metaheaders
         expected_format_set = ["AA", "AF"]
 
-        self.assertEquals(expected_format_set, actual_format_set.keys())
+        self.assertEquals(expected_format_set, sorted(actual_format_set.keys()))
 
 class VcfWriterTestCase(unittest.TestCase):
     def test_write(self):
@@ -796,7 +803,7 @@ class VcfWriterTestCase(unittest.TestCase):
             writer.write("CD\n")
             writer.close()
 
-            actual_output = output_file.read('test.tmp')
+            actual_output = output_file.read('test.tmp', encoding='utf8')
             expected_output = "AB|CD|".replace('|', os.linesep)
             self.assertEquals(expected_output, actual_output)
 
@@ -827,7 +834,7 @@ class FileReaderTestCase(unittest.TestCase):
 
     def test_read_lines(self):
         with TempDirectory() as input_file:
-            input_file.write("A.tmp", "1\n2\n3")
+            input_file.write("A.tmp", b"1\n2\n3")
             reader = FileReader(os.path.join(input_file.path, "A.tmp"))
             reader.open()
             actual_lines = [line for line in reader.read_lines()]
@@ -837,7 +844,7 @@ class FileReaderTestCase(unittest.TestCase):
 
     def test_read_lines_raisesTypeErrorWhenClosed(self):
         with TempDirectory() as input_file:
-            input_file.write("A.tmp", "1\n2\n3")
+            input_file.write("A.tmp", b"1\n2\n3")
             reader = FileReader(os.path.join(input_file.path, "A.tmp"))
             line_iter = reader.read_lines()
             self.assertRaises(TypeError, next, line_iter)

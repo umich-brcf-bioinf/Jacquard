@@ -176,7 +176,7 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
 
     def test_dispatch_nonEmptyOutputDir(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            output_dir.write("file1.vcf", "foo")
+            output_dir.write("file1.vcf", b"foo")
             output_file = os.path.join(output_dir.path, "file1.vcf")
             mock_module.my_exception_string = ""
             mock_module.predicted_output = set(["file1.vcf"])
@@ -189,7 +189,7 @@ class JacquardTestCase_dispatchOnly(test_case.JacquardBaseTestCase):
 
     def test_dispatch_forceNonEmptyOutputDir(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            output_dir.write("file1.vcf", "foo")
+            output_dir.write("file1.vcf", b"foo")
             mock_module.my_exception_string = ""
 
             jacquard._dispatch([mock_module], ["mock_module",

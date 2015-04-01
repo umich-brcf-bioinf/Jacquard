@@ -4,9 +4,13 @@ A collection of individual Tag classes hold the metaheader and logic to
 transform Jacquard-standardized VcfRecords.
 """
 from __future__ import print_function, absolute_import, division
+
+from decimal import Decimal
+import re
+
 import jacquard.utils as utils
 import jacquard.variant_callers.common_tags as common_tags
-import re
+
 
 JQ_SUMMARY_TAG = "JQ_SUMMARY_"
 JQ_REPORTED = "CALLERS_REPORTED_COUNT"
@@ -21,6 +25,7 @@ def _aggregate_numeric_values(values, function):
         try:
             return int(string)
         except ValueError:
+#             return Decimal(string)
             return float(string)
 
     split_values = [x.split(",") for x in values]
@@ -39,7 +44,7 @@ def _aggregate_numeric_values(values, function):
 def _get_non_null_values(record, sample, tag_name_regex):
     values = []
     try:
-        for tag, value in record.sample_tag_values[sample].items():
+        for tag, value in list(record.sample_tag_values[sample].items()):
             if tag_name_regex.match(tag) and value != ".":
                 values.append(value)
     except KeyError:
@@ -48,6 +53,7 @@ def _get_non_null_values(record, sample, tag_name_regex):
     return values
 
 def _average(numeric_values):
+#     average = str(sum(numeric_values)/Decimal(len(numeric_values)))
     average = str(sum(numeric_values)/float(len(numeric_values)))
     return utils.round_two_digits(average)
 

@@ -36,7 +36,7 @@ class JQExceptionTestCase(test_case.JacquardBaseTestCase):
     def test_init(self):
         actual = utils.JQException("msg:{}, {}", "bar", [1, 2, 3])
         self.assertIsInstance(actual, Exception)
-        self.assertEquals(actual.message, "msg:bar, [1, 2, 3]")
+        self.assertEquals(actual.args[0], "msg:bar, [1, 2, 3]")
 
 class SortMetaheadersTestCase(test_case.JacquardBaseTestCase):
     def test_sort_metaheaders(self):

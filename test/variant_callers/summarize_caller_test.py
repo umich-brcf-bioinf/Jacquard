@@ -645,7 +645,7 @@ class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
         actual_values = summarize_caller._get_non_null_values(record,
                                                               "SA",
                                                               re.compile("^JQ_.*_AF$"))
-        self.assertEquals(["1", "2", "0"], actual_values)
+        self.assertEquals(["0", "1", "2"], sorted(actual_values))
 
     def test_get_non_null_values_hasNulls(self):
         sample_tag_values = {"SA": {"JQ_A_AF":".",

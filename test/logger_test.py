@@ -17,8 +17,6 @@ except ImportError:
     from io import StringIO
 
 
-
-
 class LoggerTestCase(unittest.TestCase):
     def setUp(self):
         self.output = StringIO()
@@ -40,8 +38,8 @@ class LoggerTestCase(unittest.TestCase):
                          log_file=None,
                          verbose=None)
         logger.initialize_logger(args)
-        self.assertEquals(['host', 'tool', 'start_time', 'user'],
-                          logger._logging_dict.keys())
+        self.assertEquals(['host', 'start_time', 'tool', 'user'],
+                          sorted(logger._logging_dict.keys()))
         self.assertEquals("jacquard.log", os.path.basename(logger.log_filename))
 
     def test_initialize_logger_suppliedFilename(self):
@@ -52,8 +50,8 @@ class LoggerTestCase(unittest.TestCase):
                              log_file=log_filename,
                              verbose=None)
             logger.initialize_logger(args)
-            self.assertEquals(['host', 'tool', 'start_time', 'user'],
-                              logger._logging_dict.keys())
+            self.assertEquals(['host', 'start_time', 'tool', 'user'],
+                              sorted(logger._logging_dict.keys()))
             self.assertEquals(log_filename, logger.log_filename)
 
         finally:

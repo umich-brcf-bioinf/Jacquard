@@ -217,7 +217,8 @@ def _build_readers(input_files):
 
 def _build_writers_to_readers(vcf_readers, output_file):
     writers_to_readers = collections.OrderedDict()
-    for reader in natsort.natsorted(vcf_readers):
+#     for reader in natsort.natsorted(vcf_readers):
+    for reader in sorted(vcf_readers, key=lambda reader: reader.file_name):
         new_filename = _mangle_output_filenames(reader.file_name)
         output_filepath = os.path.join(output_file, new_filename)
 

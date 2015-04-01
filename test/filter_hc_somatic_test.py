@@ -26,20 +26,21 @@ class FilterSomaticTestCase(test_case.JacquardBaseTestCase):
 
     def test_validate_arguments(self):
         with TempDirectory() as input_file, TempDirectory() as output_file:
-            input_file.write("A.normalized.vcf", "##source=strelka\n#colHeader")
-            input_file.write("B.normalized.vcf", "##source=strelka\n#colHeader")
+            input_file.write("A.normalized.vcf", b"##source=strelka\n#colHeader")
+            input_file.write("B.normalized.vcf", b"##source=strelka\n#colHeader")
             args = Namespace(input=input_file.path,
                              output=output_file.path)
 
             actual_readers_to_writers, out_files = filter_hc_somatic._validate_arguments(args)
             self.assertEquals(2, len(actual_readers_to_writers))
             self.assertEquals(0, len(out_files))
-            self.assertRegexpMatches(actual_readers_to_writers.values()[0].output_filepath, "HCsomatic.vcf")
+            self.assertRegexpMatches(list(actual_readers_to_writers.values())[0].output_filepath,
+                                     "HCsomatic.vcf")
 
     def test_predict_output(self):
         with TempDirectory() as input_file:
-            input_file.write("A.normalized.jacquardTags.vcf", "##source=strelka\n#colHeader")
-            input_file.write("B.normalized.jacquardTags.vcf", "##source=strelka\n#colHeader")
+            input_file.write("A.normalized.jacquardTags.vcf", b"##source=strelka\n#colHeader")
+            input_file.write("B.normalized.jacquardTags.vcf", b"##source=strelka\n#colHeader")
             args = Namespace(input=input_file.path)
 
             desired_output_files = filter_hc_somatic._predict_output(args)
@@ -53,12 +54,12 @@ class FilterSomaticTestCase(test_case.JacquardBaseTestCase):
     def test_find_somatic_positions(self):
         with TempDirectory() as input_file:
             input_file.write("A.snp.vcf",
-                             ("##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\t"
-                              "INFO\tFORMAT\tNORMAL\tTUMOR\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234\n1\t2352"
-                              "\t.\tA\tG\t.\t.\tfoo\tDP:JQ_HC_SOM_VS\t234:1\t52:1\n"))
+                             (b"##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\t"
+                              b"INFO\tFORMAT\tNORMAL\tTUMOR\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234\n1\t2352"
+                              b"\t.\tA\tG\t.\t.\tfoo\tDP:JQ_HC_SOM_VS\t234:1\t52:1\n"))
             input_file.write("A.indel.vcf",
-                             ("##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO"
-                              "\tFORMAT\tNORMAL\tTUMOR\n1\t2353\t.\tA\tGT\t.\t.\tfoo\tDP:JQ_HC_SOM_VS\t234:1\t52:1\n"))
+                             (b"##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO"
+                              b"\tFORMAT\tNORMAL\tTUMOR\n1\t2353\t.\tA\tGT\t.\t.\tfoo\tDP:JQ_HC_SOM_VS\t234:1\t52:1\n"))
 
             file1 = os.path.join(input_file.path, "A.snp.vcf")
             file2 = os.path.join(input_file.path, "A.indel.vcf")
@@ -76,8 +77,8 @@ class FilterSomaticTestCase(test_case.JacquardBaseTestCase):
             fileB_contents = ("##source=VarScan2\n"
                               "#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR\n"
                               "1|20|.|A|GT|.|.|foo|DP:JQ_HC_SOM_VS|234:1|52:1\n")
-            input_file.write("A.vcf", self.entab(fileA_contents))
-            input_file.write("B.vcf", self.entab(fileB_contents))
+            input_file.write("A.vcf", self.entab(fileA_contents).encode("utf8"))
+            input_file.write("B.vcf", self.entab(fileB_contents).encode("utf8"))
 
             input_fileA = os.path.join(input_file.path, "A.vcf")
             input_fileB = os.path.join(input_file.path, "B.vcf")
@@ -89,12 +90,12 @@ class FilterSomaticTestCase(test_case.JacquardBaseTestCase):
     def test_filterJQExclude(self):
         with TempDirectory() as input_file:
             input_file.write("A.snp.vcf",
-                             ("##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\t"
-                              "INFO\tFORMAT\tNORMAL\tTUMOR\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234\n1\t2352"+
-                              "\t.\tA\tG\t.\tJQ_EXCLUDE\tfoo\tDP:JQ_HC_SOM_VS\t234:1\t52:1\n"))
+                             (b"##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\t"
+                              b"INFO\tFORMAT\tNORMAL\tTUMOR\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234\n1\t2352"+
+                              b"\t.\tA\tG\t.\tJQ_EXCLUDE\tfoo\tDP:JQ_HC_SOM_VS\t234:1\t52:1\n"))
             input_file.write("A.indel.vcf",
-                             ("##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO"
-                              "\tFORMAT\tNORMAL\tTUMOR\n1\t2353\t.\tA\tGT\t.\t.\tfoo\tDP:JQ_HC_SOM_VS\t234:1\t52:1\n"))
+                             (b"##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO"
+                              b"\tFORMAT\tNORMAL\tTUMOR\n1\t2353\t.\tA\tGT\t.\t.\tfoo\tDP:JQ_HC_SOM_VS\t234:1\t52:1\n"))
 
             file1 = os.path.join(input_file.path, "A.snp.vcf")
             file2 = os.path.join(input_file.path, "A.indel.vcf")
@@ -108,19 +109,19 @@ class FilterSomaticTestCase(test_case.JacquardBaseTestCase):
     def test_filterJQExclude_messages(self):
         with TempDirectory() as input_file:
             input_file.write("A.snp.vcf",
-                             ("##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\t"
-                              "INFO\tFORMAT\tNORMAL\tTUMOR\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234\n1\t2352"
-                              "\t.\tA\tG\t.\tJQ_EXCLUDE\tfoo\tDP:JQ_HC_SOM_VS\t234:1\t52:1\n"))
+                             (b"##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\t"
+                              b"INFO\tFORMAT\tNORMAL\tTUMOR\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234\n1\t2352"
+                              b"\t.\tA\tG\t.\tJQ_EXCLUDE\tfoo\tDP:JQ_HC_SOM_VS\t234:1\t52:1\n"))
             input_file.write("A.indel.vcf",
-                             ("##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO"
-                              "\tFORMAT\tNORMAL\tTUMOR\n1\t2353\t.\tA\tGT\t.\t.\tfoo\tDP:JQ_HC_SOM_VS\t234:1\t52:1\n"))
+                             (b"##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO"
+                              b"\tFORMAT\tNORMAL\tTUMOR\n1\t2353\t.\tA\tGT\t.\t.\tfoo\tDP:JQ_HC_SOM_VS\t234:1\t52:1\n"))
             input_file.write("A.snvs.vcf",
-                             ("##source=strelka\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\t"
-                              "INFO\tFORMAT\tSAMPLE\n\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234\n1\t2352"
-                              "\t.\tA\tG\t.\tJQ_EXCLUDE\tfoo\tDP:JQ_HC_SOM_SK\t234:1"))
+                             (b"##source=strelka\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\t"
+                              b"INFO\tFORMAT\tSAMPLE\n\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234\n1\t2352"
+                              b"\t.\tA\tG\t.\tJQ_EXCLUDE\tfoo\tDP:JQ_HC_SOM_SK\t234:1"))
             input_file.write("A.indels.vcf",
-                             ("##source=strelka\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO"
-                              "\tFORMAT\tSAMPLE\n1\t2353\t.\tA\tGT\t.\t.\tfoo\tDP:JQ_HC_SOM_SK\t234:1\n"))
+                             (b"##source=strelka\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO"
+                              b"\tFORMAT\tSAMPLE\n1\t2353\t.\tA\tGT\t.\t.\tfoo\tDP:JQ_HC_SOM_SK\t234:1\n"))
 
             files = [os.path.join(input_file.path, "A.snp.vcf"),
                      os.path.join(input_file.path, "A.indel.vcf"),
@@ -138,9 +139,9 @@ class FilterSomaticTestCase(test_case.JacquardBaseTestCase):
     def test_findSomaticPositions_invalidInput(self):
         with TempDirectory() as input_file:
             input_file.write("A.vcf",
-                             "##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234:1\n")
+                             b"##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234\n1\t2352\t.\tA\tG\t.\t.\tfoo\tDP\t234:1\n")
             input_file.write("B.vcf",
-                             "##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR\n1\t2353\t.\tA\tGT\t.\t.\tfoo\tDP:JQ_SOM_VS\t234:1\n")
+                             b"##source=VarScan2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNORMAL\tTUMOR\n1\t2353\t.\tA\tGT\t.\t.\tfoo\tDP:JQ_SOM_VS\t234:1\n")
 
             file1 = os.path.join(input_file.path, "A.vcf")
             file2 = os.path.join(input_file.path, "B.vcf")
@@ -153,8 +154,8 @@ class FilterSomaticTestCase(test_case.JacquardBaseTestCase):
 
     def test_writeSomatic_outputFileForEachInputFile(self):
         with TempDirectory() as input_file, TempDirectory() as output_file:
-            input1 = input_file.write('mutect.vcf', "##MuTect\n"+VCF_HEADER+"1\t32\t.\tA\tT\t.\tPASS\tFOO\tDP\t30")
-            input2 = input_file.write('varscan.vcf', "##source=VarScan2\n"+VCF_HEADER+"1\t35\t.\tA\tG\t.\tPASS\tFOO\tDP\t30")
+            input1 = input_file.write('mutect.vcf', "##MuTect\n{}1\t32\t.\tA\tT\t.\tPASS\tFOO\tDP\t30".format(VCF_HEADER).encode("utf8"))
+            input2 = input_file.write('varscan.vcf', "##source=VarScan2\n{}1\t35\t.\tA\tG\t.\tPASS\tFOO\tDP\t30".format(VCF_HEADER).encode("utf8"))
 
             in_files = [input1, input2]
             somatic_positions = {"1^32^A"}

@@ -58,7 +58,7 @@ class SummarizeTestCase(test_case.JacquardBaseTestCase):
 """##blah\n#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SAMPLE
 1|42|.|A|G|.|PASS|INFO|JQ_VS_AF:JQ_MT_AF:JQ_VS_DP:JQ_MT_DP|0.2:0.4:30:45""")
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            input_dir.write("foo.vcf", input_data)
+            input_dir.write("foo.vcf", input_data.encode("utf8"))
             input_file = os.path.join(input_dir.path, "foo.vcf")
             output_file = os.path.join(output_dir.path, "baz.vcf")
             args = Namespace(input=input_file,

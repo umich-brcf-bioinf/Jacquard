@@ -224,8 +224,8 @@ class ZScoreTagTest(test_case.JacquardBaseTestCase):
         tag.add_tag_values(rec1)
 
         self.assertEquals(0, tag._stdev)
-        self.assertEqual(["X"], rec1.sample_tag_values["SA"].keys())
-        self.assertEqual(["X"], rec1.sample_tag_values["SB"].keys())
+        self.assertEqual(["X"], sorted(rec1.sample_tag_values["SA"].keys()))
+        self.assertEqual(["X"], sorted(rec1.sample_tag_values["SB"].keys()))
 
 class AlleleFreqZScoreTagTest(test_case.JacquardBaseTestCase):
     def test_init_metaheaders(self):

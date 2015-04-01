@@ -272,8 +272,7 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
         return tags
 
     def _init_info_dict(self):
-        #TODO (cgates): Use OrderedDict to make round-trip consistent
-        info_dict = {}
+        info_dict = OrderedDict()
         if self.info and self.info != ".":
             info_list = self.info.split(";")
             for key_value in info_list:
@@ -305,8 +304,9 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
 
         self._join_info_fields()
 
+    #TODO:(cgates): Remove info; all external calls should reference info_dict
     def _join_info_fields(self):
-        """Returns an info string (suitable for writing) from info dict."""
+        """Updates info attribute from info dict."""
         if self.info_dict:
             info_fields = []
             if len(self.info_dict) > 1:
