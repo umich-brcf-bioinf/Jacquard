@@ -68,6 +68,11 @@ of \'.\'.''').replace("\n", "")
         self.tag.add_tag_values(vcf_record)
 
 class _ZScoreTag(object):
+    '''Utility tag to add zscore for dependent tag (e.g. depth or allele freq)
+
+    Given a dependent tag and a vcf reader, immediately calculates mean and stdev
+    and then adds zscores for 
+    '''
     _EXECUTION_FORMAT = "##jacquard.summarize.{0}.{1}_{2}={3}"
     _METAHEADER_FORMAT = ('##FORMAT=<ID={0},'
                           'Number=1,'
@@ -125,7 +130,7 @@ class _ZScoreTag(object):
         if zscore == ".":
             return zscore
         else:
-            return utils.round_two_digits(zscore)
+            return utils.round_two_digits(repr(zscore))
 
     def add_tag_values(self, vcf_record):
         if not self._ok_to_add_tag_values(vcf_record):
@@ -140,13 +145,14 @@ class _ZScoreTag(object):
 
             if  value is not None:
                 zscore = (value - self._mean) / self._stdev
-            sample_values[sample_name] = self._zscore_as_str(str(zscore))
+            sample_values[sample_name] = self._zscore_as_str(zscore)
 
         vcf_record.add_sample_tag_value(self._tag_id,
                                         sample_values)
 
     @staticmethod
     def _get_dependent_value(tag_values, dependent_tag_id):
+        '''Extract (float) value of dependent tag or None if absent.'''
         try:
             values = tag_values[dependent_tag_id].split(",")
             return max([float(value) for value in values])
@@ -156,6 +162,12 @@ class _ZScoreTag(object):
             return None
 
     def _init_population_stats(self, vcf_reader, dependent_tag_id):
+        '''Derive mean and stdev. 
+
+        Adapted from online variance algorithm from Knuth, The Art of Computer 
+        Programming, volume 2
+
+        Returns: mean and stdev when len(values) > 1, otherwise (None, None)'''
         #pylint: disable=invalid-name
         n = 0
         mean = 0
@@ -169,7 +181,7 @@ class _ZScoreTag(object):
                     if value is not None:
                         n += 1
                         delta = value - mean
-                        mean += delta/n
+                        mean += delta / n
                         M2 += delta * (value - mean)
         finally:
             vcf_reader.close()

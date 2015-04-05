@@ -709,6 +709,26 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
         del reader.format_metaheaders["DP"]
         self.assertEquals(["DP"], sorted(reader.format_metaheaders.keys()))
 
+    def test_sort_delegatesToFileReader(self):
+        _FILE_CONTENTS = [
+                 "##FORMAT=<ID=DP,Number=1,Type=Integer,Description='Read Depth'>\n",
+                 self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),]
+
+        class ReversedSortMockFileReader(MockFileReader):
+            def __init__(self, filename):
+                MockFileReader.__init__(self, filename, _FILE_CONTENTS)
+                self.filename = filename
+            def __lt__(self, other):
+                return self.filename > other.filename
+
+        reader1 = VcfReader(ReversedSortMockFileReader("1.txt"))
+        reader2 = VcfReader(ReversedSortMockFileReader("2.txt"))
+        reader3 = VcfReader(ReversedSortMockFileReader("3.txt"))
+
+        actual_readers = sorted([reader1, reader2, reader3])
+
+        self.assertEquals([reader3, reader2, reader1], actual_readers)
+
     def test_vcf_records(self):
         file_contents = ["##metaheader1\n",
                          "##metaheader2\n",

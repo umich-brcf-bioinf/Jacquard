@@ -451,8 +451,8 @@ class DepthAverageTagTestCase(test_case.JacquardBaseTestCase):
                            sample_tag_values=sample_tag_values)
         tag.add_tag_values(record)
 
-        self.assertEquals("1.0", record.sample_tag_values["SA"][tag._TAG_ID])
-        self.assertEquals("3.0", record.sample_tag_values["SB"][tag._TAG_ID])
+        self.assertEquals("1", record.sample_tag_values["SA"][tag._TAG_ID])
+        self.assertEquals("3", record.sample_tag_values["SB"][tag._TAG_ID])
 
     def test_add_tag_values_oneValueReturnsNull(self):
         tag = summarize_caller._DepthAverageTag()
@@ -505,7 +505,7 @@ class DepthAverageTagTestCase(test_case.JacquardBaseTestCase):
                            sample_tag_values=sample_tag_values)
         tag.add_tag_values(record)
 
-        self.assertEquals("1.0,2.0", record.sample_tag_values["SA"][tag._TAG_ID])
+        self.assertEquals("1,2", record.sample_tag_values["SA"][tag._TAG_ID])
 
     def test_add_tag_values_rounds(self):
         tag = summarize_caller._DepthAverageTag()
@@ -693,7 +693,7 @@ class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEquals("2", actual_record.sample_tag_values["SA"]["JQ_SUMMARY_CALLERS_REPORTED_COUNT"])
         self.assertEquals("0", actual_record.sample_tag_values["SA"]["JQ_SUMMARY_CALLERS_PASSED_COUNT"])
-        self.assertEquals("0.0", actual_record.sample_tag_values["SA"]["JQ_SUMMARY_AF_AVERAGE"])
+        self.assertEquals("0", actual_record.sample_tag_values["SA"]["JQ_SUMMARY_AF_AVERAGE"])
         self.assertEquals(".", actual_record.sample_tag_values["SA"]["JQ_SUMMARY_AF_RANGE"])
         self.assertEquals(".", actual_record.sample_tag_values["SA"]["JQ_SUMMARY_DP_AVERAGE"])
         self.assertEquals(".", actual_record.sample_tag_values["SA"]["JQ_SUMMARY_DP_RANGE"])

@@ -113,8 +113,8 @@ class ZScoreTagTest(test_case.JacquardBaseTestCase):
         tag = zscore_caller._ZScoreTag("ZScoreX", "ZScore for X", "X", reader)
 
         values = [4, 0, 7, 13, 16, 0]
-        self.assertAlmostEquals(mean(values), tag._mean)
-        self.assertAlmostEquals(stdev(values), tag._stdev)
+        self.assertAlmostEquals(mean(values), float(tag._mean))
+        self.assertAlmostEquals(stdev(values), float(tag._stdev))
 
 
     def test_init_setsPopulationStatisticsSkipsSamplesLackingSourceTag(self):

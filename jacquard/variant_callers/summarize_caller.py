@@ -21,13 +21,6 @@ JQ_PASSED_LIST = "CALLERS_PASSED_LIST"
 JQ_SAMPLES_PASSED = "SAMPLES_PASSED_COUNT"
 
 def _aggregate_numeric_values(values, function):
-    def _number(string):
-        try:
-            return int(string)
-        except ValueError:
-#             return Decimal(string)
-            return float(string)
-
     split_values = [x.split(",") for x in values]
     lengths = set([len(x) for x in split_values])
     if len(lengths) > 1:
@@ -37,7 +30,7 @@ def _aggregate_numeric_values(values, function):
     transposed_values = [list(x) for x in zip(*split_values)]
     string_values = []
     for group in transposed_values:
-        string_values.append(function([_number(i) for i in group]))
+        string_values.append(function([Decimal(i) for i in group]))
 
     return ",".join(string_values)
 
@@ -53,8 +46,7 @@ def _get_non_null_values(record, sample, tag_name_regex):
     return values
 
 def _average(numeric_values):
-#     average = str(sum(numeric_values)/Decimal(len(numeric_values)))
-    average = str(sum(numeric_values)/float(len(numeric_values)))
+    average = str(sum(numeric_values)/Decimal(len(numeric_values)))
     return utils.round_two_digits(average)
 
 def _range(numeric_values):

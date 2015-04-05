@@ -21,6 +21,9 @@ class VcfReader(object):
         self.sample_names = self._init_sample_names()
         self.qualified_sample_names = self._create_qualified_sample_names()
 
+    def __lt__(self, other):
+        return self._file_reader < other._file_reader
+
     def _get_tag_metaheaders(self, regex_exp):
         tag_dict = {}
         for metaheader in self.metaheaders:
@@ -250,7 +253,7 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
         self.info_dict = self._init_info_dict()
 
         if sample_tag_values is None:
-            self.sample_tag_values = {}
+            self.sample_tag_values = OrderedDict()
         else:
             self.sample_tag_values = sample_tag_values
         self._key = self._build_key()

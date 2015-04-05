@@ -252,7 +252,7 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
 
     def test_translate_files(self):
         record = vcf.VcfRecord("chr1", "42", "A", "C",
-                               sample_tag_values=OrderedDict(sorted({"SA":{}, "SB":{}}.items())))
+                               sample_tag_values=OrderedDict(sorted({"SA":OrderedDict(), "SB":OrderedDict()}.items())))
         reader = MockVcfReader(metaheaders=["##metaheader1",
                                             "##metaheader2"],
                                records=[record],
