@@ -1,3 +1,6 @@
+# OSX finder metadata
+**/.DS_Store
+
 # Compiled python modules.
 *.pyc
 
