@@ -3,8 +3,20 @@ Jacquard
 ========
 Suite of command-line tools to expedite analysis of exome variant data from multiple patients and multiple variant callers.
 
-[![Build Status](https://travis-ci.org/umich-brcf-bioinf/Jacquard.svg?branch=develop)](https://travis-ci.org/umich-brcf-bioinf/Jacquard) 
-[![Coverage Status](https://coveralls.io/repos/umich-brcf-bioinf/Jacquard/badge.png?branch=develop)](https://coveralls.io/r/umich-brcf-bioinf/Jacquard?branch=develop)
+.. image:: https://travis-ci.org/umich-brcf-bioinf/Jacquard.svg?branch=develop
+    :target: https://travis-ci.org/umich-brcf-bioinf/Jacquard
+    :alt: Build Status
+
+.. image:: https://coveralls.io/repos/umich-brcf-bioinf/Jacquard/badge.png?branch=develop
+    :target: https://coveralls.io/r/umich-brcf-bioinf/Jacquard?branch=develop
+    :alt: Coverage Status
+    
+.. image:: https://pypip.in/license/jacquard/badge.png
+    :target: https://pypi.python.org/pypi/jacquard/
+    :alt: License
+
+.. image:: https://pypip.in/d/jacquard/badge.png
+    :alt: Downloads Counter
 
 Files
 -----
