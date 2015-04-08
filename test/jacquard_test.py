@@ -55,7 +55,7 @@ class JacquardArgumentParserTestCase(test_case.JacquardBaseTestCase):
 
 class JacquardTestCase(test_case.JacquardBaseTestCase):
     def test_version(self):
-        self.assertEquals(0.31, jacquard.__version__)
+        self.assertEquals("0.4", jacquard.__version__)
 
     def test_get_execution_context(self):
         command = "foo input_dir output_dir"
