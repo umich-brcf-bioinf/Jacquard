@@ -27,30 +27,30 @@ Files
 
 Usage
 -----
-''$jacquard <subcommand> [options] [arguments]''
+``$jacquard <subcommand> [options] [arguments]``
 
 *Subcommands*
 
-:translate:
+:translate
    Accepts a directory of VCF results (including VarScan high confidence 
    files). Creates a new directory of VCFs, adding Jacquard-specific FORMAT 
    tags for each VCF record.
-:filter_hc_somatic:
+:filter_hc_somatic
    Accepts a directory of Jacquard-tagged VCF results from one or more callers
    and creates a new directory of VCFs, where rows have been filtered to 
    contain only positions that were called as high-confidence somatic in 
    any VCF.
-:merge:
+:merge
    Accepts a directory of VCFs and returns a single merged VCF file.
-:summarize:
+:summarize
    Accepts a Jacquard-merged VCF file and creates a new VCF file, adding 
    summary fields/tags.
-:expand:
+:expand
    Transforms VCF file into tab-separated text file expanding INFO fields and 
    FORMAT tags into distinct columns.
 
 For help on a specific subcommand:
-''jacquard <subcommand> --help''
+``jacquard <subcommand> --help``
 
 
 ---
