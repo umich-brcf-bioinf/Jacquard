@@ -9,8 +9,8 @@ import os
 
 import jacquard.logger as logger
 import jacquard.utils as utils
-import jacquard.variant_callers.summarize_caller as summarize_caller
-import jacquard.variant_callers.zscore_caller as zscore_caller
+import jacquard.summarize_caller as summarize_caller
+import jacquard.zscore_caller as zscore_caller
 import jacquard.vcf as vcf
 
 

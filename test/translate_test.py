@@ -12,7 +12,7 @@ from testfixtures import TempDirectory
 
 from jacquard import vcf
 import jacquard.logger
-import jacquard.translate as translate
+import jacquard.commands.translate as translate
 import jacquard.utils as utils
 import test.mock_logger
 import test.test_case as test_case

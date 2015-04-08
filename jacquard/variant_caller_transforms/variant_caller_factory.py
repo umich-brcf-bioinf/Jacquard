@@ -8,9 +8,9 @@ from __future__ import print_function, absolute_import, division
 
 import jacquard.logger as logger
 import jacquard.utils as utils
-import jacquard.variant_callers.mutect as mutect
-import jacquard.variant_callers.strelka as strelka
-import jacquard.variant_callers.varscan as varscan
+import jacquard.variant_caller_transforms.mutect as mutect
+import jacquard.variant_caller_transforms.strelka as strelka
+import jacquard.variant_caller_transforms.varscan as varscan
 
 
 SUPPORTED_CALLER_VERSIONS = {"VarScan": varscan.VERSION,

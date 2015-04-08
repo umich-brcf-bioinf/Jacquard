@@ -7,7 +7,7 @@ import os
 
 from testfixtures import TempDirectory
 
-import jacquard.summarize as summarize
+import jacquard.commands.summarize as summarize
 import jacquard.vcf as vcf
 import test.test_case as test_case
 from test.vcf_test import MockFileWriter, MockVcfReader

@@ -23,7 +23,7 @@ import os
 
 import jacquard.logger as logger
 import jacquard.utils as utils
-from jacquard.variant_callers import variant_caller_factory
+from jacquard.variant_caller_transforms import variant_caller_factory
 from jacquard.vcf import FileReader, FileWriter
 
 

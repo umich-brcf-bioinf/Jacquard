@@ -11,7 +11,7 @@ import natsort
 
 import jacquard.logger as logger
 import jacquard.utils as utils
-import jacquard.variant_callers.variant_caller_factory as variant_caller_factory
+import jacquard.variant_caller_transforms.variant_caller_factory as variant_caller_factory
 import jacquard.vcf as vcf
 
 

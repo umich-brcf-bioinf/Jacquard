@@ -50,14 +50,14 @@ import traceback
 
 from jacquard import __version__
 import jacquard.command_validator as command_validator
-import jacquard.expand as expand
-import jacquard.filter_hc_somatic as filter_hc_somatic
+import jacquard.commands.expand as expand
+import jacquard.commands.filter_hc_somatic as filter_hc_somatic
 import jacquard.logger as logger
-import jacquard.merge as merge
-import jacquard.summarize as summarize
-import jacquard.translate as translate
+import jacquard.commands.merge as merge
+import jacquard.commands.summarize as summarize
+import jacquard.commands.translate as translate
 import jacquard.utils as utils
-from jacquard.variant_callers import variant_caller_factory
+from jacquard.variant_caller_transforms import variant_caller_factory
 
 
 _SUBCOMMANDS = [translate,

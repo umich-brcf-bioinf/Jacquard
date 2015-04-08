@@ -9,7 +9,7 @@ from decimal import Decimal
 import re
 
 import jacquard.utils as utils
-import jacquard.variant_callers.common_tags as common_tags
+import jacquard.variant_caller_transforms.common_tags as common_tags
 
 
 JQ_SUMMARY_TAG = "JQ_SUMMARY_"

@@ -4,7 +4,7 @@ from __future__ import print_function, absolute_import, division
 
 import jacquard.logger
 import jacquard.utils as utils
-import jacquard.variant_callers.strelka as strelka
+import jacquard.variant_caller_transforms.strelka as strelka
 import jacquard.vcf as vcf
 import test.mock_logger
 import test.test_case as test_case

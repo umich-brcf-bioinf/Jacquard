@@ -4,7 +4,7 @@ from __future__ import print_function, absolute_import, division
 from argparse import Namespace
 import re
 
-import jacquard.variant_callers.variant_caller_factory as variant_caller_factory
+import jacquard.variant_caller_transforms.variant_caller_factory as variant_caller_factory
 import test.test_case as test_case
 import test.vcf_test as vcf_test
 

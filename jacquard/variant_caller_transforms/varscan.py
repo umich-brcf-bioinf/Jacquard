@@ -25,7 +25,7 @@ import re
 
 import jacquard.logger as logger
 import jacquard.utils as utils
-import jacquard.variant_callers.common_tags as common_tags
+import jacquard.variant_caller_transforms.common_tags as common_tags
 import jacquard.vcf as vcf
 
 
@@ -204,7 +204,7 @@ class Varscan(object):
             return "##source=VarScan2" in vcf_reader.metaheaders
         return False
 
-#TODO: (cgates) Add check of header line (extract constant from HCTag?)
+#TODO: (cgates) Add check of header line - extract constant from HCTag?
     def _is_varscan_hc_file(self, file_reader):
         return self.hc_file_pattern.search(file_reader.file_name)
 

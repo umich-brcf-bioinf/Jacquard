@@ -10,7 +10,7 @@ import os
 from testfixtures import TempDirectory
 
 import jacquard.logger
-import jacquard.merge as merge
+import jacquard.commands.merge as merge
 import jacquard.utils as utils
 from jacquard.vcf import VcfRecord
 import jacquard.vcf as vcf

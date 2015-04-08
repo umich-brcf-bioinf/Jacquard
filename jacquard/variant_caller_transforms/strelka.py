@@ -17,7 +17,7 @@ import re
 
 import jacquard.logger as logger
 import jacquard.utils as utils
-import jacquard.variant_callers.common_tags as common_tags
+import jacquard.variant_caller_transforms.common_tags as common_tags
 import jacquard.vcf as vcf
 
 

@@ -1,7 +1,7 @@
 #pylint:disable=line-too-long,too-many-public-methods
 from __future__ import print_function, absolute_import, division
 
-import jacquard.variant_callers.common_tags as common_tags
+import jacquard.variant_caller_transforms.common_tags as common_tags
 from jacquard.vcf import VcfRecord
 import test.test_case as test_case
 

@@ -8,7 +8,7 @@ import os
 
 from testfixtures import TempDirectory
 
-import jacquard.expand as expand
+import jacquard.commands.expand as expand
 import jacquard.logger
 import jacquard.utils as utils
 import jacquard.vcf as vcf
