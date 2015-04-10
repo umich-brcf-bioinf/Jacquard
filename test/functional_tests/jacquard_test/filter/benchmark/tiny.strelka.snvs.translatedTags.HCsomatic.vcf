@@ -1,9 +1,14 @@
 ##fileformat=VCFv4.1
+##content=strelka somatic snv calls
 ##fileDate=20140709
+##germlineSnvTheta=0.001
+##jacquard.translate.caller=Strelka
+##jacquard=<Timestamp="2015-03-30 13:44:08",Command="<module 'jacquard.translate' from 'C:\Users\jebene\git\Jacquard\jacquard\translate.pyc'>",Cwd="C:\Users\jebene\git">
+##priorSomaticSnvRate=1e-06
+##reference=file:ucsc.hg19.fasta
 ##source=strelka
 ##source_version=2.0.15
 ##startTime=Wed Jul  9 13:37:22 2014
-##reference=file:ucsc.hg19.fasta
 ##contig=<ID=chr1,length=249250621>
 ##contig=<ID=chr2,length=243199373>
 ##contig=<ID=chr3,length=198022430>
@@ -26,46 +31,37 @@
 ##contig=<ID=chr20,length=63025520>
 ##contig=<ID=chr21,length=48129895>
 ##contig=<ID=chr22,length=51304566>
+##contig=<ID=chrM,length=16571>
 ##contig=<ID=chrX,length=155270560>
 ##contig=<ID=chrY,length=59373566>
-##contig=<ID=chrM,length=16571>
-##content=strelka somatic snv calls
-##germlineSnvTheta=0.001
-##priorSomaticSnvRate=1e-06
-##INFO=<ID=QSS,Number=1,Type=Integer,Description="Quality score for any somatic snv, ie. for the ALT allele to be present at a significantly different frequency in the tumor and normal">
-##INFO=<ID=TQSS,Number=1,Type=Integer,Description="Data tier used to compute QSS">
+##FILTER=<ID=BCNoise,Description="Fraction of basecalls filtered at this site in either sample is at or above 0.4">
+##FILTER=<ID=JQ_EXCLUDE_MALFORMED_ALT,Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.">
+##FILTER=<ID=JQ_EXCLUDE_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.">
+##FILTER=<ID=JQ_EXCLUDE_MISSING_ALT,Description="The alternate allele is missing for this variant record.">
+##FILTER=<ID=QSS_ref,Description="Normal sample is not homozygous ref or ssnv Q-score < 15, ie calls with NT!=ref or QSS_NT < 15">
+##FILTER=<ID=SpanDel,Description="Fraction of reads crossing site with spanning deletions in either sample exceeeds 0.75">
 ##INFO=<ID=NT,Number=1,Type=String,Description="Genotype of the normal in all data tiers, as used to classify somatic variants. One of {ref,het,hom,conflict}.">
+##INFO=<ID=QSS,Number=1,Type=Integer,Description="Quality score for any somatic snv, ie. for the ALT allele to be present at a significantly different frequency in the tumor and normal">
 ##INFO=<ID=QSS_NT,Number=1,Type=Integer,Description="Quality score reflecting the joint probability of a somatic variant and NT">
-##INFO=<ID=TQSS_NT,Number=1,Type=Integer,Description="Data tier used to compute QSS_NT">
 ##INFO=<ID=SGT,Number=1,Type=String,Description="Most likely somatic genotype excluding normal noise states">
 ##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description="Somatic mutation">
-##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth for tier1 (used+filtered)">
-##FORMAT=<ID=FDP,Number=1,Type=Integer,Description="Number of basecalls filtered from original read depth for tier1">
-##FORMAT=<ID=SDP,Number=1,Type=Integer,Description="Number of reads with deletions spanning this site at tier1">
-##FORMAT=<ID=SUBDP,Number=1,Type=Integer,Description="Number of reads below tier1 mapping quality threshold aligned across this site">
+##INFO=<ID=TQSS,Number=1,Type=Integer,Description="Data tier used to compute QSS">
+##INFO=<ID=TQSS_NT,Number=1,Type=Integer,Description="Data tier used to compute QSS_NT">
 ##FORMAT=<ID=AU,Number=2,Type=Integer,Description="Number of 'A' alleles used in tiers 1,2">
 ##FORMAT=<ID=CU,Number=2,Type=Integer,Description="Number of 'C' alleles used in tiers 1,2">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth for tier1 (used+filtered)">
+##FORMAT=<ID=FDP,Number=1,Type=Integer,Description="Number of basecalls filtered from original read depth for tier1">
 ##FORMAT=<ID=GU,Number=2,Type=Integer,Description="Number of 'G' alleles used in tiers 1,2">
-##FORMAT=<ID=TU,Number=2,Type=Integer,Description="Number of 'T' alleles used in tiers 1,2">
-##FILTER=<ID=BCNoise,Description="Fraction of basecalls filtered at this site in either sample is at or above 0.4">
-##FILTER=<ID=SpanDel,Description="Fraction of reads crossing site with spanning deletions in either sample exceeeds 0.75">
-##FILTER=<ID=QSS_ref,Description="Normal sample is not homozygous ref or ssnv Q-score < 15, ie calls with NT!=ref or QSS_NT < 15">
-##FORMAT=<ID=JQ_SK_CALLER_REPORTED,Number=1,Type=Integer,Description="1 = variant present in original VCF">
-##FORMAT=<ID=JQ_SK_CALLER_PASSED,Number=1,Type=Integer,Description="1 = variant FILTER is PASS in original VCF">
 ##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)">
+##FORMAT=<ID=JQ_SK_CALLER_PASSED,Number=1,Type=Integer,Description="1 = variant FILTER is PASS in original VCF">
+##FORMAT=<ID=JQ_SK_CALLER_REPORTED,Number=1,Type=Integer,Description="1 = variant present in original VCF">
 ##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)">
 ##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)">
-##jacquard.translate.caller=Strelka
-##jacquard.version=X
-##jacquard.command=translate C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\jacquard_test\input\ C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\jacquard_test\translate\benchmark --force
-##jacquard.cwd=C:\Users\kmeng
-##FILTER=<ID=JQ_EXCLUDE_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.">
-##FILTER=<ID=JQ_EXCLUDE_MALFORMED_ALT,Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.">
-##FILTER=<ID=JQ_EXCLUDE_MISSING_ALT,Description="The alternate allele is missing for this variant record.">
+##FORMAT=<ID=SDP,Number=1,Type=Integer,Description="Number of reads with deletions spanning this site at tier1">
+##FORMAT=<ID=SUBDP,Number=1,Type=Integer,Description="Number of reads below tier1 mapping quality threshold aligned across this site">
+##FORMAT=<ID=TU,Number=2,Type=Integer,Description="Number of 'T' alleles used in tiers 1,2">
 ##jacquard.filterHCSomatic.excluded_variants=15
-##jacquard.version=X
-##jacquard.command=filter_hc_somatic C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\jacquard_test\translate\benchmark C:\Users\kmeng\ExomeSeqPipeline\test\functional_tests\jacquard_test\filter_hc_somatic\benchmark --force
-##jacquard.cwd=C:\Users\kmeng
+##jacquard=<Timestamp="2015-04-10 09:38:33",Command="<module 'jacquard.commands.filter' from 'C:\Users\jebene\git\Jacquard\jacquard\commands\filter.pyc'>",Cwd="C:\Users\jebene\git">
 ##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=13
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NORMAL	TUMOR
 chr1	1147545	.	A	G	.	PASS	NT=ref;QSS=32;QSS_NT=32;SGT=AA->AG;SOMATIC;TQSS=1;TQSS_NT=1	DP:FDP:SDP:SUBDP:AU:CU:GU:TU:JQ_SK_CALLER_REPORTED:JQ_SK_CALLER_PASSED:JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	25:1:0:0:24,27:0,0:0,0:0,0:1:1:0.0:27:0	35:0:0:0:24,24:0,0:11,11:0,0:1:1:0.31:35:1

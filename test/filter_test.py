@@ -6,7 +6,7 @@ import os
 
 from testfixtures import TempDirectory
 
-import jacquard.filter as filter
+import jacquard.commands.filter as filter
 import jacquard.logger
 import test.mock_logger
 import test.test_case as test_case

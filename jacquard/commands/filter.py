@@ -1,18 +1,15 @@
 #pylint: disable=too-many-locals
-from __future__ import print_function, absolute_import, division
-
+from __future__ import print_function, absolute_import
 from collections import defaultdict
 import collections
 import glob
-import os
-import re
-
-import natsort
-
 import jacquard.logger as logger
 import jacquard.utils as utils
 import jacquard.variant_caller_transforms.variant_caller_factory as variant_caller_factory
 import jacquard.vcf as vcf
+import natsort
+import os
+import re
 
 
 _FILE_OUTPUT_SUFFIX = "HCsomatic"
@@ -49,19 +46,19 @@ def _find_somatic_positions(in_files):
     somatic_positions = {}
     no_jq_tags = []
 
+    total_number_of_files = len(in_files)
+    count = 1
+
     num_records = 0
 
     callers = defaultdict(int)
-    for i, input_file in enumerate(in_files):
-        logger.info("Filtering file {}/{} [{}]",
-            i + 1,
-            len(in_files),
-            os.path.basename(input_file))
-
+    for input_file in in_files:
+        logger.info("Reading [{}] ({}/{})", os.path.basename(input_file), count,
+                    total_number_of_files)
         somatic = 0
         vcf_reader = vcf.VcfReader(vcf.FileReader(input_file))
 
-        #TODO: (jebene) - this is old. have this use claim() instead of get_caller()
+        #TODO: (jebene) - this is old. have this use claim() instead of get_caller
         factory = variant_caller_factory.VariantCallerFactory()
         caller = factory.get_caller(vcf_reader.metaheaders,
                                     vcf_reader.column_header,
@@ -83,6 +80,8 @@ def _find_somatic_positions(in_files):
                            "variants.", os.path.basename(input_file))
 
 #        in_file.close()
+
+        count += 1
 
     total_filtered_records = 0
 
@@ -120,7 +119,9 @@ def _write_somatic(in_files, output_file, somatic_positions, execution_context):
         actual_sorted_variants = []
 
         new_file = _mangle_output_filenames(input_file)
+
         in_file = open(input_file, "r")
+
         out_file = open(os.path.join(output_file, new_file), "w")
 
         for line in in_file:
@@ -194,10 +195,9 @@ def _sort_headers(headers):
         else:
             field_header = header
 
-    sorted_metaheaders = utils.sort_metaheaders(meta_headers)
-    sorted_metaheaders.append(field_header)
+    meta_headers.append(field_header)
 
-    return sorted_metaheaders
+    return meta_headers
 
 def _build_readers(input_files):
     vcf_readers = []
@@ -217,7 +217,7 @@ def _build_readers(input_files):
 
 def _build_writers_to_readers(vcf_readers, output_file):
     writers_to_readers = collections.OrderedDict()
-    for reader in sorted(vcf_readers):
+    for reader in natsort.natsorted(vcf_readers):
         new_filename = _mangle_output_filenames(reader.file_name)
         output_filepath = os.path.join(output_file, new_filename)
 
@@ -252,11 +252,19 @@ def get_required_input_output_types():
 
 def add_subparser(subparser):
     # pylint: disable=line-too-long
-    parser = subparser.add_parser("filter_hc_somatic", help="Accepts a directory of Jacquard-tagged VCF results from one or more callers and creates a new directory of VCFs, where rows have been filtered to contain only positions that were called high-confidence somatic in any VCF.")
+    parser = subparser.add_parser("filter", help="Accepts a directory of Jacquard-tagged VCF results from one or more callers and creates a new directory of VCFs, where rows have been filtered to contain only positions that were called high-confidence somatic in any VCF.")
     parser.add_argument("input", help="Path to directory containing VCFs. All VCFs in this directory must have Jacquard-specific tags (see jacquard.py tag for more info")
     parser.add_argument("output", help="Path to output directory. Will create if doesn't exist and will overwrite files in output directory as necessary")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+    parser.add_argument("--include_variants", choices=["passed", "somatic"], help=("passed: Only include variants which passed their respective filter\n"
+                                                                                   "somatic: Only include somatic variants"))
+
+    parser.add_argument("--include_loci", choices=["any_passed", "all_passed", "any_soamtic", "all_somatic"], help=("any_passed: Include all variants at loci where at least one variant passed\n"
+    # pylint: disable=line-too-long
+                                                                                                                        "all_passed: Include all variants at loci where all variants passed\n"
+                                                                                                                        "any_somatic: Include all variants at loci where at least one variant was somatic\n"
+                                                                                                                        "all_somatic: Include all variants at loci where all variants were somatic"))
     parser.add_argument("--log_file", help="Log file destination")
 
 def _validate_arguments(args):
