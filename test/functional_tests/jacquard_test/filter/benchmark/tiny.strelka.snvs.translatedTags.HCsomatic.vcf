@@ -2,7 +2,10 @@
 ##content=strelka somatic snv calls
 ##fileDate=20140709
 ##germlineSnvTheta=0.001
+##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=13
 ##jacquard.translate.caller=Strelka
+##jacquard.translate.caller=Strelka
+##jacquard=<Timestamp="2015-04-10 13:24:33",Command="<module 'jacquard.commands.filter' from 'C:\Users\jebene\git\Jacquard\jacquard\commands\filter.pyc'>",Cwd="C:\Users\jebene\git">
 ##jacquard=<Timestamp="2015-03-30 13:44:08",Command="<module 'jacquard.translate' from 'C:\Users\jebene\git\Jacquard\jacquard\translate.pyc'>",Cwd="C:\Users\jebene\git">
 ##priorSomaticSnvRate=1e-06
 ##reference=file:ucsc.hg19.fasta
@@ -53,16 +56,18 @@
 ##FORMAT=<ID=FDP,Number=1,Type=Integer,Description="Number of basecalls filtered from original read depth for tier1">
 ##FORMAT=<ID=GU,Number=2,Type=Integer,Description="Number of 'G' alleles used in tiers 1,2">
 ##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)">
+##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)">
+##FORMAT=<ID=JQ_SK_CALLER_PASSED,Number=1,Type=Integer,Description="1 = variant FILTER is PASS in original VCF">
 ##FORMAT=<ID=JQ_SK_CALLER_PASSED,Number=1,Type=Integer,Description="1 = variant FILTER is PASS in original VCF">
 ##FORMAT=<ID=JQ_SK_CALLER_REPORTED,Number=1,Type=Integer,Description="1 = variant present in original VCF">
+##FORMAT=<ID=JQ_SK_CALLER_REPORTED,Number=1,Type=Integer,Description="1 = variant present in original VCF">
 ##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)">
+##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)">
+##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)">
 ##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)">
 ##FORMAT=<ID=SDP,Number=1,Type=Integer,Description="Number of reads with deletions spanning this site at tier1">
 ##FORMAT=<ID=SUBDP,Number=1,Type=Integer,Description="Number of reads below tier1 mapping quality threshold aligned across this site">
 ##FORMAT=<ID=TU,Number=2,Type=Integer,Description="Number of 'T' alleles used in tiers 1,2">
-##jacquard.filterHCSomatic.excluded_variants=15
-##jacquard=<Timestamp="2015-04-10 09:38:33",Command="<module 'jacquard.commands.filter' from 'C:\Users\jebene\git\Jacquard\jacquard\commands\filter.pyc'>",Cwd="C:\Users\jebene\git">
-##jacquard.filterHCSomatic.total_highConfidence_somatic_positions=13
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NORMAL	TUMOR
 chr1	1147545	.	A	G	.	PASS	NT=ref;QSS=32;QSS_NT=32;SGT=AA->AG;SOMATIC;TQSS=1;TQSS_NT=1	DP:FDP:SDP:SUBDP:AU:CU:GU:TU:JQ_SK_CALLER_REPORTED:JQ_SK_CALLER_PASSED:JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	25:1:0:0:24,27:0,0:0,0:0,0:1:1:0.0:27:0	35:0:0:0:24,24:0,0:11,11:0,0:1:1:0.31:35:1
 chr1	1169795	.	C	T	.	PASS	NT=ref;QSS=29;QSS_NT=29;SGT=CC->CT;SOMATIC;TQSS=1;TQSS_NT=1	DP:FDP:SDP:SUBDP:AU:CU:GU:TU:JQ_SK_CALLER_REPORTED:JQ_SK_CALLER_PASSED:JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM	36:0:0:0:0,0:36,37:0,0:0,0:1:1:0.0:37:0	45:0:1:0:0,0:35,36:0,0:10,10:1:1:0.22:46:1

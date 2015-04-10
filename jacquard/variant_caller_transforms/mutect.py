@@ -234,6 +234,10 @@ class _MutectVcfReader(object):
     def column_header(self):
         return self._caller._get_new_column_header(self._vcf_reader)
 
+    def tagged_vcf_records(self):
+        for vcf_record in self._vcf_reader.vcf_records():
+            yield vcf_record
+
     def vcf_records(self):
         for vcf_record in self._vcf_reader.vcf_records():
             yield self._add_tags(vcf_record)

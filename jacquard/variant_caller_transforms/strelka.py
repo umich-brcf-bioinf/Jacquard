@@ -309,6 +309,10 @@ class _StrelkaVcfReader(object):
     def column_header(self):
         return self._vcf_reader.column_header
 
+    def tagged_vcf_records(self):
+        for vcf_record in self._vcf_reader.vcf_records():
+            yield vcf_record
+
     def vcf_records(self):
         for vcf_record in self._vcf_reader.vcf_records():
             yield self._add_tags(vcf_record)

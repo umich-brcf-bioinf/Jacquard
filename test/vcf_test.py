@@ -22,8 +22,6 @@ except ImportError:
     from io import StringIO
 
 
-
-
 class MockFileWriter(object):
     def __init__(self):
         self._content = []
@@ -73,9 +71,12 @@ class MockFileReader(object):
         return self.file_name < other.file_name
 
 class MockWriter(object):
-    def __init__(self):
+    def __init__(self, output_filepath=None):
         self._content = []
-        self.output_filepath = "foo"
+        if output_filepath:
+            self.output_filepath = output_filepath
+        else:
+            self.output_filepath = "foo"
         self.opened = False
         self.closed = False
 
@@ -127,12 +128,16 @@ class MockVcfReader(object):
         self.split_column_header = self.column_header.strip("#").split("\t")
         self.opened = False
         self.closed = False
-
+        self._caller_name = "mockCaller"
 
     def open(self):
         self.opened = True
 
     def vcf_records(self):
+        for record in self.records:
+            yield record
+
+    def tagged_vcf_records(self):
         for record in self.records:
             yield record
 
@@ -165,6 +170,10 @@ class MockVcfReader(object):
     @property
     def non_format_metaheaders(self):
         return self.metaheaders
+
+    @property
+    def caller_name(self):
+        return self._caller_name
 
     def close(self):
         self.closed = True
@@ -229,10 +238,10 @@ class MockVcfRecord(object):
         tags = self.format.split(":")
         self.format_set = tags
 
-        self.sample_dict = {}
+        self.sample_tag_values = {}
         for i, sample in enumerate(self.samples):
             values = sample.split(":")
-            self.sample_dict[i] = OrderedDict(zip(tags, values))
+            self.sample_tag_values[i] = OrderedDict(zip(tags, values))
 
     def get_empty_record(self):
         return MockVcfRecord(self.chrom, self.pos, self.ref, self.alt)
@@ -254,8 +263,8 @@ class MockVcfRecord(object):
                        self.qual, self.filter, self.info,
                        ":".join(self.format_set)]
 
-        for key in self.sample_dict:
-            stringifier.append(":".join(self.sample_dict[key].values()))
+        for key in self.sample_tag_values:
+            stringifier.append(":".join(self.sample_tag_values[key].values()))
 
         return "\t".join(stringifier) + "\n"
 
