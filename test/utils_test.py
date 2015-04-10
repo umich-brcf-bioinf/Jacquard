@@ -1,8 +1,10 @@
 #pylint: disable=line-too-long, too-many-public-methods, invalid-name
 #pylint: disable=missing-docstring, protected-access, global-statement, too-few-public-methods
-from __future__ import absolute_import, print_function
-import jacquard.utils as utils
+from __future__ import print_function, absolute_import, division
+
 import natsort
+
+import jacquard.utils as utils
 import test.test_case as test_case
 
 
@@ -34,8 +36,38 @@ class JQExceptionTestCase(test_case.JacquardBaseTestCase):
     def test_init(self):
         actual = utils.JQException("msg:{}, {}", "bar", [1, 2, 3])
         self.assertIsInstance(actual, Exception)
-        self.assertEquals(actual.message, "msg:bar, [1, 2, 3]")
+        self.assertEquals(actual.args[0], "msg:bar, [1, 2, 3]")
 
+class SortMetaheadersTestCase(test_case.JacquardBaseTestCase):
+    def test_sort_metaheaders(self):
+        unsorted = ["##FORMAT", "##fileformat", "##INFO", "##jacquard.foo="]
+        actual = utils.sort_metaheaders(unsorted)
+        expected = ["##fileformat", "##jacquard.foo=", "##INFO", "##FORMAT"]
+        self.assertEquals(expected, actual)
+
+    def test_sort_metaheaders_completeList(self):
+        unsorted = ["##FORMAT", "##fileformat", "##INFO", "##jacquard.foo=", "##ALT", "#CHROM", "##contig", "##FILTER"]
+        actual = utils.sort_metaheaders(unsorted)
+        expected = ["##fileformat", "##jacquard.foo=", "##contig", "##ALT", "##FILTER", "##INFO", "##FORMAT", "#CHROM"]
+        self.assertEquals(expected, actual)
+
+    def test_sort_metaheaders_sortsWithinCategory(self):
+        unsorted = ["##FORMAT=DP", "##FORMAT=AF", "##jacquard.bar="]
+        actual = utils.sort_metaheaders(unsorted)
+        expected = ["##jacquard.bar=", "##FORMAT=AF", "##FORMAT=DP"]
+        self.assertEquals(expected, actual)
+
+    def test_sort_metaheaders_sortsWithinCategoryAlphaNum(self):
+        unsorted = ["##contig=<ID=chr13", "##contig=<ID=chr1", "##contig=<ID=chr2"]
+        actual = utils.sort_metaheaders(unsorted)
+        expected = ["##contig=<ID=chr1", "##contig=<ID=chr2", "##contig=<ID=chr13"]
+        self.assertEquals(expected, actual)
+
+    def test_sort_metaheaders_unexpectedMetaheadesr(self):
+        unsorted = ["##FORMAT", "##INFO", "##Strelka", "##MuTect", "##VarScan"]
+        actual = utils.sort_metaheaders(unsorted)
+        expected = ["##MuTect", "##Strelka", "##VarScan", "##INFO", "##FORMAT"]
+        self.assertEquals(expected, actual)
 
 class NaturalSortTestCase(test_case.JacquardBaseTestCase):
     def test_natsort(self):

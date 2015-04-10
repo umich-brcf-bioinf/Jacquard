@@ -1,17 +1,17 @@
 #pylint: disable=too-few-public-methods, invalid-name, line-too-long
 #pylint: disable=too-many-instance-attributes, too-many-public-methods
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
 
 import re
 
+from jacquard.utils import JQException
 import jacquard.utils as utils
-import jacquard.variant_callers.common_tags as common_tags
-import jacquard.variant_callers.mutect as mutect
-import jacquard.variant_callers.summarize_caller as summarize_caller
-import jacquard.variant_callers.varscan as varscan
+import jacquard.variant_caller_transforms.common_tags as common_tags
+import jacquard.variant_caller_transforms.mutect as mutect
+import jacquard.summarize_caller as summarize_caller
+import jacquard.variant_caller_transforms.varscan as varscan
 from jacquard.vcf import VcfRecord
 import test.test_case as test_case
-from jacquard.utils import JQException
 
 
 class CallersReportedListTagTestCase(test_case.JacquardBaseTestCase):
@@ -29,6 +29,15 @@ class CallersReportedListTagTestCase(test_case.JacquardBaseTestCase):
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:MT,VS|Y:1:1:MT,VS\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_REPORTED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_REPORTED_TAG, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_REPORTED_LIST))
         self.assertEquals(expected, processedVcfRecord.text())
 
+    def test_add_tag_values_nullValues(self):
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}|X:1:.|Y:1:.\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_REPORTED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_REPORTED_TAG))
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        tag = summarize_caller._CallersReportedListTag()
+        tag.add_tag_values(processedVcfRecord)
+
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:.:MT|Y:1:.:MT\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_REPORTED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_REPORTED_TAG, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_REPORTED_LIST))
+        self.assertEquals(expected, processedVcfRecord.text())
+
 class CallersReportedTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         split_metaheader = summarize_caller._CallersReportedTag().metaheader.split("\n")
@@ -42,6 +51,15 @@ class CallersReportedTagTestCase(test_case.JacquardBaseTestCase):
         tag.add_tag_values(processedVcfRecord)
 
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:2|Y:1:1:2\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_REPORTED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_REPORTED_TAG, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_REPORTED))
+        self.assertEquals(expected, processedVcfRecord.text())
+
+    def test_add_tag_values_nullValues(self):
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}|X:.:.|Y:.:.\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_REPORTED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_REPORTED_TAG))
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        tag = summarize_caller._CallersReportedTag()
+        tag.add_tag_values(processedVcfRecord)
+
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:.:.:0|Y:.:.:0\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_REPORTED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_REPORTED_TAG, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_REPORTED))
         self.assertEquals(expected, processedVcfRecord.text())
 
 class CallersPassedListTagTestCase(test_case.JacquardBaseTestCase):
@@ -68,6 +86,15 @@ class CallersPassedListTagTestCase(test_case.JacquardBaseTestCase):
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:0:0:.|Y:0:0:.\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_PASSED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_PASSED_TAG, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_PASSED_LIST))
         self.assertEquals(expected, processedVcfRecord.text())
 
+    def test_add_tag_values_nullValues(self):
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}|X:1:.|Y:1:.\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_PASSED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_PASSED_TAG))
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        tag = summarize_caller._CallersPassedListTag()
+        tag.add_tag_values(processedVcfRecord)
+
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:.:MT|Y:1:.:MT\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_PASSED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_PASSED_TAG, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_PASSED_LIST))
+        self.assertEquals(expected, processedVcfRecord.text())
+
 class CallersPassedTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         split_metaheader = summarize_caller._CallersPassedTag().metaheader.split("\n")
@@ -83,6 +110,15 @@ class CallersPassedTagTestCase(test_case.JacquardBaseTestCase):
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:1:1:2|Y:1:0:1\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_PASSED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_PASSED_TAG, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_PASSED))
         self.assertEquals(expected, processedVcfRecord.text())
 
+    def test_add_tag_values_nullValues(self):
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}|X:.:.|Y:.:.\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_PASSED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_PASSED_TAG))
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        tag = summarize_caller._CallersPassedTag()
+        tag.add_tag_values(processedVcfRecord)
+
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}:{}{}:{}{}|X:.:.:0|Y:.:.:0\n".format(mutect.JQ_MUTECT_TAG, common_tags.CALLER_PASSED_TAG, varscan.JQ_VARSCAN_TAG, common_tags.CALLER_PASSED_TAG, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_PASSED))
+        self.assertEquals(expected, processedVcfRecord.text())
+
 class SamplesReportedTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         split_metaheader = summarize_caller._SamplesReported().metaheader.split("\n")
@@ -96,6 +132,15 @@ class SamplesReportedTestCase(test_case.JacquardBaseTestCase):
         tag.add_tag_values(processedVcfRecord)
 
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO;{}{}=2|JQ_DP:{}{}|X:2|Y:1\n".format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_SAMPLES_REPORTED, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_REPORTED))
+        self.assertEquals(expected, processedVcfRecord.text())
+
+    def test_add_tag_values_nullValues(self):
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}|X:.|Y:.\n".format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_REPORTED))
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        tag = summarize_caller._SamplesReported()
+        tag.add_tag_values(processedVcfRecord)
+
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO;{}{}=0|JQ_DP:{}{}|X:.|Y:.\n".format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_SAMPLES_REPORTED, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_REPORTED))
         self.assertEquals(expected, processedVcfRecord.text())
 
 class SamplesPassedTestCase(test_case.JacquardBaseTestCase):
@@ -122,6 +167,15 @@ class SamplesPassedTestCase(test_case.JacquardBaseTestCase):
         info_tag = summarize_caller.JQ_SUMMARY_TAG + summarize_caller.JQ_SAMPLES_PASSED
         self.assertIn(info_tag, vcf_record.info_dict)
         self.assertEquals("0", vcf_record.info_dict[info_tag])
+
+    def test_add_tag_values_nullValues(self):
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|JQ_DP:{}{}|X:.|Y:.\n".format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_PASSED))
+        processedVcfRecord = VcfRecord.parse_record(line, ["SA", "SB"])
+        tag = summarize_caller._SamplesPassed()
+        tag.add_tag_values(processedVcfRecord)
+
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO;{}{}=0|JQ_DP:{}{}|X:.|Y:.\n".format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_SAMPLES_PASSED, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_PASSED))
+        self.assertEquals(expected, processedVcfRecord.text())
 
 class AlleleFreqRangeTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
@@ -397,8 +451,8 @@ class DepthAverageTagTestCase(test_case.JacquardBaseTestCase):
                            sample_tag_values=sample_tag_values)
         tag.add_tag_values(record)
 
-        self.assertEquals("1.0", record.sample_tag_values["SA"][tag._TAG_ID])
-        self.assertEquals("3.0", record.sample_tag_values["SB"][tag._TAG_ID])
+        self.assertEquals("1", record.sample_tag_values["SA"][tag._TAG_ID])
+        self.assertEquals("3", record.sample_tag_values["SB"][tag._TAG_ID])
 
     def test_add_tag_values_oneValueReturnsNull(self):
         tag = summarize_caller._DepthAverageTag()
@@ -451,7 +505,7 @@ class DepthAverageTagTestCase(test_case.JacquardBaseTestCase):
                            sample_tag_values=sample_tag_values)
         tag.add_tag_values(record)
 
-        self.assertEquals("1.0,2.0", record.sample_tag_values["SA"][tag._TAG_ID])
+        self.assertEquals("1,2", record.sample_tag_values["SA"][tag._TAG_ID])
 
     def test_add_tag_values_rounds(self):
         tag = summarize_caller._DepthAverageTag()
@@ -591,7 +645,7 @@ class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
         actual_values = summarize_caller._get_non_null_values(record,
                                                               "SA",
                                                               re.compile("^JQ_.*_AF$"))
-        self.assertEquals(["1", "2", "0"], actual_values)
+        self.assertEquals(["0", "1", "2"], sorted(actual_values))
 
     def test_get_non_null_values_hasNulls(self):
         sample_tag_values = {"SA": {"JQ_A_AF":".",
@@ -639,7 +693,7 @@ class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEquals("2", actual_record.sample_tag_values["SA"]["JQ_SUMMARY_CALLERS_REPORTED_COUNT"])
         self.assertEquals("0", actual_record.sample_tag_values["SA"]["JQ_SUMMARY_CALLERS_PASSED_COUNT"])
-        self.assertEquals("0.0", actual_record.sample_tag_values["SA"]["JQ_SUMMARY_AF_AVERAGE"])
+        self.assertEquals("0", actual_record.sample_tag_values["SA"]["JQ_SUMMARY_AF_AVERAGE"])
         self.assertEquals(".", actual_record.sample_tag_values["SA"]["JQ_SUMMARY_AF_RANGE"])
         self.assertEquals(".", actual_record.sample_tag_values["SA"]["JQ_SUMMARY_DP_AVERAGE"])
         self.assertEquals(".", actual_record.sample_tag_values["SA"]["JQ_SUMMARY_DP_RANGE"])

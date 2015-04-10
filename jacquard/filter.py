@@ -5,7 +5,7 @@ import collections
 import glob
 import jacquard.logger as logger
 import jacquard.utils as utils
-import jacquard.variant_callers.variant_caller_factory as variant_caller_factory
+import jacquard.variant_caller_transforms.variant_caller_factory as variant_caller_factory
 import jacquard.vcf as vcf
 import natsort
 import os
@@ -265,6 +265,7 @@ def add_subparser(subparser):
                                                                                                                         "all_passed: Include all variants at loci where all variants passed\n"
                                                                                                                         "any_somatic: Include all variants at loci where at least one variant was somatic\n"
                                                                                                                         "all_somatic: Include all variants at loci where all variants were somatic"))
+    parser.add_argument("--log_file", help="Log file destination")
 
 def _validate_arguments(args):
     input_dir = os.path.abspath(args.input)

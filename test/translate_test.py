@@ -1,17 +1,19 @@
 #pylint: disable=line-too-long,too-many-public-methods,invalid-name
 #pylint: disable=missing-docstring,protected-access,too-few-public-methods
 #pylint: disable=too-many-arguments,too-many-instance-attributes
+from __future__ import print_function, absolute_import, division
+
 from argparse import Namespace
+from collections import OrderedDict
 import os
+import re
 
 from testfixtures import TempDirectory
 
 from jacquard import vcf
 import jacquard.logger
-import jacquard.translate as translate
+import jacquard.commands.translate as translate
 import jacquard.utils as utils
-import jacquard.variant_callers.variant_caller_factory as variant_caller_factory
-from test import vcf_test
 import test.mock_logger
 import test.test_case as test_case
 from test.vcf_test import MockVcfReader, MockTag, MockWriter, MockCaller
@@ -28,11 +30,19 @@ class MockVariantCallerFactory(object):
             claimed = []
             unclaimed = []
             for reader in file_readers:
-                if reader.file_name == "claimed.vcf":
-                    claimed.append(reader)
+                if re.search(r"^claimed.*\.vcf", reader.file_name):
+                    claimed.append(MockCallerVcfReader(reader))
                 else:
                     unclaimed.append(reader)
             return unclaimed, claimed
+
+class MockCallerVcfReader(object):
+    def __init__(self, file_reader):
+        self._file_reader = file_reader
+
+    @staticmethod
+    def expected_file_format():
+        return ["foo", "bar"]
 
 class TranslateTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
@@ -55,12 +65,12 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
                              output=temp_dir.path,
                              force=True,
                              varscan_hc_filter_filename=None)
-            temp_dir.write("unclaimed1.vcf", "foo")
-            temp_dir.write("unclaimed2.vcf", "foo")
-            temp_dir.write("unclaimed3.vcf", "foo")
-            temp_dir.write("unclaimed4.vcf", "foo")
-            temp_dir.write("unclaimed5.vcf", "foo")
-            temp_dir.write("unclaimed6.vcf", "foo")
+            temp_dir.write("unclaimed1.vcf", b"foo")
+            temp_dir.write("unclaimed2.vcf", b"foo")
+            temp_dir.write("unclaimed3.vcf", b"foo")
+            temp_dir.write("unclaimed4.vcf", b"foo")
+            temp_dir.write("unclaimed5.vcf", b"foo")
+            temp_dir.write("unclaimed6.vcf", b"foo")
             translate.variant_caller_factory = MockVariantCallerFactory()
             translate.execute(args, execution_context=[])
         actual_log_warnings = test.mock_logger.messages["WARNING"]
@@ -72,8 +82,11 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
 
     def test_validate_args_ok(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
-            args = Namespace(input=input_dir.path, output=output_dir.path)
-            input_dir.write("claimed.vcf", "foo")
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path,
+                             allow_inconsistent_sample_sets=0,
+                             varscan_hc_filter_filename=None)
+            input_dir.write("claimed.vcf", b"foo")
             translate.variant_caller_factory = MockVariantCallerFactory()
             translate.validate_args(args)
             self.ok()
@@ -81,9 +94,11 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
     def test_validate_args_oneUnclaimed(self):
         with TempDirectory() as input_dir:
             args = Namespace(input=input_dir.path,
-                             force=False)
-            input_dir.write("unclaimed.vcf", "foo")
-            input_dir.write("claimed.vcf", "foo")
+                             force=False,
+                             allow_inconsistent_sample_sets=0,
+                             varscan_hc_filter_filename=None)
+            input_dir.write("unclaimed.vcf", b"foo")
+            input_dir.write("claimed.vcf", b"foo")
             translate.variant_caller_factory = MockVariantCallerFactory()
             self.assertRaisesRegexp(utils.UsageError,
                                     r"1 input file \[unclaimed.vcf\] cannot be translated",
@@ -93,16 +108,20 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
     def test_validate_args_oneUnclaimed_withForceOk(self):
         with TempDirectory() as input_dir:
             args = Namespace(input=input_dir.path,
-                             force=True)
-            input_dir.write("unclaimed.vcf", "foo")
-            input_dir.write("claimed.vcf", "foo")
+                             force=True,
+                             allow_inconsistent_sample_sets=0,
+                             varscan_hc_filter_filename=None)
+            input_dir.write("unclaimed.vcf", b"foo")
+            input_dir.write("claimed.vcf", b"foo")
             translate.variant_caller_factory = MockVariantCallerFactory()
             translate.validate_args(args)
             self.ok()
 
     def test_validate_args_allUnclaimedThrowsException(self):
         with TempDirectory() as input_dir:
-            args = Namespace(input=input_dir.path)
+            args = Namespace(input=input_dir.path,
+                             allow_inconsistent_sample_sets=0,
+                             varscan_hc_filter_filename=None)
             translate.variant_caller_factory = MockVariantCallerFactory()
             self.assertRaisesRegexp(utils.UsageError,
                                     "no vcfs in input dir .* can be translated",
@@ -112,35 +131,107 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
     def test_validate_args_fiveUnclaimed(self):
         with TempDirectory() as input_dir:
             args = Namespace(input=input_dir.path,
-                             force=False)
-            input_dir.write("unclaimed1.vcf", "foo")
-            input_dir.write("unclaimed2.vcf", "foo")
-            input_dir.write("unclaimed3.vcf", "foo")
-            input_dir.write("unclaimed4.vcf", "foo")
-            input_dir.write("unclaimed5.vcf", "foo")
-            input_dir.write("claimed.vcf", "foo")
+                             force=False,
+                             varscan_hc_filter_filename=None)
+            input_dir.write("unclaimed1.vcf", b"foo")
+            input_dir.write("unclaimed2.vcf", b"foo")
+            input_dir.write("unclaimed3.vcf", b"foo")
+            input_dir.write("unclaimed4.vcf", b"foo")
+            input_dir.write("unclaimed5.vcf", b"foo")
+            input_dir.write("claimed.vcf", b"foo")
             translate.variant_caller_factory = MockVariantCallerFactory()
             self.assertRaisesRegexp(utils.UsageError,
-                                    r"5 input files \[unclaimed1.vcf, unclaimed2.vcf, unclaimed3.vcf, unclaimed4.vcf, unclaimed5.vcf\] cannot be translated",
+                                    r"5 input files \[.*\] cannot be translated",
                                     translate.validate_args,
                                     args)
 
     def test_validate_args_sixUnclaimed(self):
         with TempDirectory() as input_dir:
             args = Namespace(input=input_dir.path,
-                             force=False)
-            input_dir.write("unclaimed1.vcf", "foo")
-            input_dir.write("unclaimed2.vcf", "foo")
-            input_dir.write("unclaimed3.vcf", "foo")
-            input_dir.write("unclaimed4.vcf", "foo")
-            input_dir.write("unclaimed5.vcf", "foo")
-            input_dir.write("unclaimed6.vcf", "foo")
-            input_dir.write("claimed.vcf", "foo")
+                             force=False,
+                             varscan_hc_filter_filename=None)
+            input_dir.write("unclaimed1.vcf", b"foo")
+            input_dir.write("unclaimed2.vcf", b"foo")
+            input_dir.write("unclaimed3.vcf", b"foo")
+            input_dir.write("unclaimed4.vcf", b"foo")
+            input_dir.write("unclaimed5.vcf", b"foo")
+            input_dir.write("unclaimed6.vcf", b"foo")
+            input_dir.write("claimed.vcf", b"foo")
             translate.variant_caller_factory = MockVariantCallerFactory()
             self.assertRaisesRegexp(utils.UsageError,
-                                    r"6 input files \[unclaimed1.vcf, unclaimed2.vcf, unclaimed3.vcf, unclaimed4.vcf, unclaimed5.vcf, ...\(1 file\(s\) omitted\)\] cannot be translated",
+                                    r"6 input files \[.*, ...\(1 file\(s\) omitted\)\] cannot be translated",
                                     translate.validate_args,
                                     args)
+
+    def test_validate_args_snpIndelPairingValid(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path,
+                             force=False,
+                             allow_inconsistent_sample_sets=0,
+                             varscan_hc_filter_filename=None)
+            input_dir.write("claimed.snp.vcf", b"foo")
+            input_dir.write("claimed.indel.vcf", b"foo")
+            translate.variant_caller_factory = MockVariantCallerFactory()
+            translate.validate_args(args)
+            self.ok()
+
+    def test_validate_args_snpIndelPairingInvalid(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path,
+                             force=False,
+                             allow_inconsistent_sample_sets=0,
+                             varscan_hc_filter_filename=None)
+            input_dir.write("claimed.foo.vcf", b"foo")
+            input_dir.write("claimed2.foo.vcf", b"foo")
+            input_dir.write("claimed2.bar.vcf", b"foo")
+            translate.variant_caller_factory = MockVariantCallerFactory()
+            self.assertRaisesRegexp(utils.UsageError,
+                                    "Some VCFs were missing either a snp/snvs or an indel/indels file. Review inputs/command options to align file pairings or use the flag --allow_inconsistent_sample_sets.",
+                                    translate.validate_args,
+                                    args)
+
+    def test_validate_args_allSnpsOkay(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path,
+                             force=False,
+                             allow_inconsistent_sample_sets=0,
+                             varscan_hc_filter_filename=None)
+            input_dir.write("claimed.snp.vcf", b"foo")
+            input_dir.write("claimed2.snp.vcf", b"foo")
+            translate.variant_caller_factory = MockVariantCallerFactory()
+            translate.validate_args(args)
+            self.ok()
+
+    def test_validate_args_allIndelsOkay(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path,
+                             force=False,
+                             allow_inconsistent_sample_sets=0,
+                             varscan_hc_filter_filename=None)
+            input_dir.write("claimed.indels.vcf", b"foo")
+            input_dir.write("claimed2.indels.vcf", b"foo")
+            input_dir.write("claimed3.indels.vcf", b"foo")
+            translate.variant_caller_factory = MockVariantCallerFactory()
+            translate.validate_args(args)
+            self.ok()
+
+    def test_validate_args_snpIndelPairingAllowInconsistentSampleSetsOK(self):
+        with TempDirectory() as input_dir, TempDirectory() as output_dir:
+            args = Namespace(input=input_dir.path,
+                             output=output_dir.path,
+                             force=False,
+                             allow_inconsistent_sample_sets=1,
+                             varscan_hc_filter_filename=None)
+            input_dir.write("claimed.foo.vcf", b"foo")
+            input_dir.write("claimed2.foo.vcf", b"foo")
+            input_dir.write("claimed2.bar.vcf", b"foo")
+            translate.variant_caller_factory = MockVariantCallerFactory()
+            translate.validate_args(args)
+            self.ok()
 
     def test_get_required_input_output_types(self):
         self.assertEquals(("directory", "directory"),
@@ -148,9 +239,9 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
 
     def test_report_prediction(self):
         with TempDirectory() as input_dir:
-            input_dir.write("A.vcf", "##source=strelka\n#colHeader")
-            input_dir.write("B.vcf", "##source=strelka\n#colHeader")
-            input_dir.write("B.hpfilter.pass", "##source=strelka\n#colHeader")
+            input_dir.write("A.vcf", b"##source=strelka\n#colHeader")
+            input_dir.write("B.vcf", b"##source=strelka\n#colHeader")
+            input_dir.write("B.hpfilter.pass", b"##source=strelka\n#colHeader")
             args = Namespace(input=input_dir.path)
 
             desired_output_files = translate.report_prediction(args)
@@ -161,15 +252,19 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
 
     def test_translate_files(self):
         record = vcf.VcfRecord("chr1", "42", "A", "C",
-                               sample_tag_values={"SA":{}, "SB":{}})
+                               sample_tag_values=OrderedDict(sorted({"SA":OrderedDict(), "SB":OrderedDict()}.items())))
         reader = MockVcfReader(metaheaders=["##metaheader1",
                                             "##metaheader2"],
                                records=[record],
                                sample_names=["SA", "SB"])
         writer = MockWriter()
         execution_context = []
-        new_tags = [MockTag("TAG1", {"SA":42, "SB":43}, metaheader="##newTag1"),
-                    MockTag("TAG2", {"SA":420, "SB":430}, metaheader="##newTag2")]
+        new_tags = [MockTag("TAG1",
+                            OrderedDict(sorted({"SA":42, "SB":43}.items())),
+                            metaheader="##newTag1"),
+                    MockTag("TAG2",
+                            OrderedDict(sorted({"SA":420, "SB":430}.items())),
+                            metaheader="##newTag2")]
         translate._translate_files(reader,
                                    new_tags,
                                    execution_context,
@@ -199,9 +294,9 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
         new_tags = [MockTag(metaheader="##newTag1"),
                     MockTag(metaheader="##newTag2")]
         translate._write_headers(reader, new_tags, execution_context, writer)
-        expected_headers = ["##mockCallerMetaheader1",
-                            "##foo1=bar",
+        expected_headers = ["##foo1=bar",
                             "##foo2=baz",
+                            "##mockCallerMetaheader1",
                             "##newTag1",
                             "##newTag2",
                             "#CHROM\tPOS\tREF\tALT\tStuff"]

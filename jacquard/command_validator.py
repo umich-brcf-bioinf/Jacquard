@@ -11,9 +11,8 @@ Each function is allowed to:
  * delegate to/interact with a sub-command
  * raise a UsageException if things look problematic
 """
-from __future__ import absolute_import
+from __future__ import print_function, absolute_import, division
 
-from collections import defaultdict
 import errno
 import glob
 import os
@@ -111,39 +110,6 @@ def _check_overwrite_existing_files(module, args):
         message = _build_collision_message(args.subparser_name, collisions)
         raise utils.UsageError(message)
 
-def _check_input_snp_indel_pairing(dummy, args):
-    input_path = args.input
-    if not os.path.isdir(input_path):
-        input_path = os.path.dirname(input_path)
-
-#TODO: (jebene) - make this caller agnostic somehow
-    keywords_per_caller = {"varscan": ["snp", "indel"],
-                           "strelka": ["snvs", "indels"]}
-    input_vcfs = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
-    altered_file_names = defaultdict(list)
-
-    for keywords in keywords_per_caller.values():
-        for input_vcf in input_vcfs:
-            basename = os.path.basename(input_vcf)
-            file_names = [i for i in basename.split(".") if i not in keywords]
-            joined_file_names = ".".join(file_names)
-            if len(joined_file_names) != len(basename):
-                altered_file_names[joined_file_names].append(basename)
-
-    if not set([len(i) for i in altered_file_names.values()]) == set([1]):
-        try:
-            if not args.allow_inconsistent_sample_sets:
-                for file_names in altered_file_names.values():
-                    if len(file_names) % 2 != 0:
-                        message = ("Some VCFs were missing either a snp/snvs "
-                                   "or an indel/indels file. Review "
-                                   "inputs/command options to align file "
-                                   "pairings or use the flag "
-                                   "--allow_inconsistent_sample_sets.")
-                        raise utils.UsageError(message)
-        except AttributeError:
-            pass
-
 def _check_there_will_be_output(module, args):
     predicted_output = module.report_prediction(args)
 
@@ -217,7 +183,6 @@ _VALIDATION_TASKS = [_set_output_paths,
                      _check_input_exists,
                      _check_input_readable,
                      _check_input_correct_type,
-                     _check_input_snp_indel_pairing,
                      _check_output_exists,
                      _create_temp_working_dir,
                      _check_there_will_be_output,

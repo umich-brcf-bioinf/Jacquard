@@ -23,6 +23,8 @@ def add_subparser(subparser):
     parser.add_argument("input", help="foo")
     parser.add_argument("output", help="foo")
     parser.add_argument("--force", action='store_true', help="foo")
+    parser.add_argument("--log_file", help="foo")
+    parser.add_argument("--verbose", help="foo")
 
 def execute(args, execution_context):
     global execute_called

@@ -1,0 +1,18 @@
+##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)">
+##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)">
+##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)">
+##fileformat=VCFv4.2
+##jacquard.merge.file2=tiny_strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf(['NORMAL', 'TUMOR'])
+##jacquard.merge.sample_column1=Strelka|tiny_strelka|NORMAL(tiny_strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf)
+##jacquard.merge.sample_column2=Strelka|tiny_strelka|TUMOR(tiny_strelka.normalized.jacquardTags.HCsomatic.splitMultAlts.vcf)
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	tiny_strelka|NORMAL	tiny_strelka|TUMOR
+chr1	1147545	.	A	G	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_SK_CALLER_REPORTED:JQ_SK_CALLER_PASSED	0.0:27:1:1:0	0.31:35:1:1:0
+chr1	1169795	.	C	T		.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_SK_CALLER_REPORTED:JQ_SK_CALLER_PASSED	0.0:37:0:1:1	0.22:46:1:1:1
+chr1	1444553	.	C	T	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_SK_CALLER_REPORTED:JQ_SK_CALLER_PASSED	0.0:29:0:1:1	0.35:31:1:1:1
+chr1	1459635	.	C	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_SK_CALLER_REPORTED:JQ_SK_CALLER_PASSED	0.0:35:0:1:0	0.17:30:1:1:0
+chr1	1572893	.	G	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_SK_CALLER_REPORTED:JQ_SK_CALLER_PASSED	0.02:65:0:1:0	0.09:81:1:1:0
+chr1	1696633	.	GA	G	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_SK_CALLER_REPORTED:JQ_SK_CALLER_PASSED	0.96:48:0:1:1	0.62:45:1:1:1
+chr1	1910112	.	G	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_SK_CALLER_REPORTED:JQ_SK_CALLER_PASSED	0.0:28:0:1:0	0.34:35:1:1:0
+chr1	1912090	.	G	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_SK_CALLER_REPORTED:JQ_SK_CALLER_PASSED	0.0:27:0:1:1	0.31:32:1:1:1
+chr1	3412474	.	G	A	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_SK_CALLER_REPORTED:JQ_SK_CALLER_PASSED	0.0:46:0:1:0	0.31:61:1:1:0
+chr1	3545096	.	G	T	.	.	.	JQ_SK_AF:JQ_SK_DP:JQ_SK_HC_SOM:JQ_SK_CALLER_REPORTED:JQ_SK_CALLER_PASSED	0.0:37:0:1:0	0.25:63:1:1:0

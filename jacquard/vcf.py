@@ -1,12 +1,15 @@
 """Classes to parse, interpret, and manipulate VCF files and records."""
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
+
 from collections import OrderedDict
-import natsort
 import os
 import re
 import sys
 
+import natsort
+
 import jacquard.utils as utils
+
 
 #TODO: (cgates): add context management to open/close
 class VcfReader(object):
@@ -17,6 +20,9 @@ class VcfReader(object):
         self.split_column_header = self.column_header.strip("#").split("\t")
         self.sample_names = self._init_sample_names()
         self.qualified_sample_names = self._create_qualified_sample_names()
+
+    def __lt__(self, other):
+        return self._file_reader < other._file_reader
 
     def _get_tag_metaheaders(self, regex_exp):
         tag_dict = {}
@@ -55,7 +61,7 @@ class VcfReader(object):
     def _init_sample_names(self):
         sample_names = []
         column_fields = self.column_header.split("\t")
-        if column_fields > 8:
+        if len(column_fields) > 8:
             sample_names = column_fields[9:]
 
         return sample_names
@@ -225,7 +231,7 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
         try:
             return int(string)
         except ValueError:
-            return sys.maxint
+            return sys.maxsize
 #TODO: (cgates): Could we make filter an OrderedSet
 #TODO: (cgates) adjust info field to be stored as dict only instead of string
 #pylint: disable=too-many-arguments
@@ -247,7 +253,7 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
         self.info_dict = self._init_info_dict()
 
         if sample_tag_values is None:
-            self.sample_tag_values = {}
+            self.sample_tag_values = OrderedDict()
         else:
             self.sample_tag_values = sample_tag_values
         self._key = self._build_key()
@@ -264,13 +270,12 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
         """Returns set of format tags."""
         tags = VcfRecord._EMPTY_SET
         if self.sample_tag_values:
-            first_sample = self.sample_tag_values.keys()[0]
+            first_sample = list(self.sample_tag_values.keys())[0]
             tags = set(self.sample_tag_values[first_sample].keys())
         return tags
 
     def _init_info_dict(self):
-        #TODO (cgates): Use OrderedDict to make round-trip consistent
-        info_dict = {}
+        info_dict = OrderedDict()
         if self.info and self.info != ".":
             info_list = self.info.split(";")
             for key_value in info_list:
@@ -302,8 +307,9 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
 
         self._join_info_fields()
 
+    #TODO:(cgates): Remove info; all external calls should reference info_dict
     def _join_info_fields(self):
-        """Returns an info string (suitable for writing) from info dict."""
+        """Updates info attribute from info dict."""
         if self.info_dict:
             info_fields = []
             if len(self.info_dict) > 1:
@@ -328,7 +334,7 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
         """Returns string representation of format field."""
         format_field = "."
         if self.sample_tag_values:
-            first_sample = self.sample_tag_values.keys()[0]
+            first_sample = list(self.sample_tag_values.keys())[0]
             tag_names = self.sample_tag_values[first_sample].keys()
             if tag_names:
                 format_field = ":".join(tag_names)
@@ -396,8 +402,8 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
     def __hash__(self):
         return hash(self._key)
 
-    def __cmp__(self, other):
-        return cmp(self._key, other._key)
+    def __lt__(self, other):
+        return self._key < other._key
 
 
 #TODO cgates: add context management to open/close
@@ -458,6 +464,7 @@ class FileReader(object):
     def __hash__(self):
         return hash(self.input_filepath)
 
-    def __cmp__(self, other):
+    def __lt__(self, other):
         key = natsort.natsort_keygen()
-        return cmp(key(self.file_name), key(other.file_name))
+        return key(self.file_name) < key(other.file_name)
+

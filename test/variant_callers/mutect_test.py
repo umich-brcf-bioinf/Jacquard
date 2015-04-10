@@ -1,6 +1,8 @@
 # pylint: disable=line-too-long,too-many-public-methods,too-few-public-methods
 # pylint: disable=invalid-name,global-statement
-import jacquard.variant_callers.mutect as mutect
+from __future__ import print_function, absolute_import, division
+
+import jacquard.variant_caller_transforms.mutect as mutect
 import jacquard.vcf as vcf
 import test.test_case as test_case
 from test.vcf_test import MockFileReader, MockVcfReader

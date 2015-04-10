@@ -1,8 +1,10 @@
 #cgates/jebene: 7/9/2014
+#cgates/jebene: 3/30/2015
 
 language: python
 python:
     - "2.7"
+    - "3.4"
 
 install:
     - pip install -r requirements.txt
@@ -13,7 +15,6 @@ before_script:
 
 script: 
     - nosetests --with-coverage --verbose --cover-package=jacquard
-    #- nosetests
 
 after_success:
     - coveralls
@@ -22,4 +23,3 @@ notifications:
     email:
         - cgates@umich.edu
         - jebene@umich.edu
-        - kmeng@umich.edu

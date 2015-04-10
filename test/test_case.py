@@ -1,14 +1,22 @@
 #pylint: disable=too-many-public-methods, invalid-name, no-self-use
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
+
 import os
 import shutil
-from StringIO import StringIO
 import sys
 import unittest
 
 import jacquard.jacquard as jacquard
 import jacquard.logger as logger
 import jacquard.vcf as vcf
+
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+
+
 
 class JacquardBaseTestCase(unittest.TestCase):
     def setUp(self):
@@ -54,13 +62,9 @@ class JacquardBaseTestCase(unittest.TestCase):
         self.assertEquals(len(expected),
                           len(actual))
 
-        for i in xrange(len(expected)):
-            if expected[i].startswith("##jacquard.cwd="):
-                self.assertStartsWith(actual[i], "##jacquard.cwd=")
-            elif expected[i].startswith("##jacquard.command="):
-                self.assertStartsWith(actual[i], "##jacquard.command=")
-            elif expected[i].startswith("##jacquard.version="):
-                self.assertStartsWith(actual[i], "##jacquard.version=")
+        for i in range(len(expected)):
+            if expected[i].startswith("##jacquard=<Timestamp="):
+                self.assertStartsWith(actual[i], "##jacquard=<Timestamp=")
             else:
                 self.assertEquals(expected[i].rstrip(),
                                   actual[i].rstrip())
@@ -70,17 +74,17 @@ class JacquardBaseTestCase(unittest.TestCase):
 
         output = command[2]
 
-        try:
-            if os.path.isfile(output):
-                output_file = os.path.basename(output)
-                self._compare_files(output, output_file, expected_dir)
-            elif os.path.isdir(output):
-                for output_file in os.listdir(output):
-                    new_output = os.path.join(output, output_file)
-                    self._compare_files(new_output, output_file, expected_dir)
-        except AssertionError as e:
-            msg = "discrepancy in command [{}]: {}".format(" ".join(command), e)
-            raise AssertionError(msg)
+        #try:
+        if os.path.isfile(output):
+            output_file = os.path.basename(output)
+            self._compare_files(output, output_file, expected_dir)
+        elif os.path.isdir(output):
+            for output_file in os.listdir(output):
+                new_output = os.path.join(output, output_file)
+                self._compare_files(new_output, output_file, expected_dir)
+        #except self.failureException as e:
+        #    msg = "discrepancy in command [{}]: {}".format(" ".join(command), e)
+        #    raise self.failureException(msg)
 
     def entab(self, string, old="|"):
         return string.replace(old, "\t")
