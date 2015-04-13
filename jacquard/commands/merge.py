@@ -356,6 +356,7 @@ def _pull_matching_records(args, coordinate, buffered_readers):
         return passed_records
     if at_least_one_somatic:
         return somatic_records
+
     return vcf_records
 
 def _merge_records(args,
@@ -371,6 +372,7 @@ def _merge_records(args,
                                              all_sample_names,
                                              tags_to_keep)
         return merged_record
+
     return 0
 
 def _build_sample_list(vcf_readers):
