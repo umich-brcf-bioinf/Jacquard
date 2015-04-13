@@ -11,9 +11,9 @@ import unittest
 
 from testfixtures import TempDirectory
 
-import jacquard.utils as utils
-from jacquard.vcf import VcfRecord, VcfReader, FileWriter, FileReader
-import test.test_case as test_case
+import jacquard.utils.utils as utils
+from jacquard.utils.vcf import VcfRecord, VcfReader, FileWriter, FileReader
+import test.utils.test_case as test_case
 
 
 try:

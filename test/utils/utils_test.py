@@ -4,8 +4,8 @@ from __future__ import print_function, absolute_import, division
 
 import natsort
 
-import jacquard.utils as utils
-import test.test_case as test_case
+import jacquard.utils.utils as utils
+import test.utils.test_case as test_case
 
 
 class RoundTwoDigitsTestCase(test_case.JacquardBaseTestCase):

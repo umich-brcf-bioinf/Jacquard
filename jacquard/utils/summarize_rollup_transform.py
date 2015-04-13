@@ -8,7 +8,7 @@ from __future__ import print_function, absolute_import, division
 from decimal import Decimal
 import re
 
-import jacquard.utils as utils
+import jacquard.utils.utils as utils
 import jacquard.variant_caller_transforms.common_tags as common_tags
 
 

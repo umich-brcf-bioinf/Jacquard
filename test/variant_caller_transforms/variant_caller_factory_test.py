@@ -5,8 +5,8 @@ from argparse import Namespace
 import re
 
 import jacquard.variant_caller_transforms.variant_caller_factory as variant_caller_factory
-import test.test_case as test_case
-import test.vcf_test as vcf_test
+import test.utils.test_case as test_case
+import test.utils.vcf_test as vcf_test
 
 
 class VariantCallerFactoryClassTestCase(test_case.JacquardBaseTestCase):

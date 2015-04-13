@@ -13,10 +13,10 @@ import time
 
 from testfixtures import TempDirectory
 
-import jacquard.command_validator as command_validator
-import jacquard.utils as utils
-import test.mock_module as mock_module
-import test.test_case as test_case
+import jacquard.utils.command_validator as command_validator
+import jacquard.utils.utils as utils
+import test.utils.mock_module as mock_module
+import test.utils.test_case as test_case
 
 
 class MakeDirTestCase(test_case.JacquardBaseTestCase):

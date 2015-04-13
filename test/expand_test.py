@@ -8,23 +8,23 @@ import os
 
 from testfixtures import TempDirectory
 
-import jacquard.commands.expand as expand
-import jacquard.logger
-import jacquard.utils as utils
-import jacquard.vcf as vcf
-import test.mock_logger
-import test.test_case as test_case
-from test.vcf_test import MockVcfReader
+import jacquard.expand as expand
+import jacquard.utils.logger
+import jacquard.utils.utils as utils
+import jacquard.utils.vcf as vcf
+import test.utils.mock_logger
+import test.utils.test_case as test_case
+from test.utils.vcf_test import MockVcfReader
 
 
 class ExpandTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         super(ExpandTestCase, self).setUp()
-        expand.logger = test.mock_logger
+        expand.logger = test.utils.mock_logger
 
     def tearDown(self):
-        test.mock_logger.reset()
-        expand.mock_logger = jacquard.logger
+        test.utils.mock_logger.reset()
+        expand.mock_logger = jacquard.utils.logger
         super(ExpandTestCase, self).tearDown()
 
     def test_create_row_dict(self):
@@ -126,7 +126,7 @@ class ExpandTestCase(test_case.JacquardBaseTestCase):
                          "columns may have matched earlier expressions, or "+
                          "this expression may be irrelevant.")
 
-        actual_log_warnings = test.mock_logger.messages["WARNING"]
+        actual_log_warnings = test.utils.mock_logger.messages["WARNING"]
         self.assertEquals([exp_warning_1, exp_warning_2],
                           actual_log_warnings)
 
@@ -254,8 +254,7 @@ class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_expand(self):
         with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
-            functional_dir = os.path.dirname(test_dir)
-            module_testdir = os.path.join(functional_dir,
+            module_testdir = os.path.join(test_dir,
                                           "functional_tests",
                                           "05_expand")
             input_dir = os.path.join(module_testdir, "input")
@@ -270,12 +269,11 @@ class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_expand_colSpec(self):
         with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
-            functional_dir = os.path.dirname(test_dir)
-            module_testdir = os.path.join(functional_dir,
+            module_testdir = os.path.join(test_dir,
                                           "functional_tests",
                                           "05_expand_col_spec")
             input_dir = os.path.join(module_testdir, "input")
-            col_spec = os.path.join(functional_dir, "functional_tests", "col_spec.txt")
+            col_spec = os.path.join(test_dir, "functional_tests", "col_spec.txt")
             command = ["expand",
                        os.path.join(input_dir, "summarized.vcf"),
                        os.path.join(output_dir.path, "expanded.txt"),

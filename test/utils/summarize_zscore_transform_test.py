@@ -1,11 +1,11 @@
 # pylint: disable=line-too-long,too-many-public-methods,invalid-name,too-few-public-methods
 from __future__ import print_function, absolute_import, division
 
-import jacquard.zscore_caller as zscore_caller
-import jacquard.vcf as vcf
+import jacquard.utils.summarize_zscore_transform as zscore_caller
+import jacquard.utils.vcf as vcf
 import numpy as np
-import test.test_case as test_case
-from test.vcf_test import MockVcfReader
+import test.utils.test_case as test_case
+from test.utils.vcf_test import MockVcfReader
 
 
 class MockTag(object):

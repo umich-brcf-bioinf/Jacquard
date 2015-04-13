@@ -10,10 +10,10 @@ import signal
 from testfixtures import TempDirectory
 
 import jacquard.jacquard as jacquard
-import jacquard.logger as logger
-import jacquard.utils as utils
-import test.mock_module as mock_module
-import test.test_case as test_case
+import jacquard.utils.logger as logger
+import jacquard.utils.utils as utils
+import test.utils.mock_module as mock_module
+import test.utils.test_case as test_case
 
 
 MOCK_MOVE_TEMP_CONTENTS_CALLED = False

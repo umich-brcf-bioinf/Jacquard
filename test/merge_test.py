@@ -9,14 +9,14 @@ import os
 
 from testfixtures import TempDirectory
 
-import jacquard.logger
-import jacquard.commands.merge as merge
-import jacquard.utils as utils
-from jacquard.vcf import VcfRecord
-import jacquard.vcf as vcf
-import test.mock_logger
-import test.test_case as test_case
-from test.vcf_test import MockVcfReader, MockFileReader
+import jacquard.utils.logger
+import jacquard.merge as merge
+import jacquard.utils.utils as utils
+from jacquard.utils.vcf import VcfRecord
+import jacquard.utils.vcf as vcf
+import test.utils.mock_logger
+import test.utils.test_case as test_case
+from test.utils.vcf_test import MockVcfReader, MockFileReader
 
 
 class MockBufferedReader(object):
@@ -29,11 +29,11 @@ class MockBufferedReader(object):
 class MergeTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         super(MergeTestCase, self).setUp()
-        merge.logger = test.mock_logger
+        merge.logger = test.utils.mock_logger
 
     def tearDown(self):
-        test.mock_logger.reset()
-        merge.logger = jacquard.logger
+        test.utils.mock_logger.reset()
+        merge.logger = jacquard.utils.logger
         super(MergeTestCase, self).tearDown()
 
     def test_validate_consistent_samples_missingCaller(self):
@@ -51,7 +51,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
                                       ["##jacquard.translate.caller=VarScan"])]
         merge._validate_consistent_samples(input_files)
 
-        actual_log_warnings = test.mock_logger.messages["WARNING"]
+        actual_log_warnings = test.utils.mock_logger.messages["WARNING"]
         expected_log_warnings = ["Sample [B] is missing VCF(s): ['MuTect']",
                                  "Sample [C] is missing VCF(s): ['MuTect', 'Strelka']",
                                  "Some samples appear to be missing VCF(s)"]
@@ -66,7 +66,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
                                       ["##jacquard.translate.caller=MuTect"])]
         merge._validate_consistent_samples(input_files)
 
-        actual_log_warnings = test.mock_logger.messages["WARNING"]
+        actual_log_warnings = test.utils.mock_logger.messages["WARNING"]
         expected_log_warnings = ["Sample [A] is missing VCF(s): ['Strelka']",
                                  "Sample [B] is missing VCF(s): ['MuTect']",
                                  "Sample [C] is missing VCF(s): ['Strelka']",
@@ -109,7 +109,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
                         MockVcfReader(records=[fileBrec1])]
 
         merge._build_coordinates(mock_readers)
-        actual_log_warnings = test.mock_logger.messages["WARNING"]
+        actual_log_warnings = test.utils.mock_logger.messages["WARNING"]
         expected_log_warnings = ("No loci will be included in output. "
                                  "Review inputs/command line parameters "
                                  "and try again")
@@ -645,7 +645,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         reader2 = MockVcfReader(metaheaders=['##FORMAT=<ID=JQ2>'])
 
         dummy = merge._build_format_tags(["JQ[123]", "foo"], [reader1, reader2])
-        actual_log_warnings = test.mock_logger.messages["WARNING"]
+        actual_log_warnings = test.utils.mock_logger.messages["WARNING"]
         #pylint: disable=anomalous-backslash-in-string
         expected_log_warnings = "In the specified list of regexes \[.*\], the regex \[.*\] does not match any format tags; this expression may be irrelevant."
         self.assertRegexpMatches(actual_log_warnings[0], expected_log_warnings)
@@ -959,10 +959,10 @@ chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
         self.assertEquals(record1.text(), actual_records[0].text())
         self.assertEquals(record2.text(), actual_records[1].text())
         self.assertEquals(record3.text(), actual_records[2].text())
-        actual_log_infos = test.mock_logger.messages["INFO"]
+        actual_log_infos = test.utils.mock_logger.messages["INFO"]
         self.assertEquals(1, len(actual_log_infos))
         self.assertRegexpMatches(actual_log_infos[0], r"Sorting vcf \[unsorted.vcf\]")
-        actual_log_debugs = test.mock_logger.messages["DEBUG"]
+        actual_log_debugs = test.utils.mock_logger.messages["DEBUG"]
         self.assertEquals(1, len(actual_log_debugs))
         self.assertRegexpMatches(actual_log_debugs[0],
                                  r"VCF file:chrom:pos \[unsorted.vcf:chr1:42\] is out of order")
@@ -972,8 +972,8 @@ class MergeFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_merge(self):
         with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
-            functional_dir = os.path.dirname(test_dir)
-            module_testdir = os.path.join(functional_dir, "functional_tests", "03_merge")
+
+            module_testdir = os.path.join(test_dir, "functional_tests", "03_merge")
             input_file = os.path.join(module_testdir, "input")
             output_file = os.path.join(output_dir.path, "merged.vcf")
 

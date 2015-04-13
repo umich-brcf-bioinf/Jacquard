@@ -7,8 +7,8 @@ import sys
 import unittest
 
 import jacquard.jacquard as jacquard
-import jacquard.logger as logger
-import jacquard.vcf as vcf
+import jacquard.utils.logger as logger
+import jacquard.utils.vcf as vcf
 
 
 try:

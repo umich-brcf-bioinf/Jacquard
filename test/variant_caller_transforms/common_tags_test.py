@@ -2,8 +2,8 @@
 from __future__ import print_function, absolute_import, division
 
 import jacquard.variant_caller_transforms.common_tags as common_tags
-from jacquard.vcf import VcfRecord
-import test.test_case as test_case
+from jacquard.utils.vcf import VcfRecord
+import test.utils.test_case as test_case
 
 
 class ReportedTagTestCase(test_case.JacquardBaseTestCase):

@@ -15,9 +15,9 @@ from __future__ import print_function, absolute_import, division
 import os
 import re
 
-import jacquard.logger as logger
-import jacquard.utils as utils
-import jacquard.vcf as vcf
+import jacquard.utils.logger as logger
+import jacquard.utils.utils as utils
+import jacquard.utils.vcf as vcf
 
 UNUSED_REGEX_WARNING_FORMAT = ("The expression [{}] in column specification "
                                "file [{}:{}] didn't match any input columns; "

@@ -10,13 +10,13 @@ import re
 
 from testfixtures import TempDirectory
 
-from jacquard import vcf
-import jacquard.logger
-import jacquard.commands.translate as translate
-import jacquard.utils as utils
-import test.mock_logger
-import test.test_case as test_case
-from test.vcf_test import MockVcfReader, MockTag, MockWriter, MockCaller
+from jacquard.utils import vcf
+import jacquard.utils.logger
+import jacquard.translate as translate
+import jacquard.utils.utils as utils
+import test.utils.mock_logger
+import test.utils.test_case as test_case
+from test.utils.vcf_test import MockVcfReader, MockTag, MockWriter, MockCaller
 
 
 class MockVariantCallerFactory(object):
@@ -49,11 +49,11 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
         super(TranslateTestCase, self).setUp()
         self.original_variant_caller_factory = translate.variant_caller_factory
         self.original_validate_args = translate.validate_args
-        translate.logger = test.mock_logger
+        translate.logger = test.utils.mock_logger
 
     def tearDown(self):
-        test.mock_logger.reset()
-        translate.logger = jacquard.logger
+        test.utils.mock_logger.reset()
+        translate.logger = jacquard.utils.logger
         translate.validate_args = self.original_validate_args
         translate.variant_caller_factory = self.original_variant_caller_factory
         super(TranslateTestCase, self).tearDown()
@@ -73,7 +73,7 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
             temp_dir.write("unclaimed6.vcf", b"foo")
             translate.variant_caller_factory = MockVariantCallerFactory()
             translate.execute(args, execution_context=[])
-        actual_log_warnings = test.mock_logger.messages["WARNING"]
+        actual_log_warnings = test.utils.mock_logger.messages["WARNING"]
         self.assertEquals(6, len(actual_log_warnings))
         self.assertRegexpMatches(actual_log_warnings[0],
                                  r"input file \[unclaimed1.vcf\] will not be translated")
@@ -406,8 +406,7 @@ class TranslateFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_translate(self):
         with TempDirectory() as output_file:
             test_dir = os.path.dirname(os.path.realpath(__file__))
-            functional_dir = os.path.dirname(test_dir)
-            module_testdir = os.path.join(functional_dir,
+            module_testdir = os.path.join(test_dir,
                                           "functional_tests",
                                           "01_translate")
             input_file = os.path.join(module_testdir, "input")

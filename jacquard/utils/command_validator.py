@@ -18,7 +18,7 @@ import glob
 import os
 import time
 
-import jacquard.utils as utils
+import jacquard.utils.utils as utils
 
 
 _TEMP_WORKING_DIR_FORMAT = "jacquard.{}.{}.tmp"

@@ -15,7 +15,7 @@ import os
 import socket
 import sys
 
-import jacquard.utils as utils
+import jacquard.utils.utils as utils
 
 
 WARNING_OCCURRED = False

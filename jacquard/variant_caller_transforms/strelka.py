@@ -15,10 +15,10 @@ from collections import defaultdict, OrderedDict
 import os
 import re
 
-import jacquard.logger as logger
-import jacquard.utils as utils
+import jacquard.utils.logger as logger
+import jacquard.utils.utils as utils
 import jacquard.variant_caller_transforms.common_tags as common_tags
-import jacquard.vcf as vcf
+import jacquard.utils.vcf as vcf
 
 
 JQ_STRELKA_TAG = "JQ_SK_"

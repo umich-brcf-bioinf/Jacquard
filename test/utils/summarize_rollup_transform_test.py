@@ -4,14 +4,14 @@ from __future__ import print_function, absolute_import, division
 
 import re
 
-from jacquard.utils import JQException
-import jacquard.utils as utils
+from jacquard.utils.utils import JQException
+import jacquard.utils.utils as utils
 import jacquard.variant_caller_transforms.common_tags as common_tags
 import jacquard.variant_caller_transforms.mutect as mutect
-import jacquard.summarize_caller as summarize_caller
+import jacquard.utils.summarize_rollup_transform as summarize_caller
 import jacquard.variant_caller_transforms.varscan as varscan
-from jacquard.vcf import VcfRecord
-import test.test_case as test_case
+from jacquard.utils.vcf import VcfRecord
+import test.utils.test_case as test_case
 
 
 class CallersReportedListTagTestCase(test_case.JacquardBaseTestCase):

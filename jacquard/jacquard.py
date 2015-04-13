@@ -49,13 +49,13 @@ import sys
 import traceback
 
 from jacquard import __version__
-import jacquard.command_validator as command_validator
-import jacquard.commands.expand as expand
-import jacquard.logger as logger
-import jacquard.commands.merge as merge
-import jacquard.commands.summarize as summarize
-import jacquard.commands.translate as translate
-import jacquard.utils as utils
+import jacquard.utils.command_validator as command_validator
+import jacquard.expand as expand
+import jacquard.utils.logger as logger
+import jacquard.merge as merge
+import jacquard.summarize as summarize
+import jacquard.translate as translate
+import jacquard.utils.utils as utils
 from jacquard.variant_caller_transforms import variant_caller_factory
 
 

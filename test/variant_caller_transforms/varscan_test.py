@@ -4,14 +4,14 @@ from __future__ import print_function, absolute_import, division
 
 import re
 
-import jacquard.logger
-import jacquard.utils as utils
+import jacquard.utils.logger
+import jacquard.utils.utils as utils
 from jacquard.variant_caller_transforms import varscan
 from jacquard.variant_caller_transforms.varscan import _HCTag
-import jacquard.vcf as vcf
-import test.mock_logger
-import test.test_case as test_case
-from test.vcf_test import MockFileReader, MockVcfReader
+import jacquard.utils.vcf as vcf
+import test.utils.mock_logger
+import test.utils.test_case as test_case
+from test.utils.vcf_test import MockFileReader, MockVcfReader
 
 
 class HCTagTestCase(test_case.JacquardBaseTestCase):
@@ -137,11 +137,11 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         super(VarscanTestCase, self).setUp()
         self.caller = varscan.Varscan()
-        varscan.logger = test.mock_logger
+        varscan.logger = test.utils.mock_logger
 
     def tearDown(self):
-        test.mock_logger.reset()
-        varscan.logger = jacquard.logger
+        test.utils.mock_logger.reset()
+        varscan.logger = jacquard.utils.logger
         super(VarscanTestCase, self).tearDown()
 
     @staticmethod
@@ -390,7 +390,7 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
                                 r"Some Varscan VCFs were missing either a snp or indel file. Review inputs/command options and try again.",
                                 caller.claim,
                                 file_readers)
-        actual_log_errors = test.mock_logger.messages["ERROR"]
+        actual_log_errors = test.utils.mock_logger.messages["ERROR"]
         expected_log_errors = ["VarScan VCF [fileB.indel] has no snp file."]
         self.assertEquals(expected_log_errors, actual_log_errors)
 

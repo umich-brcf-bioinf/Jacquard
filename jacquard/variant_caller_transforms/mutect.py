@@ -4,9 +4,9 @@ MuTect VCFs are assumed to have a ".vcf" extension and have a valid
 "##MuTect=..." metaheader.
 """
 from __future__ import print_function, absolute_import, division
-import jacquard.utils as utils
+import jacquard.utils.utils as utils
 import jacquard.variant_caller_transforms.common_tags as common_tags
-import jacquard.vcf as vcf
+import jacquard.utils.vcf as vcf
 
 JQ_MUTECT_TAG = "JQ_MT_"
 VERSION = "v1.1.4"

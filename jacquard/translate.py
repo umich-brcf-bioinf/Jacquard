@@ -21,10 +21,10 @@ from collections import defaultdict
 import glob
 import os
 
-import jacquard.logger as logger
-import jacquard.utils as utils
+import jacquard.utils.logger as logger
+import jacquard.utils.utils as utils
 from jacquard.variant_caller_transforms import variant_caller_factory
-from jacquard.vcf import FileReader, FileWriter
+from jacquard.utils.vcf import FileReader, FileWriter
 
 
 _FILE_OUTPUT_SUFFIX = "translatedTags"

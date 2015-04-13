@@ -2,13 +2,13 @@
 # pylint: disable=invalid-name,global-statement,too-many-format-args
 from __future__ import print_function, absolute_import, division
 
-import jacquard.logger
-import jacquard.utils as utils
+import jacquard.utils.logger
+import jacquard.utils.utils as utils
 import jacquard.variant_caller_transforms.strelka as strelka
-import jacquard.vcf as vcf
-import test.mock_logger
-import test.test_case as test_case
-from test.vcf_test import MockFileReader, MockVcfReader
+import jacquard.utils.vcf as vcf
+import test.utils.mock_logger
+import test.utils.test_case as test_case
+from test.utils.vcf_test import MockFileReader, MockVcfReader
 
 
 class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
@@ -99,11 +99,11 @@ class StrelkaTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         super(StrelkaTestCase, self).setUp()
         self.caller = strelka.Strelka()
-        strelka.logger = test.mock_logger
+        strelka.logger = test.utils.mock_logger
 
     def tearDown(self):
-        test.mock_logger.reset()
-        strelka.logger = jacquard.logger
+        test.utils.mock_logger.reset()
+        strelka.logger = jacquard.utils.logger
         super(StrelkaTestCase, self).tearDown()
 
     def test_claim(self):
@@ -149,7 +149,7 @@ class StrelkaTestCase(test_case.JacquardBaseTestCase):
                                 r"Some Strelka VCFs were missing either a snvs or indels file. Review inputs/command options and try again.",
                                 caller.claim,
                                 file_readers)
-        actual_log_errors = test.mock_logger.messages["ERROR"]
+        actual_log_errors = test.utils.mock_logger.messages["ERROR"]
         expected_log_errors = ["Strelka VCF [fileB.indels] has no snvs file."]
         self.assertEquals(expected_log_errors, actual_log_errors)
 

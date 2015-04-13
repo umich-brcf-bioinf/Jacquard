@@ -7,11 +7,11 @@ from __future__ import print_function, absolute_import, division
 
 import os
 
-import jacquard.logger as logger
-import jacquard.utils as utils
-import jacquard.summarize_caller as summarize_caller
-import jacquard.zscore_caller as zscore_caller
-import jacquard.vcf as vcf
+import jacquard.utils.logger as logger
+import jacquard.utils.utils as utils
+import jacquard.utils.summarize_rollup_transform as summarize_caller
+import jacquard.utils.summarize_zscore_transform as zscore_caller
+import jacquard.utils.vcf as vcf
 
 
 def _write_metaheaders(caller,

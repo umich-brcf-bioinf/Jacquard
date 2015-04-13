@@ -36,10 +36,10 @@ import re
 
 import natsort
 
-import jacquard.logger as logger
-import jacquard.utils as utils
-from jacquard.vcf import FileWriter
-import jacquard.vcf as vcf
+import jacquard.utils.logger as logger
+import jacquard.utils.utils as utils
+from jacquard.utils.vcf import FileWriter
+import jacquard.utils.vcf as vcf
 
 
 _DEFAULT_INCLUDED_FORMAT_TAGS = ["JQ_.*"]

@@ -8,7 +8,7 @@ import shutil
 import sys
 import unittest
 
-import jacquard.logger as logger
+import jacquard.utils.logger as logger
 
 
 try:

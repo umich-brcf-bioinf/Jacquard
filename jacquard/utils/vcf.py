@@ -8,7 +8,7 @@ import sys
 
 import natsort
 
-import jacquard.utils as utils
+import jacquard.utils.utils as utils
 
 
 #TODO: (cgates): add context management to open/close
