@@ -71,7 +71,8 @@ class SummarizeFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_summarize(self):
         with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
-            module_testdir = os.path.join(test_dir, "functional_tests", "04_summarize")
+            functional_dir = os.path.dirname(test_dir)
+            module_testdir = os.path.join(functional_dir, "functional_tests", "04_summarize")
             input_dir = os.path.join(module_testdir, "input", "tiny_strelka.merged.vcf")
             output_file = os.path.join(output_dir.path, "summarized.vcf")
 

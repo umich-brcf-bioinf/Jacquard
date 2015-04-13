@@ -254,7 +254,8 @@ class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_expand(self):
         with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
-            module_testdir = os.path.join(test_dir,
+            functional_dir = os.path.dirname(test_dir)
+            module_testdir = os.path.join(functional_dir,
                                           "functional_tests",
                                           "05_expand")
             input_dir = os.path.join(module_testdir, "input")
@@ -269,11 +270,12 @@ class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_expand_colSpec(self):
         with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
-            module_testdir = os.path.join(test_dir,
+            functional_dir = os.path.dirname(test_dir)
+            module_testdir = os.path.join(functional_dir,
                                           "functional_tests",
                                           "05_expand_col_spec")
             input_dir = os.path.join(module_testdir, "input")
-            col_spec = os.path.join(test_dir, "functional_tests", "col_spec.txt")
+            col_spec = os.path.join(functional_dir, "functional_tests", "col_spec.txt")
             command = ["expand",
                        os.path.join(input_dir, "summarized.vcf"),
                        os.path.join(output_dir.path, "expanded.txt"),

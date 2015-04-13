@@ -230,14 +230,12 @@ class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
             initial_input = os.path.join(module_testdir, "input")
 
             translate_output = os.path.join(output_dir.path, "translate")
-            filter_output = os.path.join(output_dir.path, "filter")
             merge_output = os.path.join(output_dir.path, "merge", "merged.vcf")
             summarize_output = os.path.join(output_dir.path, "summarize", "summarized.vcf")
             expanded_output = os.path.join(output_dir.path, "expand", "expanded.tsv")
 
             commands = [["translate", initial_input, translate_output, "--force"],
-                        ["filter", translate_output, filter_output, "--force"],
-                        ["merge", filter_output, merge_output, "--force"],
+                        ["merge", translate_output, merge_output, "--force"],
                         ["summarize", merge_output, summarize_output, "--force"],
                         ["expand", summarize_output, expanded_output, "--force"]]
 

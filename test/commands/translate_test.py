@@ -406,7 +406,8 @@ class TranslateFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_translate(self):
         with TempDirectory() as output_file:
             test_dir = os.path.dirname(os.path.realpath(__file__))
-            module_testdir = os.path.join(test_dir,
+            functional_dir = os.path.dirname(test_dir)
+            module_testdir = os.path.join(functional_dir,
                                           "functional_tests",
                                           "01_translate")
             input_file = os.path.join(module_testdir, "input")

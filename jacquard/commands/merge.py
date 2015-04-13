@@ -16,8 +16,11 @@
 * Calls for the same patient/sample are joined into a single column. Each output
     column is the patient name (prefix of the file name) plus the sample name
     from the column header.
-* The merged file will have as many records as the distinct set of
+* By default, the merged file will have as many records as the distinct set of
     (chrom, pos, ref, alt) across all input files.
+    Running Merge with "--include_variants" or "--include_loci" will reduce the
+    number of records in the merged file to include only those which conform
+    with the desired flag.
 * Each variant record will have the minimal set of incoming format tags for
     that variant (i.e. the list of format tags is specific to each record).
 * Incoming QUAL and INFO fields are ignored.
