@@ -16,7 +16,7 @@ from jacquard.vcf import VcfRecord
 import jacquard.vcf as vcf
 import test.mock_logger
 import test.test_case as test_case
-from test.vcf_test import MockVcfReader, MockFileWriter, MockFileReader
+from test.vcf_test import MockVcfReader, MockFileReader
 
 
 class MockBufferedReader(object):
@@ -87,7 +87,6 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
             self.assertEquals(expected_desired_output_files, desired_output_files)
 
     def test_build_coordinates(self):
-        args = Namespace(include_variants=None, include_loci=None)
         fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
         fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")
         fileBrec1 = vcf.VcfRecord("chr2", "12", "A", "G", "id=2")
@@ -96,42 +95,27 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
                         MockVcfReader(records=[fileBrec1, fileBrec2])]
 
-        actual_coordinates = merge._build_coordinates(mock_readers, args)
+        actual_coordinates = merge._build_coordinates(mock_readers)
 
         expected = [fileArec1, fileArec2, fileBrec2]
         self.assertEquals(expected, actual_coordinates)
 
-    def test_build_coordinates_passedVariants(self):
-        args = Namespace(include_variants="passed", include_loci=None)
-        fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C", vcf_filter="PASS")
-        fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", vcf_filter="FAIL")
-        fileBrec1 = vcf.VcfRecord("chr2", "12", "A", "G", vcf_filter="PASS")
-        fileBrec2 = vcf.VcfRecord("chr42", "16", "G", "C", vcf_filter="foo.")
-
-        mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
-                        MockVcfReader(records=[fileBrec1, fileBrec2])]
-
-        actual_coordinates = merge._build_coordinates(mock_readers, args)
-
-        expected = [fileArec1, fileBrec1]
-        self.assertEquals(expected, actual_coordinates)
-
-    def test_build_coordinates_somaticVariants(self):
-        args = Namespace(include_variants="somatic", include_loci=None)
-        fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C", sample_tag_values=OrderedDict(sorted({"sampleA":{"JQ_HC_SOM": "1"}}.items())))
-        fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", sample_tag_values=OrderedDict(sorted({"sampleA":{"JQ_HC_SOM": "0"}}.items())))
-        fileBrec1 = vcf.VcfRecord("chr42", "16", "G", "C", sample_tag_values=OrderedDict(sorted({"sampleA":{"JQ_HC_SOM": "1"}}.items())))
+    def test_build_coordinates_logsNoCoordinates(self):
+        fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C", vcf_filter="JQ_EXCLUDE")
+        fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", vcf_filter="JQ_EXCLUDE")
+        fileBrec1 = vcf.VcfRecord("chr42", "16", "G", "C", vcf_filter="JQ_EXCLUDE")
 
         mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
                         MockVcfReader(records=[fileBrec1])]
 
-        actual_coordinates = merge._build_coordinates(mock_readers, args)
-
-        expected = [fileArec1, fileBrec1]
-        self.assertEquals(expected, actual_coordinates)
+        merge._build_coordinates(mock_readers)
+        actual_log_warnings = test.mock_logger.messages["WARNING"]
+        expected_log_warnings = ("No loci will be included in output. "
+                                 "Review inputs/command line parameters "
+                                 "and try again")
+        self.assertEquals(expected_log_warnings, actual_log_warnings[0])
 
     def test_build_coordinates_multAltsEmpty(self):
-        args = Namespace(include_variants=None, include_loci=None)
         fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
         fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")
         fileBrec1 = vcf.VcfRecord("chr2", "12", "A", "G", "id=2")
@@ -140,14 +124,13 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
                         MockVcfReader(records=[fileBrec1, fileBrec2])]
 
-        actual_coordinates = merge._build_coordinates(mock_readers, args)
+        actual_coordinates = merge._build_coordinates(mock_readers)
 
         actual_multalts = [record for record in actual_coordinates if record.info == "JQ_MULT_ALT_LOCUS"]
 
         self.assertEquals([], actual_multalts)
 
     def test_build_coordinates_flagsMultAltsFromDistinctFiles(self):
-        args = Namespace(include_variants=None, include_loci=None)
         fileA_rec1 = vcf.VcfRecord("chr1", "1", "A", "C")
         fileA_rec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")
         fileB_rec1 = vcf.VcfRecord("chr2", "12", "A", "T", "id=2")
@@ -156,7 +139,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         mock_readers = [MockVcfReader(records=[fileA_rec1, fileA_rec2]),
                         MockVcfReader(records=[fileB_rec1, fileB_rec2])]
 
-        actual_coordinates = merge._build_coordinates(mock_readers, args)
+        actual_coordinates = merge._build_coordinates(mock_readers)
 
         actual_multalts = [record for record in actual_coordinates if record.info == "JQ_MULT_ALT_LOCUS"]
 
@@ -164,7 +147,6 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(expected, actual_multalts)
 
     def test_build_coordinates_flagsMultAltsWithinFile(self):
-        args = Namespace(include_variants=None, include_loci=None)
         fileA_rec1 = vcf.VcfRecord("chr1", "1", "A", "C")
         fileA_rec2 = vcf.VcfRecord("chr2", "12", "A", "G,T", "id=1")
         fileB_rec1 = vcf.VcfRecord("chr3", "12", "A", "T", "id=2")
@@ -173,7 +155,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         mock_readers = [MockVcfReader(records=[fileA_rec1, fileA_rec2]),
                         MockVcfReader(records=[fileB_rec1, fileB_rec2])]
 
-        actual_coordinates = merge._build_coordinates(mock_readers, args)
+        actual_coordinates = merge._build_coordinates(mock_readers)
 
         actual_multalts = [record for record in actual_coordinates if record.info == "JQ_MULT_ALT_LOCUS"]
 
@@ -181,7 +163,6 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(expected, actual_multalts)
 
     def test_build_coordinates_flagsMultAltsWithDistinctRefs(self):
-        args = Namespace(include_variants=None, include_loci=None)
         fileA_rec1 = vcf.VcfRecord("chr1", "1", "A", "C")
         fileA_rec2 = vcf.VcfRecord("chr2", "2", "A", "G", "id=1")
         fileB_rec1 = vcf.VcfRecord("chr2", "2", "AT", "T", "id=2")
@@ -190,7 +171,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         mock_readers = [MockVcfReader(records=[fileA_rec1, fileA_rec2]),
                         MockVcfReader(records=[fileB_rec1, fileB_rec2])]
 
-        actual_coordinates = merge._build_coordinates(mock_readers, args)
+        actual_coordinates = merge._build_coordinates(mock_readers)
 
         actual_multalts = [record for record in actual_coordinates if record.info == "JQ_MULT_ALT_LOCUS"]
 
@@ -405,7 +386,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SA": OD({"foo":"A", "HC_SOM": "1"}), "SB":OD({"foo":"B", "HC_SOM": "0"})}))
-        record2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SC": OD({"foo":"C", "HC_SOM": "1"}), "SD":OD({"foo":"D", "HC_SOM": "0"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SC": OD({"foo":"C", "HC_SOM": "0"}), "SD":OD({"foo":"D", "HC_SOM": "0"})}))
         buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
 
         actual_record = merge._merge_records(args, coordinate, buffered_readers, ["SA", "SB", "SC", "SD"], ["foo"])

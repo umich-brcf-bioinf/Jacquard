@@ -177,12 +177,7 @@ def _is_somatic_variant(record):
             if re.search(_JQ_SOMATIC_TAG, tag) and is_somatic:
                 return 1
 
-def _build_coordinates(vcf_readers, args):
-    passed_variants = args.include_variants == "passed"
-    any_passed_loci = args.include_loci == "any_passed"
-    somatic_variants = args.include_variants == "somatic"
-    any_somatic_loci = args.include_loci == "any_somatic"
-
+def _build_coordinates(vcf_readers):
     coordinate_set = set()
     mult_alts = defaultdict(set)
 
@@ -195,25 +190,24 @@ def _build_coordinates(vcf_readers, args):
             vcf_reader.open()
 
             for vcf_record in vcf_reader.vcf_records():
-                if passed_variants or any_passed_loci:
-                    if vcf_record.filter == "PASS":
-                        coordinate_set.add(vcf_record.get_empty_record())
-                elif somatic_variants or any_somatic_loci:
-                    if _is_somatic_variant(vcf_record):
-                        coordinate_set.add(vcf_record.get_empty_record())
-                else:
-                    if "JQ_EXCLUDE" not in vcf_record.filter:
-                        coordinate_set.add(vcf_record.get_empty_record())
+                if "JQ_EXCLUDE" not in vcf_record.filter:
+                    coordinate_set.add(vcf_record.get_empty_record())
                 ref_alt = vcf_record.ref, vcf_record.alt
                 locus = vcf_record.chrom, vcf_record.pos
                 mult_alts[locus].add(ref_alt)
         finally:
             vcf_reader.close()
 
+    if not coordinate_set:
+        msg = ("No loci will be included in output. Review inputs/command line "
+               "parameters and try again")
+        logger.warning(msg)
+
     for vcf_record in coordinate_set:
         ref_alts_for_this_locus = mult_alts[vcf_record.chrom, vcf_record.pos]
         inferred_mult_alt = len(ref_alts_for_this_locus) > 1
         explicit_mult_alt = "," in next(iter(ref_alts_for_this_locus))[1]
+
         if inferred_mult_alt or explicit_mult_alt:
             vcf_record.add_info_field(_MULT_ALT_TAG)
 
@@ -318,10 +312,16 @@ def _build_merged_record(coordinate,
 def _pull_matching_records(args, coordinate, buffered_readers):
     passed_variants = args.include_variants == "passed"
     all_passed_loci = args.include_loci == "all_passed"
+    any_passed_loci = args.include_loci == "any_passed"
     somatic_variants = args.include_variants == "somatic"
     all_somatic_loci = args.include_loci == "all_somatic"
+    any_somatic_loci = args.include_loci == "any_somatic"
 
     vcf_records = []
+    at_least_one_passed = 0
+    passed_records = []
+    at_least_one_somatic = 0
+    somatic_records = []
     for buffered_reader in buffered_readers:
         record = buffered_reader.next_if_equals(coordinate)
         if record:
@@ -333,6 +333,10 @@ def _pull_matching_records(args, coordinate, buffered_readers):
                     vcf_records.append(record)
                 else:
                     return []
+            elif any_passed_loci:
+                if record.filter == "PASS":
+                    at_least_one_passed = 1
+                passed_records.append(record)
             elif somatic_variants:
                 if _is_somatic_variant(record):
                     vcf_records.append(record)
@@ -341,10 +345,17 @@ def _pull_matching_records(args, coordinate, buffered_readers):
                     vcf_records.append(record)
                 else:
                     return []
+            elif any_somatic_loci:
+                if _is_somatic_variant(record):
+                    at_least_one_somatic = 1
+                somatic_records.append(record)
             else:
-##accounts for any_passed/any_somatic because build_coordinates handled it
                 vcf_records.append(record)
 
+    if at_least_one_passed:
+        return passed_records
+    if at_least_one_somatic:
+        return somatic_records
     return vcf_records
 
 def _merge_records(args,
@@ -460,7 +471,7 @@ def add_subparser(subparser):
     parser.add_argument("--include_variants", choices=["passed", "somatic"], help=("passed: Only include variants which passed their respective filter\n"
                                                                                    "somatic: Only include somatic variants"))
 
-    parser.add_argument("--include_loci", choices=["any_passed", "all_passed", "any_soamtic", "all_somatic"], help=("any_passed: Include all variants at loci where at least one variant passed\n"
+    parser.add_argument("--include_loci", choices=["any_passed", "all_passed", "any_somatic", "all_somatic"], help=("any_passed: Include all variants at loci where at least one variant passed\n"
     # pylint: disable=line-too-long
                                                                                                                         "all_passed: Include all variants at loci where all variants passed\n"
                                                                                                                         "any_somatic: Include all variants at loci where at least one variant was somatic\n"
@@ -500,7 +511,7 @@ def execute(args, execution_context):
         buffered_readers, vcf_readers = _create_reader_lists(file_readers)
         vcf_readers = _sort_readers(vcf_readers, output_path)
         all_sample_names, merge_metaheaders = _build_sample_list(vcf_readers)
-        coordinates = _build_coordinates(vcf_readers, args)
+        coordinates = _build_coordinates(vcf_readers)
         format_tags_to_keep = _build_format_tags(format_tag_regex, vcf_readers)
         info_tags_to_keep = _build_info_tags(coordinates)
         contigs_to_keep = _build_contigs(coordinates)
