@@ -27,8 +27,8 @@ class FilterSomaticTestCase(test_case.JacquardBaseTestCase):
 
     def test_validate_arguments(self):
         with TempDirectory() as input_file, TempDirectory() as output_file:
-            input_file.write("A.normalized.vcf", "##source=strelka\n#colHeader")
-            input_file.write("B.normalized.vcf", "##source=strelka\n#colHeader")
+            input_file.write("A.normalized.vcf", b"##source=strelka\n#colHeader")
+            input_file.write("B.normalized.vcf", b"##source=strelka\n#colHeader")
             args = Namespace(input=input_file.path,
                              output=output_file.path)
 
@@ -39,8 +39,8 @@ class FilterSomaticTestCase(test_case.JacquardBaseTestCase):
 
     def test_predict_output(self):
         with TempDirectory() as input_file:
-            input_file.write("A.normalized.jacquardTags.vcf", "##source=strelka\n#colHeader")
-            input_file.write("B.normalized.jacquardTags.vcf", "##source=strelka\n#colHeader")
+            input_file.write("A.normalized.jacquardTags.vcf", b"##source=strelka\n#colHeader")
+            input_file.write("B.normalized.jacquardTags.vcf", b"##source=strelka\n#colHeader")
             args = Namespace(input=input_file.path)
 
             desired_output_files = filter._predict_output(args)

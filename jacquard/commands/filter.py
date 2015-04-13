@@ -249,11 +249,15 @@ def _build_readers(input_files):
 
 def _build_readers_to_writers(vcf_readers, output_dir):
     readers_to_writers = collections.OrderedDict()
-    for reader in natsort.natsorted(vcf_readers):
-        new_filename = _mangle_output_filenames(reader.file_name)
+    reader_fnames = [reader.file_name for reader in vcf_readers]
+    for reader_fname in natsort.natsorted(reader_fnames):
+        new_filename = _mangle_output_filenames(reader_fname)
         output_filepath = os.path.join(output_dir, new_filename)
 
-        readers_to_writers[reader] = vcf.FileWriter(output_filepath)
+        for reader in vcf_readers:
+            if reader.file_name == reader_fname:
+                readers_to_writers[reader] = vcf.FileWriter(output_filepath)
+                break
 
     return readers_to_writers
 
