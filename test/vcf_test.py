@@ -129,6 +129,7 @@ class MockVcfReader(object):
         self.opened = False
         self.closed = False
         self._caller_name = "mockCaller"
+        self.qualified_sample_names = self._create_qualified_sample_names()
 
     def open(self):
         self.opened = True
@@ -170,6 +171,16 @@ class MockVcfReader(object):
     @property
     def non_format_metaheaders(self):
         return self.metaheaders
+
+    def _create_qualified_sample_names(self):
+        patient_prefix = self.file_name.split(".")[0]
+        qualified_names = []
+        if self.sample_names:
+            for sample_name in self.sample_names:
+                qualified_names.append("|".join([patient_prefix, sample_name]))
+        else:
+            qualified_names.append("|".join(["foo", "bar"]))
+        return qualified_names
 
     @property
     def caller_name(self):

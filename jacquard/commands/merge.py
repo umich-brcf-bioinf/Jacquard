@@ -187,8 +187,7 @@ def _build_coordinates(vcf_readers):
             vcf_reader.close()
 
     for vcf_record in coordinate_set:
-        ref_alts_for_this_locus = mult_alts[vcf_record.chrom,
-                                            vcf_record.pos]
+        ref_alts_for_this_locus = mult_alts[vcf_record.chrom, vcf_record.pos]
         inferred_mult_alt = len(ref_alts_for_this_locus) > 1
         explicit_mult_alt = "," in next(iter(ref_alts_for_this_locus))[1]
         if inferred_mult_alt or explicit_mult_alt:
@@ -315,29 +314,22 @@ def _merge_records(coordinates,
         writer.write(merged_record.text())
 
 def _build_sample_list(vcf_readers):
-    def _column(patient, sample):
-        return "|".join([patient, sample])
-
-    all_sample_patients = set()
+    all_sample_names = set()
     patient_to_file = defaultdict(list)
 
     for vcf_reader in vcf_readers:
-        #TODO: (cgates): VcfReader should return patient
-        patient = vcf_reader.file_name.split(".")[0]
-        for sample_name in vcf_reader.sample_names:
-            all_sample_patients.add((patient, sample_name))
-            patient_sample = _column(patient, sample_name)
-            patient_to_file[patient_sample].append(vcf_reader.file_name)
+        for sample_name in vcf_reader.qualified_sample_names:
+            all_sample_names.add(sample_name)
+            patient_to_file[sample_name].append(vcf_reader.file_name)
+    sorted_sample_names = natsort.natsorted(all_sample_names)
 
-    sorted_patient_samples = natsort.natsorted(all_sample_patients)
-    patient_sample_strings = [_column(p, s) for p, s in sorted_patient_samples]
+    sorted_patient_to_file = OrderedDict()
+    for sample_name in sorted_sample_names:
+        sorted_patient_to_file[sample_name] = patient_to_file[sample_name]
 
-    patient_to_file_sorted = OrderedDict()
-    for patient_sample in patient_sample_strings:
-        patient_to_file_sorted[patient_sample] = patient_to_file[patient_sample]
-    merge_metaheaders = _build_merge_metaheaders(patient_to_file_sorted)
+    merge_metaheaders = _build_merge_metaheaders(sorted_patient_to_file)
 
-    return patient_sample_strings, merge_metaheaders
+    return sorted_sample_names, merge_metaheaders
 
 def _build_info_tags(coordinates):
     all_info_tags = set()

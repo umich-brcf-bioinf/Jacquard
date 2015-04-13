@@ -345,8 +345,8 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         readers = [reader1, reader2, reader3, reader4]
         actual_sample_names, dummy = merge._build_sample_list(readers)
 
-        expected_sample_names = ["P1|S2", "P1|S10",
-                                 "P1A|S2", "P1A|S10",
+        expected_sample_names = ["P1A|S2", "P1A|S10",
+                                 "P1|S2", "P1|S10",
                                  "P2|S2", "P2|S10",
                                  "P10|S2", "P10|S10"]
         self.assertEquals(expected_sample_names, actual_sample_names)

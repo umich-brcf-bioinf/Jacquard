@@ -35,7 +35,7 @@ class FilterSomaticTestCase(test_case.JacquardBaseTestCase):
             actual_readers_to_writers, out_files = filter._validate_arguments(args)
             self.assertEquals(2, len(actual_readers_to_writers))
             self.assertEquals(0, len(out_files))
-            self.assertRegexpMatches(actual_readers_to_writers.values()[0].output_filepath, "HCsomatic.vcf")
+            self.assertRegexpMatches(list(actual_readers_to_writers.values())[0].output_filepath, "HCsomatic.vcf")
 
     def test_predict_output(self):
         with TempDirectory() as input_file:
