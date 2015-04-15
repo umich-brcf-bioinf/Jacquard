@@ -26,6 +26,48 @@ class MockBufferedReader(object):
     def next_if_equals(self, dummy):
         return next(self.vcf_records_iter)
 
+class FilterTestCase(test_case.JacquardBaseTestCase):
+    def test_init_includeAllWhenNotSpecified(self):
+        args = Namespace(include_variants=None, include_loci=None)
+        record_filter = merge._Filter(args)
+        self.assertEquals(merge._Filter.include_all,
+                          record_filter.include_variant)
+        self.assertEquals(merge._Filter.include_all,
+                          record_filter.include_locus)
+
+    def test_includeAll(self):
+        self.assertEquals(True, merge._Filter.include_all(None))
+
+    def test_includePassedVariant(self):
+        rec = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="foo")
+        self.assertEquals(False, merge._Filter.include_passed_variant(rec))
+
+        rec = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
+        self.assertEquals(True, merge._Filter.include_passed_variant(rec))
+
+    def test_includeSomaticVariant(self):
+        rec = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values={"SA": {merge._JQ_SOMATIC_TAG: "0"}})
+        self.assertEquals(False, merge._Filter.include_somatic_variant(rec))
+
+        rec = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values={"SA": {merge._JQ_SOMATIC_TAG: "1"}})
+        self.assertEquals(True, merge._Filter.include_somatic_variant(rec))
+
+    def test_build_filters_includePassedVariant(self):
+        args = Namespace(include_variants="passed", include_loci=None)
+        record_filter = merge._Filter(args)
+        self.assertEquals(merge._Filter.include_passed_variant,
+                          record_filter.include_variant)
+        self.assertEquals(merge._Filter.include_all,
+                          record_filter.include_locus)
+
+    def test_build_filters_includeSomaticVariant(self):
+        args = Namespace(include_variants="somatic", include_loci=None)
+        record_filter = merge._Filter(args)
+        self.assertEquals(merge._Filter.include_somatic_variant,
+                          record_filter.include_variant)
+        self.assertEquals(merge._Filter.include_all,
+                          record_filter.include_locus)
+
 class MergeTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
         super(MergeTestCase, self).setUp()

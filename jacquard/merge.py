@@ -173,6 +173,7 @@ def _create_reader_lists(file_readers):
 
     return buffered_readers, vcf_readers
 
+#TODO: (cgates/jebene): Drop when refctor of filter complete
 def _is_somatic_variant(record):
     for sample in record.sample_tag_values:
         for tag in record.sample_tag_values[sample]:
@@ -310,6 +311,32 @@ def _build_merged_record(coordinate,
                                   sample_tag_values=full_matrix)
 
     return merged_record
+
+class _Filter(object):
+    def __init__(self, args):
+        variant_filters = {None : self.include_all,
+                           "passed" : self.include_passed_variant,
+                           "somatic" : self.include_somatic_variant}
+        self.include_variant = variant_filters[args.include_variants]
+        self.include_locus = self.include_all
+
+    #TODO: (cgates/jebene): Should this be part of VcfRecorc?
+    @staticmethod
+    def include_somatic_variant(record):
+        for sample in record.sample_tag_values:
+            for tag in record.sample_tag_values[sample]:
+                is_somatic = record.sample_tag_values[sample][tag] == "1"
+                if re.search(_JQ_SOMATIC_TAG, tag) and is_somatic:
+                    return True
+        return False
+    
+    @staticmethod
+    def include_all(dummy):
+        return True
+
+    @staticmethod
+    def include_passed_variant(record):
+        return record.filter == "PASS"
 
 #TODO: (jebene) alter logic to reduce number of branches
 def _pull_matching_records(args, coordinate, buffered_readers):
