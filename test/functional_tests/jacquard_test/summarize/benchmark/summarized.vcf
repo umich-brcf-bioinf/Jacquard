@@ -4,7 +4,7 @@
 ##jacquard.summarize.JQ_SUMMARY_AF_ZSCORE.JQ_SUMMARY_AF_RANGE_mean=0.0316666666667
 ##jacquard.summarize.JQ_SUMMARY_AF_ZSCORE.JQ_SUMMARY_AF_RANGE_stdev=0.0429016964182
 ##jacquard.summarize.JQ_SUMMARY_DP_ZSCORE.JQ_SUMMARY_DP_RANGE_mean=1.6
-##jacquard.summarize.JQ_SUMMARY_DP_ZSCORE.JQ_SUMMARY_DP_RANGE_stdev=1.72433562085
+##jacquard.summarize.JQ_SUMMARY_DP_ZSCORE.JQ_SUMMARY_DP_RANGE_stdev=1.7243356208503
 ##jacquard=<Timestamp="2015-04-13 14:00:56",Command="<module 'jacquard.commands.merge' from 'C:\Users\jebene\git\Jacquard\jacquard\commands\merge.pyc'>",Cwd="C:\Users\jebene\git">
 ##jacquard=<Timestamp="2015-04-13 14:02:12",Command="<module 'jacquard.commands.summarize' from 'C:\Users\jebene\git\Jacquard\jacquard\commands\summarize.pyc'>",Cwd="C:\Users\jebene\git">
 ##contig=<ID=chr1,length=249250621>

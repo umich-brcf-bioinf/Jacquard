@@ -6,6 +6,7 @@ import jacquard.utils.vcf as vcf
 import numpy as np
 import test.utils.test_case as test_case
 from test.utils.vcf_test import MockVcfReader
+from jacquard.utils.summarize_zscore_transform import _ZScoreTag
 
 
 class MockTag(object):
@@ -41,8 +42,8 @@ class ZScoreTagTest(test_case.JacquardBaseTestCase):
 
         self.assertEquals(3, len(tag.metaheaders))
         it = iter(tag.metaheaders)
-        self.assertEquals(next(it), '##jacquard.summarize.ZScoreX.X_mean=' + str(tag._mean))
-        self.assertEquals(next(it), '##jacquard.summarize.ZScoreX.X_stdev=' + str(tag._stdev))
+        self.assertEquals(next(it), '##jacquard.summarize.ZScoreX.X_mean=' + repr(tag._mean))
+        self.assertEquals(next(it), '##jacquard.summarize.ZScoreX.X_stdev=' + repr(tag._stdev))
         self.assertRegexpMatches(next(it), '##FORMAT=<ID=ZScoreX,Number=1,Type=Float,Description="ZScore for X">')
 
     def test_init_setsPopulationStatistics(self):
@@ -55,8 +56,8 @@ class ZScoreTagTest(test_case.JacquardBaseTestCase):
         tag = zscore_caller._ZScoreTag("ZScoreX", "ZScore for X", "X", reader)
 
         values = [4, 7, 13, 16]
-        self.assertEquals(mean(values), tag._mean)
-        self.assertEquals(stdev(values), tag._stdev)
+        self.assertAlmostEquals(mean(values), tag._mean, _ZScoreTag._MAX_PRECISION)
+        self.assertAlmostEquals(stdev(values), tag._stdev, _ZScoreTag._MAX_PRECISION)
 
 
     def test_init_setsPopulationStatisticsParsesFloats(self):
@@ -69,9 +70,21 @@ class ZScoreTagTest(test_case.JacquardBaseTestCase):
         tag = zscore_caller._ZScoreTag("ZScoreX", "ZScore for X", "X", reader)
 
         values = [2, 3.5, 6.5, 8]
-        self.assertEquals(mean(values), tag._mean)
-        self.assertEquals(stdev(values), tag._stdev)
+        self.assertAlmostEquals(mean(values), tag._mean, _ZScoreTag._MAX_PRECISION)
+        self.assertAlmostEquals(stdev(values), tag._stdev, _ZScoreTag._MAX_PRECISION)
 
+
+    def test_init_setsPopulationStatisticsRoundsTo13digits(self):
+        rec1 = vcf.VcfRecord("1", "42", "A", "C",
+                             sample_tag_values={"SA":{"X":"1"},
+                                                "SB":{"X":"1"},
+                                                "SC":{"X" : "0"}})
+        reader = MockVcfReader(records=[rec1])
+
+        tag = zscore_caller._ZScoreTag("ZScoreX", "ZScore for X", "X", reader)
+
+        self.assertEquals(round(2/3, 13), tag._mean, repr(tag._mean))
+        self.assertEquals(round(stdev([1,1,0]), 13), tag._stdev)
 
     def test_init_setsPopulationStatisticsUsingMaxRangeForMultiValuedInput(self):
         rec1 = vcf.VcfRecord("1", "42", "A", "C",
@@ -83,8 +96,9 @@ class ZScoreTagTest(test_case.JacquardBaseTestCase):
         tag = zscore_caller._ZScoreTag("ZScoreX", "ZScore for X", "X", reader)
 
         values = [4, 7, 13, 16]
-        self.assertEquals(mean(values), tag._mean)
-        self.assertEquals(stdev(values), tag._stdev)
+        self.assertAlmostEquals(mean(values), tag._mean, _ZScoreTag._MAX_PRECISION)
+        self.assertAlmostEquals(stdev(values), tag._stdev, _ZScoreTag._MAX_PRECISION)
+
 
     def test_init_setsPopulationStatisticsSkipsBlanks(self):
         rec1 = vcf.VcfRecord("1", "42", "A", "C",
@@ -98,8 +112,8 @@ class ZScoreTagTest(test_case.JacquardBaseTestCase):
         tag = zscore_caller._ZScoreTag("ZScoreX", "ZScore for X", "X", reader)
 
         values = [4, 7, 13, 16]
-        self.assertEquals(mean(values), tag._mean)
-        self.assertEquals(stdev(values), tag._stdev)
+        self.assertAlmostEquals(mean(values), tag._mean, _ZScoreTag._MAX_PRECISION)
+        self.assertAlmostEquals(stdev(values), tag._stdev, _ZScoreTag._MAX_PRECISION)
 
     def test_init_setsPopulationStatisticsConsidersZeros(self):
         rec1 = vcf.VcfRecord("1", "42", "A", "C",
@@ -113,8 +127,8 @@ class ZScoreTagTest(test_case.JacquardBaseTestCase):
         tag = zscore_caller._ZScoreTag("ZScoreX", "ZScore for X", "X", reader)
 
         values = [4, 0, 7, 13, 16, 0]
-        self.assertAlmostEquals(mean(values), float(tag._mean))
-        self.assertAlmostEquals(stdev(values), float(tag._stdev))
+        self.assertAlmostEquals(mean(values), float(tag._mean), _ZScoreTag._MAX_PRECISION)
+        self.assertAlmostEquals(stdev(values), float(tag._stdev), _ZScoreTag._MAX_PRECISION)
 
 
     def test_init_setsPopulationStatisticsSkipsSamplesLackingSourceTag(self):
@@ -129,8 +143,8 @@ class ZScoreTagTest(test_case.JacquardBaseTestCase):
         tag = zscore_caller._ZScoreTag("ZScoreX", "ZScore for X", "X", reader)
 
         values = [4, 7, 13, 16]
-        self.assertEquals(mean(values), tag._mean)
-        self.assertEquals(stdev(values), tag._stdev)
+        self.assertAlmostEquals(mean(values), tag._mean, _ZScoreTag._MAX_PRECISION)
+        self.assertAlmostEquals(stdev(values), tag._stdev, _ZScoreTag._MAX_PRECISION)
 
     def test_init_setsPopulationStatisticsIgnoresUnparsableValues(self):
         rec1 = vcf.VcfRecord("1", "42", "A", "C",
@@ -144,8 +158,8 @@ class ZScoreTagTest(test_case.JacquardBaseTestCase):
         tag = zscore_caller._ZScoreTag("ZScoreX", "ZScore for X", "X", reader)
 
         values = [4, 7, 13, 16]
-        self.assertEquals(mean(values), tag._mean)
-        self.assertEquals(stdev(values), tag._stdev)
+        self.assertAlmostEquals(mean(values), tag._mean, _ZScoreTag._MAX_PRECISION)
+        self.assertAlmostEquals(stdev(values), tag._stdev, _ZScoreTag._MAX_PRECISION)
 
     def test_init_setsPopulationStatisticsAssignsStddevCorrectlyWhenOneValue(self):
         rec1 = vcf.VcfRecord("1", "42", "A", "C",
@@ -155,8 +169,8 @@ class ZScoreTagTest(test_case.JacquardBaseTestCase):
         tag = zscore_caller._ZScoreTag("ZScoreX", "ZScore for X", "X", reader)
 
         values = [4]
-        self.assertEquals(mean(values), tag._mean)
-        self.assertEquals(stdev(values), tag._stdev)
+        self.assertAlmostEquals(mean(values), tag._mean, _ZScoreTag._MAX_PRECISION)
+        self.assertAlmostEquals(stdev(values), tag._stdev, _ZScoreTag._MAX_PRECISION)
 
     def test_init_setsPopulationStatisticsAssignsStddevCorrectlyWhenNoValues(self):
         rec1 = vcf.VcfRecord("1", "42", "A", "C",

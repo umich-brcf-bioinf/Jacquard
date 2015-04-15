@@ -70,14 +70,15 @@ of \'.\'.''').replace("\n", "")
 class _ZScoreTag(object):
     '''Utility tag to add zscore for dependent tag (e.g. depth or allele freq)
 
-    Given a dependent tag and a vcf reader, immediately calculates mean and stdev
-    and then adds zscores for 
+    Given a dependent tag and a vcf reader, calculates mean and stdev on
+    construction and then adds zscores for each value.
     '''
     _EXECUTION_FORMAT = "##jacquard.summarize.{0}.{1}_{2}={3}"
     _METAHEADER_FORMAT = ('##FORMAT=<ID={0},'
                           'Number=1,'
                           'Type=Float,'
                           'Description="{1}">')
+    _MAX_PRECISION = 13
 
     def __init__(self,
                  tag_id,
@@ -105,11 +106,11 @@ class _ZScoreTag(object):
         metaheaders.append(self._EXECUTION_FORMAT.format(tag_id,
                                                          dependent_tag_id,
                                                          "mean",
-                                                         mean))
+                                                         repr(mean)))
         metaheaders.append(self._EXECUTION_FORMAT.format(tag_id,
                                                          dependent_tag_id,
                                                          "stdev",
-                                                         stdev))
+                                                         repr(stdev)))
         tag_metaheader = self._METAHEADER_FORMAT.format(tag_id,
                                                         metaheader_description,
                                                         __version__)
@@ -167,7 +168,9 @@ class _ZScoreTag(object):
         Adapted from online variance algorithm from Knuth, The Art of Computer 
         Programming, volume 2
 
-        Returns: mean and stdev when len(values) > 1, otherwise (None, None)'''
+        Returns: mean and stdev when len(values) > 1, otherwise (None, None)
+            Values rounded to _MAX_PRECISION to ameliorate discrepancies between
+            python versions.'''
         #pylint: disable=invalid-name
         n = 0
         mean = 0
@@ -186,13 +189,15 @@ class _ZScoreTag(object):
         finally:
             vcf_reader.close()
 
+        mean = round(mean, self._MAX_PRECISION)
+
         stdev = 0
         if n == 0:
             mean = None
             stdev = None
         elif n >= 2:
             variance = M2/n
-            stdev = math.sqrt(variance)
+            stdev = round(math.sqrt(variance), self._MAX_PRECISION)
 
         return mean, stdev
 
