@@ -35,13 +35,9 @@ Usage
    Accepts a directory of VCF results (including VarScan high confidence 
    files). Creates a new directory of VCFs, adding Jacquard-specific FORMAT 
    tags for each VCF record.
-:filter_hc_somatic:
-   Accepts a directory of Jacquard-tagged VCF results from one or more callers
-   and creates a new directory of VCFs, where rows have been filtered to 
-   contain only positions that were called as high-confidence somatic in 
-   any VCF.
 :merge:
    Accepts a directory of VCFs and returns a single merged VCF file.
+   Optionally filters to a subset of variants/loci.
 :summarize:
    Accepts a Jacquard-merged VCF file and creates a new VCF file, adding 
    summary fields/tags.
