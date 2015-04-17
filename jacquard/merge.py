@@ -96,6 +96,74 @@ class _BufferedReader(object):
         except StopIteration:
             return None
 
+
+class _Filter(object):
+    """Interprets command-line args to initialize variant and locus filters
+    """
+    #pylint: disable=too-few-public-methods
+    def __init__(self, args):
+        variant_filters = {None : _Filter._include_all,
+                           "passed" : _Filter._include_variant_if_passed,
+                           "somatic" : _Filter._include_variant_if_somatic}
+        locus_filters = {None: _Filter._include_all,
+                         "all_passed": _Filter._include_locus_if_all_passed,
+                         "any_passed": _Filter._include_locus_if_any_passed,
+                         "all_somatic": _Filter._include_locus_if_all_somatic,
+                         "any_somatic": _Filter._include_locus_if_any_somatic}
+        self.include_variant = variant_filters[args.include_variants]
+        self.include_locus = locus_filters[args.include_loci]
+
+    #TODO: (cgates/jebene): Should this be part of VcfRecord?
+    @staticmethod
+    def _is_somatic(record):
+        for sample in record.sample_tag_values:
+            for tag in record.sample_tag_values[sample]:
+                is_somatic = record.sample_tag_values[sample][tag] == "1"
+                if re.search(_JQ_SOMATIC_TAG, tag) and is_somatic:
+                    return True
+        return False
+
+    @staticmethod
+    def _include_variant_if_somatic(record):
+        return _Filter._is_somatic(record)
+
+    @staticmethod
+    def _include_all(dummy):
+        return True
+
+    @staticmethod
+    def _include_variant_if_passed(record):
+        return record.filter == "PASS"
+
+    @staticmethod
+    def _include_locus_if_all_passed(records):
+        for record in records:
+            if record.filter != "PASS":
+                return False
+        return True
+
+    @staticmethod
+    def _include_locus_if_any_passed(records):
+        for record in records:
+            if record.filter == "PASS":
+                return True
+        return False
+
+    @staticmethod
+    def _include_locus_if_all_somatic(records):
+        for record in records:
+            if not _Filter._is_somatic(record):
+                return False
+        return True
+
+    @staticmethod
+    def _include_locus_if_any_somatic(records):
+        for record in records:
+            if _Filter._is_somatic(record):
+                return True
+        return False
+
+
 def _build_format_tags(format_tag_regex, vcf_readers):
     retained_tags = set()
     regexes_used = set()
@@ -312,90 +380,27 @@ def _build_merged_record(coordinate,
 
     return merged_record
 
-class _Filter(object):
-    def __init__(self, args):
-        variant_filters = {None : self.include_all,
-                           "passed" : self.include_passed_variant,
-                           "somatic" : self.include_somatic_variant}
-        self.include_variant = variant_filters[args.include_variants]
-        self.include_locus = self.include_all
-
-    #TODO: (cgates/jebene): Should this be part of VcfRecorc?
-    @staticmethod
-    def include_somatic_variant(record):
-        for sample in record.sample_tag_values:
-            for tag in record.sample_tag_values[sample]:
-                is_somatic = record.sample_tag_values[sample][tag] == "1"
-                if re.search(_JQ_SOMATIC_TAG, tag) and is_somatic:
-                    return True
-        return False
-    
-    @staticmethod
-    def include_all(dummy):
-        return True
-
-    @staticmethod
-    def include_passed_variant(record):
-        return record.filter == "PASS"
-
-#TODO: (jebene) alter logic to reduce number of branches
-def _pull_matching_records(args, coordinate, buffered_readers):
-    passed_variants = args.include_variants == "passed"
-    all_passed_loci = args.include_loci == "all_passed"
-    any_passed_loci = args.include_loci == "any_passed"
-    somatic_variants = args.include_variants == "somatic"
-    all_somatic_loci = args.include_loci == "all_somatic"
-    any_somatic_loci = args.include_loci == "any_somatic"
-
+def _pull_matching_records(filter_strategy, coordinate, buffered_readers):
     vcf_records = []
-    at_least_one_passed = 0
-    passed_records = []
-    at_least_one_somatic = 0
-    somatic_records = []
     for buffered_reader in buffered_readers:
         record = buffered_reader.next_if_equals(coordinate)
-        if record:
-            if passed_variants:
-                if record.filter == "PASS":
-                    vcf_records.append(record)
-            elif all_passed_loci:
-                if record.filter == "PASS":
-                    vcf_records.append(record)
-                else:
-                    return []
-            elif any_passed_loci:
-                if record.filter == "PASS":
-                    at_least_one_passed = 1
-                passed_records.append(record)
-            elif somatic_variants:
-                if _is_somatic_variant(record):
-                    vcf_records.append(record)
-            elif all_somatic_loci:
-                if _is_somatic_variant(record):
-                    vcf_records.append(record)
-                else:
-                    return []
-            elif any_somatic_loci:
-                if _is_somatic_variant(record):
-                    at_least_one_somatic = 1
-                somatic_records.append(record)
-            else:
-                vcf_records.append(record)
+        if record and filter_strategy.include_variant(record):
+            vcf_records.append(record)
+    if filter_strategy.include_locus(vcf_records):
+        return vcf_records
+    else:
+        return []
 
-    if at_least_one_passed:
-        return passed_records
-    if at_least_one_somatic:
-        return somatic_records
-
-    return vcf_records
-
-def _merge_records(args,
+#TODO: (cgates): Perhaps we could use a NullVcfRecord to avoid returning 0?
+def _merge_records(filter_strategy,
                    coordinate,
                    buffered_readers,
                    all_sample_names,
                    tags_to_keep):
 
-    vcf_records = _pull_matching_records(args, coordinate, buffered_readers)
+    vcf_records = _pull_matching_records(filter_strategy,
+                                         coordinate,
+                                         buffered_readers)
     if vcf_records:
         merged_record = _build_merged_record(coordinate,
                                              vcf_records,
@@ -527,6 +532,7 @@ def validate_args(dummy):
 def execute(args, execution_context):
     input_path = os.path.abspath(args.input)
     output_path = os.path.abspath(args.output)
+    filter_strategy = _Filter(args)
     if args.tags:
         format_tag_regex = args.tags.split(",")
     else:
@@ -558,7 +564,7 @@ def execute(args, execution_context):
         _write_metaheaders(file_writer, headers)
 
         for coordinate in coordinates:
-            merged_record = _merge_records(args,
+            merged_record = _merge_records(filter_strategy,
                                            coordinate,
                                            buffered_readers,
                                            all_sample_names,

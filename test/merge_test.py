@@ -1,6 +1,7 @@
 #pylint: disable=missing-docstring,line-too-long,too-many-public-methods
 #pylint: disable=too-few-public-methods,too-many-instance-attributes
-#pylint: disable=too-many-arguments,invalid-name,protected-access,global-statement
+#pylint: disable=too-many-arguments,invalid-name,protected-access,
+#pylint: disable=too-many-lines,global-statement
 from __future__ import print_function, absolute_import, division
 
 from argparse import Namespace
@@ -18,6 +19,8 @@ import test.utils.mock_logger
 import test.utils.test_case as test_case
 from test.utils.vcf_test import MockVcfReader, MockFileReader
 
+#TODO: (cgates): Suspect duplicate tests
+#Consider tests across Filter, merge_records, pull_matching_records; simplify?
 
 class MockBufferedReader(object):
     def __init__(self, vcf_records):
@@ -27,46 +30,137 @@ class MockBufferedReader(object):
         return next(self.vcf_records_iter)
 
 class FilterTestCase(test_case.JacquardBaseTestCase):
-    def test_init_includeAllWhenNotSpecified(self):
+    def test_init_includeAllByDefault(self):
         args = Namespace(include_variants=None, include_loci=None)
         record_filter = merge._Filter(args)
-        self.assertEquals(merge._Filter.include_all,
+        self.assertEquals(merge._Filter._include_all,
                           record_filter.include_variant)
-        self.assertEquals(merge._Filter.include_all,
+        self.assertEquals(merge._Filter._include_all,
                           record_filter.include_locus)
 
-    def test_includeAll(self):
-        self.assertEquals(True, merge._Filter.include_all(None))
-
-    def test_includePassedVariant(self):
-        rec = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="foo")
-        self.assertEquals(False, merge._Filter.include_passed_variant(rec))
-
-        rec = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
-        self.assertEquals(True, merge._Filter.include_passed_variant(rec))
-
-    def test_includeSomaticVariant(self):
-        rec = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values={"SA": {merge._JQ_SOMATIC_TAG: "0"}})
-        self.assertEquals(False, merge._Filter.include_somatic_variant(rec))
-
-        rec = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values={"SA": {merge._JQ_SOMATIC_TAG: "1"}})
-        self.assertEquals(True, merge._Filter.include_somatic_variant(rec))
-
-    def test_build_filters_includePassedVariant(self):
+    def test_init_includeVariantPassed(self):
         args = Namespace(include_variants="passed", include_loci=None)
         record_filter = merge._Filter(args)
-        self.assertEquals(merge._Filter.include_passed_variant,
+        self.assertEquals(merge._Filter._include_variant_if_passed,
                           record_filter.include_variant)
-        self.assertEquals(merge._Filter.include_all,
-                          record_filter.include_locus)
 
-    def test_build_filters_includeSomaticVariant(self):
+    def test_init_includeVariantSomatic(self):
         args = Namespace(include_variants="somatic", include_loci=None)
         record_filter = merge._Filter(args)
-        self.assertEquals(merge._Filter.include_somatic_variant,
+        self.assertEquals(merge._Filter._include_variant_if_somatic,
                           record_filter.include_variant)
-        self.assertEquals(merge._Filter.include_all,
+
+    def test_init_includeLocusAllPassed(self):
+        args = Namespace(include_variants=None, include_loci="all_passed")
+        record_filter = merge._Filter(args)
+        self.assertEquals(merge._Filter._include_locus_if_all_passed,
                           record_filter.include_locus)
+
+    def test_init_includeLocusAnyPassed(self):
+        args = Namespace(include_variants=None, include_loci="any_passed")
+        record_filter = merge._Filter(args)
+        self.assertEquals(merge._Filter._include_locus_if_any_passed,
+                          record_filter.include_locus)
+
+    def test_init_includeLocusAllSomatic(self):
+        args = Namespace(include_variants=None, include_loci="all_somatic")
+        record_filter = merge._Filter(args)
+        self.assertEquals(merge._Filter._include_locus_if_all_somatic,
+                          record_filter.include_locus)
+
+    def test_init_includeLocusAnySomatic(self):
+        args = Namespace(include_variants=None, include_loci="any_somatic")
+        record_filter = merge._Filter(args)
+        self.assertEquals(merge._Filter._include_locus_if_any_somatic,
+                          record_filter.include_locus)
+
+    def test_include_all(self):
+        self.assertEquals(True, merge._Filter._include_all(None))
+
+    def test_include_variant_if_passed(self):
+        rec = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="foo")
+        self.assertEquals(False, merge._Filter._include_variant_if_passed(rec))
+
+        rec = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
+        self.assertEquals(True, merge._Filter._include_variant_if_passed(rec))
+
+    def test_include_variant_if_somatic(self):
+        rec = VcfRecord("chrom", "pos", "ref", "alt",
+                        sample_tag_values={"SA": {merge._JQ_SOMATIC_TAG: "0"}})
+        self.assertEquals(False, merge._Filter._include_variant_if_somatic(rec))
+
+        rec = VcfRecord("chrom", "pos", "ref", "alt",
+                        sample_tag_values={"SA": {merge._JQ_SOMATIC_TAG: "1"}})
+        self.assertEquals(True, merge._Filter._include_variant_if_somatic(rec))
+
+    def test_include_locus_if_all_passed(self):
+        rec1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
+        rec2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
+        self.assertEquals(True,
+                          merge._Filter._include_locus_if_all_passed([rec1, rec2]))
+
+        rec1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
+        rec2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="FAIL")
+        self.assertEquals(False,
+                          merge._Filter._include_locus_if_all_passed([rec1, rec2]))
+
+        rec1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="FAIL")
+        rec2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="FAIL")
+        self.assertEquals(False,
+                          merge._Filter._include_locus_if_all_passed([rec1, rec2]))
+
+    def test_include_locus_if_any_passed(self):
+        rec1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
+        rec2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
+        self.assertEquals(True,
+                          merge._Filter._include_locus_if_any_passed([rec1, rec2]))
+
+        rec1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
+        rec2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="FAIL")
+        self.assertEquals(True,
+                          merge._Filter._include_locus_if_any_passed([rec1, rec2]))
+
+        rec1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="FAIL")
+        rec2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="FAIL")
+        self.assertEquals(False,
+                          merge._Filter._include_locus_if_any_passed([rec1, rec2]))
+
+    def test_include_locus_if_all_somatic(self):
+        nonsomatic = {"SA": {merge._JQ_SOMATIC_TAG: "0"}}
+        somatic = {"SA": {merge._JQ_SOMATIC_TAG: "1"}}
+        rec1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=somatic)
+        rec2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=somatic)
+        self.assertEquals(True,
+                          merge._Filter._include_locus_if_all_somatic([rec1, rec2]))
+
+        rec1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=somatic)
+        rec2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=nonsomatic)
+        self.assertEquals(False,
+                          merge._Filter._include_locus_if_all_somatic([rec1, rec2]))
+
+        rec1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=nonsomatic)
+        rec2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=nonsomatic)
+        self.assertEquals(False,
+                          merge._Filter._include_locus_if_all_somatic([rec1, rec2]))
+
+    def test_include_locus_if_any_somatic(self):
+        nonsomatic = {"SA": {merge._JQ_SOMATIC_TAG: "0"}}
+        somatic = {"SA": {merge._JQ_SOMATIC_TAG: "1"}}
+        rec1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=somatic)
+        rec2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=somatic)
+        self.assertEquals(True,
+                          merge._Filter._include_locus_if_any_somatic([rec1, rec2]))
+
+        rec1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=somatic)
+        rec2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=nonsomatic)
+        self.assertEquals(True,
+                          merge._Filter._include_locus_if_any_somatic([rec1, rec2]))
+
+        rec1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=nonsomatic)
+        rec2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=nonsomatic)
+        self.assertEquals(False,
+                          merge._Filter._include_locus_if_any_somatic([rec1, rec2]))
+
 
 class MergeTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
@@ -358,201 +452,365 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(OD([("bar", "."), ("baz", "D1"), ("foo", ".")]), actual_record.sample_tag_values["SD"])
 
     def test_merge_records(self):
-        args = Namespace(include_variants=None, include_loci=None)
+        filter_strategy = merge._Filter(Namespace(include_variants=None,
+                                                  include_loci=None))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
-        record1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SA": OD({"foo":"A"}), "SB":OD({"foo":"B"})}))
-        record2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SC": OD({"foo":"C"}), "SD":OD({"foo":"D"})}))
-        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+        record1 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SA": OD({"foo":"A"}),
+                                                  "SB":OD({"foo":"B"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SC": OD({"foo":"C"}),
+                                                  "SD":OD({"foo":"D"})}))
+        buffered_readers = [MockBufferedReader([record1]),
+                            MockBufferedReader([record2])]
 
-        actual_records = merge._merge_records(args, coordinate, buffered_readers, ["SA", "SB", "SC", "SD"], ["foo"])
+        actual_records = merge._merge_records(filter_strategy,
+                                              coordinate,
+                                              buffered_readers,
+                                              ["SA", "SB", "SC", "SD"],
+                                              ["foo"])
         self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD\n", actual_records.text())
 
     def test_merge_records_passedVariants(self):
-        args = Namespace(include_variants="passed", include_loci=None)
+        filter_strategy = merge._Filter(Namespace(include_variants="passed",
+                                                  include_loci=None))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
-        record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS", sample_tag_values=OD({"SA": OD({"foo":"A"}), "SB":OD({"foo":"B"})}))
-        record2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="foo.bar", sample_tag_values=OD({"SC": OD({"foo":"C"}), "SD":OD({"foo":"D"})}))
+        record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS",
+                            sample_tag_values=OD({"SA": OD({"foo":"A"}),
+                                                  "SB":OD({"foo":"B"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="foo.bar",
+                            sample_tag_values=OD({"SC": OD({"foo":"C"}),
+                                                  "SD":OD({"foo":"D"})}))
         buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
 
-        actual_record = merge._merge_records(args, coordinate, buffered_readers, ["SA", "SB", "SC", "SD"], ["foo"])
+        actual_record = merge._merge_records(filter_strategy,
+                                             coordinate,
+                                             buffered_readers,
+                                             ["SA", "SB", "SC", "SD"],
+                                             ["foo"])
         self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\t.\t.\n", actual_record.text())
 
     def test_merge_records_somaticVariants(self):
-        args = Namespace(include_variants="somatic", include_loci=None)
+        filter_strategy = merge._Filter(Namespace(include_variants="somatic",
+                                                  include_loci=None))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
-        record1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SA": OD({"foo":"A", "HC_SOM": "1"}), "SB":OD({"foo":"B", "HC_SOM": "0"})}))
-        record2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SC": OD({"foo":"C", "HC_SOM": "0"}), "SD":OD({"foo":"D", "HC_SOM": "0"})}))
-        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+        record1 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SA": OD({"foo":"A", "HC_SOM": "1"}),
+                                                  "SB":OD({"foo":"B", "HC_SOM": "0"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SC": OD({"foo":"C", "HC_SOM": "0"}),
+                                                  "SD":OD({"foo":"D", "HC_SOM": "0"})}))
+        buffered_readers = [MockBufferedReader([record1]),
+                            MockBufferedReader([record2])]
 
-        actual_record = merge._merge_records(args, coordinate, buffered_readers, ["SA", "SB", "SC", "SD"], ["foo"])
-        self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\t.\t.\n", actual_record.text())
+        actual_record = merge._merge_records(filter_strategy,
+                                             coordinate,
+                                             buffered_readers,
+                                             ["SA", "SB", "SC", "SD"],
+                                             ["foo"])
+        self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\t.\t.\n",
+                         actual_record.text())
 
     def test_merge_records_anyPassed(self):
-        args = Namespace(include_variants=None, include_loci="any_passed")
+        filter_strategy = merge._Filter(Namespace(include_variants=None,
+                                                  include_loci="any_passed"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
-        record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS", sample_tag_values=OD({"SA": OD({"foo":"A"}), "SB":OD({"foo":"B"})}))
-        record2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="fail", sample_tag_values=OD({"SC": OD({"foo":"C"}), "SD":OD({"foo":"D"})}))
-        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+        record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS",
+                            sample_tag_values=OD({"SA": OD({"foo":"A"}),
+                                                  "SB":OD({"foo":"B"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="fail",
+                            sample_tag_values=OD({"SC": OD({"foo":"C"}),
+                                                  "SD":OD({"foo":"D"})}))
+        buffered_readers = [MockBufferedReader([record1]),
+                            MockBufferedReader([record2])]
 
-        actual_record = merge._merge_records(args, coordinate, buffered_readers, ["SA", "SB", "SC", "SD"], ["foo"])
-        self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD\n", actual_record.text())
+        actual_record = merge._merge_records(filter_strategy,
+                                             coordinate,
+                                             buffered_readers,
+                                             ["SA", "SB", "SC", "SD"],
+                                             ["foo"])
+        self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD\n",
+                         actual_record.text())
 
     def test_merge_records_allPassed_notAllPassed(self):
-        args = Namespace(include_variants=None, include_loci="all_passed")
+        filter_strategy = merge._Filter(Namespace(include_variants=None,
+                                                  include_loci="all_passed"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
-        record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS", sample_tag_values=OD({"SA": OD({"foo":"A"}), "SB":OD({"foo":"B"})}))
-        record2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="fail", sample_tag_values=OD({"SC": OD({"foo":"C"}), "SD":OD({"foo":"D"})}))
-        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+        record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS",
+                            sample_tag_values=OD({"SA": OD({"foo":"A"}),
+                                                  "SB":OD({"foo":"B"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="fail",
+                            sample_tag_values=OD({"SC": OD({"foo":"C"}),
+                                                  "SD":OD({"foo":"D"})}))
+        buffered_readers = [MockBufferedReader([record1]),
+                            MockBufferedReader([record2])]
 
-        actual_record = merge._merge_records(args, coordinate, buffered_readers, ["SA", "SB", "SC", "SD"], ["foo"])
+        actual_record = merge._merge_records(filter_strategy,
+                                             coordinate,
+                                             buffered_readers,
+                                             ["SA", "SB", "SC", "SD"],
+                                             ["foo"])
         self.assertEqual(0, actual_record)
 
     def test_merge_records_allPassed_allPassed(self):
-        args = Namespace(include_variants=None, include_loci="all_passed")
-        coordinate =VcfRecord("chrom", "pos", "ref", "alt")
+        filter_strategy = merge._Filter(Namespace(include_variants=None,
+                                                  include_loci="all_passed"))
+        coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
-        record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS", sample_tag_values=OD({"SA": OD({"foo":"A"}), "SB":OD({"foo":"B"})}))
-        record2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS", sample_tag_values=OD({"SC": OD({"foo":"C"}), "SD":OD({"foo":"D"})}))
-        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+        record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS",
+                            sample_tag_values=OD({"SA": OD({"foo":"A"}),
+                                                  "SB":OD({"foo":"B"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS",
+                            sample_tag_values=OD({"SC": OD({"foo":"C"}),
+                                                  "SD":OD({"foo":"D"})}))
+        buffered_readers = [MockBufferedReader([record1]),
+                            MockBufferedReader([record2])]
 
-        actual_record = merge._merge_records(args, coordinate, buffered_readers,["SA", "SB", "SC", "SD"], ["foo"])
-        self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD\n", actual_record.text())
+        actual_record = merge._merge_records(filter_strategy,
+                                             coordinate,
+                                             buffered_readers,
+                                             ["SA", "SB", "SC", "SD"],
+                                             ["foo"])
+        self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD\n",
+                         actual_record.text())
 
     def test_merge_records_anySomatic(self):
-        args = Namespace(include_variants=None, include_loci="any_somatic")
+        filter_strategy = merge._Filter(Namespace(include_variants=None,
+                                                  include_loci="any_somatic"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
-        record1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SA": OD({"foo":"A", "HC_SOM": "1"}), "SB":OD({"foo":"B", "HC_SOM": "0"})}))
-        record2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SC": OD({"foo":"C", "HC_SOM": "0"}), "SD":OD({"foo":"D", "HC_SOM": "0"})}))
-        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+        record1 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SA": OD({"foo":"A", "HC_SOM": "1"}),
+                                                  "SB":OD({"foo":"B", "HC_SOM": "0"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SC": OD({"foo":"C", "HC_SOM": "0"}),
+                                                  "SD":OD({"foo":"D", "HC_SOM": "0"})}))
+        buffered_readers = [MockBufferedReader([record1]),
+                            MockBufferedReader([record2])]
 
-        actual_record = merge._merge_records(args, coordinate, buffered_readers, ["SA", "SB", "SC", "SD"], ["foo"])
-        self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD\n", actual_record.text())
+        actual_record = merge._merge_records(filter_strategy,
+                                             coordinate,
+                                             buffered_readers,
+                                             ["SA", "SB", "SC", "SD"],
+                                             ["foo"])
+        self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD\n",
+                         actual_record.text())
 
     def test_merge_records_allSomatic_notAllSomatic(self):
-        args = Namespace(include_variants=None, include_loci="all_somatic")
+        filter_strategy = merge._Filter(Namespace(include_variants=None,
+                                                  include_loci="all_somatic"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
-        record1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SA": OD({"foo":"A", "HC_SOM": "1"}), "SB":OD({"foo":"B", "HC_SOM": "0"})}))
-        record2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SC": OD({"foo":"C", "HC_SOM": "0"}), "SD":OD({"foo":"D", "HC_SOM": "0"})}))
-        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+        record1 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SA": OD({"foo":"A", "HC_SOM": "1"}),
+                                                  "SB":OD({"foo":"B", "HC_SOM": "0"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SC": OD({"foo":"C", "HC_SOM": "0"}),
+                                                  "SD":OD({"foo":"D", "HC_SOM": "0"})}))
+        buffered_readers = [MockBufferedReader([record1]),
+                            MockBufferedReader([record2])]
 
-        actual_record = merge._merge_records(args, coordinate, buffered_readers, ["SA", "SB", "SC", "SD"], ["foo"])
+        actual_record = merge._merge_records(filter_strategy,
+                                             coordinate,
+                                             buffered_readers,
+                                             ["SA", "SB", "SC", "SD"],
+                                             ["foo"])
         self.assertEqual(0, actual_record)
 
     def test_merge_records_allSomatic_allSomatic(self):
-        args = Namespace(include_variants=None, include_loci="all_somatic")
+        filter_strategy = merge._Filter(Namespace(include_variants=None,
+                                                  include_loci="all_somatic"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
-        record1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SA": OD({"foo":"A", "HC_SOM": "1"}), "SB":OD({"foo":"B", "HC_SOM": "1"})}))
-        record2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SC": OD({"foo":"C", "HC_SOM": "1"}), "SD":OD({"foo":"D", "HC_SOM": "1"})}))
-        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+        record1 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SA": OD({"foo":"A", "HC_SOM": "1"}),
+                                                  "SB":OD({"foo":"B", "HC_SOM": "1"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SC": OD({"foo":"C", "HC_SOM": "1"}),
+                                                  "SD":OD({"foo":"D", "HC_SOM": "1"})}))
+        buffered_readers = [MockBufferedReader([record1]),
+                            MockBufferedReader([record2])]
 
-        actual_record = merge._merge_records(args, coordinate, buffered_readers, ["SA", "SB", "SC", "SD"], ["foo"])
-        self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD\n", actual_record.text())
+        actual_record = merge._merge_records(filter_strategy,
+                                             coordinate,
+                                             buffered_readers,
+                                             ["SA", "SB", "SC", "SD"],
+                                             ["foo"])
+        self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD\n",
+                         actual_record.text())
 
     def test_pull_matching_records(self):
-        args = Namespace(include_variants=None, include_loci=None)
+        filter_strategy = merge._Filter(Namespace(include_variants=None,
+                                                  include_loci=None))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
-        record1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SA": OD({"foo":"A"}), "SB":OD({"foo":"B"})}))
-        record2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SC": OD({"foo":"C"}), "SD":OD({"foo":"D"})}))
-        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+        record1 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SA": OD({"foo":"A"}),
+                                                  "SB":OD({"foo":"B"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SC": OD({"foo":"C"}),
+                                                  "SD":OD({"foo":"D"})}))
+        buffered_readers = [MockBufferedReader([record1]),
+                            MockBufferedReader([record2])]
 
-        vcf_records = merge._pull_matching_records(args, coordinate, buffered_readers)
+        vcf_records = merge._pull_matching_records(filter_strategy,
+                                                   coordinate,
+                                                   buffered_readers)
         self.assertEqual([record1, record2], vcf_records)
 
     def test_pull_matching_records_passedVariants(self):
-        args = Namespace(include_variants="passed", include_loci=None)
+        filter_strategy = merge._Filter(Namespace(include_variants="passed",
+                                                  include_loci=None))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
-        record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS", sample_tag_values=OD({"SA": OD({"foo":"A"}), "SB":OD({"foo":"B"})}))
-        record2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="foo", sample_tag_values=OD({"SC": OD({"foo":"C"}), "SD":OD({"foo":"D"})}))
-        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+        record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS",
+                            sample_tag_values=OD({"SA": OD({"foo":"A"}),
+                                                  "SB":OD({"foo":"B"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="foo",
+                            sample_tag_values=OD({"SC": OD({"foo":"C"}),
+                                                  "SD":OD({"foo":"D"})}))
+        buffered_readers = [MockBufferedReader([record1]),
+                            MockBufferedReader([record2])]
 
-        vcf_records = merge._pull_matching_records(args, coordinate, buffered_readers)
+        vcf_records = merge._pull_matching_records(filter_strategy,
+                                                   coordinate,
+                                                   buffered_readers)
         self.assertEqual([record1], vcf_records)
 
     def test_pull_matching_records_anyPassedLoci(self):
-        args = Namespace(include_variants=None, include_loci="any_passed")
+        filter_strategy = merge._Filter(Namespace(include_variants=None,
+                                                  include_loci="any_passed"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
-        record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS", sample_tag_values=OD({"SA": OD({"foo":"A"}), "SB":OD({"foo":"B"})}))
-        record2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="foo", sample_tag_values=OD({"SC": OD({"foo":"C"}), "SD":OD({"foo":"D"})}))
-        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+        record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS",
+                            sample_tag_values=OD({"SA": OD({"foo":"A"}),
+                                                  "SB":OD({"foo":"B"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="foo",
+                            sample_tag_values=OD({"SC": OD({"foo":"C"}),
+                                                  "SD":OD({"foo":"D"})}))
+        buffered_readers = [MockBufferedReader([record1]),
+                            MockBufferedReader([record2])]
 
-        vcf_records = merge._pull_matching_records(args, coordinate, buffered_readers)
+        vcf_records = merge._pull_matching_records(filter_strategy,
+                                                   coordinate,
+                                                   buffered_readers)
         self.assertEqual([record1, record2], vcf_records)
 
     def test_pull_matching_records_allPassedLoci_notAllPassed(self):
-        args = Namespace(include_variants=None, include_loci="all_passed")
+        filter_strategy = merge._Filter(Namespace(include_variants=None,
+                                                  include_loci="all_passed"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
-        record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS", sample_tag_values=OD({"SA": OD({"foo":"A"}), "SB":OD({"foo":"B"})}))
-        record2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="foo", sample_tag_values=OD({"SC": OD({"foo":"C"}), "SD":OD({"foo":"D"})}))
-        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+        record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS",
+                            sample_tag_values=OD({"SA": OD({"foo":"A"}),
+                                                  "SB":OD({"foo":"B"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="foo",
+                            sample_tag_values=OD({"SC": OD({"foo":"C"}),
+                                                  "SD":OD({"foo":"D"})}))
+        buffered_readers = [MockBufferedReader([record1]),
+                            MockBufferedReader([record2])]
 
-        vcf_records = merge._pull_matching_records(args, coordinate, buffered_readers)
+        vcf_records = merge._pull_matching_records(filter_strategy,
+                                                   coordinate,
+                                                   buffered_readers)
         self.assertEqual([], vcf_records)
 
     def test_pull_matching_records_allPassedLoci_allPassed(self):
-        args = Namespace(include_variants=None, include_loci="all_passed")
+        filter_strategy = merge._Filter(Namespace(include_variants=None,
+                                                  include_loci="all_passed"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
-        record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS", sample_tag_values=OD({"SA": OD({"foo":"A"}), "SB":OD({"foo":"B"})}))
-        record2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS", sample_tag_values=OD({"SC": OD({"foo":"C"}), "SD":OD({"foo":"D"})}))
-        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+        record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS",
+                            sample_tag_values=OD({"SA": OD({"foo":"A"}),
+                                                  "SB":OD({"foo":"B"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS",
+                            sample_tag_values=OD({"SC": OD({"foo":"C"}),
+                                                  "SD":OD({"foo":"D"})}))
+        buffered_readers = [MockBufferedReader([record1]),
+                            MockBufferedReader([record2])]
 
-        vcf_records = merge._pull_matching_records(args, coordinate, buffered_readers)
+        vcf_records = merge._pull_matching_records(filter_strategy,
+                                                   coordinate,
+                                                   buffered_readers)
         self.assertEqual([record1, record2], vcf_records)
 
     def test_pull_matching_records_somaticVariants(self):
-        args = Namespace(include_variants="somatic", include_loci=None)
+        filter_strategy = merge._Filter(Namespace(include_variants="somatic",
+                                                  include_loci=None))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
-        record1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SA": OD({"foo":"A", "HC_SOM": "1"}), "SB":OD({"foo":"B", "HC_SOM": "0"})}))
-        record2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SC": OD({"foo":"C", "HC_SOM":"0"}), "SD":OD({"foo":"D", "HC_SOM": "0"})}))
-        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+        record1 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SA": OD({"foo":"A", "HC_SOM": "1"}),
+                                                  "SB":OD({"foo":"B", "HC_SOM": "0"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SC": OD({"foo":"C", "HC_SOM":"0"}),
+                                                  "SD":OD({"foo":"D", "HC_SOM": "0"})}))
+        buffered_readers = [MockBufferedReader([record1]),
+                            MockBufferedReader([record2])]
 
-        vcf_records = merge._pull_matching_records(args, coordinate, buffered_readers)
+        vcf_records = merge._pull_matching_records(filter_strategy, coordinate, buffered_readers)
         self.assertEqual([record1], vcf_records)
 
     def test_pull_matching_records_anySomaticLoci(self):
-        args = Namespace(include_variants=None, include_loci="any_somatic")
+        filter_strategy = merge._Filter(Namespace(include_variants=None,
+                                                  include_loci="any_somatic"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
-        record1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SA": OD({"foo":"A", "HC_SOM": "1"}), "SB":OD({"foo":"B", "HC_SOM": "0"})}))
-        record2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SC": OD({"foo":"C", "HC_SOM":"0"}), "SD":OD({"foo":"D", "HC_SOM": "0"})}))
-        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+        record1 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SA": OD({"foo":"A", "HC_SOM": "1"}),
+                                                  "SB":OD({"foo":"B", "HC_SOM": "0"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SC": OD({"foo":"C", "HC_SOM":"0"}),
+                                                  "SD":OD({"foo":"D", "HC_SOM": "0"})}))
+        buffered_readers = [MockBufferedReader([record1]),
+                            MockBufferedReader([record2])]
 
-        vcf_records = merge._pull_matching_records(args, coordinate, buffered_readers)
+        vcf_records = merge._pull_matching_records(filter_strategy,
+                                                   coordinate,
+                                                   buffered_readers)
         self.assertEqual([record1, record2], vcf_records)
 
     def test_pull_matching_records_allSomaticLoci_notAllSomatic(self):
-        args = Namespace(include_variants=None, include_loci="all_somatic")
+        filter_strategy = merge._Filter(Namespace(include_variants=None,
+                                                  include_loci="all_somatic"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
-        record1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SA": OD({"foo":"A", "HC_SOM": "1"}), "SB":OD({"foo":"B", "HC_SOM": "0"})}))
-        record2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SC": OD({"foo":"C", "HC_SOM":"0"}), "SD":OD({"foo":"D", "HC_SOM": "0"})}))
-        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+        record1 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SA": OD({"foo":"A", "HC_SOM": "1"}),
+                                                  "SB":OD({"foo":"B", "HC_SOM": "0"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SC": OD({"foo":"C", "HC_SOM":"0"}),
+                                                  "SD":OD({"foo":"D", "HC_SOM": "0"})}))
+        buffered_readers = [MockBufferedReader([record1]),
+                            MockBufferedReader([record2])]
 
-        vcf_records = merge._pull_matching_records(args, coordinate, buffered_readers)
+        vcf_records = merge._pull_matching_records(filter_strategy,
+                                                   coordinate,
+                                                   buffered_readers)
         self.assertEqual([], vcf_records)
 
     def test_pull_matching_records_allSomaticLoci_allSomatic(self):
-        args = Namespace(include_variants=None, include_loci="all_somatic")
+        filter_strategy = merge._Filter(Namespace(include_variants=None,
+                                                  include_loci="all_somatic"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
-        record1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SA": OD({"foo":"A", "HC_SOM": "1"}), "SB":OD({"foo":"B", "HC_SOM": "1"})}))
-        record2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=OD({"SC": OD({"foo":"C", "HC_SOM":"1"}), "SD":OD({"foo":"D", "HC_SOM": "1"})}))
-        buffered_readers = [MockBufferedReader([record1]), MockBufferedReader([record2])]
+        record1 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SA": OD({"foo":"A", "HC_SOM": "1"}),
+                                                  "SB":OD({"foo":"B", "HC_SOM": "1"})}))
+        record2 = VcfRecord("chrom", "pos", "ref", "alt",
+                            sample_tag_values=OD({"SC": OD({"foo":"C", "HC_SOM":"1"}),
+                                                  "SD":OD({"foo":"D", "HC_SOM": "1"})}))
+        buffered_readers = [MockBufferedReader([record1]),
+                            MockBufferedReader([record2])]
 
-        vcf_records = merge._pull_matching_records(args, coordinate, buffered_readers)
+        vcf_records = merge._pull_matching_records(filter_strategy,
+                                                   coordinate,
+                                                   buffered_readers)
         self.assertEqual([record1, record2], vcf_records)
 
     def test_build_sample_list_simpleSampleList(self):
@@ -616,13 +874,13 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
     def test_create_reader_lists(self):
         with TempDirectory() as input_dir:
             fileA = input_dir.write("fileA.vcf",
-                                     (b"##source=strelka\n"
-                                      b"#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_A\tSample_B\n"
-                                      b"chr1\t31\t.\tA\tT\t.\t.\t.\tDP\t23\t52\n"))
+                                    (b"##source=strelka\n"
+                                     b"#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_A\tSample_B\n"
+                                     b"chr1\t31\t.\tA\tT\t.\t.\t.\tDP\t23\t52\n"))
             fileB = input_dir.write("fileB.vcf",
-                                     (b"##source=strelka\n"
-                                      b"#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_C\tSample_D\n"
-                                      b"chr2\t32\t.\tA\tT\t.\t.\t.\tDP\t24\t53\n"))
+                                    (b"##source=strelka\n"
+                                     b"#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_C\tSample_D\n"
+                                     b"chr2\t32\t.\tA\tT\t.\t.\t.\tDP\t24\t53\n"))
             input_files = [vcf.FileReader(fileA), vcf.FileReader(fileB)]
             buffered_readers, vcf_readers = merge._create_reader_lists(input_files)
 
@@ -719,7 +977,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(3, len(actual_metaheaders))
         metaheaders_iter = iter(actual_metaheaders)
         self.assertEquals("##existing1", next(metaheaders_iter))
-        self.assertEquals("##existing2", next( metaheaders_iter))
+        self.assertEquals("##existing2", next(metaheaders_iter))
         self.assertRegexpMatches(next(metaheaders_iter), "^#CHROM")
 
     def test_compile_metaheaders_retainsFormatMetaheaders(self):
