@@ -243,21 +243,6 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         expected = [fileArec1, fileArec2, fileBrec2]
         self.assertEquals(expected, actual_coordinates)
 
-    def test_build_coordinates_logsNoCoordinates(self):
-        fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C", vcf_filter="JQ_EXCLUDE")
-        fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", vcf_filter="JQ_EXCLUDE")
-        fileBrec1 = vcf.VcfRecord("chr42", "16", "G", "C", vcf_filter="JQ_EXCLUDE")
-
-        mock_readers = [MockVcfReader(records=[fileArec1, fileArec2]),
-                        MockVcfReader(records=[fileBrec1])]
-
-        merge._build_coordinates(mock_readers)
-        actual_log_warnings = test.utils.mock_logger.messages["WARNING"]
-        expected_log_warnings = ("No loci will be included in output. "
-                                 "Review inputs/command line parameters "
-                                 "and try again")
-        self.assertEquals(expected_log_warnings, actual_log_warnings[0])
-
     def test_build_coordinates_multAltsEmpty(self):
         fileArec1 = vcf.VcfRecord("chr1", "1", "A", "C")
         fileArec2 = vcf.VcfRecord("chr2", "12", "A", "G", "id=1")

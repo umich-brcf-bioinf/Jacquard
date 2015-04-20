@@ -269,18 +269,12 @@ def _build_coordinates(vcf_readers):
             vcf_reader.open()
 
             for vcf_record in vcf_reader.vcf_records():
-                if "JQ_EXCLUDE" not in vcf_record.filter:
-                    coordinate_set.add(vcf_record.get_empty_record())
+                coordinate_set.add(vcf_record.get_empty_record())
                 ref_alt = vcf_record.ref, vcf_record.alt
                 locus = vcf_record.chrom, vcf_record.pos
                 mult_alts[locus].add(ref_alt)
         finally:
             vcf_reader.close()
-
-    if not coordinate_set:
-        msg = ("No loci will be included in output. Review inputs/command line "
-               "parameters and try again")
-        logger.warning(msg)
 
     for vcf_record in coordinate_set:
         ref_alts_for_this_locus = mult_alts[vcf_record.chrom, vcf_record.pos]
