@@ -256,7 +256,7 @@ class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir,
                                           "functional_tests",
-                                          "05_expand")
+                                          "04_expand")
             input_dir = os.path.join(module_testdir, "input")
 
             command = ["expand",
@@ -271,7 +271,7 @@ class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir,
                                           "functional_tests",
-                                          "05_expand_col_spec")
+                                          "04_expand_col_spec")
             input_dir = os.path.join(module_testdir, "input")
             col_spec = os.path.join(test_dir, "functional_tests", "col_spec.txt")
             command = ["expand",

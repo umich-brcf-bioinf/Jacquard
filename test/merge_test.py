@@ -31,51 +31,58 @@ class MockBufferedReader(object):
 
 class FilterTestCase(test_case.JacquardBaseTestCase):
     def test_init_includeAllByDefault(self):
-        args = Namespace(include_variants=None, include_loci=None)
+        args = Namespace(include_cells="valid", include_rows="at_least_one_somatic")
         record_filter = merge._Filter(args)
-        self.assertEquals(merge._Filter._include_all,
+        self.assertEquals(merge._Filter._include_valid,
                           record_filter.include_variant)
-        self.assertEquals(merge._Filter._include_all,
+        self.assertEquals(merge._Filter._include_locus_if_any_somatic,
                           record_filter.include_locus)
 
     def test_init_includeVariantPassed(self):
-        args = Namespace(include_variants="passed", include_loci=None)
+        args = Namespace(include_cells="passed", include_rows="all")
         record_filter = merge._Filter(args)
         self.assertEquals(merge._Filter._include_variant_if_passed,
                           record_filter.include_variant)
 
     def test_init_includeVariantSomatic(self):
-        args = Namespace(include_variants="somatic", include_loci=None)
+        args = Namespace(include_cells="somatic", include_rows="all")
         record_filter = merge._Filter(args)
         self.assertEquals(merge._Filter._include_variant_if_somatic,
                           record_filter.include_variant)
 
     def test_init_includeLocusAllPassed(self):
-        args = Namespace(include_variants=None, include_loci="all_passed")
+        args = Namespace(include_cells="all", include_rows="all_passed")
         record_filter = merge._Filter(args)
         self.assertEquals(merge._Filter._include_locus_if_all_passed,
                           record_filter.include_locus)
 
     def test_init_includeLocusAnyPassed(self):
-        args = Namespace(include_variants=None, include_loci="any_passed")
+        args = Namespace(include_cells="all", include_rows="at_least_one_passed")
         record_filter = merge._Filter(args)
         self.assertEquals(merge._Filter._include_locus_if_any_passed,
                           record_filter.include_locus)
 
     def test_init_includeLocusAllSomatic(self):
-        args = Namespace(include_variants=None, include_loci="all_somatic")
+        args = Namespace(include_cells="all", include_rows="all_somatic")
         record_filter = merge._Filter(args)
         self.assertEquals(merge._Filter._include_locus_if_all_somatic,
                           record_filter.include_locus)
 
     def test_init_includeLocusAnySomatic(self):
-        args = Namespace(include_variants=None, include_loci="any_somatic")
+        args = Namespace(include_cells="all", include_rows="at_least_one_somatic")
         record_filter = merge._Filter(args)
         self.assertEquals(merge._Filter._include_locus_if_any_somatic,
                           record_filter.include_locus)
 
     def test_include_all(self):
         self.assertEquals(True, merge._Filter._include_all(None))
+
+    def test_include_valid(self):
+        rec = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="JQ_EXCLUDE_FOO")
+        self.assertEquals(False, merge._Filter._include_valid(rec))
+
+        rec = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="bar")
+        self.assertEquals(True, merge._Filter._include_valid(rec))
 
     def test_include_variant_if_passed(self):
         rec = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="foo")
@@ -452,8 +459,8 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(OD([("bar", "."), ("baz", "D1"), ("foo", ".")]), actual_record.sample_tag_values["SD"])
 
     def test_merge_records(self):
-        filter_strategy = merge._Filter(Namespace(include_variants=None,
-                                                  include_loci=None))
+        filter_strategy = merge._Filter(Namespace(include_cells="all",
+                                                  include_rows="all"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt",
@@ -473,8 +480,8 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD\n", actual_records.text())
 
     def test_merge_records_passedVariants(self):
-        filter_strategy = merge._Filter(Namespace(include_variants="passed",
-                                                  include_loci=None))
+        filter_strategy = merge._Filter(Namespace(include_cells="passed",
+                                                  include_rows="all"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS",
@@ -493,8 +500,8 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\t.\t.\n", actual_record.text())
 
     def test_merge_records_somaticVariants(self):
-        filter_strategy = merge._Filter(Namespace(include_variants="somatic",
-                                                  include_loci=None))
+        filter_strategy = merge._Filter(Namespace(include_cells="somatic",
+                                                  include_rows="all"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt",
@@ -515,8 +522,8 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
                          actual_record.text())
 
     def test_merge_records_anyPassed(self):
-        filter_strategy = merge._Filter(Namespace(include_variants=None,
-                                                  include_loci="any_passed"))
+        filter_strategy = merge._Filter(Namespace(include_cells="all",
+                                                  include_rows="at_least_one_passed"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS",
@@ -537,8 +544,8 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
                          actual_record.text())
 
     def test_merge_records_allPassed_notAllPassed(self):
-        filter_strategy = merge._Filter(Namespace(include_variants=None,
-                                                  include_loci="all_passed"))
+        filter_strategy = merge._Filter(Namespace(include_cells="all",
+                                                  include_rows="all_passed"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS",
@@ -558,8 +565,8 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEqual(0, actual_record)
 
     def test_merge_records_allPassed_allPassed(self):
-        filter_strategy = merge._Filter(Namespace(include_variants=None,
-                                                  include_loci="all_passed"))
+        filter_strategy = merge._Filter(Namespace(include_cells="all",
+                                                  include_rows="all_passed"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS",
@@ -580,8 +587,8 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
                          actual_record.text())
 
     def test_merge_records_anySomatic(self):
-        filter_strategy = merge._Filter(Namespace(include_variants=None,
-                                                  include_loci="any_somatic"))
+        filter_strategy = merge._Filter(Namespace(include_cells="all",
+                                                  include_rows="at_least_one_somatic"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt",
@@ -602,8 +609,8 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
                          actual_record.text())
 
     def test_merge_records_allSomatic_notAllSomatic(self):
-        filter_strategy = merge._Filter(Namespace(include_variants=None,
-                                                  include_loci="all_somatic"))
+        filter_strategy = merge._Filter(Namespace(include_cells="all",
+                                                  include_rows="all_somatic"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt",
@@ -623,8 +630,8 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEqual(0, actual_record)
 
     def test_merge_records_allSomatic_allSomatic(self):
-        filter_strategy = merge._Filter(Namespace(include_variants=None,
-                                                  include_loci="all_somatic"))
+        filter_strategy = merge._Filter(Namespace(include_cells="all",
+                                                  include_rows="all_somatic"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt",
@@ -645,8 +652,8 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
                          actual_record.text())
 
     def test_pull_matching_records(self):
-        filter_strategy = merge._Filter(Namespace(include_variants=None,
-                                                  include_loci=None))
+        filter_strategy = merge._Filter(Namespace(include_cells="all",
+                                                  include_rows="all"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt",
@@ -664,8 +671,8 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEqual([record1, record2], vcf_records)
 
     def test_pull_matching_records_passedVariants(self):
-        filter_strategy = merge._Filter(Namespace(include_variants="passed",
-                                                  include_loci=None))
+        filter_strategy = merge._Filter(Namespace(include_cells="passed",
+                                                  include_rows="all"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS",
@@ -683,8 +690,8 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEqual([record1], vcf_records)
 
     def test_pull_matching_records_anyPassedLoci(self):
-        filter_strategy = merge._Filter(Namespace(include_variants=None,
-                                                  include_loci="any_passed"))
+        filter_strategy = merge._Filter(Namespace(include_cells="all",
+                                                  include_rows="at_least_one_passed"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS",
@@ -702,8 +709,8 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEqual([record1, record2], vcf_records)
 
     def test_pull_matching_records_allPassedLoci_notAllPassed(self):
-        filter_strategy = merge._Filter(Namespace(include_variants=None,
-                                                  include_loci="all_passed"))
+        filter_strategy = merge._Filter(Namespace(include_cells="all",
+                                                  include_rows="all_passed"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS",
@@ -721,8 +728,8 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEqual([], vcf_records)
 
     def test_pull_matching_records_allPassedLoci_allPassed(self):
-        filter_strategy = merge._Filter(Namespace(include_variants=None,
-                                                  include_loci="all_passed"))
+        filter_strategy = merge._Filter(Namespace(include_cells="all",
+                                                  include_rows="all_passed"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS",
@@ -740,8 +747,8 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEqual([record1, record2], vcf_records)
 
     def test_pull_matching_records_somaticVariants(self):
-        filter_strategy = merge._Filter(Namespace(include_variants="somatic",
-                                                  include_loci=None))
+        filter_strategy = merge._Filter(Namespace(include_cells="somatic",
+                                                  include_rows="all"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt",
@@ -757,8 +764,8 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEqual([record1], vcf_records)
 
     def test_pull_matching_records_anySomaticLoci(self):
-        filter_strategy = merge._Filter(Namespace(include_variants=None,
-                                                  include_loci="any_somatic"))
+        filter_strategy = merge._Filter(Namespace(include_cells="all",
+                                                  include_rows="at_least_one_somatic"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt",
@@ -776,8 +783,8 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEqual([record1, record2], vcf_records)
 
     def test_pull_matching_records_allSomaticLoci_notAllSomatic(self):
-        filter_strategy = merge._Filter(Namespace(include_variants=None,
-                                                  include_loci="all_somatic"))
+        filter_strategy = merge._Filter(Namespace(include_cells="all",
+                                                  include_rows="all_somatic"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt",
@@ -795,8 +802,8 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEqual([], vcf_records)
 
     def test_pull_matching_records_allSomaticLoci_allSomatic(self):
-        filter_strategy = merge._Filter(Namespace(include_variants=None,
-                                                  include_loci="all_somatic"))
+        filter_strategy = merge._Filter(Namespace(include_cells="all",
+                                                  include_rows="all_somatic"))
         coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt",
@@ -1139,8 +1146,8 @@ chr2|10|.|A|C|.|.|INFO|JQ_Bar2|C_2|D_2
             args = Namespace(input=input_file.path,
                              output=os.path.join(output_file.path, "fileC.vcf"),
                              tags=None,
-                             include_variants=None,
-                             include_loci=None)
+                             include_cells="all",
+                             include_rows="all")
 
             merge.execute(args, ["##execution_header1", "##execution_header2"])
 
@@ -1187,8 +1194,8 @@ chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
             args = Namespace(input=input_file.path,
                              output=os.path.join(output_file.path, "fileB.vcf"),
                              tags="JQ_Foo,Bar",
-                             include_variants=None,
-                             include_loci=None)
+                             include_cells="all",
+                             include_rows="all")
 
             merge.execute(args, ["##extra_header1", "##extra_header2"])
 
@@ -1273,7 +1280,7 @@ class MergeFunctionalTestCase(test_case.JacquardBaseTestCase):
         with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
 
-            module_testdir = os.path.join(test_dir, "functional_tests", "03_merge")
+            module_testdir = os.path.join(test_dir, "functional_tests", "02_merge")
             input_file = os.path.join(module_testdir, "input")
             output_file = os.path.join(output_dir.path, "merged.vcf")
 

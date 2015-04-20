@@ -102,16 +102,19 @@ class _Filter(object):
     """
     #pylint: disable=too-few-public-methods
     def __init__(self, args):
-        variant_filters = {None : _Filter._include_all,
+        variant_filters = {"all" : _Filter._include_all,
+                           "valid": _Filter._include_valid,
                            "passed" : _Filter._include_variant_if_passed,
                            "somatic" : _Filter._include_variant_if_somatic}
-        locus_filters = {None: _Filter._include_all,
+        locus_filters = {"all": _Filter._include_all,
                          "all_passed": _Filter._include_locus_if_all_passed,
-                         "any_passed": _Filter._include_locus_if_any_passed,
+                         "at_least_one_passed": _Filter.\
+                                                _include_locus_if_any_passed,
                          "all_somatic": _Filter._include_locus_if_all_somatic,
-                         "any_somatic": _Filter._include_locus_if_any_somatic}
-        self.include_variant = variant_filters[args.include_variants]
-        self.include_locus = locus_filters[args.include_loci]
+                         "at_least_one_somatic": _Filter.\
+                                                 _include_locus_if_any_somatic}
+        self.include_variant = variant_filters[args.include_cells]
+        self.include_locus = locus_filters[args.include_rows]
 
     #TODO: (cgates/jebene): Should this be part of VcfRecord?
     @staticmethod
@@ -130,6 +133,10 @@ class _Filter(object):
     @staticmethod
     def _include_all(dummy):
         return True
+
+    @staticmethod
+    def _include_valid(record):
+        return "JQ_EXCLUDE" not in record.filter
 
     @staticmethod
     def _include_variant_if_passed(record):
@@ -505,14 +512,22 @@ def add_subparser(subparser):
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
     parser.add_argument("--include_format_tags", dest='tags', help="Comma-separated list of regexs for format tags to include in output. Defaults to all JQ tags.")
     parser.add_argument("--log_file", help="Log file destination")
-    parser.add_argument("--include_variants", choices=["passed", "somatic"], help=("passed: Only include variants which passed their respective filter\n"
-                                                                                   "somatic: Only include somatic variants"))
-
-    parser.add_argument("--include_loci", choices=["any_passed", "all_passed", "any_somatic", "all_somatic"], help=("any_passed: Include all variants at loci where at least one variant passed\n"
-    # pylint: disable=line-too-long
-                                                                                                                        "all_passed: Include all variants at loci where all variants passed\n"
-                                                                                                                        "any_somatic: Include all variants at loci where at least one variant was somatic\n"
-                                                                                                                        "all_somatic: Include all variants at loci where all variants were somatic"))
+    parser.add_argument("--include_cells",
+                        choices=["all", "valid", "passed", "somatic"],
+                        default="valid",
+                        help=("all: Include all variants\n"
+                              "valid: Only include valid variants\n"
+                              "passed: Only include variants which passed their respective filter\n"
+                              "somatic: Only include somatic variants"))
+    parser.add_argument("--include_rows",
+                        choices=["all", "at_least_one_passed", "all_passed", "at_least_one_somatic", "all_somatic"],
+                        default="at_least_one_somatic",
+                        help=("all: Include all variants at loci\n"
+                              #pylint: disable=line-too-long
+                              "at_least_one_passed: Include all variants at loci where at least one variant passed\n"
+                              "all_passed: Include all variants at loci where all variants passed\n"
+                              "at_least_one_somatic: Include all variants at loci where at least one variant was somatic\n"
+                              "all_somatic: Include all variants at loci where all variants were somatic"))
 
 def _predict_output(args):
     desired_output_files = set([os.path.basename(args.output)])
