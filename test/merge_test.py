@@ -43,7 +43,7 @@ class FilterTestCase(test_case.JacquardBaseTestCase):
     def test_init_includeAllByDefault(self):
         args = Namespace(include_cells="valid", include_rows="at_least_one_somatic")
         record_filter = merge._Filter(args)
-        self.assertEquals(merge._Filter._include_valid,
+        self.assertEquals(merge._Filter._include_cell_if_valid,
                           record_filter._cell_filter_strategy)
         self.assertEquals(merge._Filter._include_row_if_any_somatic,
                           record_filter._row_filter_strategy)
@@ -85,30 +85,45 @@ class FilterTestCase(test_case.JacquardBaseTestCase):
                           record_filter._row_filter_strategy)
 
     def test_include_all(self):
-        self.assertEquals(True, merge._Filter._include_all(None))
+        args = Namespace(include_rows = "all", include_cells = "all")
+        filter_obj = merge._Filter(args)
+        self.assertEquals(True, filter_obj._include_cell_if_all(None))
+        self.assertEquals(True, filter_obj._include_row_if_all(None))
 
-    def test_include_valid(self):
+    def test_include_cell_if_valid(self):
+        args = Namespace(include_rows = "all", include_cells = "all")
+        filter_obj= merge._Filter(args)
         rec = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="JQ_EXCLUDE_FOO")
-        self.assertEquals(False, merge._Filter._include_valid(rec))
+        self.assertEquals(False, filter_obj._include_cell_if_valid(rec))
 
         rec = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="bar")
-        self.assertEquals(True, merge._Filter._include_valid(rec))
+        self.assertEquals(True, filter_obj._include_cell_if_valid(rec))
+
+        self.assertEquals({"JQ_EXCLUDE_FOO": 1}, filter_obj.excluded_breakdown)
 
     def test_include_cell_if_passed(self):
+        args = Namespace(include_cells = "all", include_rows = "all")
+        filter_obj = merge._Filter(args)
         rec = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="foo")
-        self.assertEquals(False, merge._Filter._include_cell_if_passed(rec))
+        self.assertEquals(False, filter_obj._include_cell_if_passed(rec))
 
         rec = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
-        self.assertEquals(True, merge._Filter._include_cell_if_passed(rec))
+        self.assertEquals(True, filter_obj._include_cell_if_passed(rec))
+
+        self.assertEquals({"foo": 1}, filter_obj.excluded_breakdown)
 
     def test_include_cell_if_somatic(self):
+        args = Namespace(include_rows = "all", include_cells = "all")
+        filter_obj = merge._Filter(args)
         rec = VcfRecord("chrom", "pos", "ref", "alt",
                         sample_tag_values={"SA": {merge._JQ_SOMATIC_TAG: "0"}})
-        self.assertEquals(False, merge._Filter._include_cell_if_somatic(rec))
+        self.assertEquals(False, filter_obj._include_cell_if_somatic(rec))
 
         rec = VcfRecord("chrom", "pos", "ref", "alt",
                         sample_tag_values={"SA": {merge._JQ_SOMATIC_TAG: "1"}})
-        self.assertEquals(True, merge._Filter._include_cell_if_somatic(rec))
+        self.assertEquals(True, filter_obj._include_cell_if_somatic(rec))
+
+        self.assertEquals({"not somatic": 1}, filter_obj.excluded_breakdown)
 
     def test_include_row_if_all_passed(self):
         rec1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
@@ -212,21 +227,32 @@ class FilterTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(2, filter_obj.cell_count)
         self.assertEquals(1, filter_obj.cells_excluded)
 
-    def test_log_filter_statistics(self):
+    def test_log_statistics(self):
         args = Namespace(include_cells="passed", include_rows="at_least_one_somatic")
         filter_obj = merge._Filter(args)
         filter_obj.cell_count = 20
         filter_obj.cells_excluded = 4
         filter_obj.row_count = 40
         filter_obj.rows_excluded = 2
+        filter_obj.excluded_breakdown = {"JQ_EXCLUDED": 2, "JQ_INVALID": 1, "FOO": 1}
 
         filter_obj.log_statistics()
-        actual_log_message = test.utils.mock_logger.messages["INFO"]
+        actual_info_message = test.utils.mock_logger.messages["INFO"]
+        actual_debug_message = test.utils.mock_logger.messages["DEBUG"]
 
+        self.assertEquals(2, len(actual_info_message))
         self.assertEquals("20% (4) cells were excluded because (--include_cells=passed)",
-                          actual_log_message[0])
+                          actual_info_message[0])
         self.assertEquals("5% (2) rows were excluded because (--include_rows=at_least_one_somatic)",
-                          actual_log_message[1])
+                          actual_info_message[1])
+
+        self.assertEquals(3, len(actual_debug_message))
+        self.assertIn("2 cells were excluded with [JQ_EXCLUDED]",
+                          actual_debug_message)
+        self.assertIn("1 cells were excluded with [JQ_INVALID]",
+                          actual_debug_message)
+        self.assertIn("1 cells were excluded with [FOO]",
+                          actual_debug_message)
 
 class MergeTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):

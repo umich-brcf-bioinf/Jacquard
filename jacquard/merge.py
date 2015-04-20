@@ -102,17 +102,17 @@ class _Filter(object):
     """
     #pylint: disable=too-few-public-methods
     def __init__(self, args):
-        self._cell_filters = {"all" : _Filter._include_all,
-                        "valid": _Filter._include_valid,
-                        "passed" : _Filter._include_cell_if_passed,
-                        "somatic" : _Filter._include_cell_if_somatic}
-        self._row_filters = {"all": _Filter._include_all,
-                       "all_passed": _Filter._include_row_if_all_passed,
-                       "at_least_one_passed": _Filter.\
-                                                _include_row_if_any_passed,
-                       "all_somatic": _Filter._include_row_if_all_somatic,
-                       "at_least_one_somatic": _Filter.\
-                                                 _include_row_if_any_somatic}
+        self._cell_filters = {"all" : _Filter._include_cell_if_all,
+                              "valid": _Filter._include_cell_if_valid,
+                              "passed" : _Filter._include_cell_if_passed,
+                              "somatic" : _Filter._include_cell_if_somatic}
+        self._row_filters = {"all": _Filter._include_row_if_all,
+                             "all_passed": _Filter._include_row_if_all_passed,
+                             "at_least_one_passed": _Filter.\
+                                                    _include_row_if_any_passed,
+                             "all_somatic": _Filter._include_row_if_all_somatic,
+                             "at_least_one_somatic": _Filter.\
+                                                    _include_row_if_any_somatic}
         self._args = args
         self._cell_filter_strategy = self._cell_filters[args.include_cells]
         self._row_filter_strategy = self._row_filters[args.include_rows]
@@ -122,9 +122,11 @@ class _Filter(object):
         self.cell_count = 0
         self.cells_excluded = 0
 
+        self.excluded_breakdown = defaultdict(int)
+
     def include_cell(self, vcf_record):
         self.cell_count += 1
-        include = self._cell_filter_strategy(vcf_record)
+        include = self._cell_filter_strategy(self, vcf_record)
         if not include:
             self.cells_excluded += 1
         return include
@@ -149,6 +151,10 @@ class _Filter(object):
                     self.rows_excluded,
                     self._args.include_rows)
 
+        for key, count in self.excluded_breakdown.items():
+            msg = "{} cells were excluded with [{}]"
+            logger.debug(msg, count, key)
+
     #TODO: (cgates/jebene): Should this be part of VcfRecord?
     @staticmethod
     def _is_somatic(record):
@@ -159,21 +165,31 @@ class _Filter(object):
                     return True
         return False
 
-    @staticmethod
-    def _include_cell_if_somatic(record):
-        return _Filter._is_somatic(record)
-
-    @staticmethod
-    def _include_all(dummy):
+    def _include_cell_if_all(self, dummy):
+        #pylint: disable=no-self-use
         return True
 
-    @staticmethod
-    def _include_valid(record):
-        return "JQ_EXCLUDE" not in record.filter
+    def _include_cell_if_somatic(self, record):
+        include = _Filter._is_somatic(record)
+        if not include:
+            self.excluded_breakdown["not somatic"] += 1
+        return include
+
+    def _include_cell_if_valid(self, record):
+        include ="JQ_EXCLUDE" not in record.filter
+        if not include:
+            self.excluded_breakdown[record.filter] += 1
+        return include
+
+    def _include_cell_if_passed(self, record):
+        include = record.filter == "PASS"
+        if not include:
+            self.excluded_breakdown[record.filter] += 1
+        return include
 
     @staticmethod
-    def _include_cell_if_passed(record):
-        return record.filter == "PASS"
+    def _include_row_if_all(dummy):
+        return True
 
     @staticmethod
     def _include_row_if_all_passed(records):
@@ -202,7 +218,6 @@ class _Filter(object):
             if _Filter._is_somatic(record):
                 return True
         return False
-
 
 def _build_format_tags(format_tag_regex, vcf_readers):
     retained_tags = set()
