@@ -4,6 +4,7 @@
 #pylint: disable=too-many-lines,global-statement
 from __future__ import print_function, absolute_import, division
 
+import argparse
 from argparse import Namespace
 from collections import OrderedDict
 import os
@@ -30,49 +31,58 @@ class MockBufferedReader(object):
         return next(self.vcf_records_iter)
 
 class FilterTestCase(test_case.JacquardBaseTestCase):
+    def setUp(self):
+        super(FilterTestCase, self).setUp()
+        merge.logger = test.utils.mock_logger
+
+    def tearDown(self):
+        test.utils.mock_logger.reset()
+        merge.logger = jacquard.utils.logger
+        super(FilterTestCase, self).tearDown()
+
     def test_init_includeAllByDefault(self):
         args = Namespace(include_cells="valid", include_rows="at_least_one_somatic")
         record_filter = merge._Filter(args)
         self.assertEquals(merge._Filter._include_valid,
-                          record_filter.include_variant)
+                          record_filter._cell_filter_strategy)
         self.assertEquals(merge._Filter._include_row_if_any_somatic,
-                          record_filter.include_locus)
+                          record_filter._row_filter_strategy)
 
     def test_init_includeVariantPassed(self):
         args = Namespace(include_cells="passed", include_rows="all")
         record_filter = merge._Filter(args)
         self.assertEquals(merge._Filter._include_cell_if_passed,
-                          record_filter.include_variant)
+                          record_filter._cell_filter_strategy)
 
     def test_init_includeVariantSomatic(self):
         args = Namespace(include_cells="somatic", include_rows="all")
         record_filter = merge._Filter(args)
         self.assertEquals(merge._Filter._include_cell_if_somatic,
-                          record_filter.include_variant)
+                          record_filter._cell_filter_strategy)
 
     def test_init_includeLocusAllPassed(self):
         args = Namespace(include_cells="all", include_rows="all_passed")
         record_filter = merge._Filter(args)
         self.assertEquals(merge._Filter._include_row_if_all_passed,
-                          record_filter.include_locus)
+                          record_filter._row_filter_strategy)
 
     def test_init_includeLocusAnyPassed(self):
         args = Namespace(include_cells="all", include_rows="at_least_one_passed")
         record_filter = merge._Filter(args)
         self.assertEquals(merge._Filter._include_row_if_any_passed,
-                          record_filter.include_locus)
+                          record_filter._row_filter_strategy)
 
     def test_init_includeLocusAllSomatic(self):
         args = Namespace(include_cells="all", include_rows="all_somatic")
         record_filter = merge._Filter(args)
         self.assertEquals(merge._Filter._include_row_if_all_somatic,
-                          record_filter.include_locus)
+                          record_filter._row_filter_strategy)
 
     def test_init_includeLocusAnySomatic(self):
         args = Namespace(include_cells="all", include_rows="at_least_one_somatic")
         record_filter = merge._Filter(args)
         self.assertEquals(merge._Filter._include_row_if_any_somatic,
-                          record_filter.include_locus)
+                          record_filter._row_filter_strategy)
 
     def test_include_all(self):
         self.assertEquals(True, merge._Filter._include_all(None))
@@ -168,6 +178,55 @@ class FilterTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(False,
                           merge._Filter._include_row_if_any_somatic([rec1, rec2]))
 
+    def test_include_row_statistics(self):
+        args = Namespace(include_cells="all", include_rows="at_least_one_passed")
+        filter_obj = merge._Filter(args)
+        passed_record = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
+        failed_record = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="FAIL")
+
+        self.assertEquals(0, filter_obj.row_count)
+        self.assertEquals(0, filter_obj.rows_excluded)
+
+        filter_obj.include_row([passed_record, failed_record])
+        self.assertEquals(1, filter_obj.row_count)
+        self.assertEquals(0, filter_obj.rows_excluded)
+
+        filter_obj.include_row([failed_record, failed_record])
+        self.assertEquals(2, filter_obj.row_count)
+        self.assertEquals(1, filter_obj.rows_excluded)
+
+    def test_include_cell_statistics(self):
+        args = Namespace(include_cells="passed", include_rows="all")
+        filter_obj = merge._Filter(args)
+        passed_record = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
+        failed_record = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="FAIL")
+
+        self.assertEquals(0, filter_obj.cell_count)
+        self.assertEquals(0, filter_obj.cells_excluded)
+
+        filter_obj.include_cell(passed_record)
+        self.assertEquals(1, filter_obj.cell_count)
+        self.assertEquals(0, filter_obj.cells_excluded)
+
+        filter_obj.include_cell(failed_record)
+        self.assertEquals(2, filter_obj.cell_count)
+        self.assertEquals(1, filter_obj.cells_excluded)
+
+    def test_log_filter_statistics(self):
+        args = Namespace(include_cells="passed", include_rows="at_least_one_somatic")
+        filter_obj = merge._Filter(args)
+        filter_obj.cell_count = 20
+        filter_obj.cells_excluded = 4
+        filter_obj.row_count = 40
+        filter_obj.rows_excluded = 2
+
+        filter_obj.log_statistics()
+        actual_log_message = test.utils.mock_logger.messages["INFO"]
+
+        self.assertEquals("20% (4) cells were excluded because (--include_cells=passed)",
+                          actual_log_message[0])
+        self.assertEquals("5% (2) rows were excluded because (--include_rows=at_least_one_somatic)",
+                          actual_log_message[1])
 
 class MergeTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
@@ -178,6 +237,35 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         test.utils.mock_logger.reset()
         merge.logger = jacquard.utils.logger
         super(MergeTestCase, self).tearDown()
+
+    def test_validate_consistent_arguments(self):
+        parser = argparse.ArgumentParser()
+        subparsers = parser.add_subparsers(title="subcommands",
+                                           dest="subparser_name")
+        merge.add_subparser(subparsers)
+
+        cell_choices = subparsers.choices["merge"]._option_string_actions["--include_cells"].choices
+        row_choices = subparsers.choices["merge"]._option_string_actions["--include_rows"].choices
+
+        cell_help = subparsers.choices["merge"]._option_string_actions["--include_cells"].help
+        cell_help = [i.split(":")[0] for i in cell_help.split("\n")]
+        row_help = subparsers.choices["merge"]._option_string_actions["--include_rows"].help
+        row_help = [i.split(":")[0] for i in row_help.split("\n")]
+
+        args = Namespace(include_rows="all", include_cells="all")
+        filter_obj = merge._Filter(args)
+
+        for key in filter_obj._cell_filters.keys():
+            if key not in cell_choices:
+                self.assertFalse("[{}] not found in {}".format(key, cell_choices))
+            if key not in cell_help:
+                self.assertFalse("[{}] not found in {}".format(key, cell_help))
+
+        for key in filter_obj._row_filters.keys():
+            if key not in row_choices:
+                self.assertFalse("[{}] not found in {}".format(key, row_choices))
+            if key not in row_help:
+                self.assertFalse("[{}] not found in {}".format(key, row_help))
 
     def test_validate_consistent_samples_missingCaller(self):
         input_files = [MockFileReader("A.mutect.vcf",

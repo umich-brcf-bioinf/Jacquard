@@ -102,19 +102,52 @@ class _Filter(object):
     """
     #pylint: disable=too-few-public-methods
     def __init__(self, args):
-        cell_filters = {"all" : _Filter._include_all,
+        self._cell_filters = {"all" : _Filter._include_all,
                         "valid": _Filter._include_valid,
                         "passed" : _Filter._include_cell_if_passed,
                         "somatic" : _Filter._include_cell_if_somatic}
-        row_filters = {"all": _Filter._include_all,
+        self._row_filters = {"all": _Filter._include_all,
                        "all_passed": _Filter._include_row_if_all_passed,
                        "at_least_one_passed": _Filter.\
                                                 _include_row_if_any_passed,
                        "all_somatic": _Filter._include_row_if_all_somatic,
                        "at_least_one_somatic": _Filter.\
                                                  _include_row_if_any_somatic}
-        self.include_variant = cell_filters[args.include_cells]
-        self.include_locus = row_filters[args.include_rows]
+        self._args = args
+        self._cell_filter_strategy = self._cell_filters[args.include_cells]
+        self._row_filter_strategy = self._row_filters[args.include_rows]
+
+        self.row_count = 0
+        self.rows_excluded = 0
+        self.cell_count = 0
+        self.cells_excluded = 0
+
+    def include_cell(self, vcf_record):
+        self.cell_count += 1
+        include = self._cell_filter_strategy(vcf_record)
+        if not include:
+            self.cells_excluded += 1
+        return include
+
+    def include_row(self, vcf_records):
+        self.row_count += 1
+        include = self._row_filter_strategy(vcf_records)
+        if not include:
+            self.rows_excluded += 1
+        return include
+
+    def log_statistics(self):
+        cell_msg = "{}% ({}) cells were excluded because (--include_cells={})"
+        logger.info(cell_msg,
+                    int(round(100 * self.cells_excluded / self.cell_count, 0)),
+                    self.cells_excluded,
+                    self._args.include_cells)
+
+        row_msg = "{}% ({}) rows were excluded because (--include_rows={})"
+        logger.info(row_msg,
+                    int(round(100 * self.rows_excluded / self.row_count, 0)),
+                    self.rows_excluded,
+                    self._args.include_rows)
 
     #TODO: (cgates/jebene): Should this be part of VcfRecord?
     @staticmethod
@@ -385,9 +418,9 @@ def _pull_matching_records(filter_strategy, coordinate, buffered_readers):
     vcf_records = []
     for buffered_reader in buffered_readers:
         record = buffered_reader.next_if_equals(coordinate)
-        if record and filter_strategy.include_variant(record):
+        if record and filter_strategy.include_cell(record):
             vcf_records.append(record)
-    if filter_strategy.include_locus(vcf_records):
+    if filter_strategy.include_row(vcf_records):
         return vcf_records
     else:
         return []
@@ -402,6 +435,7 @@ def _merge_records(filter_strategy,
     vcf_records = _pull_matching_records(filter_strategy,
                                          coordinate,
                                          buffered_readers)
+    filter_strategy.log_statistics()
     if vcf_records:
         merged_record = _build_merged_record(coordinate,
                                              vcf_records,
