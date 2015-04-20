@@ -102,19 +102,19 @@ class _Filter(object):
     """
     #pylint: disable=too-few-public-methods
     def __init__(self, args):
-        variant_filters = {"all" : _Filter._include_all,
-                           "valid": _Filter._include_valid,
-                           "passed" : _Filter._include_variant_if_passed,
-                           "somatic" : _Filter._include_variant_if_somatic}
-        locus_filters = {"all": _Filter._include_all,
-                         "all_passed": _Filter._include_locus_if_all_passed,
-                         "at_least_one_passed": _Filter.\
-                                                _include_locus_if_any_passed,
-                         "all_somatic": _Filter._include_locus_if_all_somatic,
-                         "at_least_one_somatic": _Filter.\
-                                                 _include_locus_if_any_somatic}
-        self.include_variant = variant_filters[args.include_cells]
-        self.include_locus = locus_filters[args.include_rows]
+        cell_filters = {"all" : _Filter._include_all,
+                        "valid": _Filter._include_valid,
+                        "passed" : _Filter._include_cell_if_passed,
+                        "somatic" : _Filter._include_cell_if_somatic}
+        row_filters = {"all": _Filter._include_all,
+                       "all_passed": _Filter._include_row_if_all_passed,
+                       "at_least_one_passed": _Filter.\
+                                                _include_row_if_any_passed,
+                       "all_somatic": _Filter._include_row_if_all_somatic,
+                       "at_least_one_somatic": _Filter.\
+                                                 _include_row_if_any_somatic}
+        self.include_variant = cell_filters[args.include_cells]
+        self.include_locus = row_filters[args.include_rows]
 
     #TODO: (cgates/jebene): Should this be part of VcfRecord?
     @staticmethod
@@ -127,7 +127,7 @@ class _Filter(object):
         return False
 
     @staticmethod
-    def _include_variant_if_somatic(record):
+    def _include_cell_if_somatic(record):
         return _Filter._is_somatic(record)
 
     @staticmethod
@@ -139,32 +139,32 @@ class _Filter(object):
         return "JQ_EXCLUDE" not in record.filter
 
     @staticmethod
-    def _include_variant_if_passed(record):
+    def _include_cell_if_passed(record):
         return record.filter == "PASS"
 
     @staticmethod
-    def _include_locus_if_all_passed(records):
+    def _include_row_if_all_passed(records):
         for record in records:
             if record.filter != "PASS":
                 return False
         return True
 
     @staticmethod
-    def _include_locus_if_any_passed(records):
+    def _include_row_if_any_passed(records):
         for record in records:
             if record.filter == "PASS":
                 return True
         return False
 
     @staticmethod
-    def _include_locus_if_all_somatic(records):
+    def _include_row_if_all_somatic(records):
         for record in records:
             if not _Filter._is_somatic(record):
                 return False
         return True
 
     @staticmethod
-    def _include_locus_if_any_somatic(records):
+    def _include_row_if_any_somatic(records):
         for record in records:
             if _Filter._is_somatic(record):
                 return True

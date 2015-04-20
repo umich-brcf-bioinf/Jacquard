@@ -35,43 +35,43 @@ class FilterTestCase(test_case.JacquardBaseTestCase):
         record_filter = merge._Filter(args)
         self.assertEquals(merge._Filter._include_valid,
                           record_filter.include_variant)
-        self.assertEquals(merge._Filter._include_locus_if_any_somatic,
+        self.assertEquals(merge._Filter._include_row_if_any_somatic,
                           record_filter.include_locus)
 
     def test_init_includeVariantPassed(self):
         args = Namespace(include_cells="passed", include_rows="all")
         record_filter = merge._Filter(args)
-        self.assertEquals(merge._Filter._include_variant_if_passed,
+        self.assertEquals(merge._Filter._include_cell_if_passed,
                           record_filter.include_variant)
 
     def test_init_includeVariantSomatic(self):
         args = Namespace(include_cells="somatic", include_rows="all")
         record_filter = merge._Filter(args)
-        self.assertEquals(merge._Filter._include_variant_if_somatic,
+        self.assertEquals(merge._Filter._include_cell_if_somatic,
                           record_filter.include_variant)
 
     def test_init_includeLocusAllPassed(self):
         args = Namespace(include_cells="all", include_rows="all_passed")
         record_filter = merge._Filter(args)
-        self.assertEquals(merge._Filter._include_locus_if_all_passed,
+        self.assertEquals(merge._Filter._include_row_if_all_passed,
                           record_filter.include_locus)
 
     def test_init_includeLocusAnyPassed(self):
         args = Namespace(include_cells="all", include_rows="at_least_one_passed")
         record_filter = merge._Filter(args)
-        self.assertEquals(merge._Filter._include_locus_if_any_passed,
+        self.assertEquals(merge._Filter._include_row_if_any_passed,
                           record_filter.include_locus)
 
     def test_init_includeLocusAllSomatic(self):
         args = Namespace(include_cells="all", include_rows="all_somatic")
         record_filter = merge._Filter(args)
-        self.assertEquals(merge._Filter._include_locus_if_all_somatic,
+        self.assertEquals(merge._Filter._include_row_if_all_somatic,
                           record_filter.include_locus)
 
     def test_init_includeLocusAnySomatic(self):
         args = Namespace(include_cells="all", include_rows="at_least_one_somatic")
         record_filter = merge._Filter(args)
-        self.assertEquals(merge._Filter._include_locus_if_any_somatic,
+        self.assertEquals(merge._Filter._include_row_if_any_somatic,
                           record_filter.include_locus)
 
     def test_include_all(self):
@@ -84,89 +84,89 @@ class FilterTestCase(test_case.JacquardBaseTestCase):
         rec = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="bar")
         self.assertEquals(True, merge._Filter._include_valid(rec))
 
-    def test_include_variant_if_passed(self):
+    def test_include_cell_if_passed(self):
         rec = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="foo")
-        self.assertEquals(False, merge._Filter._include_variant_if_passed(rec))
+        self.assertEquals(False, merge._Filter._include_cell_if_passed(rec))
 
         rec = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
-        self.assertEquals(True, merge._Filter._include_variant_if_passed(rec))
+        self.assertEquals(True, merge._Filter._include_cell_if_passed(rec))
 
-    def test_include_variant_if_somatic(self):
+    def test_include_cell_if_somatic(self):
         rec = VcfRecord("chrom", "pos", "ref", "alt",
                         sample_tag_values={"SA": {merge._JQ_SOMATIC_TAG: "0"}})
-        self.assertEquals(False, merge._Filter._include_variant_if_somatic(rec))
+        self.assertEquals(False, merge._Filter._include_cell_if_somatic(rec))
 
         rec = VcfRecord("chrom", "pos", "ref", "alt",
                         sample_tag_values={"SA": {merge._JQ_SOMATIC_TAG: "1"}})
-        self.assertEquals(True, merge._Filter._include_variant_if_somatic(rec))
+        self.assertEquals(True, merge._Filter._include_cell_if_somatic(rec))
 
-    def test_include_locus_if_all_passed(self):
+    def test_include_row_if_all_passed(self):
         rec1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
         rec2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
         self.assertEquals(True,
-                          merge._Filter._include_locus_if_all_passed([rec1, rec2]))
+                          merge._Filter._include_row_if_all_passed([rec1, rec2]))
 
         rec1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
         rec2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="FAIL")
         self.assertEquals(False,
-                          merge._Filter._include_locus_if_all_passed([rec1, rec2]))
+                          merge._Filter._include_row_if_all_passed([rec1, rec2]))
 
         rec1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="FAIL")
         rec2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="FAIL")
         self.assertEquals(False,
-                          merge._Filter._include_locus_if_all_passed([rec1, rec2]))
+                          merge._Filter._include_row_if_all_passed([rec1, rec2]))
 
-    def test_include_locus_if_any_passed(self):
+    def test_include_row_if_any_passed(self):
         rec1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
         rec2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
         self.assertEquals(True,
-                          merge._Filter._include_locus_if_any_passed([rec1, rec2]))
+                          merge._Filter._include_row_if_any_passed([rec1, rec2]))
 
         rec1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="PASS")
         rec2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="FAIL")
         self.assertEquals(True,
-                          merge._Filter._include_locus_if_any_passed([rec1, rec2]))
+                          merge._Filter._include_row_if_any_passed([rec1, rec2]))
 
         rec1 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="FAIL")
         rec2 = VcfRecord("chrom", "pos", "ref", "alt", vcf_filter="FAIL")
         self.assertEquals(False,
-                          merge._Filter._include_locus_if_any_passed([rec1, rec2]))
+                          merge._Filter._include_row_if_any_passed([rec1, rec2]))
 
-    def test_include_locus_if_all_somatic(self):
+    def test_include_row_if_all_somatic(self):
         nonsomatic = {"SA": {merge._JQ_SOMATIC_TAG: "0"}}
         somatic = {"SA": {merge._JQ_SOMATIC_TAG: "1"}}
         rec1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=somatic)
         rec2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=somatic)
         self.assertEquals(True,
-                          merge._Filter._include_locus_if_all_somatic([rec1, rec2]))
+                          merge._Filter._include_row_if_all_somatic([rec1, rec2]))
 
         rec1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=somatic)
         rec2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=nonsomatic)
         self.assertEquals(False,
-                          merge._Filter._include_locus_if_all_somatic([rec1, rec2]))
+                          merge._Filter._include_row_if_all_somatic([rec1, rec2]))
 
         rec1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=nonsomatic)
         rec2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=nonsomatic)
         self.assertEquals(False,
-                          merge._Filter._include_locus_if_all_somatic([rec1, rec2]))
+                          merge._Filter._include_row_if_all_somatic([rec1, rec2]))
 
-    def test_include_locus_if_any_somatic(self):
+    def test_include_row_if_any_somatic(self):
         nonsomatic = {"SA": {merge._JQ_SOMATIC_TAG: "0"}}
         somatic = {"SA": {merge._JQ_SOMATIC_TAG: "1"}}
         rec1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=somatic)
         rec2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=somatic)
         self.assertEquals(True,
-                          merge._Filter._include_locus_if_any_somatic([rec1, rec2]))
+                          merge._Filter._include_row_if_any_somatic([rec1, rec2]))
 
         rec1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=somatic)
         rec2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=nonsomatic)
         self.assertEquals(True,
-                          merge._Filter._include_locus_if_any_somatic([rec1, rec2]))
+                          merge._Filter._include_row_if_any_somatic([rec1, rec2]))
 
         rec1 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=nonsomatic)
         rec2 = VcfRecord("chrom", "pos", "ref", "alt", sample_tag_values=nonsomatic)
         self.assertEquals(False,
-                          merge._Filter._include_locus_if_any_somatic([rec1, rec2]))
+                          merge._Filter._include_row_if_any_somatic([rec1, rec2]))
 
 
 class MergeTestCase(test_case.JacquardBaseTestCase):
