@@ -109,7 +109,7 @@ def _parse_command_line_args(modules, arguments):
         usage="jacquard",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         # pylint: disable=line-too-long
-        description='''type 'Jacquard -h <command>' for help on a specific command''',
+        description='''type 'jacquard <command> -h' for help on a specific command''',
         epilog="See https://github.com/umich-brcf-bioinf/Jacquard for more info.")
 
     parser.add_argument("-V",

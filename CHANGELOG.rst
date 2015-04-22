@@ -1,8 +1,9 @@
 Changelog
 =========
 
-0.4 (4/8/2015)
---------------
+0.4 (4/22/2015)
+---------------
+ - Combined filter command with merge.
  - Adjusted code to support Python >=2.7 or 3.x
  - Fixed bug in summarize that caused error if variant was called by subset of callers 
  - Improved checks for consistent VCF file sets

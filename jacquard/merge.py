@@ -296,13 +296,6 @@ def _create_reader_lists(file_readers):
 
     return buffered_readers, vcf_readers
 
-#TODO: (cgates/jebene): Drop when refctor of filter complete
-def _is_somatic_variant(record):
-    for sample in record.sample_tag_values:
-        for tag in record.sample_tag_values[sample]:
-            is_somatic = record.sample_tag_values[sample][tag] == "1"
-            if re.search(_JQ_SOMATIC_TAG, tag) and is_somatic:
-                return 1
 
 def _build_coordinates(vcf_readers):
     coordinate_set = set()
@@ -450,7 +443,6 @@ def _merge_records(filter_strategy,
     vcf_records = _pull_matching_records(filter_strategy,
                                          coordinate,
                                          buffered_readers)
-    filter_strategy.log_statistics()
     if vcf_records:
         merged_record = _build_merged_record(coordinate,
                                              vcf_records,
@@ -629,6 +621,8 @@ def execute(args, execution_context):
                                            format_tags_to_keep)
             if merged_record:
                 file_writer.write(merged_record.text())
+
+        filter_strategy.log_statistics()
 
     finally:
         for vcf_reader in vcf_readers:
