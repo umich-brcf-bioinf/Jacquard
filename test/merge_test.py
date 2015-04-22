@@ -20,8 +20,6 @@ import test.utils.mock_logger
 import test.utils.test_case as test_case
 from test.utils.vcf_test import MockVcfReader, MockFileReader
 
-#TODO: (cgates): Suspect duplicate tests
-#Consider tests across Filter, merge_records, pull_matching_records; simplify?
 
 class MockBufferedReader(object):
     def __init__(self, vcf_records):
@@ -1044,8 +1042,10 @@ chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
         self.assertEquals(record2.text(), actual_records[1].text())
         self.assertEquals(record3.text(), actual_records[2].text())
         actual_log_infos = test.utils.mock_logger.messages["INFO"]
-        self.assertEquals(1, len(actual_log_infos))
-        self.assertRegexpMatches(actual_log_infos[0], r"Sorting vcf \[unsorted.vcf\]")
+        self.assertEquals(3, len(actual_log_infos))
+        self.assertRegexpMatches(actual_log_infos[0], r"Checking sort order of \[vcfName\] \(1/2\)")
+        self.assertRegexpMatches(actual_log_infos[1], r"Checking sort order of \[unsorted.vcf\] \(2/2\)")
+        self.assertRegexpMatches(actual_log_infos[2], r"Sorting vcf \[unsorted.vcf\] \(1/1\)")
         actual_log_debugs = test.utils.mock_logger.messages["DEBUG"]
         self.assertEquals(1, len(actual_log_debugs))
         self.assertRegexpMatches(actual_log_debugs[0],

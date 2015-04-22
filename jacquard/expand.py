@@ -162,6 +162,7 @@ def execute(args, dummy_execution_context):
 
     file_writer.write("#" + "\t".join(actual_columns) + "\n")
 
+    line_count = 0
     vcf_reader.open()
     for vcf_record in vcf_reader.vcf_records():
         row_dict = _create_row_dict(vcf_reader.split_column_header,
@@ -175,6 +176,11 @@ def execute(args, dummy_execution_context):
                 new_line.append(".")
 
         file_writer.write("\t".join(new_line) + "\n")
+        line_count +=1
+        if line_count % 10000 == 0:
+            logger.info("Expanding: {} rows processed", line_count)
+    logger.info("Expand complete: {} rows processed", line_count)
+
     file_writer.close()
     vcf_reader.close()
 

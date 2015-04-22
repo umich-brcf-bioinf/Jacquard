@@ -335,7 +335,6 @@ def _write_headers(reader, file_writer):
     file_writer.write("\n".join(headers) + "\n")
 
 def _sort_vcf(reader, temp_dir):
-    logger.info("Sorting vcf [{}]", reader.file_name)
     vcf_records = []
     sorted_dir = os.path.join(temp_dir, "tmp")
     os.makedirs(sorted_dir)
@@ -359,7 +358,12 @@ def _sort_vcf(reader, temp_dir):
 
 def _get_unsorted_readers(vcf_readers):
     unsorted_readers = []
-    for reader in vcf_readers:
+    for i, reader in enumerate(vcf_readers):
+        logger.info("Checking sort order of [{}] ({}/{})",
+                    reader.file_name,
+                    i+1,
+                    len(vcf_readers)
+                    )
         previous_record = None
         reader.open()
         for vcf_record in reader.vcf_records():
@@ -378,8 +382,14 @@ def _get_unsorted_readers(vcf_readers):
 def _sort_readers(vcf_readers, temp_dir):
     unsorted_readers = _get_unsorted_readers(vcf_readers)
     sorted_readers = []
+    unsorted_count = 0
     for reader in vcf_readers:
         if reader in unsorted_readers:
+            unsorted_count += 1
+            logger.info("Sorting vcf [{}] ({}/{})",
+                        reader.file_name,
+                        unsorted_count,
+                        len(unsorted_readers))
             reader = _sort_vcf(reader, temp_dir)
         sorted_readers.append(reader)
     return sorted_readers
@@ -598,10 +608,10 @@ def execute(args, execution_context):
         file_writer.open()
 
         buffered_readers, vcf_readers = _create_reader_lists(file_readers)
+        format_tags_to_keep = _build_format_tags(format_tag_regex, vcf_readers)
         vcf_readers = _sort_readers(vcf_readers, output_path)
         all_sample_names, merge_metaheaders = _build_sample_list(vcf_readers)
         coordinates = _build_coordinates(vcf_readers)
-        format_tags_to_keep = _build_format_tags(format_tag_regex, vcf_readers)
         info_tags_to_keep = _build_info_tags(coordinates)
         contigs_to_keep = _build_contigs(coordinates)
         incoming_headers = _FILE_FORMAT + execution_context + merge_metaheaders
@@ -614,6 +624,8 @@ def execute(args, execution_context):
 
         _write_metaheaders(file_writer, headers)
 
+        row_count = 0
+        next_breakpoint = 0
         for coordinate in coordinates:
             merged_record = _merge_records(filter_strategy,
                                            coordinate,
@@ -623,6 +635,15 @@ def execute(args, execution_context):
             if merged_record:
                 file_writer.write(merged_record.text())
 
+            row_count += 1
+            progress = 100 * row_count / len(coordinates)
+            if progress > next_breakpoint:
+                logger.info("Merging: {} rows processed ({}%)", 
+                            row_count,
+                            next_breakpoint)
+                next_breakpoint = 10 * int(progress/10) + 10
+
+        logger.info("Merge complete: {} rows processed (100%)", row_count)
         filter_strategy.log_statistics()
 
     finally:
