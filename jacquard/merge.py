@@ -45,9 +45,10 @@ import jacquard.utils.vcf as vcf
 _DEFAULT_INCLUDED_FORMAT_TAGS = ["JQ_.*"]
 _MULT_ALT_TAG = "JQ_MULT_ALT_LOCUS"
 _JQ_SOMATIC_TAG = "HC_SOM"
-#TODO: (jebene) is the description of this really accurate?
+
 _MULT_ALT_HEADER = ('##INFO=<ID={},Number=0,Type=Flag,'
-                    'Description="dbSNP Membership">').format(_MULT_ALT_TAG)
+                    'Description="More than one alt allele was seen at this '
+                    'locus.">').format(_MULT_ALT_TAG)
 _FILE_FORMAT = ["##fileformat=VCFv4.1"]
 _FILE_OUTPUT_SUFFIX = "merged"
 

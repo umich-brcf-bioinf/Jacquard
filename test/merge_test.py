@@ -987,7 +987,7 @@ chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
                                    "##jacquard.merge.sample=<Column=2,Name=P1|SampleB,Source=P1.fileA.vcf>\n",
                                    '##contig=<ID=chr1,Number=1>\n',
                                    '##contig=<ID=chr2,Number=1>\n',
-                                   '##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,Description="dbSNP Membership">\n',
+                                   '##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,Description="More than one alt allele was seen at this locus.">\n',
                                    '##FORMAT=<ID=Bar,Number=1,Type=Float,Description="bar">\n',
                                    '##FORMAT=<ID=JQ_Foo,Number=1,Type=Float,Description="foo">\n',
                                    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tP1|SampleA\tP1|SampleB\n"]
