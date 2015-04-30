@@ -101,6 +101,35 @@ def _create_potential_column_list(vcf_reader):
            + sorted(vcf_reader.info_metaheaders.keys()) \
            + format_sample_names
 
+#TODO: (jebene) hookup _create_glossary
+def _create_glossary(metaheaders, writer):
+    writer.write("FIELD\tID\tDESCRIPTION")
+    for metaheader in metaheaders:
+        glossary_line = _create_glossary_line(metaheader)
+        if glossary_line:
+            writer.write(glossary_line)
+
+def _create_glossary_line(metaheader):
+    type_match = re.search('^##(.*)?(?==<)', metaheader)
+    if type_match:
+        header_type = type_match.group(1)
+
+    id_match = re.search('^##.*(ID=.*?(?=(,|>)))', metaheader)
+    if id_match:
+        id_term = id_match.group(1)
+
+    description_match = re.search('^##.*(Description=.*?(?=(,|>)))', metaheader)
+    if description_match:
+        description_term = description_match.group(1)
+
+    if not type_match and not id_match and not description_match:
+        return False
+
+    dummy, id_value = id_term.split("=")
+    dummy, description = description_term.split("=")
+
+    return "\t".join([header_type, id_value, description.strip('"')])
+
 def add_subparser(subparser):
     # pylint: disable=C0301
     parser = subparser.add_parser("expand", help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
