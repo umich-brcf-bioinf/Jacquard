@@ -1,4 +1,6 @@
+from __future__ import print_function
 import argparse
+from datetime import datetime
 import numpy
 import os
 from os import listdir
@@ -11,10 +13,14 @@ import sys
 import traceback 
 import openpyxl
 from openpyxl import load_workbook
-import logger
 
 SNPEFF_IMPACT_COLUMN = "SNPEFF_TOP_EFFECT_IMPACT"
 DBNSFP_IMPACT_DAMAGING_COLUMN = "dbNSFP_rollup_damaging"
+
+def log(msg_format, *args):
+    timestamp = datetime.now().strftime('%Y/%m/%d %H:%M:%S')
+    print("{} - {}".format(timestamp, msg_format).format(*args), file=sys.stderr)
+    sys.stderr.flush()
 
 class RollupError(Exception):
     """Base class for exceptions in this module."""
@@ -255,18 +261,18 @@ def process_files(input, output, samples, delim):
             # new_columns.append(col[:-1])
     rearranged_df.columns = new_columns
     
-    print "writing to excel file: {0}".format(output)
+    log("building to excel file: {}", output)
     writer = ExcelWriter(output)
     
     rearranged_df.to_excel(writer, "Variant_output", index=True, merge_cells = 0)  
 
-    print "saving file"
+    log("saving file")
     writer.save() 
     
     # print "styling workbook"
     # style_workbook(output)
 
-    print "done"
+    log("done")
     
 
 def add_subparser(subparser):
@@ -287,7 +293,7 @@ def execute(args, execution_context):
     delim   = args.input_delimiter if args.input_delimiter else "\t"
 
     if not os.path.isfile(input_file):
-        print "Error. Specified input_file file {0} does not exist".format(input_file)
+        log("Error. Specified input_file file {} does not exist", input_file)
         exit(1)
 
     process_files(input_file, output, samples, delim)
@@ -318,20 +324,18 @@ def dispatch(arguments):
     
         args = parser.parse_args(arguments)
     
-        logger.initialize_logger("gene_rollup")
-        logger.info("gene rollup begins")
-        logger.info("Saving log to [{}]", logger.log_filename)
-        logger.debug("cwd|{}", os.getcwd())
-        logger.debug("command|{}", " ".join(arguments))
+        log("gene rollup begins")
+        log("cwd|{}", os.getcwd())
+        log("command|{}", " ".join(arguments))
     
         execute(args, execution_context)
-        logger.info("Done")
+        log("Done")
 
     # pylint: disable=W0703
     except Exception as exception:
-        logger.error(str(exception))
-        logger.error("Jacquard encountered an unanticipated problem. Please review log file and contact your sysadmin or Jacquard support for assistance.")
-        logger.debug(traceback.format_exc())
+        log(str(exception))
+        log("Jacquard encountered an unanticipated problem. Please review log file and contact your sysadmin or Jacquard support for assistance.")
+        print(traceback.format_exc(), file=sys.stderr)
         sys.exit(1)
 
 
