@@ -206,7 +206,7 @@ chr2|1|.|A|C|.|.|SOMATIC|GT|0/1|0/1
 
             expand.execute(args, ["##extra_header1", "##extra_header2"])
 
-            output_dir.check("P1.txt")
+            output_dir.check("P1.glossary.txt", "P1.txt")
             actual_filename = os.path.join(output_dir.path, "P1.txt")
             with open(actual_filename) as actual_output_file:
                 actual_output_lines = actual_output_file.readlines()
