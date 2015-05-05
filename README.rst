@@ -1,4 +1,4 @@
-
+========
 Jacquard
 ========
 Suite of command-line tools to expedite analysis of exome variant data from multiple patients and multiple variant callers.
@@ -10,23 +10,27 @@ Suite of command-line tools to expedite analysis of exome variant data from mult
 .. image:: https://coveralls.io/repos/umich-brcf-bioinf/Jacquard/badge.png?branch=develop
     :target: https://coveralls.io/r/umich-brcf-bioinf/Jacquard?branch=develop
     :alt: Coverage Status
-    
+
 .. image:: https://pypip.in/license/jacquard/badge.png
     :target: https://pypi.python.org/pypi/jacquard/
     :alt: License
+
+.. image:: http://img.shields.io/pypi/v/colour.svg?style=flat
+   :target: https://pypi.python.org/pypi/jacquard/
+   :alt: Latest PyPI version
 
 .. image:: https://pypip.in/d/jacquard/badge.png
     :alt: Downloads Counter
 
 Files
------
-* jacquard-runner.py : Convenience wrapper for running Jacquard directly from source tree.
-* jacquard : Python libraries
-* spikes : Unsupported prototypes and other experiements
-* test : Automated unit tests
+=====
+- jacquard-runner.py : Convenience wrapper for running Jacquard directly from source tree.
+- jacquard : Python libraries
+- spikes : Unsupported prototypes and other experiments
+- test : Automated unit tests
 
 Usage
------
+=====
 ``$jacquard <subcommand> [options] [arguments]``
 
 *Subcommands*
@@ -43,14 +47,15 @@ Usage
    summary fields/tags.
 :expand:
    Transforms VCF file into tab-separated text file expanding INFO fields and 
-   FORMAT tags into distinct columns.
+   FORMAT tags into discrete columns.
 
 For help on a specific subcommand:
 
 ``jacquard <subcommand> --help``
 
 
----
+====
+
 
 Email bfx-jacquard@umich.edu for support and questions.
 
