@@ -122,7 +122,7 @@ def _create_glossary_line(metaheader):
         id_value = re.search(r'^##.*\WID=(\w*)', metaheader).group(1)
         desc = re.search(r'^##.*Description="(.*?)"', metaheader).group(1)
         return "\t".join([id_value, header_type, desc.strip('"')]) + "\n"
-    except StandardError:
+    except AttributeError:
         return ""
 
 
