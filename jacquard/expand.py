@@ -101,6 +101,43 @@ def _create_potential_column_list(vcf_reader):
            + sorted(vcf_reader.info_metaheaders.keys()) \
            + format_sample_names
 
+def _get_glossary_writer(output_file):
+    output_dir = os.path.dirname(output_file)
+    complete_output_fname = os.path.basename(output_file)
+    output_fname, dummy = os.path.splitext(complete_output_fname)
+    glossary_fname = ".".join([output_fname, "glossary.txt"])
+    glossary = os.path.join(output_dir, glossary_fname)
+
+    return vcf.FileWriter(glossary)
+
+def _create_glossary(metaheaders, writer):
+    writer.write("FIELD\tID\tDESCRIPTION\n")
+    for metaheader in metaheaders:
+        glossary_line = _create_glossary_line(metaheader)
+        if glossary_line:
+            writer.write(glossary_line + "\n")
+
+def _create_glossary_line(metaheader):
+    type_match = re.search('^##(.*)?(?==<)', metaheader)
+    if type_match:
+        header_type = type_match.group(1)
+
+    id_match = re.search('^##.*(ID=.*?(?=(,|>)))', metaheader)
+    if id_match:
+        id_term = id_match.group(1)
+
+    description_match = re.search('^##.*(Description=.*?(?=(,|>)))', metaheader)
+    if description_match:
+        description_term = description_match.group(1)
+
+    if not type_match or not id_match or not description_match:
+        return False
+
+    dummy, id_value = id_term.split("=")
+    dummy, description = description_term.split("=", 1) #split on first '='
+
+    return "\t".join([header_type, id_value, description.strip('"')])
+
 def add_subparser(subparser):
     # pylint: disable=C0301
     parser = subparser.add_parser("expand", help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
@@ -182,6 +219,11 @@ def execute(args, dummy_execution_context):
     logger.info("Expand complete: {} rows processed", line_count)
 
     file_writer.close()
-    vcf_reader.close()
 
+    glossary_writer = _get_glossary_writer(output_file)
+    glossary_writer.open()
+    _create_glossary(vcf_reader.metaheaders, glossary_writer)
+    glossary_writer.close()
+
+    vcf_reader.close()
     logger.debug("Wrote input [{}] to output [{}]", input_file, output_file)

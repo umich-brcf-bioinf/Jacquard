@@ -14,7 +14,7 @@ import jacquard.utils.utils as utils
 import jacquard.utils.vcf as vcf
 import test.utils.mock_logger
 import test.utils.test_case as test_case
-from test.utils.vcf_test import MockVcfReader
+from test.utils.vcf_test import MockVcfReader, MockFileWriter
 
 
 class ExpandTestCase(test_case.JacquardBaseTestCase):
@@ -206,7 +206,7 @@ chr2|1|.|A|C|.|.|SOMATIC|GT|0/1|0/1
 
             expand.execute(args, ["##extra_header1", "##extra_header2"])
 
-            output_dir.check("P1.txt")
+            output_dir.check("P1.glossary.txt", "P1.txt")
             actual_filename = os.path.join(output_dir.path, "P1.txt")
             with open(actual_filename) as actual_output_file:
                 actual_output_lines = actual_output_file.readlines()
@@ -249,6 +249,29 @@ chr2|1|.|A|C|.|.|SOMATIC|GT|0/1|0/1
                                     "The column specification file .* could not be read. Review inputs/usage and try again",
                                     expand.validate_args,
                                     args)
+
+    def test_create_glossary_line(self):
+        header = '##INFO=<ID=SOMATIC,Number=1,Description="foo">'
+        actual_line = expand._create_glossary_line(header)
+        expected_line = "INFO\tSOMATIC\tfoo"
+
+        self.assertEquals(expected_line, actual_line)
+
+    def test_create_glossary_line_notGlossaryHeader(self):
+        header = '##source=strelka'
+        actual_line = expand._create_glossary_line(header)
+
+        self.assertEquals(False, actual_line)
+
+    def test_create_glossary(self):
+        writer = MockFileWriter()
+        metaheaders = ['##source=strelka',
+                       '##INFO=<ID=SOMATIC,Number=1,Description="foo">',
+                       '##FORMAT=<ID=GT,Number=1,Description="bar">']
+        expand._create_glossary(metaheaders, writer)
+
+        expected = ["FIELD\tID\tDESCRIPTION", "INFO\tSOMATIC\tfoo", "FORMAT\tGT\tbar"]
+        self.assertEquals(expected, writer.lines())
 
 class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_expand(self):
