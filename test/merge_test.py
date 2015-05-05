@@ -1021,7 +1021,7 @@ chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
 
         input_readers = [vcf_readerA, vcf_readerB]
         with TempDirectory() as temp_dir:
-            temp_dir.write("foo.vcf", "foo\nbar")
+            temp_dir.write("foo.vcf", b"foo\nbar")
             output_filepath = os.path.join(temp_dir.path, "foo.vcf")
             actual_readers = merge._sort_readers(list(input_readers),
                                                  output_filepath)
