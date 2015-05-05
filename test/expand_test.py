@@ -253,15 +253,38 @@ chr2|1|.|A|C|.|.|SOMATIC|GT|0/1|0/1
     def test_create_glossary_line(self):
         header = '##INFO=<ID=SOMATIC,Number=1,Description="foo">'
         actual_line = expand._create_glossary_line(header)
-        expected_line = "INFO\tSOMATIC\tfoo"
+        expected_line = "SOMATIC\tINFO\tfoo\n"
 
         self.assertEquals(expected_line, actual_line)
+
+    def test_create_glossary_line_withInternalEqualsSign(self):
+        header = '##INFO=<ID=SOMATIC,Number=1,Description="foo=bar when hoopy=frood">'
+        actual_line = expand._create_glossary_line(header)
+        expected_line = "SOMATIC\tINFO\tfoo=bar when hoopy=frood\n"
+
+        self.assertEquals(expected_line, actual_line)
+
+    def test_create_glossary_line_withCommas(self):
+        header = '##INFO=<ID=SOMATIC,Number=1,Description="foo, or bar">'
+        actual_line = expand._create_glossary_line(header)
+        expected_line = "SOMATIC\tINFO\tfoo, or bar\n"
+
+        self.assertEquals(expected_line, actual_line)
+
+
+    def test_create_glossary_line_withGreaterThan(self):
+        header = '##INFO=<ID=SOMATIC,Number=1,Description="foo > bar">'
+        actual_line = expand._create_glossary_line(header)
+        expected_line = "SOMATIC\tINFO\tfoo > bar\n"
+
+        self.assertEquals(expected_line, actual_line)
+
 
     def test_create_glossary_line_notGlossaryHeader(self):
         header = '##source=strelka'
         actual_line = expand._create_glossary_line(header)
 
-        self.assertEquals(False, actual_line)
+        self.assertEquals("", actual_line)
 
     def test_create_glossary(self):
         writer = MockFileWriter()
@@ -270,7 +293,9 @@ chr2|1|.|A|C|.|.|SOMATIC|GT|0/1|0/1
                        '##FORMAT=<ID=GT,Number=1,Description="bar">']
         expand._create_glossary(metaheaders, writer)
 
-        expected = ["FIELD\tID\tDESCRIPTION", "INFO\tSOMATIC\tfoo", "FORMAT\tGT\tbar"]
+        expected = ["FIELD_NAME\tTYPE\tDESCRIPTION",
+                    "GT\tFORMAT\tbar",
+                    "SOMATIC\tINFO\tfoo"]
         self.assertEquals(expected, writer.lines())
 
 class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):

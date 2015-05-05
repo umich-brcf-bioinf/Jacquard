@@ -111,32 +111,20 @@ def _get_glossary_writer(output_file):
     return vcf.FileWriter(glossary)
 
 def _create_glossary(metaheaders, writer):
-    writer.write("FIELD\tID\tDESCRIPTION\n")
-    for metaheader in metaheaders:
-        glossary_line = _create_glossary_line(metaheader)
-        if glossary_line:
-            writer.write(glossary_line + "\n")
+    glossary = sorted([_create_glossary_line(x) for x in metaheaders])
+    writer.write("FIELD_NAME\tTYPE\tDESCRIPTION\n")
+    for line in glossary:
+        writer.write(line)
 
 def _create_glossary_line(metaheader):
-    type_match = re.search('^##(.*)?(?==<)', metaheader)
-    if type_match:
-        header_type = type_match.group(1)
+    try:
+        header_type = re.search(r'^##(.*)=<', metaheader).group(1)
+        id_value = re.search(r'^##.*\WID=(\w*)', metaheader).group(1)
+        desc = re.search(r'^##.*Description="(.*?)"', metaheader).group(1)
+        return "\t".join([id_value, header_type, desc.strip('"')]) + "\n"
+    except StandardError:
+        return ""
 
-    id_match = re.search('^##.*(ID=.*?(?=(,|>)))', metaheader)
-    if id_match:
-        id_term = id_match.group(1)
-
-    description_match = re.search('^##.*(Description=.*?(?=(,|>)))', metaheader)
-    if description_match:
-        description_term = description_match.group(1)
-
-    if not type_match or not id_match or not description_match:
-        return False
-
-    dummy, id_value = id_term.split("=")
-    dummy, description = description_term.split("=", 1) #split on first '='
-
-    return "\t".join([header_type, id_value, description.strip('"')])
 
 def add_subparser(subparser):
     # pylint: disable=C0301
@@ -157,7 +145,6 @@ def report_prediction(args):
 def get_required_input_output_types():
     return ("file", "file")
 
-#TODO (cgates): Validate should actually validate
 def validate_args(args):
     if args.column_specification:
         if not os.path.isfile(args.column_specification):
@@ -224,6 +211,8 @@ def execute(args, dummy_execution_context):
     glossary_writer.open()
     _create_glossary(vcf_reader.metaheaders, glossary_writer)
     glossary_writer.close()
+    logger.info("Wrote glossary to [{}]",
+                os.path.basename(glossary_writer.output_filepath))
 
     vcf_reader.close()
     logger.debug("Wrote input [{}] to output [{}]", input_file, output_file)

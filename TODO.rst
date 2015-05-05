@@ -3,7 +3,7 @@ TODO
 - Improved workflow documentation with example data
 - Extend [translate] to support more tags (e.g. GT)
 - Extend [merge] to filter and disambiguate tag collisions
-- Add [weave] command to combine [translate, filter, merge, summarize]
+- Add [weave] command to combine [translate, merge, summarize]
 - Extend [expand] generate glossary
 - Extend [expand] to parse SnpEff/Annovar annotated results
 - Extend [expand] to generate formatted results
