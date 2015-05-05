@@ -185,7 +185,7 @@ class ExpandTestCase(test_case.JacquardBaseTestCase):
                                         sample_names=sample_names)
 
         actual_cols = expand._create_potential_column_list(mock_vcf_reader)
-        actual_format_sample_names = actual_cols.keys()[8:]
+        actual_format_sample_names = list(actual_cols.keys())[8:]
 
         expected_format_sample_names = ["A|sample1", "A|sample2", "A|sample10",
                                         "B|sample1", "B|sample2", "B|sample10"]
