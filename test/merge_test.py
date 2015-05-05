@@ -1,7 +1,7 @@
-#pylint: disable=missing-docstring,line-too-long,too-many-public-methods
+#pylint: disable=too-many-lines,missing-docstring,line-too-long,too-many-public-methods
 #pylint: disable=too-few-public-methods,too-many-instance-attributes
 #pylint: disable=too-many-arguments,invalid-name,protected-access,
-#pylint: disable=too-many-lines,global-statement
+#pylint: disable=global-statement
 from __future__ import print_function, absolute_import, division
 
 import argparse
@@ -992,7 +992,7 @@ chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
 
         self.assertEquals(expected_output_headers, actual_output_lines[0:len(expected_output_headers)])
 
-    def test_sort_vcfs_orderedVcfsPassThrough(self):
+    def test_sort_readers_orderedVcfsPassThrough(self):
         record1 = vcf.VcfRecord("chr1", "42", "A", "C")
         record2 = vcf.VcfRecord("chr2", "42", "A", "C")
         record3 = vcf.VcfRecord("chr3", "42", "A", "C")
@@ -1021,8 +1021,10 @@ chr2|1|.|A|C|.|.|INFO|JQ_Foo1:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
 
         input_readers = [vcf_readerA, vcf_readerB]
         with TempDirectory() as temp_dir:
+            temp_dir.write("foo.vcf", "foo\nbar")
+            output_filepath = os.path.join(temp_dir.path, "foo.vcf")
             actual_readers = merge._sort_readers(list(input_readers),
-                                                 temp_dir.path)
+                                                 output_filepath)
 
             self.assertNotEquals(actual_readers, input_readers)
             self.assertIn(vcf_readerA, actual_readers)

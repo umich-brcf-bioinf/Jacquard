@@ -334,10 +334,8 @@ def _write_headers(reader, file_writer):
 
     file_writer.write("\n".join(headers) + "\n")
 
-def _sort_vcf(reader, temp_dir):
+def _sort_vcf(reader, sorted_dir):
     vcf_records = []
-    sorted_dir = os.path.join(temp_dir, "tmp")
-    os.makedirs(sorted_dir)
     reader.open()
     for vcf_record in reader.vcf_records():
         vcf_records.append(vcf_record)
@@ -379,10 +377,14 @@ def _get_unsorted_readers(vcf_readers):
         reader.close()
     return unsorted_readers
 
-def _sort_readers(vcf_readers, temp_dir):
+def _sort_readers(vcf_readers, output_path):
     unsorted_readers = _get_unsorted_readers(vcf_readers)
     sorted_readers = []
     unsorted_count = 0
+    if unsorted_readers:
+        sorted_dir = os.path.join(os.path.dirname(output_path), "tmp")
+        os.makedirs(sorted_dir)
+
     for reader in vcf_readers:
         if reader in unsorted_readers:
             unsorted_count += 1
@@ -390,7 +392,7 @@ def _sort_readers(vcf_readers, temp_dir):
                         reader.file_name,
                         unsorted_count,
                         len(unsorted_readers))
-            reader = _sort_vcf(reader, temp_dir)
+            reader = _sort_vcf(reader, sorted_dir)
         sorted_readers.append(reader)
     return sorted_readers
 
