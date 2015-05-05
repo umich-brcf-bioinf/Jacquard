@@ -3,9 +3,10 @@
 #pylint: disable=too-many-public-methods
 from __future__ import print_function, absolute_import, division
 
-from argparse import Namespace
+from collections import OrderedDict
 import os
 
+from argparse import Namespace
 from testfixtures import TempDirectory
 
 import jacquard.expand as expand
@@ -53,43 +54,52 @@ class ExpandTestCase(test_case.JacquardBaseTestCase):
                          "AF|SAMPLE_A|TUMOR": "0.3"}
         self.assertEquals(expected_dict, actual_dict)
 
-    def test_create_actual_column_list(self):
-        potential_col_list = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL",
-                              "FILTER", "MULT_ALT", "DP|SAMPLE_A|NORMAL",
-                              "AF|SAMPLE_A|NORMAL", "DP|SAMPLE_B|NORMAL",
-                              "AF|SAMPLE_B|NORMAL"]
-        col_spec = ["CHROM", r"DP\|.*", "POS"]
-        actual_column_list = expand._create_actual_column_list(col_spec,
-                                                               potential_col_list,
-                                                               "col_spec.txt")
+    def test_filter_column_list(self):
+        potential_col_list = OrderedDict([("CHROM", None),
+                                          ("POS", None),
+                                          ("MULT_ALT", "MULT_ALT"),
+                                          ("DP|SAMPLE_A|NORMAL", "DP"),
+                                          ("AF|SAMPLE_A|NORMAL", "DP"),
+                                          ("DP|SAMPLE_B|NORMAL", "DP"),
+                                          ("AF|SAMPLE_B|NORMAL", "DP")])
+        col_spec = ["CHROM", r"DP\|.*", "POS", "MULT_ALT"]
+        (text_column_list,
+         glossary_fields) = expand._filter_column_list(col_spec,
+                                                       potential_col_list,
+                                                       "col_spec.txt")
         expected_column_list = ["CHROM",
                                 "DP|SAMPLE_A|NORMAL",
                                 "DP|SAMPLE_B|NORMAL",
-                                "POS"]
+                                "POS",
+                                "MULT_ALT"]
 
-        self.assertEquals(expected_column_list, actual_column_list)
+        self.assertEquals(expected_column_list, text_column_list)
+        self.assertEquals(["DP", "MULT_ALT"], glossary_fields)
 
-    def test_create_actual_column_list_regexImplictlyAnchored(self):
-        potential_col_list = ["FOO", "FOO_1", "FOO_2", "BAR", "BAR_FOO"]
+    def test_filter_column_list_regexImplictlyAnchored(self):
+        fields = ["FOO", "FOO_1", "FOO_2", "BAR", "BAR_FOO"]
+        potential_col_list = OrderedDict(zip(fields, [None] * 5))
         col_spec = ["FOO"]
-        actual_column_list = expand._create_actual_column_list(col_spec,
-                                                               potential_col_list,
-                                                               "col_spec.txt")
+        (actual_column_list,
+         dummy) = expand._filter_column_list(col_spec,
+                                             potential_col_list,
+                                             "col_spec.txt")
         expected_column_list = ["FOO"]
 
         self.assertEquals(expected_column_list, actual_column_list)
 
 
-    def test_create_actual_column_list_duplicateRegexMatchDoesNotDuplicateColumns(self):
-        potential_col_list = ["CHROM",
-                              "JQ_DP|SAMPLE_A|NORMAL",
-                              "JQ_DP|SAMPLE_B|NORMAL",
-                              "JQ_AF|SAMPLE_A|NORMAL",
-                              "JQ_AF|SAMPLE_B|NORMAL"]
+    def test_filter_column_list_duplicateRegexMatchDoesNotDuplicateColumns(self):
+        potential_col_list = OrderedDict([("CHROM",None),
+                                          ("JQ_DP|SAMPLE_A|NORMAL",'JQ_DP'),
+                                          ("JQ_DP|SAMPLE_B|NORMAL",'JQ_DP'),
+                                          ("JQ_AF|SAMPLE_A|NORMAL",'JQ_DP'),
+                                          ("JQ_AF|SAMPLE_B|NORMAL",'JQ_DP')])
         col_spec = ["CHROM", r"JQ_DP.*", "JQ_.*"]
-        actual_column_list = expand._create_actual_column_list(col_spec,
-                                                               potential_col_list,
-                                                               "col_spec.txt")
+        (actual_column_list,
+         dummy) = expand._filter_column_list(col_spec,
+                                             potential_col_list,
+                                             "col_spec.txt")
         expected_column_list = ["CHROM",
                                 "JQ_DP|SAMPLE_A|NORMAL",
                                 "JQ_DP|SAMPLE_B|NORMAL",
@@ -98,23 +108,26 @@ class ExpandTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEquals(expected_column_list, actual_column_list)
 
-    def test_create_actual_column_list_noColsIncluded(self):
-        potential_col_list = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL"]
+    def test_filter_column_list_noColsIncluded(self):
+        fields = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL"]
+        potential_col_list = OrderedDict(zip(fields, [None] * 6))
         col_spec = ["FOO", "BAR", "BAZ"]
 
         self.assertRaises(utils.JQException,
-                          expand._create_actual_column_list,
+                          expand._filter_column_list,
                           col_spec,
                           potential_col_list,
                           "col_spec.txt")
 
-    def test_create_actual_column_list_regexNotInCols(self):
-        potential_col_list = ["CHROM", "POS", "ID", "REF", "ALT"]
+    def test_filter_column_list_regexNotInCols(self):
+        fields = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL"]
+        potential_col_list = OrderedDict(zip(fields, [None] * 6))
         col_spec = ["CHROM", "FOO", "POS", "BAR"]
         col_spec_fname = "spec.txt"
-        actual_column_list = expand._create_actual_column_list(col_spec,
-                                                               potential_col_list,
-                                                               col_spec_fname)
+        (actual_column_list,
+         dummy) = expand._filter_column_list(col_spec,
+                                             potential_col_list,
+                                             col_spec_fname)
         self.assertEquals(["CHROM", "POS"], actual_column_list)
 
         exp_warning_1 = ("The expression [FOO] in column specification "+
@@ -131,10 +144,10 @@ class ExpandTestCase(test_case.JacquardBaseTestCase):
                           actual_log_warnings)
 
     def test_create_potential_column_list(self):
-        metaheaders = ['##INFO=<ID=AF,Number=1>',
-                       '##INFO=<ID=AA,Number=1>',
-                       '##FORMAT=<ID=GT,Number=1>',
-                       '##FORMAT=<ID=GQ,Number=1,Description="bar">']
+        metaheaders = ['##INFO=<ID=AF,Number=1,Description="AF revealed">',
+                       '##INFO=<ID=AA,Number=1,Description="AA revealed">',
+                       '##FORMAT=<ID=GT,Number=1,Description="GT revealed">',
+                       '##FORMAT=<ID=GQ,Number=1,Description="GQ revealed">']
         sample_names = ["sampleA", "sampleB"]
         column_header = self.entab("#chrom|pos|id|ref|alt|"
                                    "qual|filter|info|format|"
@@ -143,13 +156,22 @@ class ExpandTestCase(test_case.JacquardBaseTestCase):
                                         column_header=column_header,
                                         sample_names=sample_names)
 
-        actual_col_list = expand._create_potential_column_list(mock_vcf_reader)
-        expected_col_list = ["chrom", "pos", "id", "ref", "alt",
-                             "qual", "filter", "info",
-                             "AA", "AF",
-                             "GQ|sampleA", "GQ|sampleB",
-                             "GT|sampleA", "GT|sampleB"]
-        self.assertEquals(expected_col_list, actual_col_list)
+        actual_cols = expand._create_potential_column_list(mock_vcf_reader)
+        expected_cols = OrderedDict([("chrom", None),
+                                     ("pos", None),
+                                     ("id", None),
+                                     ("ref", None),
+                                     ("alt", None),
+                                     ("qual", None),
+                                     ("filter", None),
+                                     ("info", None),
+                                     ("AA", "AA"),
+                                     ("AF", "AF"),
+                                     ("GQ|sampleA", "GQ"),
+                                     ("GQ|sampleB", "GQ"),
+                                     ("GT|sampleA", "GT"),
+                                     ("GT|sampleB", "GT")])
+        self.assertEquals(expected_cols, actual_cols)
 
     def test_create_potential_column_list_preservesSampleOrdering(self):
         metaheaders = ['##FORMAT=<ID=B,Number=1>', '##FORMAT=<ID=A,Number=1>']
@@ -162,8 +184,8 @@ class ExpandTestCase(test_case.JacquardBaseTestCase):
                                         column_header=column_header,
                                         sample_names=sample_names)
 
-        actual_col_list = expand._create_potential_column_list(mock_vcf_reader)
-        actual_format_sample_names = actual_col_list[8:]
+        actual_cols = expand._create_potential_column_list(mock_vcf_reader)
+        actual_format_sample_names = actual_cols.keys()[8:]
 
         expected_format_sample_names = ["A|sample1", "A|sample2", "A|sample10",
                                         "B|sample1", "B|sample2", "B|sample10"]
@@ -250,52 +272,58 @@ chr2|1|.|A|C|.|.|SOMATIC|GT|0/1|0/1
                                     expand.validate_args,
                                     args)
 
-    def test_create_glossary_line(self):
+    def test_create_glossary_entry(self):
         header = '##INFO=<ID=SOMATIC,Number=1,Description="foo">'
-        actual_line = expand._create_glossary_line(header)
-        expected_line = "SOMATIC\tINFO\tfoo\n"
+        actual_line = expand._create_glossary_entry(header)
+        expected_line = ('SOMATIC', 'SOMATIC\tINFO\tfoo\n')
 
         self.assertEquals(expected_line, actual_line)
 
-    def test_create_glossary_line_withInternalEqualsSign(self):
+    def test_create_glossary_entry_withInternalEqualsSign(self):
         header = '##INFO=<ID=SOMATIC,Number=1,Description="foo=bar when hoopy=frood">'
-        actual_line = expand._create_glossary_line(header)
-        expected_line = "SOMATIC\tINFO\tfoo=bar when hoopy=frood\n"
+        actual_line = expand._create_glossary_entry(header)
+        expected_line = ('SOMATIC', 'SOMATIC\tINFO\tfoo=bar when hoopy=frood\n')
 
         self.assertEquals(expected_line, actual_line)
 
-    def test_create_glossary_line_withCommas(self):
+    def test_create_glossary_entry_withCommas(self):
         header = '##INFO=<ID=SOMATIC,Number=1,Description="foo, or bar">'
-        actual_line = expand._create_glossary_line(header)
-        expected_line = "SOMATIC\tINFO\tfoo, or bar\n"
+        actual_line = expand._create_glossary_entry(header)
+        expected_line = ('SOMATIC', 'SOMATIC\tINFO\tfoo, or bar\n')
 
         self.assertEquals(expected_line, actual_line)
 
 
-    def test_create_glossary_line_withGreaterThan(self):
+    def test_create_glossary_entry_withGreaterThan(self):
         header = '##INFO=<ID=SOMATIC,Number=1,Description="foo > bar">'
-        actual_line = expand._create_glossary_line(header)
-        expected_line = "SOMATIC\tINFO\tfoo > bar\n"
+        actual_line = expand._create_glossary_entry(header)
+        expected_line = ('SOMATIC', 'SOMATIC\tINFO\tfoo > bar\n')
 
         self.assertEquals(expected_line, actual_line)
 
+    def test_create_glossary_entry_missingTrailingQuote(self):
+        header = '##INFO=<ID=SOMATIC,Number=1,Description="foo > bar'
+        actual_line = expand._create_glossary_entry(header)
+        expected_line = ('SOMATIC', 'SOMATIC\tINFO\tfoo > bar\n')
 
-    def test_create_glossary_line_notGlossaryHeader(self):
+        self.assertEquals(expected_line, actual_line)
+
+    def test_create_glossary_entry_notGlossaryHeader(self):
         header = '##source=strelka'
-        actual_line = expand._create_glossary_line(header)
-
-        self.assertEquals("", actual_line)
+        actual_line = expand._create_glossary_entry(header)
+        self.assertEquals((None, None), actual_line)
 
     def test_create_glossary(self):
         writer = MockFileWriter()
         metaheaders = ['##source=strelka',
                        '##INFO=<ID=SOMATIC,Number=1,Description="foo">',
                        '##FORMAT=<ID=GT,Number=1,Description="bar">']
-        expand._create_glossary(metaheaders, writer)
+        glossary_fields = ["SOMATIC", "GT"]
+        expand._create_glossary(metaheaders, glossary_fields, writer)
 
         expected = ["FIELD_NAME\tTYPE\tDESCRIPTION",
-                    "GT\tFORMAT\tbar",
-                    "SOMATIC\tINFO\tfoo"]
+                    "SOMATIC\tINFO\tfoo",
+                    "GT\tFORMAT\tbar"]
         self.assertEquals(expected, writer.lines())
 
 class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):

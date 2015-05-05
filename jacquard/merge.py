@@ -638,7 +638,7 @@ def execute(args, execution_context):
             row_count += 1
             progress = 100 * row_count / len(coordinates)
             if progress > next_breakpoint:
-                logger.info("Merging: {} rows processed ({}%)", 
+                logger.info("Merging: {} rows processed ({}%)",
                             row_count,
                             next_breakpoint)
                 next_breakpoint = 10 * int(progress/10) + 10
