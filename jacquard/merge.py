@@ -564,8 +564,7 @@ def add_subparser(subparser):
     parser.add_argument("--include_cells",
                         choices=["all", "valid", "passed", "somatic"],
                         default="valid",
-                        help=("%(choices)s\n"
-                              "all: Include all variants\n"
+                        help=("all: Include all variants\n"
                               "valid: Only include valid variants\n"
                               "passed: Only include variants which passed their respective filter\n"
                               "somatic: Only include somatic variants"),
