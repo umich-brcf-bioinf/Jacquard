@@ -280,6 +280,8 @@ class Varscan(object):
             if not self.hc_file_pattern.match(Varscan._DEFAULT_REGEX):
                 msg = ("The VarScan high-confidence filename regex [{}] "
                        "didn't match any files in the input directory. "
+                       "The beginning of the high-confidence filename must "
+                       "exactly match a VCF filename up to the .vcf extention. "
                        "Review inputs/command options and try again.")
                 raise utils.UsageError(msg, self.hc_file_pattern.pattern)
 
