@@ -167,10 +167,24 @@ class Varscan(object):
         self.abbr = "VS"
         self.meta_header = "##jacquard.normalize_varscan.sources={0},{1}\n"
 
+        self.hc_file_pattern = self._get_hc_file_pattern(args)
+
+    @staticmethod
+    def _get_hc_file_pattern(args):
+        msg = ("The specified regex [{}] could not be compiled. "
+               "Review inputs and try again")
         if args and args.varscan_hc_filter_filename:
-            self.hc_file_pattern = re.compile(args.varscan_hc_filter_filename)
+            try:
+                compiled_regex = re.compile(args.varscan_hc_filter_filename)
+            except:
+                raise utils.UsageError(msg, args.varscan_hc_filter_filename)
         else:
-            self.hc_file_pattern = re.compile(Varscan._DEFAULT_REGEX)
+            try:
+                compiled_regex = re.compile(Varscan._DEFAULT_REGEX)
+            except:
+                raise utils.UsageError(msg, Varscan._DEFAULT_REGEX)
+
+        return compiled_regex
 
     ##TODO (cgates): deprecated; remove
     @staticmethod
@@ -267,7 +281,7 @@ class Varscan(object):
                 msg = ("The VarScan high-confidence filename regex [{}] "
                        "didn't match any files in the input directory. "
                        "Review inputs/command options and try again.")
-                raise utils.JQException(msg, self.hc_file_pattern)
+                raise utils.UsageError(msg, self.hc_file_pattern.pattern)
 
         return prefix_file_readers, filter_files, unclaimed_set
 
