@@ -173,11 +173,11 @@ class Varscan(object):
     def _get_hc_file_pattern(args):
         msg = ("The specified regex [{}] could not be compiled. "
                "Review inputs and try again")
-        if args and args.varscan_hc_filter_filename:
+        if args and args.varscan_hc_filter_file_regex:
             try:
-                compiled_regex = re.compile(args.varscan_hc_filter_filename)
+                compiled_regex = re.compile(args.varscan_hc_filter_file_regex)
             except:
-                raise utils.UsageError(msg, args.varscan_hc_filter_filename)
+                raise utils.UsageError(msg, args.varscan_hc_filter_file_regex)
         else:
             try:
                 compiled_regex = re.compile(Varscan._DEFAULT_REGEX)

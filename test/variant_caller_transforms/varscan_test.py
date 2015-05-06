@@ -160,12 +160,12 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         return [tag.__class__.__name__ for tag in vcf_reader.tags]
 
     def test_get_hc_file_pattern(self):
-        args = Namespace(varscan_hc_filter_filename="foo.*")
+        args = Namespace(varscan_hc_filter_file_regex="foo.*")
         compiled_regex = varscan.Varscan._get_hc_file_pattern(args)
         self.assertEquals("foo.*", compiled_regex.pattern)
 
     def test_get_hc_file_pattern_invalidRegex(self):
-        args = Namespace(varscan_hc_filter_filename="*foo")
+        args = Namespace(varscan_hc_filter_file_regex="*foo")
         self.assertRaisesRegexp(utils.UsageError,
                                 r"The specified regex \[\*foo\] could not be compiled. Review inputs and try again",
                                 varscan.Varscan._get_hc_file_pattern,

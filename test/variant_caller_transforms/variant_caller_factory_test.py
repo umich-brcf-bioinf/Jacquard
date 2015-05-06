@@ -11,7 +11,7 @@ import test.utils.vcf_test as vcf_test
 
 class VariantCallerFactoryClassTestCase(test_case.JacquardBaseTestCase):
     def test_claim(self):
-        args = Namespace(varscan_hc_filter_filename=None)
+        args = Namespace(varscan_hc_filter_file_regex=None)
         factory = variant_caller_factory.VariantCallerFactory(args)
         fileA = vcf_test.MockFileReader("fileA.vcf")
         fileB = vcf_test.MockFileReader("fileB.vcf")
@@ -27,7 +27,7 @@ class VariantCallerFactoryClassTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(expected, actual)
 
     def test_claim_unclaimedFilesRemain(self):
-        args = Namespace(varscan_hc_filter_filename=None)
+        args = Namespace(varscan_hc_filter_file_regex=None)
         factory = variant_caller_factory.VariantCallerFactory(args)
         fileA = vcf_test.MockFileReader("fileA.vcf")
         fileB = vcf_test.MockFileReader("fileB.vcf")
@@ -42,6 +42,6 @@ class VariantCallerFactoryClassTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(expected_unclaimed, actual_unclaimed)
 
     def test_claim_initializingVarscanStoresHCFile(self):
-        args = Namespace(varscan_hc_filter_filename="bar$")
+        args = Namespace(varscan_hc_filter_file_regex="bar$")
         factory = variant_caller_factory.VariantCallerFactory(args)
         self.assertEquals(re.compile("bar$"), factory._callers[0].hc_file_pattern)

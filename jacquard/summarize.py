@@ -5,6 +5,7 @@ variant record based on the presence of previously translated tags.
 """
 from __future__ import print_function, absolute_import, division
 
+import argparse
 import os
 
 import jacquard.utils.logger as logger
@@ -77,7 +78,7 @@ def _add_tags(caller, vcf_reader, file_writer):
 
 def add_subparser(subparser):
     # pylint: disable=line-too-long
-    parser = subparser.add_parser("summarize", help="Accepts a Jacquard-merged VCF file and creates a new file, adding summary fields.")
+    parser = subparser.add_parser("summarize", formatter_class=argparse.RawTextHelpFormatter, help="Accepts a Jacquard-merged VCF file and creates a new file, adding summary fields.")
     parser.add_argument("input", help="Path to Jacquard-merged VCF (or any VCF with Jacquard tags; e.g. JQ_SOM_MT)")
     parser.add_argument("output", help="Path to output VCf")
     parser.add_argument("-v", "--verbose", action='store_true')

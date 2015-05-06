@@ -29,6 +29,7 @@
 """
 from __future__ import print_function, absolute_import, division
 
+import argparse
 from collections import defaultdict, OrderedDict
 import glob
 import os
@@ -553,7 +554,7 @@ def _validate_consistent_samples(file_readers):
 
 def add_subparser(subparser):
     #pylint: disable=line-too-long
-    parser = subparser.add_parser("merge", help="Accepts a directory of VCFs and returns a single merged VCF file.")
+    parser = subparser.add_parser("merge", formatter_class=argparse.RawTextHelpFormatter, help="Accepts a directory of VCFs and returns a single merged VCF file.")
     parser.add_argument("input", help="Path to directory containing VCFs. Other file types ignored")
     parser.add_argument("output", help="Path to output variant-level VCF file")
     parser.add_argument("-v", "--verbose", action='store_true')
@@ -563,10 +564,13 @@ def add_subparser(subparser):
     parser.add_argument("--include_cells",
                         choices=["all", "valid", "passed", "somatic"],
                         default="valid",
-                        help=("all: Include all variants\n"
+                        help=("%(choices)s\n"
+                              "all: Include all variants\n"
                               "valid: Only include valid variants\n"
                               "passed: Only include variants which passed their respective filter\n"
-                              "somatic: Only include somatic variants"))
+                              "somatic: Only include somatic variants"),
+                        metavar=["all", "valid", "passed", "somatic"])
+#                         metavar="")
     parser.add_argument("--include_rows",
                         choices=["all", "at_least_one_passed", "all_passed", "at_least_one_somatic", "all_somatic"],
                         default="at_least_one_somatic",
@@ -575,7 +579,8 @@ def add_subparser(subparser):
                               "at_least_one_passed: Include all variants at loci where at least one variant passed\n"
                               "all_passed: Include all variants at loci where all variants passed\n"
                               "at_least_one_somatic: Include all variants at loci where at least one variant was somatic\n"
-                              "all_somatic: Include all variants at loci where all variants were somatic"))
+                              "all_somatic: Include all variants at loci where all variants were somatic"),
+                        metavar=["all", "at_least_one_passed", "at_least_one_somatic", "all_somatic"])
 
 def _predict_output(args):
     desired_output_files = set([os.path.basename(args.output)])

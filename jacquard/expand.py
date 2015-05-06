@@ -12,6 +12,8 @@ Expand relies on accurate metaheaders; it will not expand any fields absent
 from the metaheaders.
 """
 from __future__ import print_function, absolute_import, division
+
+import argparse
 from collections import OrderedDict
 import os
 import re
@@ -19,6 +21,7 @@ import re
 import jacquard.utils.logger as logger
 import jacquard.utils.utils as utils
 import jacquard.utils.vcf as vcf
+
 
 UNUSED_REGEX_WARNING_FORMAT = ("The expression [{}] in column specification "
                                "file [{}:{}] didn't match any input columns; "
@@ -135,11 +138,12 @@ def _create_glossary_entry(metaheader):
 
 def add_subparser(subparser):
     # pylint: disable=C0301
-    parser = subparser.add_parser("expand", help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
+    parser = subparser.add_parser("expand", formatter_class=argparse.RawTextHelpFormatter, help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
     parser.add_argument("input", help="Path to annotated VCF file or path to directory of annotated VCF files. Other file types ignored")
     parser.add_argument("output", help="Path to directory of output variant-level TXT files")
     parser.add_argument("-v", "--verbose", action='store_true')
-    parser.add_argument("-c", "--column_specification", help="Path to text file containing column regular expressions to be included in output file")
+    parser.add_argument("-c", "--column_specification",
+                        help="Path to text file containing column regular expressions to be included in output file",)
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
     parser.add_argument("--log_file", help="Log file destination")
 

@@ -107,7 +107,8 @@ def _move_tmp_contents_to_original(args):
 def _parse_command_line_args(modules, arguments):
     parser = _JacquardArgumentParser(
         usage="jacquard",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+#         formatter_class=argparse.RawDescriptionHelpFormatter,
+        formatter_class=argparse.RawTextHelpFormatter,
         # pylint: disable=line-too-long
         description='''type 'jacquard <command> -h' for help on a specific command''',
         epilog="See https://github.com/umich-brcf-bioinf/Jacquard for more info.")
