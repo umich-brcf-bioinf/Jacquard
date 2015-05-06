@@ -284,20 +284,22 @@ def _compile_metaheaders(incoming_headers,
 def _write_metaheaders(file_writer, all_headers):
     file_writer.write("\n".join(all_headers) + "\n")
 
-def _create_reader_lists(file_readers):
-    buffered_readers = []
+def _create_vcf_readers(file_readers):
     vcf_readers = []
-
     for file_reader in file_readers:
         vcf_reader = vcf.VcfReader(file_reader)
         vcf_readers.append(vcf_reader)
-        vcf_reader.open()
 
+    return vcf_readers
+
+def _create_buffered_readers(vcf_readers):
+    buffered_readers = []
+    for vcf_reader in vcf_readers:
+        vcf_reader.open()
         records = vcf_reader.vcf_records(qualified=True)
         buffered_readers.append(_BufferedReader(records))
 
-    return buffered_readers, vcf_readers
-
+    return buffered_readers
 
 def _build_coordinates(vcf_readers):
     coordinate_set = set()
@@ -447,25 +449,6 @@ def _pull_matching_records(filter_strategy, coordinate, buffered_readers):
     else:
         return []
 
-#TODO: (cgates): Perhaps we could use a NullVcfRecord to avoid returning 0?
-def _merge_records(filter_strategy,
-                   coordinate,
-                   buffered_readers,
-                   all_sample_names,
-                   tags_to_keep):
-
-    vcf_records = _pull_matching_records(filter_strategy,
-                                         coordinate,
-                                         buffered_readers)
-    if vcf_records:
-        merged_record = _build_merged_record(coordinate,
-                                             vcf_records,
-                                             all_sample_names,
-                                             tags_to_keep)
-        return merged_record
-
-    return 0
-
 def _build_sample_list(vcf_readers):
     all_sample_names = set()
     patient_to_file = defaultdict(list)
@@ -552,6 +535,39 @@ def _validate_consistent_samples(file_readers):
         msg = "Some samples appear to be missing VCF(s)"
         logger.warning(msg)
 
+def _merge_records(vcf_readers,
+                   coordinates,
+                   filter_strategy,
+                   all_sample_names,
+                   format_tags_to_keep,
+                   file_writer):
+    #pylint: disable=too-many-arguments
+    row_count = 0
+    next_breakpoint = 0
+    buffered_readers = _create_buffered_readers(vcf_readers)
+
+    for coordinate in coordinates:
+        vcf_records = _pull_matching_records(filter_strategy,
+                                             coordinate,
+                                             buffered_readers)
+        if vcf_records:
+            merged_record = _build_merged_record(coordinate,
+                                                 vcf_records,
+                                                 all_sample_names,
+                                                 format_tags_to_keep)
+            file_writer.write(merged_record.text())
+
+        row_count += 1
+        progress = 100 * row_count / len(coordinates)
+        if progress > next_breakpoint:
+            logger.info("Merging: {} rows processed ({}%)",
+                        row_count,
+                        next_breakpoint)
+            next_breakpoint = 10 * int(progress/10) + 10
+
+    logger.info("Merge complete: {} rows processed (100%)", row_count)
+    filter_strategy.log_statistics()
+
 def add_subparser(subparser):
     #pylint: disable=line-too-long
     parser = subparser.add_parser("merge", formatter_class=argparse.RawTextHelpFormatter, help="Accepts a directory of VCFs and returns a single merged VCF file.")
@@ -613,7 +629,11 @@ def execute(args, execution_context):
         file_writer = vcf.FileWriter(output_path)
         file_writer.open()
 
-        buffered_readers, vcf_readers = _create_reader_lists(file_readers)
+#TODO: jebene: _build_format_tags, _built_sample_list, _build_info_tags,
+#and _build_contigs behave differently. It seems like we could make the
+#signatures of these methods more similar or even combine some methods to
+#reduce excess iterations over the coordinates/vcf_readers
+        vcf_readers = _create_vcf_readers(file_readers)
         format_tags_to_keep = _build_format_tags(format_tag_regex, vcf_readers)
         vcf_readers = _sort_readers(vcf_readers, output_path)
         all_sample_names, merge_metaheaders = _build_sample_list(vcf_readers)
@@ -630,28 +650,12 @@ def execute(args, execution_context):
 
         _write_metaheaders(file_writer, headers)
 
-        row_count = 0
-        next_breakpoint = 0
-        for coordinate in coordinates:
-            merged_record = _merge_records(filter_strategy,
-                                           coordinate,
-                                           buffered_readers,
-                                           all_sample_names,
-                                           format_tags_to_keep)
-            if merged_record:
-                file_writer.write(merged_record.text())
-
-            row_count += 1
-            progress = 100 * row_count / len(coordinates)
-            if progress > next_breakpoint:
-                logger.info("Merging: {} rows processed ({}%)",
-                            row_count,
-                            next_breakpoint)
-                next_breakpoint = 10 * int(progress/10) + 10
-
-        logger.info("Merge complete: {} rows processed (100%)", row_count)
-        filter_strategy.log_statistics()
-
+        _merge_records(vcf_readers,
+                       coordinates,
+                       filter_strategy,
+                       all_sample_names,
+                       format_tags_to_keep,
+                       file_writer)
     finally:
         for vcf_reader in vcf_readers:
             vcf_reader.close()

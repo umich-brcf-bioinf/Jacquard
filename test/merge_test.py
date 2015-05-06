@@ -18,7 +18,7 @@ from jacquard.utils.vcf import VcfRecord
 import jacquard.utils.vcf as vcf
 import test.utils.mock_logger
 import test.utils.test_case as test_case
-from test.utils.vcf_test import MockVcfReader, MockFileReader
+from test.utils.vcf_test import MockVcfReader, MockFileReader, MockFileWriter
 
 
 class MockBufferedReader(object):
@@ -556,9 +556,9 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(OD([("bar", "."), ("baz", "D1"), ("foo", ".")]), actual_record.sample_tag_values["SD"])
 
     def test_merge_records(self):
+        coordinates = [VcfRecord("chrom", "pos", "ref", "alt")]
         filter_strategy = merge._Filter(Namespace(include_cells="all",
                                                   include_rows="all"))
-        coordinate = VcfRecord("chrom", "pos", "ref", "alt")
         OD = OrderedDict
         record1 = VcfRecord("chrom", "pos", "ref", "alt",
                             sample_tag_values=OD({"SA": OD({"foo":"A"}),
@@ -566,15 +566,23 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         record2 = VcfRecord("chrom", "pos", "ref", "alt",
                             sample_tag_values=OD({"SC": OD({"foo":"C"}),
                                                   "SD":OD({"foo":"D"})}))
-        buffered_readers = [MockBufferedReader([record1]),
-                            MockBufferedReader([record2])]
+        vcf_readers = [MockVcfReader(input_filepath="fileA.vcf",
+                                     records=[record1]),
+                       MockVcfReader(input_filepath="fileB.vcf",
+                                     records=[record2])]
+        all_sample_names = ["SA", "SB", "SC", "SD"]
+        format_tags_to_keep = ["foo"]
+        file_writer = MockFileWriter()
 
-        actual_records = merge._merge_records(filter_strategy,
-                                              coordinate,
-                                              buffered_readers,
-                                              ["SA", "SB", "SC", "SD"],
-                                              ["foo"])
-        self.assertEqual("chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD\n", actual_records.text())
+        merge._merge_records(vcf_readers,
+                             coordinates,
+                             filter_strategy,
+                             all_sample_names,
+                             format_tags_to_keep,
+                             file_writer)
+
+        expected_record = "chrom\tpos\t.\tref\talt\t.\t.\t.\tfoo\tA\tB\tC\tD"
+        self.assertEquals([expected_record], file_writer.lines())
 
     def test_pull_matching_records(self):
         filter_strategy = merge._Filter(Namespace(include_cells="all",
@@ -653,7 +661,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(4, len(actual_metaheaders))
         self.assertEquals(expected_metaheaders, actual_metaheaders)
 
-    def test_create_reader_lists(self):
+    def test_create_vcf_readers(self):
         with TempDirectory() as input_dir:
             fileA = input_dir.write("fileA.vcf",
                                     (b"##source=strelka\n"
@@ -664,13 +672,20 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
                                      b"#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample_C\tSample_D\n"
                                      b"chr2\t32\t.\tA\tT\t.\t.\t.\tDP\t24\t53\n"))
             input_files = [vcf.FileReader(fileA), vcf.FileReader(fileB)]
-            buffered_readers, vcf_readers = merge._create_reader_lists(input_files)
+            vcf_readers = merge._create_vcf_readers(input_files)
 
             for vcf_reader in vcf_readers:
                 vcf_reader.close()
 
-            self.assertEquals(2, len(buffered_readers))
             self.assertEquals(2, len(vcf_readers))
+            self.assertEquals("fileA.vcf", vcf_readers[0].file_name)
+            self.assertEquals("fileB.vcf", vcf_readers[1].file_name)
+
+    def test_create_buffered_readers(self):
+        vcf_readers = [MockVcfReader("PA.vcf"), MockVcfReader("PB.vcf")]
+        buffered_readers = merge._create_buffered_readers(vcf_readers)
+
+        self.assertEquals(2, len(buffered_readers))
 
     def test_build_info_tags_sorts(self):
         records = [VcfRecord("1", "42", "A", "C", info="foo"),

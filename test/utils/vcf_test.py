@@ -134,7 +134,7 @@ class MockVcfReader(object):
     def open(self):
         self.opened = True
 
-    def vcf_records(self):
+    def vcf_records(self, qualified=False):
         for record in self.records:
             yield record
 
