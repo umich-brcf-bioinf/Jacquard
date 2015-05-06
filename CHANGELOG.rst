@@ -1,12 +1,13 @@
 Changelog
 =========
 
-0.4 (5/5/2015)
+0.4 (5/6/2015)
 --------------
  - Combined filter command with merge
  - Extended expand to create simple metaheader glossary
  - Adjusted code to support Python >=2.7 or 3.x
  - Improved checks for consistent VCF file sets
+ - Fixed bug in merge that caused error if any VCFs were unsorted
  - Fixed bug in summarize that caused error if variant was called by subset of callers 
 
 0.3.1 (3/17/2015)

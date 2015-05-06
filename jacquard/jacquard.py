@@ -170,7 +170,8 @@ def _dispatch(modules, arguments):
         command_validator.preflight(command, args)
 
         logger.info("Jacquard begins (v{})", __version__)
-        logger.info("Saving log to [{}]", logger.log_filename)
+        logger.info("Saving log to [{}]",
+                    os.path.basename(logger.log_filename))
         logger.debug("Writing output to tmp directory [{}]",
                      args.temp_working_dir)
 
