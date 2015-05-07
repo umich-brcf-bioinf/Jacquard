@@ -11,7 +11,7 @@ Suite of command-line tools to expedite analysis of exome variant data from mult
     :target: https://coveralls.io/r/umich-brcf-bioinf/Jacquard?branch=develop
     :alt: Coverage Status
 
-.. image:: https://pypip.in/license/jacquard/badge.png
+.. image:: https://img.shields.io/pypi/l/Jacquard.svg
     :target: https://pypi.python.org/pypi/jacquard/
     :alt: License
 
@@ -19,7 +19,8 @@ Suite of command-line tools to expedite analysis of exome variant data from mult
    :target: https://pypi.python.org/pypi/jacquard/
    :alt: Latest PyPI version
 
-.. image:: https://pypip.in/d/jacquard/badge.png
+.. image:: https://img.shields.io/pypi/dm/Jacquard.svg
+   :target: https://pypi.python.org/pypi/jacquard/
     :alt: Downloads Counter
 
 Files
