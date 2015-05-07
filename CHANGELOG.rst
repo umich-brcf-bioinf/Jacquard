@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.40 (5/7/2015)
+0.41 (5/7/2015)
 ---------------
  - Combined filter command with merge command
  - Extended expand to create simple metaheader glossary
