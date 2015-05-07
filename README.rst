@@ -1,7 +1,8 @@
 ========
 Jacquard
 ========
-Suite of command-line tools to expedite analysis of exome variant data from multiple patients and multiple variant callers.
+Suite of command-line tools to expedite analysis of exome variant data from 
+multiple patients and multiple variant callers.
 
 .. image:: https://travis-ci.org/umich-brcf-bioinf/Jacquard.svg?branch=develop
     :target: https://travis-ci.org/umich-brcf-bioinf/Jacquard
@@ -58,9 +59,7 @@ For help on a specific subcommand:
 
 ``jacquard <subcommand> --help``
 
-
 ====
-
 
 Email bfx-jacquard@umich.edu for support and questions.
 
