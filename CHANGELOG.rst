@@ -1,17 +1,17 @@
 Changelog
 =========
 
-0.4 (5/6/2015)
---------------
- - Combined filter command with merge
+0.40 (5/7/2015)
+---------------
+ - Combined filter command with merge command
  - Extended expand to create simple metaheader glossary
  - Adjusted code to support Python >=2.7 or 3.x
  - Improved checks for consistent VCF file sets
  - Fixed bug in merge that caused error if any VCFs were unsorted
  - Fixed bug in summarize that caused error if variant was called by subset of callers 
 
-0.3.1 (3/17/2015)
------------------
+0.31 (3/17/2015)
+----------------
  - Downgraded VCF format from 4.2 to 4.1
  - Fixed a bug that omitted CALLERS_REPORTED_LIST summary tag
  - Simplified summary tags; removed dependency on numpy
