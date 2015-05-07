@@ -1,10 +1,11 @@
 from setuptools import setup
+import os
 import jacquard
 
 def read(*paths):
     """Build a file path from *paths* and return the contents."""
-    with open(os.path.join(*paths), 'r') as f:
-        return f.read()
+    with open(os.path.join(*paths), 'r') as filename:
+        return filename.read()
 
 setup(name='jacquard',
       version=jacquard.__version__,
