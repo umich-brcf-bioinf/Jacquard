@@ -316,8 +316,9 @@ chr2|1|.|A|C|.|.|SOMATIC|GT|0/1|0/1
     def test_create_glossary(self):
         writer = MockFileWriter()
         metaheaders = ['##source=strelka',
-                       '##INFO=<ID=SOMATIC,Number=1,Description="foo">',
-                       '##FORMAT=<ID=GT,Number=1,Description="bar">']
+                       '##INFO=<ID=AA,Number=1,Description="baz">',
+                       '##FORMAT=<ID=GT,Number=1,Description="bar">',
+                       '##INFO=<ID=SOMATIC,Number=1,Description="foo">']
         glossary_fields = ["SOMATIC", "GT"]
         expand._create_glossary(metaheaders, glossary_fields, writer)
 
