@@ -1,15 +1,18 @@
 from setuptools import setup
 import jacquard
 
-def readme():
-    with open('README.rst') as readme_file:
-        return readme_file.read()
+def read(*paths):
+    """Build a file path from *paths* and return the contents."""
+    with open(os.path.join(*paths), 'r') as f:
+        return f.read()
 
 setup(name='jacquard',
       version=jacquard.__version__,
       description=('Command-line tools to expedite analysis of '
                    'Variant Call Format (VCF) files.'),
-      long_description=readme(),
+      long_description=(read('README.rst') + '\n\n' +
+                        read('CHANGELOG.rst') + '\n\n' +
+                        read('AUTHORS.rst')),
       url='https://github.com/umich-brcf-bioinf/Jacquard',
       author='University of Michigan Bioinformatics Core',
       author_email='bfx-jacquard@umich.edu',

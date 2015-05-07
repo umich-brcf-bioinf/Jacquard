@@ -23,6 +23,10 @@ Suite of command-line tools to expedite analysis of exome variant data from mult
    :target: https://pypi.python.org/pypi/jacquard/
     :alt: Downloads Counter
 
+The official repository is at:
+
+https://github.com/umich-brcf-bioinf/Jacquard
+
 Files
 =====
 - jacquard-runner.py : Convenience wrapper for running Jacquard directly from source tree.
