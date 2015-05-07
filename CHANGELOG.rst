@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.42 (X/X/XXXX)
+---------------
+
+
 0.41 (5/7/2015)
 ---------------
  - Combined filter command with merge command

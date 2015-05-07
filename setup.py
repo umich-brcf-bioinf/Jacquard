@@ -13,6 +13,7 @@ setup(name='jacquard',
       description=('Command-line tools to expedite analysis of '
                    'Variant Call Format (VCF) files.'),
       long_description=(read('README.rst') + '\n\n' +
+                        read('INSTALL.rst') + '\n\n' +
                         read('CHANGELOG.rst') + '\n\n' +
                         read('AUTHORS.rst')),
       url='https://github.com/umich-brcf-bioinf/Jacquard',
