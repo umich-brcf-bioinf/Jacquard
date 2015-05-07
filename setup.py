@@ -1,4 +1,5 @@
 from setuptools import setup
+from setuptools import find_packages
 import os
 import jacquard
 
@@ -18,7 +19,7 @@ setup(name='jacquard',
       author='University of Michigan Bioinformatics Core',
       author_email='bfx-jacquard@umich.edu',
       license='Apache',
-      packages=['jacquard', 'jacquard.variant_caller_transforms'],
+      packages=find_packages(exclude=['test*']),
       classifiers=['Development Status :: 4 - Beta',
                    'Environment :: Console',
                    'Intended Audience :: Science/Research',
