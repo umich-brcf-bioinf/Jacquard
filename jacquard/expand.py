@@ -137,13 +137,18 @@ def _create_glossary_entry(metaheader):
 
 
 def add_subparser(subparser):
-    # pylint: disable=C0301
-    parser = subparser.add_parser("expand", formatter_class=argparse.RawTextHelpFormatter, help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
-    parser.add_argument("input", help="Path to annotated VCF file or path to directory of annotated VCF files. Other file types ignored")
-    parser.add_argument("output", help="Path to directory of output variant-level TXT files")
+    # pylint: disable=line-too-long
+    parser = subparser.add_parser("expand",
+                                  formatter_class=argparse.RawTextHelpFormatter,
+                                  usage="%(prog)s <input> <output> [--log_file=./jacquard.log]",
+                                  description=('Arguments in the [] are DEFAULT\n'
+                                               ' '),
+                                  help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
+    parser.add_argument("input", help="VCF file. Other file types ignored")
+    parser.add_argument("output", help="TXT file")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("-c", "--column_specification",
-                        help="Path to text file containing column regular expressions to be included in output file",)
+                        help="Path to text file containing column regular expressions to be included in output file")
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
     parser.add_argument("--log_file", help="Log file destination")
 

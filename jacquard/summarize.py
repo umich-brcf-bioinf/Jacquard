@@ -78,9 +78,14 @@ def _add_tags(caller, vcf_reader, file_writer):
 
 def add_subparser(subparser):
     # pylint: disable=line-too-long
-    parser = subparser.add_parser("summarize", formatter_class=argparse.RawTextHelpFormatter, help="Accepts a Jacquard-merged VCF file and creates a new file, adding summary fields.")
-    parser.add_argument("input", help="Path to Jacquard-merged VCF (or any VCF with Jacquard tags; e.g. JQ_SOM_MT)")
-    parser.add_argument("output", help="Path to output VCf")
+    parser = subparser.add_parser("summarize",
+                                  formatter_class=argparse.RawTextHelpFormatter,
+                                  usage="%(prog)s <input> <output> [--log_file=./jacquard.log]",
+                                  description=('Arguments in the [] are DEFAULT\n'
+                                               ' '),
+                                  help="Accepts a Jacquard-merged VCF file and creates a new file, adding summary fields.")
+    parser.add_argument("input", help="Jacquard-merged VCF file (or any VCF with Jacquard tags; e.g. JQ_SOM_MT)")
+    parser.add_argument("output", help="VCF file")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
     parser.add_argument("--log_file", help="Log file destination")

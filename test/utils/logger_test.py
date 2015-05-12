@@ -10,7 +10,6 @@ import unittest
 
 import jacquard.utils.logger as logger
 
-
 try:
     from StringIO import StringIO
 except ImportError:

@@ -230,9 +230,14 @@ def report_prediction(args):
 
 def add_subparser(subparser):
     #pylint: disable=line-too-long
-    parser = subparser.add_parser("translate", formatter_class=argparse.RawTextHelpFormatter, help="Accepts a directory of VCF results (and VarScan high confidence files). Creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
-    parser.add_argument("input", help="Path to directory containing VCFs (and VarScan high confidence files). Other file types ignored")
-    parser.add_argument("output", help="Path to Jacquard-tagged VCFs. Will create if doesn't exist and will overwrite files in output directory as necessary")
+    parser = subparser.add_parser("translate",
+                                  formatter_class=argparse.RawTextHelpFormatter,
+                                  usage="%(prog)s <input> <output> [--varscan_hc_filter_file_regex=Somatic.hc.fpfilter.pass] [--log_file=./jacquard.log]",
+                                  description=('Arguments in the [] are DEFAULT\n'
+                                               ' '),
+                                  help="Accepts a directory of VCF results (and VarScan high confidence files). Creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
+    parser.add_argument("input", help="Directory containing VCF files (and VarScan high confidence files). Other file types ignored")
+    parser.add_argument("output", help="Directory containing VCF files. Will create if doesn't exist and will overwrite files in output directory as necessary")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
     parser.add_argument("--varscan_hc_filter_file_regex",
