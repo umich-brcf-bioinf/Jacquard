@@ -83,6 +83,15 @@ class _JacquardArgumentParser(argparse.ArgumentParser):
         message = self._remessage_invalid_subparser(message)
         raise utils.UsageError(message)
 
+class _JacquardHelpFormatter(argparse.RawTextHelpFormatter):
+    def _format_usage(self, default_values):
+        prog = '%(prog)s' % dict(prog=self._prog)
+        usage = 'usage: {} <input> <output> {}'.format(prog,
+                                                       " ".join(default_values))
+        return usage
+
+    def add_usage(self, default_values, actions=None, groups=None, prefix=None):
+        self._add_item(self._format_usage, default_values)
 
 def _cleanup(temp_working_dir):
     if temp_working_dir and os.path.exists(temp_working_dir):
@@ -107,8 +116,8 @@ def _move_tmp_contents_to_original(args):
 def _parse_command_line_args(modules, arguments):
     parser = _JacquardArgumentParser(
         usage="jacquard",
-#         formatter_class=argparse.RawDescriptionHelpFormatter,
         formatter_class=argparse.RawTextHelpFormatter,
+#         formatter_class=_JacquardHelpFormatter,
         # pylint: disable=line-too-long
         description='''type 'jacquard <subcommand> -h' for help on a specific command''',
         epilog="See https://github.com/umich-brcf-bioinf/Jacquard for more info.")
