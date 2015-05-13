@@ -36,7 +36,6 @@ import re
 
 import natsort
 
-import jacquard.jacquard
 import jacquard.utils.logger as logger
 import jacquard.utils.utils as utils
 from jacquard.utils.vcf import FileWriter
@@ -221,15 +220,41 @@ class _Filter(object):
                 return True
         return False
 
+
+def _add_format_tags(vcf_reader, original_tag, new_tag):
+    vcf_reader.open()
+    for vcf_record in vcf_reader.vcf_records():
+        for tags in vcf_record.sample_tag_values.values():
+            tags[new_tag] = tags[original_tag]
+    vcf_reader.close()
+    return vcf_reader
+
+def _disambiguate_tags(format_tags, vcf_readers):
+    for tag, metaheaders in format_tags.items():
+        if len(metaheaders) > 1:
+            for vcf_reader in vcf_readers:
+                for i, metaheader in enumerate(list(metaheaders)):
+                    new_tag = "JX{}_{}".format(i+1, tag)
+                    if metaheader in vcf_reader.format_metaheaders.values():
+                        format_tags[new_tag] = metaheaders
+                        vcf_reader.modify_metaheader(metaheader, new_tag)
+#                         vcf_reader = _add_format_tags(vcf_reader, tag, new_tag)
+            del format_tags[tag]
+
+    return format_tags
+
 def _build_format_tags(format_tag_regex, vcf_readers):
-    retained_tags = set()
+    retained_tags = defaultdict(set)
     regexes_used = set()
+
     for vcf_reader in vcf_readers:
         for tag_regex in format_tag_regex:
-            for tag in vcf_reader.format_metaheaders:
+            for tag, metaheader in vcf_reader.format_metaheaders.items():
                 if re.match(tag_regex + "$", tag):
-                    retained_tags.add(tag)
+                    retained_tags[tag].add(metaheader)
                     regexes_used.add(tag_regex)
+
+    retained_tags = _disambiguate_tags(retained_tags, vcf_readers)
 
     if len(retained_tags) == 0:
         msg = ("The specified format tag regex [{}] would exclude all format "
@@ -244,7 +269,7 @@ def _build_format_tags(format_tag_regex, vcf_readers):
                    "irrelevant.")
             logger.warning(msg, format_tag_regex, unused_regex)
 
-    return sorted(list(retained_tags))
+    return sorted(retained_tags.keys())
 
 def _compile_metaheaders(incoming_headers,
                          vcf_readers,
@@ -572,7 +597,7 @@ def add_subparser(subparser):
     #pylint: disable=line-too-long
 
     parser = subparser.add_parser("merge",
-                                  formatter_class=jacquard.jacquard._JacquardHelpFormatter,
+                                  formatter_class=utils._JacquardHelpFormatter,
                                   usage=["[--include_format_tags=JQ_.*] [--include_cells=valid] [--include_rows=at_least_one_somatic]"],
                                   description=('\n\n'
                                                'Arguments in the [] are DEFAULT\n'

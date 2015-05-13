@@ -7,7 +7,6 @@ from __future__ import print_function, absolute_import, division
 
 import os
 
-import jacquard.jacquard
 import jacquard.utils.logger as logger
 import jacquard.utils.utils as utils
 import jacquard.utils.summarize_rollup_transform as summarize_caller
@@ -79,7 +78,7 @@ def _add_tags(caller, vcf_reader, file_writer):
 def add_subparser(subparser):
     # pylint: disable=line-too-long
     parser = subparser.add_parser("summarize",
-                                  formatter_class=jacquard.jacquard._JacquardHelpFormatter,
+                                  formatter_class=utils._JacquardHelpFormatter,
                                   usage=[""],
                                   description=('\n\n'
                                                'Arguments in the [] are DEFAULT\n'

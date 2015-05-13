@@ -21,7 +21,6 @@ from collections import defaultdict
 import glob
 import os
 
-import jacquard.jacquard
 import jacquard.utils.logger as logger
 import jacquard.utils.utils as utils
 from jacquard.variant_caller_transforms import variant_caller_factory
@@ -231,7 +230,7 @@ def report_prediction(args):
 def add_subparser(subparser):
     #pylint: disable=line-too-long
     parser = subparser.add_parser("translate",
-                                  formatter_class=jacquard.jacquard._JacquardHelpFormatter,
+                                  formatter_class=utils._JacquardHelpFormatter,
                                   usage=["[--varscan_hc_filter_file_regex=Somatic.hc.fpfilter.pass]"],
                                   description=('\n\n'
                                                'Arguments in the [] are DEFAULT\n'

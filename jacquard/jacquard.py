@@ -83,15 +83,6 @@ class _JacquardArgumentParser(argparse.ArgumentParser):
         message = self._remessage_invalid_subparser(message)
         raise utils.UsageError(message)
 
-class _JacquardHelpFormatter(argparse.RawTextHelpFormatter):
-    def _format_usage(self, default_values):
-        prog = '%(prog)s' % dict(prog=self._prog)
-        usage = 'usage: {} <input> <output> {}'.format(prog, default_values)
-        return usage
-
-    def add_usage(self, default_values, actions=None, groups=None, prefix=None):
-        self._add_item(self._format_usage, default_values)
-
 def _cleanup(temp_working_dir):
     if temp_working_dir and os.path.exists(temp_working_dir):
         logger.debug("Cleaning up tmp directory")

@@ -3,7 +3,7 @@
 #pylint: disable=too-many-arguments,too-many-instance-attributes
 from __future__ import print_function, absolute_import, division
 
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 import os
 import re
 import sys
@@ -181,6 +181,9 @@ class MockVcfReader(object):
         else:
             qualified_names.append("|".join(["foo", "bar"]))
         return qualified_names
+
+    def modify_metaheader(self, original_metaheader, transformed_tag):
+        pass
 
     @property
     def caller_name(self):
@@ -613,7 +616,7 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals("my_dir/my_file.txt", actual_vcf_reader.input_filepath)
         self.assertEquals("my_file.txt", actual_vcf_reader.file_name)
         self.assertEquals("#columnHeader", actual_vcf_reader.column_header)
-        self.assertEquals(("##metaheader1", "##metaheader2"), actual_vcf_reader.metaheaders)
+        self.assertEquals(["##metaheader1", "##metaheader2"], actual_vcf_reader.metaheaders)
         self.assertEquals([], actual_vcf_reader.sample_names)
 
     def test_init_sampleNamesInitialized(self):
@@ -627,12 +630,30 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
         actual_vcf_reader = VcfReader(mock_reader)
         self.assertEquals(["SampleA", "SampleB"], actual_vcf_reader.sample_names)
 
+    def test_modify_metaheader(self):
+        file_contents = ["##metaheader1\n",
+                         '##FORMAT=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">\n',
+                         '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">\n',
+                         self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
+                         self.entab("chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR")]
+        mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+        vcf_reader = VcfReader(mock_reader)
+
+        original_metaheader = '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">'
+        transformed_tag = "JX1_DP"
+
+        self.assertIn('##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">', vcf_reader.metaheaders)
+
+        vcf_reader.modify_metaheader(original_metaheader, transformed_tag)
+
+        self.assertIn('##FORMAT=<ID=JX1_DP,Number=1,Type=Integer,Description="Read Depth">', vcf_reader.metaheaders)
+        self.assertNotIn('##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">', vcf_reader.metaheaders)
+
     def test_format_metaheaders(self):
         file_contents = ["##metaheader1\n",
                          "##FORMAT=<ID=AF,Number=A,Type=Float,Description=\"Allele Frequency\">\n",
                          "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">\n",
                          self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
-                         self.entab("chr1|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR\n"),
                          self.entab("chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR")]
         mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
         reader = VcfReader(mock_reader)

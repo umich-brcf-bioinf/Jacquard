@@ -5,6 +5,7 @@
 #circular dependencies. (e.g. jacquard depends on translate depends on jacquard)
 from __future__ import print_function, absolute_import, division
 
+import argparse
 import natsort
 
 
@@ -37,6 +38,15 @@ def sort_metaheaders(metaheaders):
     return sorted(nat_sorted_metaheaders,
                   key=lambda metaheader: metaheader_dict[metaheader\
                                                          .split("=")[0]])
+
+class _JacquardHelpFormatter(argparse.RawTextHelpFormatter):
+    def _format_usage(self, default_values):
+        prog = '%(prog)s' % dict(prog=self._prog)
+        usage = 'usage: {} <input> <output> {}'.format(prog, default_values)
+        return usage
+
+    def add_usage(self, default_values, actions=None, groups=None, prefix=None):
+        self._add_item(self._format_usage, default_values)
 
 class JQException(Exception):
     """Base class for all run-time exceptions in this module."""

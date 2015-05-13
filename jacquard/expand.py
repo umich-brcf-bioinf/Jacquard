@@ -17,7 +17,6 @@ from collections import OrderedDict
 import os
 import re
 
-import jacquard.jacquard
 import jacquard.utils.logger as logger
 import jacquard.utils.utils as utils
 import jacquard.utils.vcf as vcf
@@ -139,7 +138,7 @@ def _create_glossary_entry(metaheader):
 def add_subparser(subparser):
     # pylint: disable=line-too-long
     parser = subparser.add_parser("expand",
-                                  formatter_class=jacquard.jacquard._JacquardHelpFormatter,
+                                  formatter_class=utils._JacquardHelpFormatter,
                                   usage=[""],
                                   description=('\n\n'
                                                'Arguments in the [] are DEFAULT\n'

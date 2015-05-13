@@ -2,6 +2,7 @@
 #pylint: disable=missing-docstring, protected-access, global-statement, too-few-public-methods
 from __future__ import print_function, absolute_import, division
 
+import argparse
 import natsort
 
 import jacquard.utils.utils as utils
@@ -31,6 +32,39 @@ class RoundTwoDigitsTestCase(test_case.JacquardBaseTestCase):
         actual = utils.round_two_digits(val)
         self.assertEquals(expected, actual)
 
+class JaquardHelpFormatterTestCase(test_case.JacquardBaseTestCase):
+    def test_extends_raw_text_help_formatter(self):
+        jq_formatter = utils._JacquardHelpFormatter("prog")
+        actual_lines = jq_formatter._split_lines("foo\nbar\nbaz", 100)
+        expected_lines = ["foo", "bar", "baz"]
+
+        self.assertEquals(expected_lines, actual_lines)
+
+    def test_format_usage(self):
+        jq_formatter = utils._JacquardHelpFormatter("prog")
+        default_values = "[--include_rows=valid] [--foo=bar]"
+        actual_usage = jq_formatter._format_usage(default_values)
+        expected_usage = "usage: prog <input> <output> [--include_rows=valid] [--foo=bar]"
+
+        self.assertEquals(expected_usage, actual_usage)
+
+    def test_add_usage(self):
+        jq_formatter = utils._JacquardHelpFormatter("prog")
+        default_values = ["[--include_rows=valid]", "[--foo=bar]"]
+        jq_formatter.add_usage(default_values)
+        actual_tuple = jq_formatter._current_section.items
+
+        self.assertEquals((jq_formatter._format_usage, default_values), actual_tuple[0])
+
+    def test_jacquard_formatter(self):
+        default_values = ["[--include_rows=valid]", "[--foo=bar]"]
+        parser = argparse.ArgumentParser()
+        subparsers = parser.add_subparsers(title="subcommands",
+                                           dest="subparser_name")
+        parser = subparsers.add_parser("foo",
+                                       formatter_class=utils._JacquardHelpFormatter,
+                                       usage=default_values)
+        self.assertEquals(default_values, parser.usage)
 
 class JQExceptionTestCase(test_case.JacquardBaseTestCase):
     def test_init(self):
