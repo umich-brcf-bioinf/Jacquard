@@ -86,8 +86,7 @@ class _JacquardArgumentParser(argparse.ArgumentParser):
 class _JacquardHelpFormatter(argparse.RawTextHelpFormatter):
     def _format_usage(self, default_values):
         prog = '%(prog)s' % dict(prog=self._prog)
-        usage = 'usage: {} <input> <output> {}'.format(prog,
-                                                       " ".join(default_values))
+        usage = 'usage: {} <input> <output> {}'.format(prog, default_values)
         return usage
 
     def add_usage(self, default_values, actions=None, groups=None, prefix=None):
@@ -117,7 +116,6 @@ def _parse_command_line_args(modules, arguments):
     parser = _JacquardArgumentParser(
         usage="jacquard",
         formatter_class=argparse.RawTextHelpFormatter,
-#         formatter_class=_JacquardHelpFormatter,
         # pylint: disable=line-too-long
         description='''type 'jacquard <subcommand> -h' for help on a specific command''',
         epilog="See https://github.com/umich-brcf-bioinf/Jacquard for more info.")

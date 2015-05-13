@@ -17,11 +17,11 @@ so it's imperative that VCF metaheaders be present and accurate.
 """
 from __future__ import print_function, absolute_import, division
 
-import argparse
 from collections import defaultdict
 import glob
 import os
 
+import jacquard.jacquard
 import jacquard.utils.logger as logger
 import jacquard.utils.utils as utils
 from jacquard.variant_caller_transforms import variant_caller_factory
@@ -231,10 +231,11 @@ def report_prediction(args):
 def add_subparser(subparser):
     #pylint: disable=line-too-long
     parser = subparser.add_parser("translate",
-                                  formatter_class=argparse.RawTextHelpFormatter,
-                                  usage="%(prog)s <input> <output> [--varscan_hc_filter_file_regex=Somatic.hc.fpfilter.pass] [--log_file=./jacquard.log]",
-                                  description=('Arguments in the [] are DEFAULT\n'
-                                               ' '),
+                                  formatter_class=jacquard.jacquard._JacquardHelpFormatter,
+                                  usage=["[--varscan_hc_filter_file_regex=Somatic.hc.fpfilter.pass]"],
+                                  description=('\n\n'
+                                               'Arguments in the [] are DEFAULT\n'
+                                               '\n'),
                                   help="Accepts a directory of VCF results (and VarScan high confidence files). Creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
     parser.add_argument("input", help="Directory containing VCF files (and VarScan high confidence files). Other file types ignored")
     parser.add_argument("output", help="Directory containing VCF files. Will create if doesn't exist and will overwrite files in output directory as necessary")

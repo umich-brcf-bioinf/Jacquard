@@ -13,11 +13,11 @@ from the metaheaders.
 """
 from __future__ import print_function, absolute_import, division
 
-import argparse
 from collections import OrderedDict
 import os
 import re
 
+import jacquard.jacquard
 import jacquard.utils.logger as logger
 import jacquard.utils.utils as utils
 import jacquard.utils.vcf as vcf
@@ -139,10 +139,11 @@ def _create_glossary_entry(metaheader):
 def add_subparser(subparser):
     # pylint: disable=line-too-long
     parser = subparser.add_parser("expand",
-                                  formatter_class=argparse.RawTextHelpFormatter,
-                                  usage="%(prog)s <input> <output> [--log_file=./jacquard.log]",
-                                  description=('Arguments in the [] are DEFAULT\n'
-                                               ' '),
+                                  formatter_class=jacquard.jacquard._JacquardHelpFormatter,
+                                  usage=[""],
+                                  description=('\n\n'
+                                               'Arguments in the [] are DEFAULT\n'
+                                               '\n'),
                                   help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
     parser.add_argument("input", help="VCF file. Other file types ignored")
     parser.add_argument("output", help="TXT file")

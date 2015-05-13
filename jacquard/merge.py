@@ -29,7 +29,6 @@
 """
 from __future__ import print_function, absolute_import, division
 
-import argparse
 from collections import defaultdict, OrderedDict
 import glob
 import os
@@ -37,6 +36,7 @@ import re
 
 import natsort
 
+import jacquard.jacquard
 import jacquard.utils.logger as logger
 import jacquard.utils.utils as utils
 from jacquard.utils.vcf import FileWriter
@@ -572,10 +572,11 @@ def add_subparser(subparser):
     #pylint: disable=line-too-long
 
     parser = subparser.add_parser("merge",
-                                  formatter_class=argparse.RawTextHelpFormatter,
-                                  usage="%(prog)s <input> <output> [--include_format_tags=^JQ.*] [--log_file=./jacquard.log] [--include_cells=valid] [--include_rows=at_least_one_somatic]",
-                                  description=('Arguments in the [] are DEFAULT\n'
-                                               ' '),
+                                  formatter_class=jacquard.jacquard._JacquardHelpFormatter,
+                                  usage=["[--include_format_tags=JQ_.*] [--include_cells=valid] [--include_rows=at_least_one_somatic]"],
+                                  description=('\n\n'
+                                               'Arguments in the [] are DEFAULT\n'
+                                               '\n'),
                                   help="Accepts a directory of VCFs and returns a single merged VCF file.")
     parser.add_argument("input", help="Directory containing VCF files. Other file types ignored")
     parser.add_argument("output", help="VCF file")

@@ -50,7 +50,7 @@ class JaquardHelpFormatterTestCase(test_case.JacquardBaseTestCase):
 
     def test_format_usage(self):
         jq_formatter = jacquard._JacquardHelpFormatter("prog")
-        default_values = ["[--include_rows=valid]", "[--foo=bar]"]
+        default_values = "[--include_rows=valid] [--foo=bar]"
         actual_usage = jq_formatter._format_usage(default_values)
         expected_usage = "usage: prog <input> <output> [--include_rows=valid] [--foo=bar]"
 
