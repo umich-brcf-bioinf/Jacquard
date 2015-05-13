@@ -220,26 +220,27 @@ class _Filter(object):
                 return True
         return False
 
-
+#TODO: (jebene) hook this up
 def _add_format_tags(vcf_reader, original_tag, new_tag):
     vcf_reader.open()
     for vcf_record in vcf_reader.vcf_records():
-        for tags in vcf_record.sample_tag_values.values():
+        for tags in list(vcf_record.sample_tag_values.values()):
             tags[new_tag] = tags[original_tag]
     vcf_reader.close()
     return vcf_reader
 
-def _disambiguate_tags(format_tags, vcf_readers):
-    for tag, metaheaders in format_tags.items():
+def _disambiguate_tags(retained_tags, vcf_readers):
+    format_tags = {}
+    for tag, metaheaders in list(retained_tags.items()):
         if len(metaheaders) > 1:
             for vcf_reader in vcf_readers:
-                for i, metaheader in enumerate(list(metaheaders)):
+                for i, metahdr in enumerate(list(metaheaders)):
                     new_tag = "JX{}_{}".format(i+1, tag)
-                    if metaheader in vcf_reader.format_metaheaders.values():
-                        format_tags[new_tag] = metaheaders
-                        vcf_reader.modify_metaheader(metaheader, new_tag)
-#                         vcf_reader = _add_format_tags(vcf_reader, tag, new_tag)
-            del format_tags[tag]
+                    if metahdr in list(vcf_reader.format_metaheaders.values()):
+                        format_tags[new_tag] = tag
+                        vcf_reader.modify_metaheader(metahdr, new_tag)
+        else:
+            format_tags[tag] = tag
 
     return format_tags
 
@@ -249,7 +250,7 @@ def _build_format_tags(format_tag_regex, vcf_readers):
 
     for vcf_reader in vcf_readers:
         for tag_regex in format_tag_regex:
-            for tag, metaheader in vcf_reader.format_metaheaders.items():
+            for tag, metaheader in list(vcf_reader.format_metaheaders.items()):
                 if re.match(tag_regex + "$", tag):
                     retained_tags[tag].add(metaheader)
                     regexes_used.add(tag_regex)
@@ -269,7 +270,7 @@ def _build_format_tags(format_tag_regex, vcf_readers):
                    "irrelevant.")
             logger.warning(msg, format_tag_regex, unused_regex)
 
-    return sorted(retained_tags.keys())
+    return retained_tags
 
 def _compile_metaheaders(incoming_headers,
                          vcf_readers,

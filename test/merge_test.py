@@ -439,6 +439,27 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(OD([("JQ_foo", "bar3")]), actual_record.sample_tag_values["SC"])
         self.assertEquals(OD([("JQ_foo", "bar1")]), actual_record.sample_tag_values["SD"])
 
+#     def test_build_merged_record_keepUnabmiguousTags(self):
+#         OD = OrderedDict
+#         coordinate = VcfRecord("chr1", "1", "A", "C", info="baseInfo")
+#         samples1 = OD({"SD": {"DP":"bar1",
+#                               "AF": "bar2"},
+#                        "SC": {"DP":"bar3",
+#                               "AF":"bar4"}})
+#         samples2 = OD({"SB": {"DP":"bar5"},
+#                        "SA": {"AF":"bar6"}})
+#         record1 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples1)
+#         record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
+# 
+#         sample_list = ["SA", "SB", "SC", "SD"]
+#         tags_to_keep = {"JX1_DP": "DP", "JX2_DP": "DP", "AF": "AF"}
+#         actual_record = merge._build_merged_record(coordinate, [record1, record2], sample_list, tags_to_keep)
+# 
+#         self.assertEquals(OD([("AF", "bar6"), ("JX1_DP", "."), ("JX2_DP", ".")]), actual_record.sample_tag_values["SA"])
+#         self.assertEquals(OD([("AF", "."), ("JX1_DP", "."),("JX2_DP", "bar5")]), actual_record.sample_tag_values["SB"])
+#         self.assertEquals(OD([("AF", "bar4"), ("JX1_DP", "bar3"),("JX2_DP", ".")]), actual_record.sample_tag_values["SC"])
+#         self.assertEquals(OD([("AF", "bar2"), ("JX1_DP", "bar1"),("JX2_DP", ".")]), actual_record.sample_tag_values["SD"])
+
     def test_build_merged_record_redundantPatientNames(self):
         OD = OrderedDict
         coordinate = VcfRecord("chr1", "1", "A", "C", info="baseInfo")
@@ -450,7 +471,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         record2 = VcfRecord("chr1", "1", "A", "C", sample_tag_values=samples2)
 
         sample_list = ["PA|NORMAL", "PA|TUMOR"]
-        tags_to_keep = ["JQ_vs", "JQ_mt"]
+        tags_to_keep = {"JQ_vs": "JQ_vs", "JQ_mt": "JQ_mt"}
         actual_record = merge._build_merged_record(coordinate, [record1, record2], sample_list, tags_to_keep)
 
         self.assertEquals(OD([("JQ_mt", "3"), ("JQ_vs", "1")]), actual_record.sample_tag_values["PA|NORMAL"])
@@ -733,18 +754,13 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         expected_metaheader2 = '##FORMAT=<ID=JX2_DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">'
         self.assertIn(expected_metaheader2, vcf_reader2.metaheaders)
 
-#         vcf_reader1.open()
-#         for vcf_record in vcf_reader1.vcf_records():
-#             self.assertIn("JX1_DP", vcf_record.sample_tag_values["SampleNormal"].keys())
-#         vcf_reader1.close()
-
     def test_build_format_tags_disambiguatesForeignTags(self):
         meta_headers = ['##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">',
                         '##FORMAT=<ID=FA,Number=A,Type=Float,Description="Allele fraction of the alternate allele with regard to reference">']
         vcf_reader1 = MockVcfReader(metaheaders=meta_headers)
         vcf_reader2 = MockVcfReader(metaheaders=['##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">'])
         actual_format_tags = merge._build_format_tags([".*"], [vcf_reader1, vcf_reader2])
-        expected_format_tags = ["FA", "JX1_DP", "JX2_DP"]
+        expected_format_tags = {"FA": "FA", "JX1_DP": "DP", "JX2_DP": "DP"}
 
         self.assertEquals(expected_format_tags, actual_format_tags)
 
@@ -756,7 +772,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
                          '##FORMAT=<ID=FA,Number=A,Type=Float,Description="Allele Frequency']
         vcf_reader2 = MockVcfReader(metaheaders=meta_headers2)
         actual_format_tags = merge._build_format_tags([".*"], [vcf_reader1, vcf_reader2])
-        expected_format_tags = ["JX1_DP", "JX1_FA", "JX2_DP", "JX2_FA"]
+        expected_format_tags = {"JX1_DP": "DP", "JX1_FA": "FA", "JX2_DP": "DP", "JX2_FA": "FA"}
 
         self.assertEquals(expected_format_tags, actual_format_tags)
 
@@ -766,7 +782,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         vcf_reader1 = MockVcfReader(metaheaders=meta_headers)
         vcf_reader2 = MockVcfReader(metaheaders=['##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">'])
         actual_format_tags = merge._build_format_tags([".*"], [vcf_reader1, vcf_reader2])
-        expected_format_tags = ["DP", "FA"]
+        expected_format_tags = {"DP": "DP", "FA": "FA"}
 
         self.assertEquals(expected_format_tags, actual_format_tags)
 
@@ -777,7 +793,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         vcf_reader = MockVcfReader(metaheaders=meta_headers)
         format_tags = merge._build_format_tags(["JQ[12]"], [vcf_reader])
 
-        self.assertEquals(["JQ1", "JQ2"], format_tags)
+        self.assertEquals({"JQ1": "JQ1", "JQ2": "JQ2"}, format_tags)
 
     def test_build_format_tags_uniqueSetAcrossMultipleReaders(self):
         reader1 = MockVcfReader(metaheaders=['##FORMAT=<ID=JQ1>'])
@@ -786,7 +802,7 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
 
         format_tags = merge._build_format_tags(["JQ[123]"], [reader1, reader2, reader3])
 
-        self.assertEquals(["JQ1", "JQ2", "JQ3"], format_tags)
+        self.assertEquals({"JQ1": "JQ1", "JQ2": "JQ2", "JQ3": "JQ3"}, format_tags)
 
     def test_build_format_tags_errorIfExcludesAllTags(self):
         reader1 = MockVcfReader(metaheaders=['##FORMAT=<ID=JQ1>'])
