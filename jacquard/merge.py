@@ -97,6 +97,63 @@ class _BufferedReader(object):
         except StopIteration:
             return None
 
+class MergeVcfReader(vcf.VcfReader):
+    def __init__(self, file_reader):
+        super(self.__class__,self).__init__(file_reader)
+        self.format_tags = {}
+
+    def modify_metaheader(self, original_metaheader, transformed_tag):
+        updated_metaheader = re.sub(r'(^##FORMAT=.*?[<,]ID=)([^,>]*)',
+                                    r'\g<1>%s' % transformed_tag,
+                                    original_metaheader)
+
+        self.metaheaders.append(updated_metaheader)
+        if original_metaheader in self.metaheaders:
+            self.metaheaders.remove(original_metaheader)
+
+    def store_format_tags(self, original_tag, new_tag):
+        self.format_tags[original_tag] = new_tag
+
+    @staticmethod
+    def modify_format_tag(vcf_record, format_tags):
+        for tags in list(vcf_record.sample_tag_values.values()):
+            for original_tag, new_tag in list(format_tags.items()):
+                if new_tag not in tags and original_tag in tags:
+                    tags[new_tag] = tags[original_tag]
+                    del tags[original_tag]
+
+        return vcf_record
+
+    def vcf_records(self, format_tags=None, qualified=False):
+        """Generates parsed VcfRecord objects.
+
+        Typically called in a for loop to process each vcf record in a
+        VcfReader. VcfReader must be opened in advanced and closed when
+        complete. Skips all headers.
+
+        Args:
+            qualified: When True, sample names are prefixed with file name
+
+        Returns:
+            Parsed VcfRecord
+
+        Raises:
+            StopIteration: when reader is exhausted.
+            TypeError: if reader is closed.
+        """
+        if qualified:
+            sample_names = self.qualified_sample_names
+        else:
+            sample_names = self.sample_names
+
+        for line in self._file_reader.read_lines():
+            if line.startswith("#"):
+                continue
+            vcf_record = vcf.VcfRecord.parse_record(line, sample_names)
+            if format_tags:
+                vcf_record = self.modify_format_tag(vcf_record, format_tags)
+            yield vcf_record
+
 
 class _Filter(object):
     """Interprets command-line args to initialize variant and locus filters
@@ -220,42 +277,41 @@ class _Filter(object):
                 return True
         return False
 
-#TODO: (jebene) hook this up
-def _add_format_tags(vcf_reader, original_tag, new_tag):
-    vcf_reader.open()
-    for vcf_record in vcf_reader.vcf_records():
-        for tags in list(vcf_record.sample_tag_values.values()):
-            tags[new_tag] = tags[original_tag]
-    vcf_reader.close()
-    return vcf_reader
+def _get_format_tags(merge_vcf_readers):
+    format_tags = defaultdict(list)
+    for merge_vcf_reader in merge_vcf_readers:
+        for tag, metahdr in list(merge_vcf_reader.format_metaheaders.items()):
+            if metahdr not in format_tags[tag]:
+                format_tags[tag].append(metahdr)
+    return format_tags
 
-def _disambiguate_tags(retained_tags, vcf_readers):
-    format_tags = {}
-    for tag, metaheaders in list(retained_tags.items()):
-        if len(metaheaders) > 1:
-            for vcf_reader in vcf_readers:
-                for i, metahdr in enumerate(list(metaheaders)):
-                    new_tag = "JX{}_{}".format(i+1, tag)
-                    if metahdr in list(vcf_reader.format_metaheaders.values()):
-                        format_tags[new_tag] = tag
-                        vcf_reader.modify_metaheader(metahdr, new_tag)
-        else:
-            format_tags[tag] = tag
+def _disambiguate_format_tags(merge_vcf_readers, format_tags):
+    for tag, metaheaders in list(format_tags.items()):
+        for merge_vcf_reader in merge_vcf_readers:
+            for i, metahdr in enumerate(list(metaheaders)):
+                vcf_metaheaders = merge_vcf_reader.format_metaheaders.values()
+                if metahdr in list(vcf_metaheaders):
+                    if len(metaheaders) > 1:
+                        new_tag = "JX{}_{}".format(i+1, tag)
+                        format_tags[new_tag] = metaheaders
+
+                        merge_vcf_reader.modify_metaheader(metahdr, new_tag)
+                        merge_vcf_reader.store_format_tags(tag, new_tag)
+                    else:
+                        merge_vcf_reader.store_format_tags(tag, tag)
 
     return format_tags
 
 def _build_format_tags(format_tag_regex, vcf_readers):
-    retained_tags = defaultdict(set)
+    retained_tags = set()
     regexes_used = set()
 
     for vcf_reader in vcf_readers:
         for tag_regex in format_tag_regex:
-            for tag, metaheader in list(vcf_reader.format_metaheaders.items()):
-                if re.match(tag_regex + "$", tag):
-                    retained_tags[tag].add(metaheader)
+            for original_tag, new_tag in list(vcf_reader.format_tags.items()):
+                if re.match(tag_regex + "$", original_tag):
+                    retained_tags.add(new_tag)
                     regexes_used.add(tag_regex)
-
-    retained_tags = _disambiguate_tags(retained_tags, vcf_readers)
 
     if len(retained_tags) == 0:
         msg = ("The specified format tag regex [{}] would exclude all format "
@@ -269,8 +325,7 @@ def _build_format_tags(format_tag_regex, vcf_readers):
                    "not match any format tags; this expression may be "
                    "irrelevant.")
             logger.warning(msg, format_tag_regex, unused_regex)
-
-    return retained_tags
+    return sorted(list(retained_tags))
 
 def _compile_metaheaders(incoming_headers,
                          vcf_readers,
@@ -311,18 +366,19 @@ def _write_metaheaders(file_writer, all_headers):
     file_writer.write("\n".join(all_headers) + "\n")
 
 def _create_vcf_readers(file_readers):
-    vcf_readers = []
+    merge_vcf_readers = []
     for file_reader in file_readers:
-        vcf_reader = vcf.VcfReader(file_reader)
-        vcf_readers.append(vcf_reader)
+#         vcf_reader = vcf.VcfReader(file_reader)
+        merge_vcf_reader = MergeVcfReader(file_reader)
+        merge_vcf_readers.append(merge_vcf_reader)
 
-    return vcf_readers
+    return merge_vcf_readers
 
 def _create_buffered_readers(vcf_readers):
     buffered_readers = []
     for vcf_reader in vcf_readers:
         vcf_reader.open()
-        records = vcf_reader.vcf_records(qualified=True)
+        records = vcf_reader.vcf_records(vcf_reader.format_tags, qualified=True)
         buffered_readers.append(_BufferedReader(records))
 
     return buffered_readers
@@ -576,6 +632,7 @@ def _merge_records(vcf_readers,
         vcf_records = _pull_matching_records(filter_strategy,
                                              coordinate,
                                              buffered_readers)
+
         if vcf_records:
             merged_record = _build_merged_record(coordinate,
                                                  vcf_records,
@@ -664,16 +721,21 @@ def execute(args, execution_context):
 #and _build_contigs behave differently. It seems like we could make the
 #signatures of these methods more similar or even combine some methods to
 #reduce excess iterations over the coordinates/vcf_readers
-        vcf_readers = _create_vcf_readers(file_readers)
-        format_tags_to_keep = _build_format_tags(format_tag_regex, vcf_readers)
-        vcf_readers = _sort_readers(vcf_readers, output_path)
-        all_sample_names, merge_metaheaders = _build_sample_list(vcf_readers)
-        coordinates = _build_coordinates(vcf_readers)
+        merge_vcf_readers = _create_vcf_readers(file_readers)
+        merge_vcf_readers = _sort_readers(merge_vcf_readers, output_path)
+        format_tags = _get_format_tags(merge_vcf_readers)
+        _disambiguate_format_tags(merge_vcf_readers, format_tags)
+        format_tags_to_keep = _build_format_tags(format_tag_regex,
+                                                 merge_vcf_readers)
+        (all_sample_names,
+        merge_metaheaders) = _build_sample_list(merge_vcf_readers)
+
+        coordinates = _build_coordinates(merge_vcf_readers)
         info_tags_to_keep = _build_info_tags(coordinates)
         contigs_to_keep = _build_contigs(coordinates)
         incoming_headers = _FILE_FORMAT + execution_context + merge_metaheaders
         headers = _compile_metaheaders(incoming_headers,
-                                       vcf_readers,
+                                       merge_vcf_readers,
                                        all_sample_names,
                                        contigs_to_keep,
                                        format_tags_to_keep,
@@ -681,13 +743,13 @@ def execute(args, execution_context):
 
         _write_metaheaders(file_writer, headers)
 
-        _merge_records(vcf_readers,
+        _merge_records(merge_vcf_readers,
                        coordinates,
                        filter_strategy,
                        all_sample_names,
                        format_tags_to_keep,
                        file_writer)
     finally:
-        for vcf_reader in vcf_readers:
+        for vcf_reader in merge_vcf_readers:
             vcf_reader.close()
         file_writer.close()

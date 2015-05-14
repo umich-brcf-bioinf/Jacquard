@@ -3,7 +3,7 @@
 #pylint: disable=too-many-arguments,too-many-instance-attributes
 from __future__ import print_function, absolute_import, division
 
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 import os
 import re
 import sys
@@ -130,11 +130,12 @@ class MockVcfReader(object):
         self.closed = False
         self._caller_name = "mockCaller"
         self.qualified_sample_names = self._create_qualified_sample_names()
+        self.format_tags={}
 
     def open(self):
         self.opened = True
-
-    def vcf_records(self, qualified=False):
+    #pylint:disable=unused-argument
+    def vcf_records(self, dummy=None, qualified=False):
         for record in self.records:
             yield record
 
@@ -184,6 +185,9 @@ class MockVcfReader(object):
 
     def modify_metaheader(self, original_metaheader, transformed_tag):
         pass
+
+    def store_format_tags(self, original_tag, new_tag):
+        self.format_tags[original_tag] = new_tag
 
     @property
     def caller_name(self):
@@ -629,25 +633,6 @@ class VcfReaderTestCase(test_case.JacquardBaseTestCase):
 
         actual_vcf_reader = VcfReader(mock_reader)
         self.assertEquals(["SampleA", "SampleB"], actual_vcf_reader.sample_names)
-
-    def test_modify_metaheader(self):
-        file_contents = ["##metaheader1\n",
-                         '##FORMAT=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">\n',
-                         '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">\n',
-                         self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
-                         self.entab("chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR")]
-        mock_reader = MockFileReader("my_dir/my_file.txt", file_contents)
-        vcf_reader = VcfReader(mock_reader)
-
-        original_metaheader = '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">'
-        transformed_tag = "JX1_DP"
-
-        self.assertIn('##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">', vcf_reader.metaheaders)
-
-        vcf_reader.modify_metaheader(original_metaheader, transformed_tag)
-
-        self.assertIn('##FORMAT=<ID=JX1_DP,Number=1,Type=Integer,Description="Read Depth">', vcf_reader.metaheaders)
-        self.assertNotIn('##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">', vcf_reader.metaheaders)
 
     def test_format_metaheaders(self):
         file_contents = ["##metaheader1\n",
