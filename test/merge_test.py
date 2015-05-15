@@ -449,6 +449,41 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
 
             self.assertEquals(expected_desired_output_files, desired_output_files)
 
+    def test_get_caller_name(self):
+        file_contents = ["##metaheader1\n",
+                         "##jacquard.translate.caller=MuTect",
+                         '##FORMAT=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">\n',
+                         '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">\n',
+                         self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
+                         self.entab("chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR")]
+        mock_file_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+        merge_vcf_reader = merge.MergeVcfReader(mock_file_reader)
+
+        caller_name = merge._get_caller_name(merge_vcf_reader)
+
+        self.assertEquals("MuTect", caller_name)
+
+    def test_get_caller_name_noCallerDefined(self):
+        file_contents = ["##metaheader1\n",
+                         '##FORMAT=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">\n',
+                         '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">\n',
+                         self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
+                         self.entab("chr2|1|.|A|C|.|.|INFO|FORMAT|NORMAL|TUMOR")]
+        mock_file_reader = MockFileReader("my_dir/my_file.txt", file_contents)
+        merge_vcf_reader = merge.MergeVcfReader(mock_file_reader)
+
+        caller_name = merge._get_caller_name(merge_vcf_reader)
+
+        self.assertEquals(False, caller_name)
+
+    def test_alter_description(self):
+        metaheadr = '##FORMAT=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">'
+        caller_name = 'VarScan'
+
+        expected = '##FORMAT=<ID=AF,Number=A,Type=Float,Description="[VarScan]: Allele Frequency">'
+        actual = merge._alter_description(metaheadr, caller_name)
+        self.assertEquals(expected, actual)
+
     def test_get_format_tags(self):
         file_contents = ["##metaheader1\n",
                          '##FORMAT=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">\n',
@@ -461,6 +496,29 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         format_tags = merge._get_format_tags([merge_vcf_reader])
         expected_format_tag_dict = {"AF": ['##FORMAT=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">'],
                                     "DP": ['##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">']}
+
+        self.assertEquals(expected_format_tag_dict, format_tags)
+
+    def test_get_format_tags_considersDifferentCallers(self):
+        file_contents1 = ["##metaheader1\n",
+                          "##jacquard.translate.caller=MuTect",
+                          '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">\n',
+                          self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
+                          self.entab("chr2|1|.|A|C|.|.|INFO|DP|15|87")]
+        mock_file_reader1 = MockFileReader("fileA.txt", file_contents1)
+        merge_vcf_reader1 = merge.MergeVcfReader(mock_file_reader1)
+
+        file_contents2 = ["##metaheader1\n",
+                          "##jacquard.translate.caller=VarScan",
+                          '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">\n',
+                          self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
+                          self.entab("chr2|1|.|A|C|.|.|INFO|DP|75|65")]
+        mock_file_reader2 = MockFileReader("fileB.txt", file_contents2)
+        merge_vcf_reader2 = merge.MergeVcfReader(mock_file_reader2)
+
+        format_tags = merge._get_format_tags([merge_vcf_reader1, merge_vcf_reader2])
+        expected_format_tag_dict = {"DP": ['##FORMAT=<ID=DP,Number=1,Type=Integer,Description="[MuTect]: Read Depth">',
+                                           '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="[VarScan]: Read Depth">']}
 
         self.assertEquals(expected_format_tag_dict, format_tags)
 
@@ -508,6 +566,32 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
         self.assertIn('##FORMAT=<ID=JX1_DP,Number=1,Type=Integer,Description="Read Depth">',
                       merge_vcf_reader1.metaheaders)
         self.assertIn('##FORMAT=<ID=JX2_DP,Number=1,Type=Integer,Description="Approximate Read Depth">',
+                      merge_vcf_reader2.metaheaders)
+
+    def xtest_disambiguate_format_tags_considersDifferentCallers(self):
+        file_contents1 = ["##metaheader1\n",
+                          "##jacquard.translate.caller=MuTect",
+                          '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">\n',
+                          self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
+                          self.entab("chr2|1|.|A|C|.|.|INFO|DP|15|87")]
+        mock_file_reader1 = MockFileReader("fileA.txt", file_contents1)
+        merge_vcf_reader1 = merge.MergeVcfReader(mock_file_reader1)
+
+        file_contents2 = ["##metaheader1\n",
+                          "##jacquard.translate.caller=VarScan",
+                          '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">\n',
+                          self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|SampleNormal|SampleTumor\n"),
+                          self.entab("chr2|1|.|A|C|.|.|INFO|DP|75|65")]
+        mock_file_reader2 = MockFileReader("fileB.txt", file_contents2)
+        merge_vcf_reader2 = merge.MergeVcfReader(mock_file_reader2)
+
+        format_tags = {"DP": ['##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">',
+                              '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate Read Depth">']}
+        merge._disambiguate_format_tags([merge_vcf_reader1, merge_vcf_reader2], format_tags)
+
+        self.assertIn('##FORMAT=<ID=JX1_DP,Number=1,Type=Integer,Description="[MuTect]: Read Depth">',
+                      merge_vcf_reader1.metaheaders)
+        self.assertIn('##FORMAT=<ID=JX2_DP,Number=1,Type=Integer,Description="[VarScan]: Read Depth">',
                       merge_vcf_reader2.metaheaders)
 
     def test_disambiguate_format_tags_modifiesRecords(self):

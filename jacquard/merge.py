@@ -277,12 +277,35 @@ class _Filter(object):
                 return True
         return False
 
+def _get_caller_name(merge_vcf_reader):
+    for metaheader in merge_vcf_reader.metaheaders:
+        tag = re.match("##jacquard.translate.caller=(.*)", metaheader)
+        if tag:
+            return tag.group(1)
+    return False
+
+def _alter_description(metaheader, caller_name):
+    return re.sub(r'^##FORMAT=.*?[<,]Description="([,>]*)',
+                  r'\g<0>[%s]: ' % caller_name,
+                  metaheader)
+
 def _get_format_tags(merge_vcf_readers):
     format_tags = defaultdict(list)
+    caller_names = defaultdict(list)
     for merge_vcf_reader in merge_vcf_readers:
+        caller_name = _get_caller_name(merge_vcf_reader)
         for tag, metahdr in list(merge_vcf_reader.format_metaheaders.items()):
-            if metahdr not in format_tags[tag]:
-                format_tags[tag].append(metahdr)
+            format_tags[tag].append(metahdr)
+            caller_names[tag].append(caller_name)
+
+    for tag, callers in caller_names.items():
+        if len(set(callers)) != 1:
+            for i, caller in enumerate(callers):
+                format_tags[tag][i] = _alter_description(format_tags[tag][i],
+                                                         caller)
+        else:
+            format_tags[tag] = [format_tags[tag][0]]
+
     return format_tags
 
 def _disambiguate_format_tags(merge_vcf_readers, format_tags):
@@ -728,7 +751,7 @@ def execute(args, execution_context):
         format_tags_to_keep = _build_format_tags(format_tag_regex,
                                                  merge_vcf_readers)
         (all_sample_names,
-        merge_metaheaders) = _build_sample_list(merge_vcf_readers)
+         merge_metaheaders) = _build_sample_list(merge_vcf_readers)
 
         coordinates = _build_coordinates(merge_vcf_readers)
         info_tags_to_keep = _build_info_tags(coordinates)

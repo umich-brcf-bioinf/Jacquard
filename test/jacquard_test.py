@@ -3,7 +3,6 @@
 # pylint: disable=too-few-public-methods
 from __future__ import print_function, absolute_import, division
 
-import argparse
 from argparse import Namespace
 import os
 import signal

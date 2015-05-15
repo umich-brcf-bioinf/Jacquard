@@ -96,15 +96,6 @@ class VcfReader(object):
 #         return column_header, tuple(metaheaders)
         return column_header, metaheaders
 
-#     def modify_metaheader(self, original_metaheader, transformed_tag):
-#         updated_metaheader = re.sub(r'(^##FORMAT=.*?[<,]ID=)([^,>]*)',
-#                                     r'\g<1>%s' % transformed_tag,
-#                                     original_metaheader)
-# 
-#         self.metaheaders.append(updated_metaheader)
-#         if original_metaheader in self.metaheaders:
-#             self.metaheaders.remove(original_metaheader)
-
     #TODO (cgates): qualified is used by ONE invocation in merge. Can we
     #somehow make merge do this instead of universally complicating the method?
     def vcf_records(self, qualified=False):
