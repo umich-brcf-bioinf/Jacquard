@@ -175,7 +175,7 @@ def validate_args(args):
 def _get_actual_columns(vcf_reader, col_spec):
     columns  = _create_potential_column_list(vcf_reader)
     glossary_fields = []
-    for glossary_field in sorted([x for x in columns.values() if x], 
+    for glossary_field in sorted([x for x in columns.values() if x],
                                  key=lambda x: x.upper()):
         if glossary_field and glossary_field not in glossary_fields:
             glossary_fields.append(glossary_field)
