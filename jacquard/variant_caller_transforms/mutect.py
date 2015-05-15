@@ -36,6 +36,31 @@ class _AlleleFreqTag(object):
             new_values.append(utils.round_two_digits(val))
         return ",".join(new_values)
 
+class _GenotypeTag(object):
+    #pylint: disable=too-few-public-methods
+    @classmethod
+    def _standardize_gt(cls, value):
+        if value == "0":
+            value = "0/0"
+        return value
+
+    def __init__(self):
+        self.metaheader = ('##FORMAT=<ID={0}GT,'
+                           'Number=1,'
+                           'Type=String,'
+                           #pylint: disable=line-too-long
+                           'Description="Jacquard genotype (based on GT)">')\
+                           .format(JQ_MUTECT_TAG)
+
+    @staticmethod
+    def add_tag_values(vcf_record):
+        if "GT" in vcf_record.format_tags:
+            sample_values = {}
+            for samp in vcf_record.sample_tag_values:
+                genotype = vcf_record.sample_tag_values[samp]["GT"]
+                sample_values[samp] = _GenotypeTag._standardize_gt(genotype)
+            vcf_record.add_sample_tag_value(JQ_MUTECT_TAG + "GT", sample_values)
+
 class _DepthTag(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
@@ -197,7 +222,8 @@ class _MutectVcfReader(object):
                      common_tags.PassedTag(JQ_MUTECT_TAG),
                      _AlleleFreqTag(),
                      _DepthTag(),
-                     _SomaticTag()]
+                     _SomaticTag(),
+                     _GenotypeTag()]
 
     def _get_new_metaheaders(self):
         return [tag.metaheader for tag in self.tags]
