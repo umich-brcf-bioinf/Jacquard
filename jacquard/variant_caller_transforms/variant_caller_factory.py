@@ -23,18 +23,6 @@ class VariantCallerFactory(object):
                          strelka.Strelka(),
                          mutect.Mutect()]
 
-#TODO: (cgates): Filter uses this, but only for logging; adjust filter and drop
-# method. Then consider renaming the module.
-    def get_caller(self, metaheaders, column_header, name):
-        for caller in self._callers:
-            if caller.validate_input_file(metaheaders, column_header):
-                logger.debug("VCF [{}] recognized by caller [{}]",
-                             name,
-                             caller.name)
-                return caller
-        raise utils.JQException(("VCF [{}] was not in the set of "
-                                 "recognized callers.").format(name))
-
     def claim(self, unclaimed_file_readers):
         """Allows each caller to claim incoming files as they are recognized.
 
