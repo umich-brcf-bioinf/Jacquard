@@ -12,16 +12,16 @@ Jacquard first writes results to temp dir and only copies results on successful
 
 Then architecture of Jacquard modules can be divided into:
  * commands : These transform files or directories (e.g. translate.py) and are
-     indirectly executable through the jacquard module. Each command must
+     indirectly executed through the jacquard module. Each command must
      implement an execute method that does the heavy lifting along with some
-     simpler methods that expedite command validation
- * callers : These transform VcfRecords (e.g. mutect.py). They typically have
+     simpler methods that expedite command validation.
+ * transforms : These transform VcfRecords (e.g. mutect.py). They typically have
      a collection of tag classes; where each tag holds the metaheader and
      code to transform a single VcfRecord. Note that a caller could
      manipulate any aspect of a VcfRecord, but (by strong convention) typically
      only adds information, for example add a sample-format tag, add an info
      field, or add a filter field.
- * helpers : Common functionality (e.g. command_validator, vcf, logger, etc.)
+ * utils : Common functionality (e.g. command_validator, vcf, logger, etc.)
 """
 ##   Copyright 2014 Bioinformatics Core, University of Michigan
 ##
