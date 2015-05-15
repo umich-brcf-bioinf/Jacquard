@@ -247,6 +247,7 @@ class MockVcfRecord(object):
         self.qual = qual
         self.filter = vcf_filter
         self.info = info
+        self.info_dict = self._init_info_dict()
         self.format = vcf_format
         if samples is None:
             self.samples = []
@@ -264,7 +265,7 @@ class MockVcfRecord(object):
     def get_empty_record(self):
         return MockVcfRecord(self.chrom, self.pos, self.ref, self.alt)
 
-    def get_info_dict(self):
+    def _init_info_dict(self):
         info_dict = {}
 
         for key_value in self.info.split(";"):

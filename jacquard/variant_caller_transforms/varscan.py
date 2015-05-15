@@ -35,6 +35,7 @@ JQ_VARSCAN_TAG = "JQ_VS_"
 VERSION = "v2.3"
 
 class _GenotypeTag(object):
+    #pylint: disable=too-few-public-methods
     def __init__(self):
         self.metaheader = ('##FORMAT=<ID={0}GT,'
                            'Number=1,'
