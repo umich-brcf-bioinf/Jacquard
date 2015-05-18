@@ -112,10 +112,9 @@ def _check_snp_indel_pairings(altered_file_names, args):
                     logger.error(message, file_names)
                     error = 1
             if error:
-                message = ("Some VCFs were missing either a snp/snvs "
-                            "or an indel/indels file. Review "
-                            "inputs/command options to align file "
-                            "pairings or use the flag "
+                message = ("Not all patients were represented by the same set "
+                           "of caller-VCFs. Review inputs/command options to "
+                           "align file pairings or use the flag "
                             "--allow_inconsistent_sample_sets.")
                 raise utils.UsageError(message)
 
@@ -238,15 +237,17 @@ def add_subparser(subparser):
                                   help="Accepts a directory of VCF results (and VarScan high confidence files). Creates a new directory of VCFs, adding Jacquard-specific FORMAT tags for each VCF record.")
     parser.add_argument("input", help="Directory containing VCF files (and VarScan high confidence files). Other file types ignored")
     parser.add_argument("output", help="Directory containing VCF files. Will create if doesn't exist and will overwrite files in output directory as necessary")
-    parser.add_argument("-v", "--verbose", action='store_true')
-    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+    parser.add_argument("--allow_inconsistent_sample_sets",
+                        action='store_true',
+                        help="Set this flag if not every patient is represented by the same set of caller-VCFs.")
     parser.add_argument("--varscan_hc_filter_file_regex",
                         help=("Regex pattern that identifies optional VarScan high-confidence filter files.\n"
                               "The VCF, high-confidence file pairs should share the same prefix.\n"
                               "For example, given patientA.snp.vcf, patientA.indel.vcf, patientA.snp.fpfilter.pass, patientA.indel.fpfilter.pass,\n"
                               "you could enable this option as varscan_hc_filter_file_regex='.fpfilter.pass$'"))
-    parser.add_argument("--allow_inconsistent_sample_sets", help="Allow inconsistent sample sets to be used")
+    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
     parser.add_argument("--log_file", help="Path to log file destination. Defaults to current working directory if not specified.")
+    parser.add_argument("-v", "--verbose", action='store_true')
 
 #TODO (cgates): This module is both a command and also manipulates VcfRecords
 # like a caller. This is the only body of code that does both these things.

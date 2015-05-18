@@ -188,7 +188,7 @@ class TranslateTestCase(test_case.JacquardBaseTestCase):
             input_dir.write("claimed2.bar.vcf", b"foo")
             translate.variant_caller_factory = MockVariantCallerFactory()
             self.assertRaisesRegexp(utils.UsageError,
-                                    "Some VCFs were missing either a snp/snvs or an indel/indels file. Review inputs/command options to align file pairings or use the flag --allow_inconsistent_sample_sets.",
+                                    "Not all patients were represented by the same set of caller-VCFs. Review inputs/command options to align file pairings or use the flag --allow_inconsistent_sample_sets.",
                                     translate.validate_args,
                                     args)
 
