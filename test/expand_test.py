@@ -130,13 +130,13 @@ class ExpandTestCase(test_case.JacquardBaseTestCase):
                                              col_spec_fname)
         self.assertEquals(["CHROM", "POS"], actual_column_list)
 
-        exp_warning_1 = ("The expression [FOO] in column specification "+
-                         "file [spec.txt:2] didn't match any input columns; "+
-                         "columns may have matched earlier expressions, or "+
+        exp_warning_1 = ("The expression [FOO] in selected_columns_file "
+                         "[spec.txt:2] didn't match any input columns; "
+                         "columns may have matched earlier expressions, or "
                          "this expression may be irrelevant.")
-        exp_warning_2 = ("The expression [BAR] in column specification "+
-                         "file [spec.txt:4] didn't match any input columns; "+
-                         "columns may have matched earlier expressions, or "+
+        exp_warning_2 = ("The expression [BAR] in selected_columns_file "
+                         "[spec.txt:4] didn't match any input columns; "
+                         "columns may have matched earlier expressions, or "
                          "this expression may be irrelevant.")
 
         actual_log_warnings = test.utils.mock_logger.messages["WARNING"]
@@ -224,7 +224,7 @@ chr2|1|.|A|C|.|.|SOMATIC|GT|0/1|0/1
             args = Namespace(input=input_file,
                              original_output=output_file,
                              output=output_file,
-                             column_specification=0)
+                             selected_columns_file=0)
 
             expand.execute(args, ["##extra_header1", "##extra_header2"])
 
@@ -256,7 +256,7 @@ chr2|1|.|A|C|.|.|SOMATIC|GT|0/1|0/1
 
             args = Namespace(input="input.txt",
                              output="expanded.txt",
-                             column_specification=col_spec_file)
+                             selected_columns_file=col_spec_file)
             expand.validate_args(args)
             self.ok()
 
@@ -266,9 +266,9 @@ chr2|1|.|A|C|.|.|SOMATIC|GT|0/1|0/1
 
             args = Namespace(input="input.txt",
                              output="expanded.txt",
-                             column_specification=col_spec_dir.path)
+                             selected_columns_file=col_spec_dir.path)
             self.assertRaisesRegexp(utils.UsageError,
-                                    "The column specification file .* could not be read. Review inputs/usage and try again",
+                                    "The selected_columns_file .* could not be read. Review inputs/usage and try again",
                                     expand.validate_args,
                                     args)
 
@@ -355,7 +355,7 @@ class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):
                        os.path.join(input_dir, "summarized.vcf"),
                        os.path.join(output_dir.path, "expanded.txt"),
                        "--force",
-                       "--column_specification=" + col_spec]
+                       "--selected_columns_file=" + col_spec]
             expected_dir = os.path.join(module_testdir, "benchmark")
 
             self.assertCommand(command, expected_dir)

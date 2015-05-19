@@ -688,7 +688,7 @@ def add_subparser(subparser):
     parser.add_argument("output", help="VCF file")
     parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
-    parser.add_argument("--include_format_tags", dest='tags', help="Comma-separated list of regexs for format tags to include in output", metavar="")
+    parser.add_argument("--include_format_tags", dest='tags', help="Comma-separated user-defined list of regular expressions for format tags to be included in output", metavar="")
     parser.add_argument("--log_file", help="Log file destination", metavar="")
     parser.add_argument("--include_cells",
                         choices=["all", "valid", "passed", "somatic"],

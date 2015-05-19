@@ -12,19 +12,19 @@ variant callers); the output is intended to be useful to analysts and
 biological researchers.
 
 
-Most variant callers have embraced the Variant Call Format (VCF) standard [REFERENCE] which
-clearly and succinctly describes variants from a single tumor-normal pair.
-However, while many callers follow the standard, they often adopt different
-ways to partition results (e.g. somatic file vs. germline file, or
-SNP vs. indel); likewise each caller creates its own dialect of VCF fields and
-tags. Jacquard transforms the dialects of different variant callers into a
+Most variant callers have embraced the Variant Call Format (VCF) standard
+[REFERENCE] which clearly and succinctly describes variants from a single
+tumor-normal pair. However, while many callers follow the standard, they often
+adopt different ways to partition results (e.g. somatic file vs. germline file,
+or SNP vs. indel); likewise each caller creates its own dialect of VCF fields
+and tags. Jacquard transforms the dialects of different variant callers into a
 controlled vocabulary of tags with a consistent representation of values.
 Furthermore it intelligently merges VCFs from different patients and callers to
 create a single unified VCFs across your dataset.
 
-The consistent tag names and represntations expedite downstream analysis and 
-the ingerated VCF highlights prevelance of specific variants, and overall
-mutation loads across samples.
+The consistent tag names and represntations expedite downstream analysis and the
+ingerated VCF highlights prevelance of specific variants, and overall mutation
+loads across samples.
 
 <schematic picture of excel with highlighted columns/rows (from the poster)>
 

@@ -22,8 +22,8 @@ import jacquard.utils.utils as utils
 import jacquard.utils.vcf as vcf
 
 
-UNUSED_REGEX_WARNING_FORMAT = ("The expression [{}] in column specification "
-                               "file [{}:{}] didn't match any input columns; "
+UNUSED_REGEX_WARNING_FORMAT = ("The expression [{}] in selected_columns_file "
+                               "[{}:{}] didn't match any input columns; "
                                "columns may have matched earlier expressions, "
                                "or this expression may be irrelevant.")
 
@@ -88,7 +88,7 @@ def _filter_column_list(column_spec_list,
                            i + 1)
 
     if not actual_column_list:
-        raise utils.JQException("The column specification file [{}] would "
+        raise utils.JQException("The selected_columns_file [{}] would "
                                 "exclude all input columns. Review "
                                 "inputs/usage and try again.",
                                 column_spec_filename)
@@ -147,8 +147,8 @@ def add_subparser(subparser):
     parser.add_argument("input", help="VCF file. Other file types ignored")
     parser.add_argument("output", help="TXT file")
     parser.add_argument("-v", "--verbose", action='store_true')
-    parser.add_argument("-c", "--column_specification",
-                        help="Path to text file containing column regular expressions to be included in output file")
+    parser.add_argument("-s", "--selected_columns_file",
+                        help="File containing an ordered list of column names to be included in the output file; column names can include regular expressions.")
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
     parser.add_argument("--log_file", help="Log file destination")
 
@@ -162,14 +162,14 @@ def get_required_input_output_types():
     return ("file", "file")
 
 def validate_args(args):
-    if args.column_specification:
-        if not os.path.isfile(args.column_specification):
-            raise utils.UsageError(("The column specification file [{}] could "
+    if args.selected_columns_file:
+        if not os.path.isfile(args.selected_columns_file):
+            raise utils.UsageError(("The selected_columns_file [{}] could "
                                     "not be read. Review inputs/usage and "
                                     "try again."),
-                                    args.column_specification)
+                                    args.selected_columns_file)
 
-        _read_col_spec(args.column_specification)
+        _read_col_spec(args.selected_columns_file)
 
 def _get_actual_columns(vcf_reader, col_spec):
     columns  = _create_potential_column_list(vcf_reader)
@@ -192,7 +192,7 @@ def execute(args, dummy_execution_context):
     #for the moment, there is no good place to put the execution context
     input_file = os.path.abspath(args.input)
     output_file = os.path.abspath(args.output)
-    col_spec = args.column_specification if args.column_specification else None
+    col_spec = args.selected_columns_file if args.selected_columns_file else None
 
     logger.debug("Expanding [{}] to [{}]",
                  input_file,
