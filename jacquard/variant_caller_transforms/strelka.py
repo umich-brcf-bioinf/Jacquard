@@ -24,6 +24,63 @@ import jacquard.utils.vcf as vcf
 JQ_STRELKA_TAG = "JQ_SK_"
 VERSION = "v2.0.15"
 
+class _GenotypeTag(object):
+    _INDEL_VALUES = ["ref", "hom", "het"]
+
+    def __init__(self):
+        #pylint: disable=line-too-long
+        self.metaheader = ('##FORMAT=<ID={}GT,'
+                           'Number=1,'
+                           'Type=String,'
+                           'Description="Jacquard genotype (based on SGT). Example for snv: REF=A, ALT=C, INFO:SGT=AA->AC is translated as normal=0/0, tumor=0/1. Example for indel: INFO:SGT=ref->het is translated as normal=0/0, tumor=0/1.">')\
+                           .format(JQ_STRELKA_TAG)
+
+    @staticmethod
+    def _get_indel_genotype(sample_genotype):
+        indel_mapping_values = {"ref":"0/0","het":"0/1","hom":"1/1"}
+        if sample_genotype in indel_mapping_values:
+            return indel_mapping_values[sample_genotype]
+        else:
+            raise utils.JQException("Unable to determine Genotype")
+
+    @staticmethod
+    def _get_snv_genotype(sample_genotype, ref, alt):
+        sample_allele1, sample_allele2 = list(sample_genotype)
+        alleles = [ref]
+        alleles.extend(alt.split(","))
+
+        numerator = None
+        denominator = None
+
+        for i, allele in enumerate(alleles):
+            if sample_allele1 == allele:
+                numerator = str(i)
+            if sample_allele2 == allele:
+                denominator = str(i)
+
+        if numerator and denominator:
+            return numerator+"/"+denominator
+        else:
+            raise utils.JQException("Unable to determine Genotype")
+
+    def add_tag_values(self, vcf_record):
+        sample_values = {}
+        if "SGT" in vcf_record.info_dict:
+            sample_genotypes = vcf_record.info_dict["SGT"].split("->")
+
+            for i, sample in enumerate(vcf_record.sample_tag_values):
+                if sample_genotypes[i] in _GenotypeTag._INDEL_VALUES:
+                    genotype = self._get_indel_genotype(sample_genotypes[i])
+                else:
+                    genotype = self._get_snv_genotype(sample_genotypes[i],
+                                                      vcf_record.ref,
+                                                      vcf_record.alt)
+                sample_values[sample] = genotype
+
+        if sample_values:
+            vcf_record.add_sample_tag_value(JQ_STRELKA_TAG + "GT",
+                                            sample_values)
+
 class _AlleleFreqTag(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
@@ -272,7 +329,8 @@ class _StrelkaVcfReader(object):
                      common_tags.PassedTag(JQ_STRELKA_TAG),
                      _AlleleFreqTag(),
                      _DepthTag(),
-                     _SomaticTag()]
+                     _SomaticTag(),
+                     _GenotypeTag()]
 
     def _get_new_metaheaders(self):
         return [tag.metaheader for tag in self.tags]

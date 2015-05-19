@@ -5,6 +5,7 @@ transform Jacquard-standardized VcfRecords.
 """
 from __future__ import print_function, absolute_import, division
 
+from collections import defaultdict
 from decimal import Decimal
 import re
 
@@ -225,6 +226,51 @@ class _SamplesPassed(object):
     @staticmethod
     def add_tag_values(vcf_record):
         _add_sample_count_values(vcf_record, JQ_PASSED, JQ_SAMPLES_PASSED)
+
+class _HCGenotypeTag(object):
+    _TAG_ID = "{}HC_GT".format(JQ_SUMMARY_TAG)
+    _PATTERN = re.compile("^JQ_.*_GT$")
+
+    def __init__(self):
+        self.metaheader = self._get_metaheader()
+
+    @staticmethod
+    def _get_metaheader():
+        #pylint: disable=line-too-long
+        return ('##FORMAT=<ID={},'
+                'Number=1,'
+                'Type=String,'
+                'Description="High confidence consensus genotype (inferred from JQ_*_GT and JQ_*_CALLER_PASSED). Majority rules; ties go to the least unusual variant (0/1>0/2>1/1). Variants which failed their filter are ignored.">')\
+                .format(_HCGenotypeTag._TAG_ID)
+
+    @staticmethod
+    def _prioritize_genotype(values):
+        def _break_ties(value):
+            if value == "0/0":
+                return "99"
+            return value
+
+        count = defaultdict(int)
+        for value in values:
+            count[value] += 1
+
+        sorted_values = sorted(values,
+                               key=lambda x: (-count[x], _break_ties(x)))
+        return sorted_values[0]
+
+    def add_tag_values(self, vcf_record):
+        new_sample_tag_values = {}
+        for sample in vcf_record.sample_tag_values:
+            tag_values = _get_non_null_values(vcf_record,
+                                              sample,
+                                              _HCGenotypeTag._PATTERN)
+            genotype = "."
+            if tag_values:
+                genotype = self._prioritize_genotype(tag_values)
+            new_sample_tag_values[sample] = genotype
+
+        vcf_record.add_sample_tag_value(_HCGenotypeTag._TAG_ID,
+                                        new_sample_tag_values)
 
 class _AlleleFreqRangeTag(object):
     #pylint: disable=too-few-public-methods
@@ -449,7 +495,8 @@ class SummarizeCaller(object):
                      _AlleleFreqRangeTag(),
                      _DepthAverageTag(),
                      _DepthRangeTag(),
-                     _SomaticTag()]
+                     _SomaticTag(),
+                     _HCGenotypeTag()]
 
     def add_tags(self, vcf_record):
         for tag in self.tags:

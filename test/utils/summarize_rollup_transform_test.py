@@ -177,6 +177,57 @@ class SamplesPassedTestCase(test_case.JacquardBaseTestCase):
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO;{}{}=0|JQ_DP:{}{}|X:.|Y:.\n".format(summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_SAMPLES_PASSED, summarize_caller.JQ_SUMMARY_TAG, summarize_caller.JQ_PASSED))
         self.assertEquals(expected, processedVcfRecord.text())
 
+class HCGenotypeTagTestCase(test_case.JacquardBaseTestCase):
+    def test_metaheader(self):
+        self.assertEquals('##FORMAT=<ID={}HC_GT,Number=1,Type=String,Description="High confidence consensus genotype (inferred from JQ_*_GT and JQ_*_CALLER_PASSED). Majority rules; ties go to the least unusual variant (0/1>0/2>1/1). Variants which failed their filter are ignored.">'.format(summarize_caller.JQ_SUMMARY_TAG),
+                          summarize_caller._HCGenotypeTag().metaheader)
+
+    def test_add_tag_values(self):
+        tag = summarize_caller._HCGenotypeTag()
+        sample_tag_values = {"SA": {"JQ_foo_GT": "0/1", "JQ_bar_GT": "0/1", "JQ_baz_GT":"."},
+                             "SB": {"JQ_foo_GT": "0/0", "JQ_bar_GT": "0/0", "JQ_baz_GT":"0/1"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+        self.assertEquals("0/1", record.sample_tag_values["SA"][tag._TAG_ID])
+        self.assertEquals("0/0", record.sample_tag_values["SB"][tag._TAG_ID])
+
+    def test_add_tag_values_allNulls(self):
+        tag = summarize_caller._HCGenotypeTag()
+        sample_tag_values = {"SA": {"JQ_foo_GT": ".", "JQ_bar_GT": ".", "JQ_baz_GT":"."}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals(".", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_onlyCountGTTags(self):
+        tag = summarize_caller._HCGenotypeTag()
+        sample_tag_values = {"SA": {"JQ_foo_XX": "0/1", "JQ_bar_GT": ".", "JQ_baz_GT":"0/0"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals("0/0", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_add_tag_values_missingGTTags(self):
+        tag = summarize_caller._HCGenotypeTag()
+        sample_tag_values = {"SA": {"JQ_foo_XX": "0/1"}}
+        record = VcfRecord("CHROM", "POS", "REF", "ALT",
+                           sample_tag_values=sample_tag_values)
+        tag.add_tag_values(record)
+
+        self.assertEquals(".", record.sample_tag_values["SA"][tag._TAG_ID])
+
+    def test_prioritize_genotype(self):
+        tag = summarize_caller._HCGenotypeTag()
+        self.assertEquals("0/1", tag._prioritize_genotype(["0/1"]))
+        self.assertEquals("0/1", tag._prioritize_genotype(["0/0", "0/1"]))
+        self.assertEquals("1/1", tag._prioritize_genotype(["0/0", "1/1"]))
+        self.assertEquals("1/1", tag._prioritize_genotype(["1/1", "1/1", "0/1"]))
+        self.assertEquals("0/1", tag._prioritize_genotype(["1/1", "0/1", "0/1"]))
+        self.assertEquals("0/1", tag._prioritize_genotype(["0/1", "0/2"]))
+
 class AlleleFreqRangeTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
         split_meta_header = summarize_caller._AlleleFreqRangeTag().metaheader.split("\n")
@@ -721,6 +772,6 @@ class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
         first_meta_header = split_actual[0]
 
         self.assertEqual(expected, first_meta_header)
-        self.assertEqual(11, len(actual))
+        self.assertEqual(12, len(actual))
         self.assertEqual(1, len(split_actual))
 

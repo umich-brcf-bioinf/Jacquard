@@ -2,14 +2,104 @@
 # pylint: disable=invalid-name,global-statement,too-many-format-args
 from __future__ import print_function, absolute_import, division
 
+from collections import OrderedDict
+
 import jacquard.utils.logger
 import jacquard.utils.utils as utils
-import jacquard.variant_caller_transforms.strelka as strelka
 import jacquard.utils.vcf as vcf
+import jacquard.variant_caller_transforms.strelka as strelka
 import test.utils.mock_logger
 import test.utils.test_case as test_case
-from test.utils.vcf_test import MockFileReader, MockVcfReader
+from test.utils.vcf_test import MockFileReader, MockVcfReader, MockVcfRecord
 
+
+class GenotypeTagTestCase(test_case.JacquardBaseTestCase):
+    def test_metaheader(self):
+        self.assertEquals('##FORMAT=<ID={}GT,Number=1,Type=String,Description="Jacquard genotype (based on SGT). Example for snv: REF=A, ALT=C, INFO:SGT=AA->AC is translated as normal=0/0, tumor=0/1. Example for indel: INFO:SGT=ref->het is translated as normal=0/0, tumor=0/1.">'.format(strelka.JQ_STRELKA_TAG),
+                          strelka._GenotypeTag().metaheader)
+
+    def test_get_snv_genotype(self):
+        tag = strelka._GenotypeTag()
+        genotype = tag._get_snv_genotype("AA", "A", "G")
+        self.assertEquals("0/0", genotype)
+
+        genotype = tag._get_snv_genotype("AG", "A", "G")
+        self.assertEquals("0/1", genotype)
+
+        genotype = tag._get_snv_genotype("GG", "A", "G")
+        self.assertEquals("1/1", genotype)
+
+    def test_get_snv_genotype_handleNullValue(self):
+        tag = strelka._GenotypeTag()
+        genotype = tag._get_snv_genotype("AA", "A", ".")
+
+        self.assertEquals("0/0", genotype)
+
+    def test_get_snv_genotype_multAlt(self):
+        tag = strelka._GenotypeTag()
+        genotype = tag._get_snv_genotype("CG", "C", "A,G")
+        self.assertEquals("0/2", genotype)
+
+        genotype = tag._get_snv_genotype("CA", "C", "A,G")
+        self.assertEquals("0/1", genotype)
+
+        genotype = tag._get_snv_genotype("AG", "C", "A,G")
+        self.assertEquals("1/2", genotype)
+
+    def test_get_snv_genotype_errorIfDoesntMatchRefAlt(self):
+        tag = strelka._GenotypeTag()
+
+        self.assertRaisesRegexp(utils.JQException,
+                                "Unable to determine Genotype",
+                                tag._get_snv_genotype,
+                                "AT",
+                                "A",
+                                "G")
+
+    def test_get_indel_genotype(self):
+        tag = strelka._GenotypeTag()
+        genotype = tag._get_indel_genotype("ref")
+        self.assertEquals("0/0", genotype)
+
+        genotype = tag._get_indel_genotype("het")
+        self.assertEquals("0/1", genotype)
+
+        genotype = tag._get_indel_genotype("hom")
+        self.assertEquals("1/1", genotype)
+
+    def test_get_indel_genotype_errorIfDoesntMatch(self):
+        tag = strelka._GenotypeTag()
+
+        self.assertRaisesRegexp(utils.JQException,
+                          "Unable to determine Genotype",
+                          tag._get_indel_genotype,
+                          "foo")
+
+    def test_add_tag_values_snvs(self):
+        vcf_record = MockVcfRecord("chr1", "12", "A", "G", info="SGT=AA->AG", vcf_format="AF", samples=["0.2", "0.3"])
+        tag = strelka._GenotypeTag()
+        tag.add_tag_values(vcf_record)
+
+        expected_sample1 = OrderedDict(sorted({"AF": "0.2",
+                                               "{}GT".format(strelka.JQ_STRELKA_TAG): "0/0"}.items()))
+        self.assertEquals(expected_sample1, vcf_record.sample_tag_values[0])
+
+        expected_sample2 = OrderedDict(sorted({"AF": "0.3",
+                                               "{}GT".format(strelka.JQ_STRELKA_TAG ): "0/1"}.items()))
+        self.assertEquals(expected_sample2, vcf_record.sample_tag_values[1])
+
+    def test_add_tag_values_indels(self):
+        vcf_record = MockVcfRecord("chr1", "12", "A", "G", info="SGT=ref->het", vcf_format="AF", samples=["0.2", "0.3"])
+        tag = strelka._GenotypeTag()
+        tag.add_tag_values(vcf_record)
+
+        expected_sample1 = OrderedDict(sorted({"AF": "0.2",
+                                               "{}GT".format(strelka.JQ_STRELKA_TAG): "0/0"}.items()))
+        self.assertEquals(expected_sample1, vcf_record.sample_tag_values[0])
+
+        expected_sample2 = OrderedDict(sorted({"AF": "0.3",
+                                               "{}GT".format(strelka.JQ_STRELKA_TAG ): "0/1"}.items()))
+        self.assertEquals(expected_sample2, vcf_record.sample_tag_values[1])
 
 class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):

@@ -3,18 +3,17 @@
 from __future__ import print_function, absolute_import, division
 
 from argparse import Namespace
+from collections import OrderedDict
 import re
 
 import jacquard.utils.logger
 import jacquard.utils.utils as utils
 import jacquard.utils.vcf as vcf
-import jacquard.utils.utils as utils
 from jacquard.variant_caller_transforms import varscan
 from jacquard.variant_caller_transforms.varscan import _HCTag
 import test.utils.mock_logger
 import test.utils.test_case as test_case
-from test.utils.vcf_test import MockFileReader, MockVcfReader
-
+from test.utils.vcf_test import MockFileReader, MockVcfReader, MockVcfRecord
 
 class HCTagTestCase(test_case.JacquardBaseTestCase):
     def test_add_tag_values_highConfidenceDoesNotChangeFilter(self):
@@ -36,6 +35,37 @@ class HCTagTestCase(test_case.JacquardBaseTestCase):
         actual = tag.add_tag_values(record).filter
         self.assertEquals(expected, actual)
 
+
+class GenotypeTagTestCase(test_case.JacquardBaseTestCase):
+    def test_metaheader(self):
+        self.assertEqual('##FORMAT=<ID={0}GT,Number=1,Type=String,Description="Jacquard genotype (based on GT)">'.format(varscan.JQ_VARSCAN_TAG),
+                         varscan._GenotypeTag().metaheader)
+
+    def test_add_tag_values_addsGTTag(self):
+        vcf_record = MockVcfRecord("chr1", "12", "A", "T", vcf_format="AF:GT", samples=["0.2:0/0", "0.4:0/1"])
+        tag = varscan._GenotypeTag()
+        tag.add_tag_values(vcf_record)
+
+        expected_sample1 = OrderedDict(sorted({"AF": "0.2",
+                                               "GT": "0/0",
+                                               "{}GT".format(varscan.JQ_VARSCAN_TAG): "0/0"}.items()))
+        self.assertEquals(expected_sample1, vcf_record.sample_tag_values[0])
+
+        expected_sample2 = OrderedDict(sorted({"AF": "0.4",
+                                               "GT": "0/1",
+                                               "{}GT".format(varscan.JQ_VARSCAN_TAG): "0/1"}.items()))
+        self.assertEquals(expected_sample2, vcf_record.sample_tag_values[1])
+
+    def test_add_tag_values_missingGTTag(self):
+        vcf_record = MockVcfRecord("chr1", "12", "A", "T", vcf_format="AF", samples=["0.2", "0.4"])
+        tag = varscan._GenotypeTag()
+        tag.add_tag_values(vcf_record)
+
+        expected_sample1 = OrderedDict(sorted({"AF": "0.2"}.items()))
+        self.assertEquals(expected_sample1, vcf_record.sample_tag_values[0])
+
+        expected_sample2 = OrderedDict(sorted({"AF": "0.4"}.items()))
+        self.assertEquals(expected_sample2, vcf_record.sample_tag_values[1])
 
 class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):

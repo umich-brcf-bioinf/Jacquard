@@ -2,10 +2,58 @@
 # pylint: disable=invalid-name,global-statement
 from __future__ import print_function, absolute_import, division
 
+from collections import OrderedDict
 import jacquard.variant_caller_transforms.mutect as mutect
 import jacquard.utils.vcf as vcf
 import test.utils.test_case as test_case
-from test.utils.vcf_test import MockFileReader, MockVcfReader
+from test.utils.vcf_test import MockFileReader, MockVcfReader, MockVcfRecord
+
+
+class GenotypeTagTestCase(test_case.JacquardBaseTestCase):
+    def test_metaheader(self):
+        self.assertEqual('##FORMAT=<ID={0}GT,Number=1,Type=String,Description="Jacquard genotype (based on GT)">'.format(mutect.JQ_MUTECT_TAG),
+                         mutect._GenotypeTag().metaheader)
+
+    def test_add_tag_values(self):
+        vcf_record = MockVcfRecord("chr1", "24", "A", "T", vcf_format="AF:GT", samples=["0.3:0", "0.2:0/1"])
+        tag = mutect._GenotypeTag()
+        tag.add_tag_values(vcf_record)
+
+        expected_sample1 = OrderedDict(sorted({"AF": "0.3",
+                                               "GT": "0",
+                                               "{}GT".format(mutect.JQ_MUTECT_TAG): "0/0"}.items()))
+        self.assertEquals(expected_sample1, vcf_record.sample_tag_values[0])
+
+        expected_sample2 = OrderedDict(sorted({"AF": "0.2",
+                                               "GT": "0/1",
+                                               "{}GT".format(mutect.JQ_MUTECT_TAG): "0/1"}.items()))
+        self.assertEquals(expected_sample2, vcf_record.sample_tag_values[1])
+
+    def test_add_tag_values_missingGTTag(self):
+        vcf_record = MockVcfRecord("chr1", "24", "A", "T", vcf_format="AF", samples=["0.3", "0.2"])
+        tag = mutect._GenotypeTag()
+        tag.add_tag_values(vcf_record)
+
+        expected_sample1 = OrderedDict(sorted({"AF": "0.3"}.items()))
+        self.assertEquals(expected_sample1, vcf_record.sample_tag_values[0])
+
+        expected_sample2 = OrderedDict(sorted({"AF": "0.2"}.items()))
+        self.assertEquals(expected_sample2, vcf_record.sample_tag_values[1])
+
+    def test_add_tag_values_noChangeInGT(self):
+        vcf_record = MockVcfRecord("chr1", "24", "A", "T", vcf_format="AF:GT", samples=["0.3:0/1", "0.2:0/1"])
+        tag = mutect._GenotypeTag()
+        tag.add_tag_values(vcf_record)
+
+        expected_sample1 = OrderedDict(sorted({"AF": "0.3",
+                                               "GT": "0/1",
+                                               "{}GT".format(mutect.JQ_MUTECT_TAG): "0/1"}.items()))
+        self.assertEquals(expected_sample1, vcf_record.sample_tag_values[0])
+
+        expected_sample2 = OrderedDict(sorted({"AF": "0.2",
+                                               "GT": "0/1",
+                                               "{}GT".format(mutect.JQ_MUTECT_TAG): "0/1"}.items()))
+        self.assertEquals(expected_sample2, vcf_record.sample_tag_values[1])
 
 
 class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):

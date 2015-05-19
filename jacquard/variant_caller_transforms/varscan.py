@@ -34,6 +34,25 @@ _VARSCAN_SOMATIC_HEADER = ("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"
 JQ_VARSCAN_TAG = "JQ_VS_"
 VERSION = "v2.3"
 
+class _GenotypeTag(object):
+    #pylint: disable=too-few-public-methods
+    def __init__(self):
+        self.metaheader = ('##FORMAT=<ID={0}GT,'
+                           'Number=1,'
+                           'Type=String,'
+                           'Description="Jacquard genotype (based on GT)">')\
+                           .format(JQ_VARSCAN_TAG)
+
+    @staticmethod
+    def add_tag_values(vcf_record):
+        sample_values = {}
+        if "GT" in vcf_record.format_tags:
+            for sample in vcf_record.sample_tag_values:
+                genotype = vcf_record.sample_tag_values[sample]["GT"]
+                sample_values[sample] = genotype
+            vcf_record.add_sample_tag_value(JQ_VARSCAN_TAG + "GT",
+                                            sample_values)
+
 class _AlleleFreqTag(object):
     #pylint: disable=too-few-public-methods
     @classmethod
@@ -427,7 +446,8 @@ class _VarscanVcfReader(object):
                      common_tags.PassedTag(JQ_VARSCAN_TAG),
                      _AlleleFreqTag(),
                      _DepthTag(),
-                     _SomaticTag()]
+                     _SomaticTag(),
+                     _GenotypeTag()]
 
         if som_hc_file_reader:
             self.tags.insert(0, _HCTag(som_hc_file_reader))

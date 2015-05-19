@@ -247,6 +247,7 @@ class MockVcfRecord(object):
         self.qual = qual
         self.filter = vcf_filter
         self.info = info
+        self.info_dict = self._init_info_dict()
         self.format = vcf_format
         if samples is None:
             self.samples = []
@@ -264,7 +265,7 @@ class MockVcfRecord(object):
     def get_empty_record(self):
         return MockVcfRecord(self.chrom, self.pos, self.ref, self.alt)
 
-    def get_info_dict(self):
+    def _init_info_dict(self):
         info_dict = {}
 
         for key_value in self.info.split(";"):
@@ -275,6 +276,20 @@ class MockVcfRecord(object):
                 info_dict[key_value] = key_value
 
         return info_dict
+
+    @property
+    def format_tags(self):
+        """Returns set of format tags."""
+        tags = VcfRecord._EMPTY_SET
+        if self.sample_tag_values:
+            first_sample = list(self.sample_tag_values.keys())[0]
+            tags = set(self.sample_tag_values[first_sample].keys())
+        return tags
+
+    def add_sample_tag_value(self, tag_name, new_sample_values):
+        for sample in self.sample_tag_values.keys():
+            value = str(new_sample_values[sample])
+            self.sample_tag_values[sample][tag_name] = value
 
     def text(self):
         stringifier = [self.chrom, self.pos, self.id, self.ref, self.alt,
