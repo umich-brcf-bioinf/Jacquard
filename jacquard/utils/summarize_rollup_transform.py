@@ -227,7 +227,6 @@ class _SamplesPassed(object):
     def add_tag_values(vcf_record):
         _add_sample_count_values(vcf_record, JQ_PASSED, JQ_SAMPLES_PASSED)
 
-#TODO: hook this up
 class _HCGenotypeTag(object):
     _TAG_ID = "{}HC_GT".format(JQ_SUMMARY_TAG)
     _PATTERN = re.compile("^JQ_.*_GT$")
@@ -496,7 +495,8 @@ class SummarizeCaller(object):
                      _AlleleFreqRangeTag(),
                      _DepthAverageTag(),
                      _DepthRangeTag(),
-                     _SomaticTag()]
+                     _SomaticTag(),
+                     _HCGenotypeTag()]
 
     def add_tags(self, vcf_record):
         for tag in self.tags:

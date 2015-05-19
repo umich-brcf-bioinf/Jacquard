@@ -772,6 +772,6 @@ class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
         first_meta_header = split_actual[0]
 
         self.assertEqual(expected, first_meta_header)
-        self.assertEqual(11, len(actual))
+        self.assertEqual(12, len(actual))
         self.assertEqual(1, len(split_actual))
 
