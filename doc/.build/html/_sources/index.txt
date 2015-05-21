@@ -12,12 +12,17 @@ Contents:
    :maxdepth: 2
 
    Overview <overview>
-   Workflows and Supported Variant Callers <workflows>
+   Installation <include_install>
+   Workflows & Supported Variant Callers <workflows>
    General Usage <general_usage>
    Translate <translate>
    Merge <merge>
    Summarize <summarize>
    Expand <expand>
+   FAQ <faq>
+   Changelog <include_changelog>
+   TODO <include_todo>
+   License <license>
 
 
 Indices and tables

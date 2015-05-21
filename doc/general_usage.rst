@@ -6,6 +6,7 @@ For help on a specific command:
 
 ``jacquard <SUBCOMMAND> -h'``
 
+|
 
 Sub-Commands
 ------------
@@ -26,6 +27,7 @@ fields.
 be better suited than a VCF file for analysis and visualization in R, Pandas, 
 Excel, or another third party application.
 
+|
 
 Common Sub-Command Options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -37,6 +39,7 @@ Common Sub-Command Options
 -v, --verbose              Prints detailed logs to the console
 =====================      ====================================================
 
+|
 
 Input File Conventions
 ----------------------
@@ -61,6 +64,7 @@ preserve all metaheaders in the source VCF.
 For a specific source VCF, Jacquard automatically determines the tumor and
 normal samples based on the column header and the metaheaders.
 
+|
 
 Notes
 -----

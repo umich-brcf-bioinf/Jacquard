@@ -1,5 +1,9 @@
+Workflows and Supported Variant Callers
+=======================================
+|
+
 Workflows
-=========
+---------
 Jacquard is a suite of tools that can be either run in succession or
 individually: translate, merge, summarize, and expand. Each of these tools is
 discussed in detail in subsequent pages.
@@ -15,8 +19,9 @@ to obtain meaningful results.
    signature workflow of Jacquard.*
 
 
+|
 Supported Variant Callers
-=========================
+-------------------------
 Merge and Expand are able to process VCF files from any variant caller.
 Translate and Summarize, however, must be run with VCF files from one or more
 of the supported variant callers. Currently, Jacquard supports MuTect, VarScan,

@@ -22,12 +22,15 @@ for Strelka, 'JQ_VS' for VarScan and 'JQ_MT' for MuTect.
    contain the original format tags from the input files as well as the 
    Jacquard-specific format tags.*
 
+|
+
 Usage
 ^^^^^
 ``jacquard translate <input_dir> <output_dir> [OPTIONS]``
 
 
 *positional arguments:*
+
 =====================================  ========================================
 input                                  Directory containing VCF files (and 
                                        VarScan high confidence files). Other
@@ -40,6 +43,7 @@ output                                 Directory containing VCF files. Will
 
 
 *optional arguments:*
+
 =====================================  ========================================
 --allow_inconsistent_sample_sets
                                        Set this flag if not every patient is

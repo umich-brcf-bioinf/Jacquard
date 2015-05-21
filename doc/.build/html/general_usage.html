@@ -32,7 +32,7 @@
   
     <link rel="top" title="Jacquard 0.41 documentation" href="index.html"/>
         <link rel="next" title="Translate" href="translate.html"/>
-        <link rel="prev" title="Workflows" href="workflows.html"/> 
+        <link rel="prev" title="Workflows and Supported Variant Callers" href="workflows.html"/> 
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
@@ -64,9 +64,20 @@
           
           
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="workflows.html">Workflows</a></li>
-<li class="toctree-l1"><a class="reference internal" href="workflows.html#supported-variant-callers">Supported Variant Callers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#contact-us">Contact Us:</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="include_install.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="include_install.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="include_install.html#installing">Installing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="workflows.html">Workflows &amp; Supported Variant Callers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#workflows">Workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#supported-variant-callers">Supported Variant Callers</a></li>
+</ul>
+</li>
 <li class="toctree-l1 current"><a class="current reference internal" href="">General Usage</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#sub-commands">Sub-Commands</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#input-file-conventions">Input File Conventions</a></li>
@@ -89,6 +100,17 @@
 <li class="toctree-l2"><a class="reference internal" href="expand.html#usage">Usage</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="include_changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="include_changelog.html#x-x-xxxx">0.42 (X/X/XXXX)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="include_changelog.html#id1">0.41 (5/7/2015)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="include_changelog.html#id2">0.31 (3/17/2015)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="include_changelog.html#id3">0.3 (3/9/2015)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="include_changelog.html#id4">0.21 (10/2014)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="include_todo.html">TODO</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
 </ul>
 
           
@@ -129,6 +151,9 @@
 <p><code class="docutils literal"><span class="pre">usage:</span> <span class="pre">jacquard</span> <span class="pre">&lt;SUBCOMMAND&gt;</span> <span class="pre">[ARGUMENTS]</span> <span class="pre">[OPTIONS]</span></code></p>
 <p>For help on a specific command:</p>
 <p><code class="docutils literal"><span class="pre">jacquard</span> <span class="pre">&lt;SUBCOMMAND&gt;</span> <span class="pre">-h'</span></code></p>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
 <div class="section" id="sub-commands">
 <h2>Sub-Commands<a class="headerlink" href="#sub-commands" title="Permalink to this headline">¶</a></h2>
 <p><strong>translate</strong>
@@ -144,6 +169,9 @@ fields.</p>
 : Converts a VCF file into an tab-delimited file in a tabular format which would
 be better suited than a VCF file for analysis and visualization in R, Pandas,
 Excel, or another third party application.</p>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
 <div class="section" id="common-sub-command-options">
 <h3>Common Sub-Command Options<a class="headerlink" href="#common-sub-command-options" title="Permalink to this headline">¶</a></h3>
 <table border="1" class="docutils">
@@ -167,6 +195,9 @@ working directory if not specified.</td>
 </tr>
 </tbody>
 </table>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
 </div>
 </div>
 <div class="section" id="input-file-conventions">
@@ -185,6 +216,9 @@ caller based on the VCF metaheaders. For this reason it is essential that you
 preserve all metaheaders in the source VCF.</p>
 <p>For a specific source VCF, Jacquard automatically determines the tumor and
 normal samples based on the column header and the metaheaders.</p>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
 </div>
 <div class="section" id="notes">
 <h2>Notes<a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h2>
@@ -207,7 +241,7 @@ verbose (in which case debug is also echoed to console).</p>
         <a href="translate.html" class="btn btn-neutral float-right" title="Translate">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="workflows.html" class="btn btn-neutral" title="Workflows"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="workflows.html" class="btn btn-neutral" title="Workflows and Supported Variant Callers"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

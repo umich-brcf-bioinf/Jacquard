@@ -64,9 +64,20 @@
           
           
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="workflows.html">Workflows</a></li>
-<li class="toctree-l1"><a class="reference internal" href="workflows.html#supported-variant-callers">Supported Variant Callers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#contact-us">Contact Us:</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="include_install.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="include_install.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="include_install.html#installing">Installing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="workflows.html">Workflows &amp; Supported Variant Callers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#workflows">Workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#supported-variant-callers">Supported Variant Callers</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="general_usage.html">General Usage</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="general_usage.html#sub-commands">Sub-Commands</a></li>
 <li class="toctree-l2"><a class="reference internal" href="general_usage.html#input-file-conventions">Input File Conventions</a></li>
@@ -89,6 +100,17 @@
 <li class="toctree-l2"><a class="reference internal" href="expand.html#usage">Usage</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="include_changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="include_changelog.html#x-x-xxxx">0.42 (X/X/XXXX)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="include_changelog.html#id1">0.41 (5/7/2015)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="include_changelog.html#id2">0.31 (3/17/2015)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="include_changelog.html#id3">0.3 (3/9/2015)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="include_changelog.html#id4">0.21 (10/2014)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="include_todo.html">TODO</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
 </ul>
 
           
@@ -143,26 +165,25 @@ for Strelka, &#8216;JQ_VS&#8217; for VarScan and &#8216;JQ_MT&#8217; for MuTect.
 contain the original format tags from the input files as well as the
 Jacquard-specific format tags.</em></span></p>
 </div>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
 <div class="section" id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
 <p><code class="docutils literal"><span class="pre">jacquard</span> <span class="pre">translate</span> <span class="pre">&lt;input_dir&gt;</span> <span class="pre">&lt;output_dir&gt;</span> <span class="pre">[OPTIONS]</span></code></p>
+<p><em>positional arguments:</em></p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="48%" />
 <col width="52%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">positional arguments:</th>
-<th class="head">&nbsp;</th>
-</tr>
-</thead>
 <tbody valign="top">
-<tr class="row-even"><td>input</td>
+<tr class="row-odd"><td>input</td>
 <td>Directory containing VCF files (and
 VarScan high confidence files). Other
 file types ignored</td>
 </tr>
-<tr class="row-odd"><td>output</td>
+<tr class="row-even"><td>output</td>
 <td>Directory containing VCF files. Will
 create if doesn&#8217;t exist and will
 overwrite files in output directory as
@@ -170,23 +191,19 @@ necessary</td>
 </tr>
 </tbody>
 </table>
+<p><em>optional arguments:</em></p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="48%" />
 <col width="52%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">optional arguments:</th>
-<th class="head">&nbsp;</th>
-</tr>
-</thead>
 <tbody valign="top">
-<tr class="row-even"><td>&#8211;allow_inconsistent_sample_sets</td>
+<tr class="row-odd"><td>&#8211;allow_inconsistent_sample_sets</td>
 <td>Set this flag if not every patient is
 represented by the same set of
 caller-VCFs.</td>
 </tr>
-<tr class="row-odd"><td>&#8211;varscan_hc_filter_file_regex REGEX</td>
+<tr class="row-even"><td>&#8211;varscan_hc_filter_file_regex REGEX</td>
 <td>Regex pattern that identifies optional
 VarScan high-confidence filter files.
 The VCF, high-confidence file pairs

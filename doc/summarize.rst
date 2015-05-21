@@ -13,12 +13,15 @@ The summarized format tags contain the prefix 'JQ_SUMMARY'.
    each caller are aggregated and processed together to create consensus format
    tags.* 
 
+|
+
 Usage
 ^^^^^
 ``usage: jacquard summarize <input_file> <output_file>``
 
 
 *positional arguments:*
+
 =====================   =======================================================
 input                   Jacquard-merged VCF file (or any VCF with Jacquard
                         tags; e.g. JQ_SOM_MT)

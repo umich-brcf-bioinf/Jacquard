@@ -29,12 +29,15 @@ glossary and are defined by their metaheader description.
    **Expanding Columns :** *The INFO column and sample-specific format tags from
    the input VCF file are separated into distinct columns in the output file.*
 
+|
+
 Usage
 ^^^^^
 ``usage: jacquard expand <input_file> <output_file> [OPTIONS]``
 
 
 *positional arguments:*
+
 =====================   =======================================================
 input                   VCF file. Other file types ignored
 output                  TXT file
@@ -42,6 +45,7 @@ output                  TXT file
 
 
 *optional arguments:*
+
 ================================       ========================================
 -s, --selected_columns_file FILE       File containing an ordered list
                                        of column names to be included in the

@@ -64,9 +64,20 @@
           
           
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="workflows.html">Workflows</a></li>
-<li class="toctree-l1"><a class="reference internal" href="workflows.html#supported-variant-callers">Supported Variant Callers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#contact-us">Contact Us:</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="include_install.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="include_install.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="include_install.html#installing">Installing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="workflows.html">Workflows &amp; Supported Variant Callers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#workflows">Workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#supported-variant-callers">Supported Variant Callers</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="general_usage.html">General Usage</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="general_usage.html#sub-commands">Sub-Commands</a></li>
 <li class="toctree-l2"><a class="reference internal" href="general_usage.html#input-file-conventions">Input File Conventions</a></li>
@@ -89,6 +100,17 @@
 <li class="toctree-l2"><a class="reference internal" href="expand.html#usage">Usage</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="include_changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="include_changelog.html#x-x-xxxx">0.42 (X/X/XXXX)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="include_changelog.html#id1">0.41 (5/7/2015)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="include_changelog.html#id2">0.31 (3/17/2015)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="include_changelog.html#id3">0.3 (3/9/2015)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="include_changelog.html#id4">0.21 (10/2014)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="include_todo.html">TODO</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
 </ul>
 
           
@@ -128,10 +150,14 @@
 <h1>Merge<a class="headerlink" href="#merge" title="Permalink to this headline">¶</a></h1>
 <p>The merge command takes an input directory of VCFs and filters both the
 variants and format tags based on your specifications.</p>
-<p>By default, merge contains only Jacquard-translated format tags (<a href="#id3"><span class="problematic" id="id4">JQ_</span></a>.*) and
+<p>By default, merge contains only Jacquard-translated format tags (JQ_.*) and
 includes all variants with valid syntax at loci where at least one variant was
 somatic. The resulting filtered files contain fewer rows, yet higher quality
 data than the input files.</p>
+<p>Though most variant callers have their own distinct set of format tags, some
+tag names are common across multiple callers. If there are any format tag name
+collisions, merge will add a prefix (e.g. JQ1_&lt;original_tag&gt;) in order to
+disambiguate the format tags.</p>
 <div class="figure" id="id1">
 <img alt="_images/merge_filter_step.jpg" src="_images/merge_filter_step.jpg" />
 <p class="caption"><span class="caption-text"><strong>The Filtering Process :</strong> <em>Rows and specific cells in the VCF files are
@@ -155,68 +181,63 @@ analyze the data.</p>
 <p class="caption"><span class="caption-text"><strong>The Merging Process :</strong> <em>Sample-specific information is grouped together for
 each patient.</em></span></p>
 </div>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
 <div class="section" id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
 <p><code class="docutils literal"><span class="pre">usage:</span> <span class="pre">jacquard</span> <span class="pre">merge</span> <span class="pre">&lt;input_dir&gt;</span> <span class="pre">&lt;output_file&gt;</span> <span class="pre">[OPTIONS]</span></code></p>
+<p><em>positional arguments:</em></p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="31%" />
 <col width="69%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">positional arguments:</th>
-<th class="head">&nbsp;</th>
-</tr>
-</thead>
 <tbody valign="top">
-<tr class="row-even"><td>input</td>
+<tr class="row-odd"><td>input</td>
 <td>Directory containing VCF files. Other file types
 ignored</td>
 </tr>
-<tr class="row-odd"><td>output</td>
+<tr class="row-even"><td>output</td>
 <td>VCF file</td>
 </tr>
 </tbody>
 </table>
+<p><em>optional arguments:</em></p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="32%" />
 <col width="68%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">optional arguments:</th>
-<th class="head">&nbsp;</th>
-</tr>
-</thead>
 <tbody valign="top">
-<tr class="row-even"><td>&#8211;include_format_tags</td>
+<tr class="row-odd"><td>&#8211;include_format_tags</td>
 <td>Comma-separated user-defined list of regular
 expressions for format tags to be included in
 output</td>
 </tr>
-<tr class="row-odd"><td>&#8211;include_cells</td>
-<td><p class="first">valid: Only include valid variants
-all: Include all variants
-passed: Only include variants which passed their</p>
+<tr class="row-even"><td>&#8211;include_cells</td>
+<td><p class="first">valid:  Only include valid variants
+all:  Include all variants
+passed:  Only include variants which passed their</p>
 <blockquote>
 <div>respective filter</div></blockquote>
-<p class="last">somatic: Only include somatic variants</p>
+<p class="last">somatic:  Only include somatic variants</p>
 </td>
 </tr>
-<tr class="row-even"><td>&#8211;include_rows</td>
+<tr class="row-odd"><td>&#8211;include_rows</td>
 <td><dl class="first docutils">
-<dt>at_least_one_somatic: Include all variants at loci</dt>
+<dt>at_least_one_somatic:  Include all variants at loci</dt>
 <dd>where at least one variant
 was somatic</dd>
-<dt>all_somatic: Include all variants at loci where all</dt>
+<dt>all_somatic:  Include all variants at loci where all</dt>
 <dd>variants were somatic</dd>
-<dt>at_least_one_passed: Include all variants at loci</dt>
+<dt>at_least_one_passed:  Include all variants at loci</dt>
 <dd>where at least one variant
 passed</dd>
-<dt>all_passed: Include all variants at loci where all</dt>
+<dt>all_passed:  Include all variants at loci where all</dt>
 <dd>variants passed</dd>
 </dl>
-<p class="last">all: Include all variants at loci</p>
+<p class="last">all:  Include all variants at loci</p>
 </td>
 </tr>
 </tbody>

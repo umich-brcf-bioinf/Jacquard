@@ -13,7 +13,7 @@ biological researchers.
 
 
 Most variant callers have embraced the Variant Call Format (VCF) standard
-[REFERENCE], which clearly and succinctly describes variants from a single
+[Reference]_, which clearly and succinctly describes variants from a single
 tumor-normal pair. However, while many callers follow the standard, they often
 adopt different ways to partition results (e.g. somatic file vs. germline file,
 or SNP vs. indel); likewise, each caller creates its own dialect of VCF fields
@@ -43,10 +43,15 @@ callers.
 **Technology Stack:** Python 2.7, 3.x; natsort 3.5.2; numpy 1.7.1;
 testfixtures 3.0.2
 
-
-**Contact Us:** 
+|
+|
+Contact Us:
+-----------
 
 Email bfx-jacquard@umich.edu for support and questions.
 
 **UM BRCF Bioinformatics Core**
 
+
+.. [Reference] Danecek P, Auton A, Abecasis G, Albers CA, Banks E, DePristo MA, et
+   al. The variant call format and VCFtools.Bioinformatics 2011; 27: 2156–8.
