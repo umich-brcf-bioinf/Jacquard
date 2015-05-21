@@ -14,3 +14,6 @@
 /*.egg-info
 
 jacquard.log
+
+#Sphinx build
+doc/.build
