@@ -21,7 +21,7 @@ Contents:
    Expand <expand>
    FAQ <faq>
    Changelog <include_changelog>
-   TODO <include_todo>
+   Future Directions <include_todo>
    License <license>
 
 

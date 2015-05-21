@@ -1,5 +1,5 @@
-TODO
-====
+Future Directions
+=================
 - Improved workflow documentation with example data
 - Extend [merge] to filter and disambiguate tag collisions
 - Extend [translate/summarize] to support more tags (e.g. GT)

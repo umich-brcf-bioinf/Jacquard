@@ -45,8 +45,8 @@ testfixtures 3.0.2
 
 |
 |
-Contact Us:
------------
+Contact Us
+----------
 
 Email bfx-jacquard@umich.edu for support and questions.
 
