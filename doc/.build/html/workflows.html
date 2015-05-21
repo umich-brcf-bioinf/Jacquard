@@ -1,0 +1,201 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Workflows &mdash; Jacquard 0.41 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/jacquard_theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Jacquard 0.41 documentation" href="index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="index.html" class="fa fa-home"> Jacquard</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="general_usage.html">General Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="general_usage.html#sub-commands">Sub-Commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="general_usage.html#input-file-conventions">Input File Conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="general_usage.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="general_usage.html#id1">Sub-commands</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="general_usage.html#translate">Translate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="general_usage.html#merge">Merge</a></li>
+<li class="toctree-l2"><a class="reference internal" href="general_usage.html#summarize">Summarize</a></li>
+<li class="toctree-l2"><a class="reference internal" href="general_usage.html#expand">Expand</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Jacquard</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Workflows</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="_sources/workflows.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="workflows">
+<h1>Workflows<a class="headerlink" href="#workflows" title="Permalink to this headline">¶</a></h1>
+<p>Jacquard is a suite of tools that can be either run in succession or
+individually: translate, merge, summarize, and expand. Each of these tools is
+discussed in detail in subsequent pages.</p>
+<p>The typical workflow for Jacquard is to run VCF files through translate, merge,
+summarize, and expand. However, any of the below workflows may be implemented
+to obtain meaningful results.</p>
+<div class="figure" id="id1">
+<img alt="_images/general_workflows1.jpg" src="_images/general_workflows1.jpg" />
+<p class="caption"><span class="caption-text"><strong>Multiple Jacquard Workflows :</strong> <em>There are 8 different possible workflows
+in Jacquard. The first workflow represented in the above diagram is the
+signature workflow of Jacquard.</em></span></p>
+</div>
+</div>
+<div class="section" id="supported-variant-callers">
+<h1>Supported Variant Callers<a class="headerlink" href="#supported-variant-callers" title="Permalink to this headline">¶</a></h1>
+<p>Merge and Expand are able to process VCF files from any variant caller.
+Translate and Summarize, however, must be run with VCF files from one or more
+of the supported variant callers. Currently, Jacquard supports MuTect, VarScan,
+and Strelka.</p>
+<div class="figure" id="id2">
+<img alt="_images/general_workflows2.jpg" src="_images/general_workflows2.jpg" />
+<p class="caption"><span class="caption-text"><strong>Supported Variant Callers for Jacquard :</strong> <em>Each subcommand in Jacquard
+currently supports MuTect, VarScan and Strelka. Merge and Expand commands
+can also accept VCF files from other variant callers.</em></span></p>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Jessica Bene, Ashwini Bhasi, Chris Gates, Divya Kriti, Kevin Meng, Peter Ulintz.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.41',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

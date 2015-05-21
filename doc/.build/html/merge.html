@@ -1,0 +1,294 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Merge &mdash; Jacquard 0.41 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/jacquard_theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Jacquard 0.41 documentation" href="index.html"/>
+        <link rel="next" title="Summarize" href="summarize.html"/>
+        <link rel="prev" title="Translate" href="translate.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="index.html" class="fa fa-home"> Jacquard</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflows.html">Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflows.html#supported-variant-callers">Supported Variant Callers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="general_usage.html">General Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="general_usage.html#sub-commands">Sub-Commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="general_usage.html#input-file-conventions">Input File Conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="general_usage.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="translate.html">Translate</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="translate.html#usage">Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Merge</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="summarize.html">Summarize</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="summarize.html#usage">Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="expand.html">Expand</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="expand.html#usage">Usage</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Jacquard</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Merge</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="_sources/merge.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="merge">
+<h1>Merge<a class="headerlink" href="#merge" title="Permalink to this headline">¶</a></h1>
+<p>The merge command takes an input directory of VCFs and filters both the
+variants and format tags based on your specifications.</p>
+<p>By default, merge contains only Jacquard-translated format tags (<a href="#id3"><span class="problematic" id="id4">JQ_</span></a>.*) and
+includes all variants with valid syntax at loci where at least one variant was
+somatic. The resulting filtered files contain fewer rows, yet higher quality
+data than the input files.</p>
+<div class="figure" id="id1">
+<img alt="_images/merge_filter_step.jpg" src="_images/merge_filter_step.jpg" />
+<p class="caption"><span class="caption-text"><strong>The Filtering Process :</strong> <em>Rows and specific cells in the VCF files are
+filtered based on the command-line options.</em></span></p>
+</div>
+<p>After filtering, the merge command combines all of the input VCFs into a single
+merged VCF that includes all necessary information for continuing your analysis.</p>
+<p>The resulting VCF files contain the distinct set of all coordinates (CHROM, POS,
+REF, and ALT) and samples from the input files, provided they pass the filters.
+Each coordinate from the input VCF files is added to the output file, which
+increases the file length. Additionally, sample columns are merged for each
+patient, adding sample specific information and leading to increased column and
+file width.</p>
+<p>Importantly, rather than giving caller-wise sample columns in the output VCf
+file, merge emits patient-wise sample columns. For each patient, the merge
+command joins the set of corresponding sample columns into a single column. The
+grouping of sample-specific information for each patient helps to easily
+analyze the data.</p>
+<div class="figure" id="id2">
+<img alt="_images/merge_join_step.jpg" src="_images/merge_join_step.jpg" />
+<p class="caption"><span class="caption-text"><strong>The Merging Process :</strong> <em>Sample-specific information is grouped together for
+each patient.</em></span></p>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">usage:</span> <span class="pre">jacquard</span> <span class="pre">merge</span> <span class="pre">&lt;input_dir&gt;</span> <span class="pre">&lt;output_file&gt;</span> <span class="pre">[OPTIONS]</span></code></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="31%" />
+<col width="69%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">positional arguments:</th>
+<th class="head">&nbsp;</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>input</td>
+<td>Directory containing VCF files. Other file types
+ignored</td>
+</tr>
+<tr class="row-odd"><td>output</td>
+<td>VCF file</td>
+</tr>
+</tbody>
+</table>
+<table border="1" class="docutils">
+<colgroup>
+<col width="32%" />
+<col width="68%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">optional arguments:</th>
+<th class="head">&nbsp;</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>&#8211;include_format_tags</td>
+<td>Comma-separated user-defined list of regular
+expressions for format tags to be included in
+output</td>
+</tr>
+<tr class="row-odd"><td>&#8211;include_cells</td>
+<td><p class="first">valid: Only include valid variants
+all: Include all variants
+passed: Only include variants which passed their</p>
+<blockquote>
+<div>respective filter</div></blockquote>
+<p class="last">somatic: Only include somatic variants</p>
+</td>
+</tr>
+<tr class="row-even"><td>&#8211;include_rows</td>
+<td><dl class="first docutils">
+<dt>at_least_one_somatic: Include all variants at loci</dt>
+<dd>where at least one variant
+was somatic</dd>
+<dt>all_somatic: Include all variants at loci where all</dt>
+<dd>variants were somatic</dd>
+<dt>at_least_one_passed: Include all variants at loci</dt>
+<dd>where at least one variant
+passed</dd>
+<dt>all_passed: Include all variants at loci where all</dt>
+<dd>variants passed</dd>
+</dl>
+<p class="last">all: Include all variants at loci</p>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="summarize.html" class="btn btn-neutral float-right" title="Summarize">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="translate.html" class="btn btn-neutral" title="Translate"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Jessica Bene, Ashwini Bhasi, Chris Gates, Divya Kriti, Kevin Meng, Peter Ulintz.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.41',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
