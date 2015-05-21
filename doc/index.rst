@@ -19,9 +19,13 @@ Contents:
    Merge <merge>
    Summarize <summarize>
    Expand <expand>
+
    FAQ <faq>
+
+   Architectural Overview <architecture>
    Changelog <include_changelog>
    Future Directions <include_todo>
+
    License <license>
 
 
