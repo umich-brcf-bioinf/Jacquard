@@ -1,6 +1,7 @@
 """Common tags used by several callers."""
 from __future__ import print_function, absolute_import, division
 import abc
+from abc import abstractmethod
 
 CALLER_REPORTED_TAG = "CALLER_REPORTED"
 CALLER_PASSED_TAG = "CALLER_PASSED"
@@ -8,6 +9,9 @@ CALLER_PASSED_TAG = "CALLER_PASSED"
 
 class JacquardTag(object):
     __metaclass__ = abc.ABCMeta
+
+    FORMAT = ('##FORMAT=<ID=JQ_{}_{},Number={},'
+                         'Type={},Description="{}">')
 
     class _TagType(object):
         def __init__(self, abbreviation, vcf_type, vcf_number):
@@ -17,8 +21,18 @@ class JacquardTag(object):
 
     DEPTH_TAG = _TagType("DP", "Integer", "1")
     GENOTYPE_TAG = _TagType("GT", "String", "A")
-
+    ALLELE_FREQ_TAG = _TagType("AF", "String", "A")
+    SOMATIC_TAG = _TagType("HC_SOM", "Integer", "1")
+    
     def __init__(self, variant_caller_abbrev, tag_type, description):
+        self.metaheader = JacquardTag.FORMAT.format(variant_caller_abbrev,
+                                                    tag_type.abbreviation,
+                                                    tag_type.vcf_number,
+                                                    tag_type.vcf_type,
+                                                    description)
+
+    @abstractmethod
+    def add_tag_values(self):
         pass
 
 

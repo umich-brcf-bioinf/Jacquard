@@ -7,10 +7,10 @@ import test.utils.test_case as test_case
 
 
 class JacquardTagTestCase(test_case.JacquardBaseTestCase):
-    def xtest_allele_freq_tag(self):
+    def test_allele_freq_tag(self):
         tag = common_tags.JacquardTag.ALLELE_FREQ_TAG
         self.assertEquals("AF", tag.abbreviation)
-        self.assertEquals("Float", tag.vcf_type)
+        self.assertEquals("String", tag.vcf_type)
         self.assertEquals("A", tag.vcf_number)
 
     def test_depth_tag(self):
@@ -24,6 +24,28 @@ class JacquardTagTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals("GT", tag.abbreviation)
         self.assertEquals("String", tag.vcf_type)
         self.assertEquals("A", tag.vcf_number)
+
+    def test_somatic_tag(self):
+        tag = common_tags.JacquardTag.SOMATIC_TAG
+        self.assertEquals("HC_SOM", tag.abbreviation)
+        self.assertEquals("Integer", tag.vcf_type)
+        self.assertEquals("1", tag.vcf_number)
+
+    def test_add_tag_values_is_abstract(self):
+        try:
+            class FakeTag(common_tags.JacquardTag):
+                def __init__(self): pass
+            FakeTag()
+            self.fail("Should not be able to instantiate JacquardTag without overrideing abstract methods.")
+        except TypeError: pass
+
+    def test_metaheader(self):
+        tag_type = common_tags.JacquardTag.GENOTYPE_TAG
+        class MyTag(common_tags.JacquardTag):
+            def add_tag_values(self, vcf_record): pass
+        actual_tag = MyTag("SK", tag_type, "foo bar baz")
+        expected_metaheader = '##FORMAT=<ID=JQ_SK_GT,Number=A,Type=String,Description="foo bar baz">'
+        self.assertEquals(expected_metaheader, actual_tag.metaheader)
 
 class ReportedTagTestCase(test_case.JacquardBaseTestCase):
     def test_reported_tag_metaheader(self):
