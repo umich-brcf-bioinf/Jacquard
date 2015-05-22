@@ -1,3 +1,13 @@
+"""This file contains abstract classes and methods which reflect the standard
+architecture of Jacquard.
+
+The following signatures are outlined:
+    * FORMAT tags
+    * variant callers
+    * commands
+"""
+
+
 #pylint: disable=pointless-string-statement
 import abc
 
@@ -14,7 +24,7 @@ class NewTag(object):
 
 
 """Abstract class outlining requirements for adding a new variant caller to
-   Jacquard."""
+   Jacquard. The claim() method in this class calls _NewVcfReader()"""
 class NewVariantCaller(object):
     #pylint:disable=too-few-public-methods,abstract-class-not-used
     __metaclass__ = abc.ABCMeta
@@ -36,7 +46,8 @@ class NewVariantCaller(object):
 
 
 """Abstract class outlining requirements for adding a new variant
-  caller-specific VcfReader object to Jacquard."""
+  caller-specific VcfReader object to Jacquard. This class is called by
+  the claim() method in NewVariantCaller()."""
 class _NewVcfReader(object):
     #pylint:disable=abstract-class-not-used
     __metaclass__ = abc.ABCMeta

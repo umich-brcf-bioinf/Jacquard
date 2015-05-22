@@ -18,7 +18,7 @@ The 'fixed' fields (i.e. CHROM, POS, ID, REF, ALT, QUAL, FILTER) are directly
 copied from the input VCF file. Based on the metaheaders, each field in the
 INFO column is expanded into a separate column named after its tag ID. Also,
 based on the metaheaders, each FORMAT tag is expanded into a set of columns,
-one for each sample, named as <format tag ID>|<sample column name>.
+one for each sample, named as <FORMAT tag ID>|<sample column name>.
 
 This command also emits a tab-delimited glossary file, created based on the
 metaheaders in the input VCF file. FORMAT and INFO tag IDs are listed in the
@@ -26,7 +26,7 @@ glossary and are defined by their metaheader description.
 
 .. figure:: images/expand_columns.jpg
 
-   **Expanding Columns :** *The INFO column and sample-specific format tags from
+   **Expanding Columns :** *The INFO column and sample-specific FORMAT tags from
    the input VCF file are separated into distinct columns in the output file.*
 
 |

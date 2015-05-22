@@ -1,7 +1,7 @@
 Frequently Asked Questions
 ==========================
 
-**Can I use Jacquard with other Variant Callers?**
+**Can I use Jacquard with any Variant Caller?**
 
    Merge and Expand are able to process VCF files from any variant caller.
    Translate and Summarize, however, must be run with VCF files from one or

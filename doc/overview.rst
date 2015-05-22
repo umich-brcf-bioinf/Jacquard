@@ -13,26 +13,42 @@ biological researchers.
 
 
 Most variant callers have embraced the Variant Call Format (VCF) standard
-[Reference]_, which clearly and succinctly describes variants from a single
+[ii]_, which clearly and succinctly describes variants from a single
 tumor-normal pair. However, while many callers follow the standard, they often
 adopt different ways to partition results (e.g. somatic file vs. germline file,
 or SNP vs. indel); likewise, each caller creates its own dialect of VCF fields
-and tags. Jacquard transforms the dialects of different variant callers into a
+and tags [iii]_ [v]_ [vii]_.
+
+
+Each variant caller follows its own algorithms, thus producing a distinct
+output. Because of this, it is valuable to run data through multiple variant
+callers and compare the outputs [iii]_ [v]_ [vii]_. However, since each caller has
+its own dialect, direct comparisons are difficult to make.
+
+
+Jacquard transforms the dialects of different variant callers into a
 controlled vocabulary of tags with a consistent representation of values.
 Furthermore, it intelligently merges VCFs from different patients and callers
 to create a single, unified VCF across your dataset.
+
 
 The consistent tag names and represntations expedite downstream analysis, and
 the ingerated VCF highlights both the prevelance of specific variants and the
 overall mutation loads across samples.
 
+|
 .. figure:: images/overview_Diagram.jpg
 
    **Overview of Jacquard Workflow :** *Jacquard transforms different caller 
    dialects into a uniform VCF format.*
 
-At this time, the Jacquard-supported variant callers are MuTect, VarScan, and
-Strelka. A subset of the Jacquard commands support VCFs from other variant
+At this time, the Jacquard-supported variant callers are:
+
+* MuTect [i]_
+* VarScan [iv]_
+* Strelka [vi]_
+
+A subset of the Jacquard commands support VCFs from other variant
 callers.
 
 
@@ -51,7 +67,3 @@ Contact Us
 Email bfx-jacquard@umich.edu for support and questions.
 
 **UM BRCF Bioinformatics Core**
-
-
-.. [Reference] Danecek P, Auton A, Abecasis G, Albers CA, Banks E, DePristo MA, et
-   al. The variant call format and VCFtools.Bioinformatics 2011; 27: 2156–8.

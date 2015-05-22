@@ -6,8 +6,6 @@ variant callers outside of this module.
 """
 from __future__ import print_function, absolute_import, division
 
-import jacquard.utils.logger as logger
-import jacquard.utils.utils as utils
 import jacquard.variant_caller_transforms.mutect as mutect
 import jacquard.variant_caller_transforms.strelka as strelka
 import jacquard.variant_caller_transforms.varscan as varscan

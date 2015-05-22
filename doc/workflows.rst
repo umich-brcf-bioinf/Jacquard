@@ -1,7 +1,6 @@
 Workflows and Supported Variant Callers
 =======================================
 |
-
 Workflows
 ---------
 Jacquard is a suite of tools that can be either run in succession or

@@ -26,6 +26,7 @@ Contents:
    Changelog <include_changelog>
    Future Directions <include_todo>
 
+   References <citations>
    License <license>
 
 

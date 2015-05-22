@@ -2,7 +2,7 @@ Translate
 ---------
 The translate command accepts a directory of VCF files and creates a new
 directory of "translated" VCF files, which include several Jacquard-specific
-format tags and their corresponding metaheaders. Were a variant in the source
+FORMAT tags and their corresponding metaheaders. Were a variant in the source
 VCF to be malformed, the translated VCF file would label it as such in the
 FILTER column.
 
@@ -13,14 +13,19 @@ run translate once for each input directory. When partitioning into separate
 input directories, all file names must be unique.
 
 
-The translated format tags contain a caller specific prefix; example: 'JQ_SK'
+The translated FORMAT tags contain a caller specific prefix; example: 'JQ_SK'
 for Strelka, 'JQ_VS' for VarScan and 'JQ_MT' for MuTect.
+
+Currently, Translate adds Jacquard-specific FORMAT tags for:
+   * Allele Frequency
+   * Depth
+   * Somatic Status
 
 .. figure:: images/translate_pic.jpg
 
-   **Addition of the Jacquard-Specific Format Tags :** *The translated VCF files 
-   contain the original format tags from the input files as well as the 
-   Jacquard-specific format tags.*
+   **Addition of the Jacquard-Specific FORMAT Tags :** *The translated VCF files 
+   contain the original FORMAT tags from the input files as well as the 
+   Jacquard-specific FORMAT tags.*
 
 |
 
