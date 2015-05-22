@@ -32,28 +32,27 @@ import jacquard.utils.vcf as vcf
 _VARSCAN_SOMATIC_HEADER = ("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"
                            "NORMAL|TUMOR").replace("|", "\t")
 JQ_VARSCAN_TAG = "JQ_VS_"
+VARSCAN_ABBREVIATION = "VS"
 VERSION = "v2.3"
 
-class _GenotypeTag(object):
+class _GenotypeTag(common_tags.JacquardTag):
     #pylint: disable=too-few-public-methods
     def __init__(self):
-        self.metaheader = ('##FORMAT=<ID={0}GT,'
-                           'Number=1,'
-                           'Type=String,'
-                           'Description="Jacquard genotype (based on GT)">')\
-                           .format(JQ_VARSCAN_TAG)
+        super(self.__class__,
+              self).__init__(VARSCAN_ABBREVIATION,
+                             common_tags.JacquardTag.GENOTYPE_TAG,
+                             'Jacquard genotype (based on GT)')
 
-    @staticmethod
-    def add_tag_values(vcf_record):
+    def add_tag_values(self, vcf_record):
         sample_values = {}
         if "GT" in vcf_record.format_tags:
             for sample in vcf_record.sample_tag_values:
                 genotype = vcf_record.sample_tag_values[sample]["GT"]
                 sample_values[sample] = genotype
-            vcf_record.add_sample_tag_value(JQ_VARSCAN_TAG + "GT",
+            vcf_record.add_sample_tag_value(self.tag_id,
                                             sample_values)
 
-class _AlleleFreqTag(object):
+class _AlleleFreqTag(common_tags.JacquardTag):
     #pylint: disable=too-few-public-methods
     @classmethod
     def _standardize_af(cls, value):
@@ -64,45 +63,39 @@ class _AlleleFreqTag(object):
         return ",".join(new_values)
 
     def __init__(self):
-        #pylint: disable=line-too-long
-        self.metaheader = ('##FORMAT=<ID={0}AF,'
-                           'Number=A,'
-                           'Type=Float,'
-                           'Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)">')\
-                           .format(JQ_VARSCAN_TAG)
+        super(self.__class__,
+              self).__init__(VARSCAN_ABBREVIATION,
+                             common_tags.JacquardTag.ALLELE_FREQ_TAG,
+                             ('Jacquard allele frequency for VarScan: Decimal '
+                              'allele frequency rounded to 2 digits (based on '
+                              'FREQ)'))
 
-    @staticmethod
-    def add_tag_values(vcf_record):
+    def add_tag_values(self, vcf_record):
         sample_values = {}
         if "FREQ" in vcf_record.format_tags:
             for sample in vcf_record.sample_tag_values:
                 freq = vcf_record.sample_tag_values[sample]["FREQ"].split(",")
                 sample_values[sample] = _AlleleFreqTag._standardize_af(freq)
-            vcf_record.add_sample_tag_value(JQ_VARSCAN_TAG + "AF",
-                                            sample_values)
+            vcf_record.add_sample_tag_value(self.tag_id, sample_values)
 
-class _DepthTag(object):
+class _DepthTag(common_tags.JacquardTag):
     #pylint: disable=too-few-public-methods
     def __init__(self):
-        #pylint: disable=line-too-long
-        self.metaheader = ('##FORMAT=<ID={0}DP,'
-                           'Number=1,'
-                           'Type=Float,'
-                           'Description="Jacquard depth for VarScan (based on DP)">')\
-                           .format(JQ_VARSCAN_TAG)
+        super(self.__class__,
+              self).__init__(VARSCAN_ABBREVIATION,
+                             common_tags.JacquardTag.DEPTH_TAG,
+                             'Jacquard depth for VarScan (based on DP)')
 
-    @staticmethod
-    def add_tag_values(vcf_record):
+    def add_tag_values(self, vcf_record):
         if "DP" in vcf_record.format_tags:
             sample_values = {}
             for sample in vcf_record.sample_tag_values:
                 depth = vcf_record.sample_tag_values[sample]["DP"]
                 sample_values[sample] = depth
-            vcf_record.add_sample_tag_value(JQ_VARSCAN_TAG + "DP",
-                                            sample_values)
+            vcf_record.add_sample_tag_value(self.tag_id, sample_values)
 
 ##TODO (cgates): Make this robust to sample order changes
-class _SomaticTag(object):
+class _SomaticTag(common_tags.JacquardTag):
     #pylint: disable=too-few-public-methods
 
     @staticmethod
@@ -113,17 +106,15 @@ class _SomaticTag(object):
             return "1"
 
     def __init__(self):
-        #pylint: disable=line-too-long
-        self.metaheader = ('##FORMAT=<ID={0}HC_SOM,'
-                           'Number=1,'
-                           'Type=Integer,'
-                           'Description="Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)">')\
-                           .format(JQ_VARSCAN_TAG)
+        super(self.__class__,
+              self).__init__(VARSCAN_ABBREVIATION,
+                             common_tags.JacquardTag.SOMATIC_TAG,
+                             ('Jacquard somatic status for VarScan: '
+                              '0=non-somatic,1=somatic (based on SOMATIC info '
+                              'tag and if sample is TUMOR)'))
 
-    @staticmethod
-    def add_tag_values(vcf_record):
+    def add_tag_values(self, vcf_record):
         info_array = vcf_record.info.split(";")
-        varscan_tag = JQ_VARSCAN_TAG + "HC_SOM"
         sample_values = {}
 
         if "SS=2" in info_array and vcf_record.filter == "PASS":
@@ -133,7 +124,7 @@ class _SomaticTag(object):
             for sample in vcf_record.sample_tag_values:
                 sample_values[sample] = "0"
 
-        vcf_record.add_sample_tag_value(varscan_tag, sample_values)
+        vcf_record.add_sample_tag_value(self.tag_id, sample_values)
 
 #TODO: (cgates/jebene): All tags should have _TAG_ID as implemented below
 class _HCTag(object):

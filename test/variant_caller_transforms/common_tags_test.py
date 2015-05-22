@@ -4,13 +4,14 @@ from __future__ import print_function, absolute_import, division
 import jacquard.variant_caller_transforms.common_tags as common_tags
 from jacquard.utils.vcf import VcfRecord
 import test.utils.test_case as test_case
+from jacquard.utils.utils import JQException
 
 
 class JacquardTagTestCase(test_case.JacquardBaseTestCase):
     def test_allele_freq_tag(self):
         tag = common_tags.JacquardTag.ALLELE_FREQ_TAG
         self.assertEquals("AF", tag.abbreviation)
-        self.assertEquals("String", tag.vcf_type)
+        self.assertEquals("Float", tag.vcf_type)
         self.assertEquals("A", tag.vcf_number)
 
     def test_depth_tag(self):
@@ -23,7 +24,7 @@ class JacquardTagTestCase(test_case.JacquardBaseTestCase):
         tag = common_tags.JacquardTag.GENOTYPE_TAG
         self.assertEquals("GT", tag.abbreviation)
         self.assertEquals("String", tag.vcf_type)
-        self.assertEquals("A", tag.vcf_number)
+        self.assertEquals("1", tag.vcf_number)
 
     def test_somatic_tag(self):
         tag = common_tags.JacquardTag.SOMATIC_TAG
@@ -36,7 +37,8 @@ class JacquardTagTestCase(test_case.JacquardBaseTestCase):
             class FakeTag(common_tags.JacquardTag):
                 def __init__(self): pass
             FakeTag()
-            self.fail("Should not be able to instantiate JacquardTag without overrideing abstract methods.")
+            self.fail(("Should not be able to instantiate JacquardTag without "
+                       "overrideing abstract methods."))
         except TypeError: pass
 
     def test_metaheader(self):
@@ -44,8 +46,29 @@ class JacquardTagTestCase(test_case.JacquardBaseTestCase):
         class MyTag(common_tags.JacquardTag):
             def add_tag_values(self, vcf_record): pass
         actual_tag = MyTag("SK", tag_type, "foo bar baz")
-        expected_metaheader = '##FORMAT=<ID=JQ_SK_GT,Number=A,Type=String,Description="foo bar baz">'
+        expected_metaheader = ('##FORMAT=<ID=JQ_SK_GT,Number=1,Type=String,'
+                               'Description="foo bar baz">')
         self.assertEquals(expected_metaheader, actual_tag.metaheader)
+
+    def test_metaheader_raisesExceptionIfEmbeddedQuotesInDescription(self):
+        tag_type = common_tags.JacquardTag.GENOTYPE_TAG
+        class MyTag(common_tags.JacquardTag):
+            def add_tag_values(self, vcf_record): pass
+        MyTag("SK", tag_type, "Single quotes are 'ok'")
+        self.assertRaisesRegexp(JQException,
+                                r'Metaheader descriptions cannot contain double quotes: \[Double quotes are "not ok"\]',
+                                MyTag,
+                                "SK",
+                                tag_type,
+                                'Double quotes are "not ok"')
+
+    def test_tag_id(self):
+        tag_type = common_tags.JacquardTag.GENOTYPE_TAG
+        class MyTag(common_tags.JacquardTag):
+            def add_tag_values(self, vcf_record): pass
+        actual_tag = MyTag("SK", tag_type, "foo bar baz")
+        self.assertEquals("JQ_SK_GT", actual_tag.tag_id)
+
 
 class ReportedTagTestCase(test_case.JacquardBaseTestCase):
     def test_reported_tag_metaheader(self):

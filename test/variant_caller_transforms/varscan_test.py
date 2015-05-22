@@ -99,7 +99,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
 
 class DepthTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}DP,Number=1,Type=Float,Description="Jacquard depth for VarScan (based on DP)">'.format(varscan.JQ_VARSCAN_TAG),
+        self.assertEqual('##FORMAT=<ID={0}DP,Number=1,Type=Integer,Description="Jacquard depth for VarScan (based on DP)">'.format(varscan.JQ_VARSCAN_TAG),
                          varscan._DepthTag().metaheader)
 
     def test_format_missingDPTag(self):

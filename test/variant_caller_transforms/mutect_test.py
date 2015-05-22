@@ -86,7 +86,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
 
 class DepthTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}DP,Number=1,Type=Float,Description="Jacquard depth for MuTect (based on DP)">'.format(mutect.JQ_MUTECT_TAG), mutect._DepthTag().metaheader)
+        self.assertEqual('##FORMAT=<ID={0}DP,Number=1,Type=Integer,Description="Jacquard depth for MuTect (based on DP)">'.format(mutect.JQ_MUTECT_TAG), mutect._DepthTag().metaheader)
 
     def test_format_missingDPTag(self):
         tag = mutect._DepthTag()

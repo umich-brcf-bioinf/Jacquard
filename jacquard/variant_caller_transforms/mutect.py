@@ -9,9 +9,10 @@ import jacquard.variant_caller_transforms.common_tags as common_tags
 import jacquard.utils.vcf as vcf
 
 JQ_MUTECT_TAG = "JQ_MT_"
+MUTECT_ABBREVIATION = "MT"
 VERSION = "v1.1.4"
 
-class _GenotypeTag(object):
+class _GenotypeTag(common_tags.JacquardTag):
     #pylint: disable=too-few-public-methods
     @classmethod
     def _standardize_gt(cls, value):
@@ -20,30 +21,29 @@ class _GenotypeTag(object):
         return value
 
     def __init__(self):
-        self.metaheader = ('##FORMAT=<ID={0}GT,'
-                           'Number=1,'
-                           'Type=String,'
-                           'Description="Jacquard genotype (based on GT)">')\
-                           .format(JQ_MUTECT_TAG)
+        super(self.__class__,
+              self).__init__(MUTECT_ABBREVIATION,
+                             common_tags.JacquardTag.GENOTYPE_TAG,
+                             "Jacquard genotype (based on GT)")
 
-    @staticmethod
-    def add_tag_values(vcf_record):
+    def add_tag_values(self, vcf_record):
         if "GT" in vcf_record.format_tags:
             sample_values = {}
             for samp in vcf_record.sample_tag_values:
                 genotype = vcf_record.sample_tag_values[samp]["GT"]
                 sample_values[samp] = _GenotypeTag._standardize_gt(genotype)
-            vcf_record.add_sample_tag_value(JQ_MUTECT_TAG + "GT", sample_values)
+            vcf_record.add_sample_tag_value(self.tag_id, sample_values)
 
-class _AlleleFreqTag(object):
+class _AlleleFreqTag(common_tags.JacquardTag):
     #pylint: disable=too-few-public-methods
     def __init__(self):
-        self.metaheader = ('##FORMAT=<ID={0}AF,'
-                           'Number=A,'
-                           'Type=Float,'
-                           #pylint: disable=line-too-long
-                           'Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)">')\
-                           .format(JQ_MUTECT_TAG)
+        super(self.__class__,
+              self).__init__(MUTECT_ABBREVIATION,
+                             common_tags.JacquardTag.ALLELE_FREQ_TAG,
+                             ('Jacquard allele frequency for MuTect: '
+                              'Decimal allele frequency rounded to 2 digits '
+                              '(based on FA)'))
+       
 
     def add_tag_values(self, vcf_record):
         if "FA" in vcf_record.format_tags:
@@ -51,7 +51,7 @@ class _AlleleFreqTag(object):
             for sample in vcf_record.sample_tag_values:
                 freq = vcf_record.sample_tag_values[sample]["FA"].split(",")
                 sample_values[sample] = self._standardize_af(freq)
-            vcf_record.add_sample_tag_value(JQ_MUTECT_TAG + "AF", sample_values)
+            vcf_record.add_sample_tag_value(self.tag_id, sample_values)
 
     @staticmethod
     def _standardize_af(value):
@@ -60,36 +60,30 @@ class _AlleleFreqTag(object):
             new_values.append(utils.round_two_digits(val))
         return ",".join(new_values)
 
-class _DepthTag(object):
+class _DepthTag(common_tags.JacquardTag):
     #pylint: disable=too-few-public-methods
     def __init__(self):
-        self.metaheader = ('##FORMAT=<ID={0}DP,'
-                           'Number=1,'
-                           'Type=Float,'
-                           #pylint: disable=line-too-long
-                           'Description="Jacquard depth for MuTect (based on DP)">')\
-                           .format(JQ_MUTECT_TAG)
+        super(self.__class__,
+              self).__init__(MUTECT_ABBREVIATION,
+                             common_tags.JacquardTag.DEPTH_TAG,
+                             'Jacquard depth for MuTect (based on DP)')
 
-    @staticmethod
-    def add_tag_values(vcf_record):
+    def add_tag_values(self, vcf_record):
         if "DP" in vcf_record.format_tags:
             sample_values = {}
             for samp in vcf_record.sample_tag_values:
                 sample_values[samp] = vcf_record.sample_tag_values[samp]["DP"]
-            vcf_record.add_sample_tag_value(JQ_MUTECT_TAG + "DP", sample_values)
+            vcf_record.add_sample_tag_value(self.tag_id, sample_values)
 
-class _SomaticTag(object):
+class _SomaticTag(common_tags.JacquardTag):
     #pylint: disable=too-few-public-methods
     def __init__(self):
-        self.metaheader = ('##FORMAT=<ID={0}HC_SOM,'
-                           'Number=1,'
-                           'Type=Integer,'
-                           #pylint: disable=line-too-long
-                           'Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)">')\
-                           .format(JQ_MUTECT_TAG)
+        super(self.__class__,
+              self).__init__(MUTECT_ABBREVIATION,
+                             common_tags.JacquardTag.SOMATIC_TAG,
+                             'Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)')
 
     def add_tag_values(self, vcf_record):
-        mutect_tag = JQ_MUTECT_TAG + "HC_SOM"
         sample_values = {}
         if "SS" in vcf_record.format_tags:
             for sample in vcf_record.sample_tag_values:
@@ -98,7 +92,7 @@ class _SomaticTag(object):
         else:
             for sample in vcf_record.sample_tag_values:
                 sample_values[sample] = "0"
-        vcf_record.add_sample_tag_value(mutect_tag, sample_values)
+        vcf_record.add_sample_tag_value(self.tag_id, sample_values)
 
     @staticmethod
     def _somatic_status(ss_value):

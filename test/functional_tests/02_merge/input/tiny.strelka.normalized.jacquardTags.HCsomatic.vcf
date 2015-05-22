@@ -80,7 +80,7 @@
 ##jacquard.cwd=C:\\Users\\jebene\\git
 ##jacquard.tag.caller=Strelka
 ##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)">
-##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)">
+##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Integer,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)">
 ##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)">
 ##FILTER=<ID=JQ_EXCLUDE,Description="This variant record is problematic and will be excluded from downstream Jacquard processing.">
 ##FILTER=<ID=JQ_MISSING_ALT,Description="The alternate allele is missing for this variant record.">

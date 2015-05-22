@@ -55,7 +55,7 @@
 ##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)">
 ##FORMAT=<ID=JQ_SK_CALLER_PASSED,Number=1,Type=Integer,Description="1 = variant FILTER is PASS in original VCF">
 ##FORMAT=<ID=JQ_SK_CALLER_REPORTED,Number=1,Type=Integer,Description="1 = variant present in original VCF">
-##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)">
+##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Integer,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)">
 ##FORMAT=<ID=JQ_SK_GT,Number=1,Type=String,Description="Jacquard genotype (based on SGT). Example for snv: REF=A, ALT=C, INFO:SGT=AA->AC is translated as normal=0/0, tumor=0/1. Example for indel: INFO:SGT=ref->het is translated as normal=0/0, tumor=0/1.">
 ##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)">
 ##FORMAT=<ID=SDP,Number=1,Type=Integer,Description="Number of reads with deletions spanning this site at tier1">

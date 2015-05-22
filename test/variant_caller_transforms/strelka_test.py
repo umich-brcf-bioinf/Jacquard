@@ -139,7 +139,7 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
 
 class DepthTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}DP,Number=1,Type=Float,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)">'.format(strelka.JQ_STRELKA_TAG), strelka._DepthTag().metaheader)
+        self.assertEqual('##FORMAT=<ID={0}DP,Number=1,Type=Integer,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)">'.format(strelka.JQ_STRELKA_TAG), strelka._DepthTag().metaheader)
 
     def test_format_missingTag(self):
         tag = strelka._DepthTag()

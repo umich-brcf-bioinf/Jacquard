@@ -22,18 +22,21 @@ import jacquard.utils.vcf as vcf
 
 
 JQ_STRELKA_TAG = "JQ_SK_"
+STRELKA_ABBREVIATION = "SK"
 VERSION = "v2.0.15"
 
-class _GenotypeTag(object):
+class _GenotypeTag(common_tags.JacquardTag):
     _INDEL_VALUES = ["ref", "hom", "het"]
 
     def __init__(self):
-        #pylint: disable=line-too-long
-        self.metaheader = ('##FORMAT=<ID={}GT,'
-                           'Number=1,'
-                           'Type=String,'
-                           'Description="Jacquard genotype (based on SGT). Example for snv: REF=A, ALT=C, INFO:SGT=AA->AC is translated as normal=0/0, tumor=0/1. Example for indel: INFO:SGT=ref->het is translated as normal=0/0, tumor=0/1.">')\
-                           .format(JQ_STRELKA_TAG)
+        super(self.__class__,
+              self).__init__(STRELKA_ABBREVIATION,
+                             common_tags.JacquardTag.GENOTYPE_TAG,
+                             ('Jacquard genotype (based on SGT). Example for '
+                              'snv: REF=A, ALT=C, INFO:SGT=AA->AC is translated'
+                              ' as normal=0/0, tumor=0/1. Example for indel: '
+                              'INFO:SGT=ref->het is translated as normal=0/0, '
+                              'tumor=0/1.'))
 
     @staticmethod
     def _get_indel_genotype(sample_genotype):
@@ -78,18 +81,20 @@ class _GenotypeTag(object):
                 sample_values[sample] = genotype
 
         if sample_values:
-            vcf_record.add_sample_tag_value(JQ_STRELKA_TAG + "GT",
+            vcf_record.add_sample_tag_value(self.tag_id,
                                             sample_values)
 
-class _AlleleFreqTag(object):
+class _AlleleFreqTag(common_tags.JacquardTag):
     #pylint: disable=too-few-public-methods
     def __init__(self):
-        #pylint: disable=line-too-long
-        self.metaheader = ('##FORMAT=<ID={0}AF,'
-                           'Number=A,'
-                           'Type=Float,'
-                           'Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)">')\
-                           .format(JQ_STRELKA_TAG)
+        super(self.__class__,
+              self).__init__(STRELKA_ABBREVIATION,
+                             common_tags.JacquardTag.ALLELE_FREQ_TAG,
+                             ('Jacquard allele frequency for Strelka: Decimal '
+                              'allele frequency rounded to 2 digits (based on '
+                              'alt_depth/total_depth. Uses (TIR tier 2)/DP2 if '
+                              'available, otherwise uses (ACGT tier2 depth) / '
+                              'DP2)'))
 
     @staticmethod
     def _get_tier2_base_depth(sample_format_dict, alt_allele):
@@ -149,14 +154,14 @@ class _AlleleFreqTag(object):
                     continue
 
         if sample_values:
-            vcf_record.add_sample_tag_value(JQ_STRELKA_TAG + "AF",
+            vcf_record.add_sample_tag_value(self.tag_id,
                                             sample_values)
 
     @staticmethod
     def _standardize_af(value):
         return utils.round_two_digits(value)
 
-class _DepthTag(object):
+class _DepthTag(common_tags.JacquardTag):
     #pylint: disable=too-few-public-methods
     REQUIRED_TAGS = set(["DP2", "AU"])
     NUCLEOTIDE_DEPTH_TAGS = ["AU", "CU", "TU", "GU"]
@@ -172,41 +177,38 @@ class _DepthTag(object):
         return str(depth)
 
     def __init__(self):
-        #pylint: disable=line-too-long
-        self.metaheader = ('##FORMAT=<ID={0}DP,'
-                           'Number=1,'
-                           'Type=Float,'
-                           'Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)">')\
-                           .format(JQ_STRELKA_TAG)
+        super(self.__class__,
+              self).__init__(STRELKA_ABBREVIATION,
+                             common_tags.JacquardTag.DEPTH_TAG,
+                             ('Jacquard depth for Strelka (uses DP2 if '
+                              'available, otherwise uses ACGT tier2 depth)'))
 
-    @staticmethod
-    def add_tag_values(vcf_record):
+    def add_tag_values(self, vcf_record):
         if vcf_record.format_tags.isdisjoint(_DepthTag.REQUIRED_TAGS):
             return
         sample_values = {}
         for sample in vcf_record.sample_tag_values:
             sample_tags = vcf_record.sample_tag_values[sample]
             sample_values[sample] = _DepthTag._get_tier2_base_depth(sample_tags)
-        vcf_record.add_sample_tag_value(JQ_STRELKA_TAG + "DP", sample_values)
+        vcf_record.add_sample_tag_value(self.tag_id, sample_values)
 
 
 ##TODO (cgates): Make this robust to sample order changes
-class _SomaticTag(object):
+class _SomaticTag(common_tags.JacquardTag):
     #pylint: disable=too-few-public-methods
     def __init__(self):
-        #pylint: disable=line-too-long
-        self.metaheader = ('##FORMAT=<ID={0}HC_SOM,'
-                           'Number=1,Type=Integer,'
-                           'Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)">')\
-                           .format(JQ_STRELKA_TAG)
+        super(self.__class__,
+              self).__init__(STRELKA_ABBREVIATION,
+                             common_tags.JacquardTag.SOMATIC_TAG,
+                             ('Jacquard somatic status for Strelka: '
+                              '0=non-somatic,1=somatic (based on PASS in FILTER'
+                              ' column)'))
 
-    @staticmethod
-    def add_tag_values(vcf_record):
+    def add_tag_values(self,vcf_record):
         sample_values = {}
         for i, sample in enumerate(vcf_record.sample_tag_values):
             sample_values[sample] = _SomaticTag._somatic_status(i, vcf_record)
-        strelka_tag = JQ_STRELKA_TAG + "HC_SOM"
-        vcf_record.add_sample_tag_value(strelka_tag, sample_values)
+        vcf_record.add_sample_tag_value(self.tag_id, sample_values)
 
     @classmethod
     def _somatic_status(cls, sample_index, vcf_record):
