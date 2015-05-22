@@ -1,9 +1,26 @@
 """Common tags used by several callers."""
 from __future__ import print_function, absolute_import, division
-
+import abc
 
 CALLER_REPORTED_TAG = "CALLER_REPORTED"
 CALLER_PASSED_TAG = "CALLER_PASSED"
+
+
+class JacquardTag(object):
+    __metaclass__ = abc.ABCMeta
+
+    class _TagType(object):
+        def __init__(self, abbreviation, vcf_type, vcf_number):
+            self.abbreviation = abbreviation
+            self.vcf_type = vcf_type
+            self.vcf_number = vcf_number
+
+    DEPTH_TAG = _TagType("DP", "Integer", "1")
+    GENOTYPE_TAG = _TagType("GT", "String", "A")
+
+    def __init__(self, variant_caller_abbrev, tag_type, description):
+        pass
+
 
 class ReportedTag(object):
     """Tracks whether the caller reported this variant (i.e. it's in the VCF).

@@ -6,8 +6,26 @@ from jacquard.utils.vcf import VcfRecord
 import test.utils.test_case as test_case
 
 
-class ReportedTagTestCase(test_case.JacquardBaseTestCase):
+class JacquardTagTestCase(test_case.JacquardBaseTestCase):
+    def xtest_allele_freq_tag(self):
+        tag = common_tags.JacquardTag.ALLELE_FREQ_TAG
+        self.assertEquals("AF", tag.abbreviation)
+        self.assertEquals("Float", tag.vcf_type)
+        self.assertEquals("A", tag.vcf_number)
 
+    def test_depth_tag(self):
+        tag = common_tags.JacquardTag.DEPTH_TAG
+        self.assertEquals("DP", tag.abbreviation)
+        self.assertEquals("Integer", tag.vcf_type)
+        self.assertEquals("1", tag.vcf_number)
+
+    def test_genotype_tag(self):
+        tag = common_tags.JacquardTag.GENOTYPE_TAG
+        self.assertEquals("GT", tag.abbreviation)
+        self.assertEquals("String", tag.vcf_type)
+        self.assertEquals("A", tag.vcf_number)
+
+class ReportedTagTestCase(test_case.JacquardBaseTestCase):
     def test_reported_tag_metaheader(self):
         reported_tag = common_tags.ReportedTag("foo_")
         self.assertEquals(('##FORMAT=<ID={}{},'
