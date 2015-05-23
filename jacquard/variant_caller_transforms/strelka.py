@@ -26,6 +26,8 @@ STRELKA_ABBREVIATION = "SK"
 VERSION = "v2.0.15"
 
 class _GenotypeTag(common_tags.JacquardTag):
+    #pylint: disable=too-few-public-methods
+
     _INDEL_VALUES = ["ref", "hom", "het"]
 
     def __init__(self):
@@ -230,11 +232,6 @@ class Strelka(object):
         self.name = "Strelka"
         self.abbr = "SK"
         self.meta_header = "##jacquard.normalize_strelka.sources={0},{1}\n"
-
-    ##TODO (cgates): deprecated; remove
-    @staticmethod
-    def validate_input_file(meta_headers, dummy_column_header):
-        return "##source=strelka" in meta_headers
 
     @staticmethod
     def _is_strelka_vcf(file_reader):

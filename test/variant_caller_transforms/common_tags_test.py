@@ -32,14 +32,14 @@ class JacquardTagTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals("Integer", tag.vcf_type)
         self.assertEquals("1", tag.vcf_number)
 
-    def test_add_tag_values_is_abstract(self):
-        try:
-            class FakeTag(common_tags.JacquardTag):
-                def __init__(self): pass
-            FakeTag()
-            self.fail(("Should not be able to instantiate JacquardTag without "
-                       "overrideing abstract methods."))
-        except TypeError: pass
+    def test_add_tag_values_raisesNotImplementedError(self):
+        class FakeTag(common_tags.JacquardTag):
+            def __init__(self): pass
+        tag = FakeTag()
+        self.assertRaises(NotImplementedError,
+                          tag.add_tag_values,
+                          VcfRecord("1", "42", "A", "C")
+                          )
 
     def test_metaheader(self):
         tag_type = common_tags.JacquardTag.GENOTYPE_TAG

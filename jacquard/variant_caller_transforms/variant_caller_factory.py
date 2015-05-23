@@ -16,6 +16,7 @@ SUPPORTED_CALLER_VERSIONS = {"VarScan": varscan.VERSION,
                              "Strelka": strelka.VERSION}
 
 class VariantCallerFactory(object):
+    #pylint: disable=too-few-public-methods
     def __init__(self, args=None):
         self._callers = [varscan.Varscan(args),
                          strelka.Strelka(),

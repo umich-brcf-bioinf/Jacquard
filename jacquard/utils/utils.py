@@ -40,6 +40,7 @@ def sort_metaheaders(metaheaders):
                                                          .split("=")[0]])
 
 class _JacquardHelpFormatter(argparse.RawTextHelpFormatter):
+    #pylint: disable=too-few-public-methods
     def _format_usage(self, default_values):
         prog = '%(prog)s' % dict(prog=self._prog)
         usage = 'usage: {} <input> <output> {}'.format(prog, default_values)
@@ -47,6 +48,7 @@ class _JacquardHelpFormatter(argparse.RawTextHelpFormatter):
 
     def add_usage(self, default_values, actions=None, groups=None, prefix=None):
         self._add_item(self._format_usage, default_values)
+
 
 class JQException(Exception):
     """Base class for all run-time exceptions in this module."""

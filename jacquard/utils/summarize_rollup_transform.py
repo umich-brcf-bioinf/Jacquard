@@ -228,6 +228,7 @@ class _SamplesPassed(object):
         _add_sample_count_values(vcf_record, JQ_PASSED, JQ_SAMPLES_PASSED)
 
 class _HCGenotypeTag(object):
+    #pylint: disable=too-few-public-methods
     _TAG_ID = "{}HC_GT".format(JQ_SUMMARY_TAG)
     _PATTERN = re.compile("^JQ_.*_GT$")
 

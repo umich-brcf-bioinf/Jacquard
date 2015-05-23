@@ -192,7 +192,9 @@ def execute(args, dummy_execution_context):
     #for the moment, there is no good place to put the execution context
     input_file = os.path.abspath(args.input)
     output_file = os.path.abspath(args.output)
-    col_spec = args.selected_columns_file if args.selected_columns_file else None
+    col_spec = None
+    if args.selected_columns_file:
+        col_spec = args.selected_columns_file
 
     logger.debug("Expanding [{}] to [{}]",
                  input_file,

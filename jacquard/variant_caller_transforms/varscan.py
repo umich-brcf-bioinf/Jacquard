@@ -196,18 +196,6 @@ class Varscan(object):
 
         return compiled_regex
 
-    ##TODO (cgates): deprecated; remove
-    @staticmethod
-    def validate_input_file(meta_headers, column_header):
-        if "##source=VarScan2" not in meta_headers:
-            return 0
-
-        if _VARSCAN_SOMATIC_HEADER == column_header:
-            return 1
-        else:
-            raise utils.JQException("Unexpected VarScan VCF structure - "
-                                    "missing NORMAL and TUMOR headers.")
-
     @staticmethod
     def _validate_filter_file(file_reader):
         column_header = 0
@@ -394,7 +382,7 @@ class Varscan(object):
 
 #pylint: disable=too-many-locals
     def claim(self, file_readers):
-        """Recognizes and claims MuTect VCFs form the set of all input VCFs.
+        """Recognizes and claims VarScan VCFs form the set of all input VCFs.
 
         Each defined caller has a chance to evaluate and claim all the incoming
         files as something that it can process. Since VarScan can claim
@@ -405,7 +393,7 @@ class Varscan(object):
             file_readers: the collection of currently unclaimed files
 
         Returns:
-            A tuple of unclaimed readers and MuTectVcfReaders.
+            A tuple of unclaimed readers and VarScanVcfReaders.
         """
 
         (prefix_to_readers,

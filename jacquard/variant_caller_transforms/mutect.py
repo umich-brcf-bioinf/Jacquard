@@ -76,12 +76,15 @@ class _DepthTag(common_tags.JacquardTag):
             vcf_record.add_sample_tag_value(self.tag_id, sample_values)
 
 class _SomaticTag(common_tags.JacquardTag):
+    _DESCRIPTION = (\
+'''Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS 
+FORMAT tag)''').replace("\n","")
     #pylint: disable=too-few-public-methods
     def __init__(self):
         super(self.__class__,
               self).__init__(MUTECT_ABBREVIATION,
                              common_tags.JacquardTag.SOMATIC_TAG,
-                             'Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)')
+                             self._DESCRIPTION)
 
     def add_tag_values(self, vcf_record):
         sample_values = {}
@@ -116,14 +119,6 @@ class Mutect(object):
     def __init__(self):
         self.name = "MuTect"
         self.abbr = "MT"
-
-    ##TODO (cgates): deprecate; remove
-    @staticmethod
-    def validate_input_file(meta_headers, dummy_column_header):
-        for line in meta_headers:
-            if line.startswith(Mutect._MUTECT_METAHEADER_PREFIX):
-                return True
-        return False
 
     @staticmethod
     def _is_mutect_vcf(file_reader):

@@ -1,7 +1,6 @@
 """Common tags used by several callers."""
 from __future__ import print_function, absolute_import, division
 import abc
-from abc import abstractmethod
 import jacquard.utils.utils as utils
 
 CALLER_REPORTED_TAG = "CALLER_REPORTED"
@@ -24,24 +23,21 @@ class JacquardTag(object):
     GENOTYPE_TAG = _TagType("GT", "String", "1")
     ALLELE_FREQ_TAG = _TagType("AF", "Float", "A")
     SOMATIC_TAG = _TagType("HC_SOM", "Integer", "1")
-    
+
     def __init__(self, variant_caller_abbrev, tag_type, description):
         if '"' in description:
             raise utils.JQException(("Metaheader descriptions cannot contain "
                                     "double quotes: [{}]"),
                                     description)
-        self.tag_id = "JQ_{}_{}".format(variant_caller_abbrev,tag_type.abbreviation)
-        
+        self.tag_id = "JQ_{}_{}".format(variant_caller_abbrev,
+                                        tag_type.abbreviation)
         self.metaheader = JacquardTag.FORMAT.format(self.tag_id,
                                                     tag_type.vcf_number,
                                                     tag_type.vcf_type,
                                                     description)
-        
-        
 
-    @abstractmethod
-    def add_tag_values(self):
-        pass
+    def add_tag_values(self, vcf_record):
+        raise NotImplementedError()
 
 
 class ReportedTag(object):

@@ -129,14 +129,6 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
         super(MutectTestCase, self).setUp()
         self.caller = mutect.Mutect()
 
-    def test_validateInputFile_isValid(self):
-        metaheaders = ["##MuTect=blah"]
-        self.assertTrue(self.caller.validate_input_file(metaheaders, "#column_header"))
-
-    def test_validateInputFile_isNotValid(self):
-        metaheaders = ["Foo"]
-        self.assertFalse(self.caller.validate_input_file(metaheaders, "#column_header"))
-
     def test_claim(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
         content1 = ["##foo", "##source=strelka", "#chrom", record1]

@@ -163,7 +163,7 @@ class _ZScoreTag(object):
             return None
 
     def _init_population_stats(self, vcf_reader, dependent_tag_id):
-        '''Derive mean and stdev. 
+        '''Derive mean and stdev.
 
         Adapted from online variance algorithm from Knuth, The Art of Computer 
         Programming, volume 2

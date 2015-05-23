@@ -250,8 +250,8 @@ def add_subparser(subparser):
     parser.add_argument("-v", "--verbose", action='store_true')
 
 #TODO (cgates): This module is both a command and also manipulates VcfRecords
-# like a caller. This is the only body of code that does both these things.
-# Does this bother anyone else?
+# like a caller transform. This is the only body of code that does both these
+# things. Does this bother anyone else?
 def execute(args, execution_context):
     validate_args(args)
 

@@ -74,17 +74,17 @@ class JacquardBaseTestCase(unittest.TestCase):
 
         output = command[2]
 
-        #try:
-        if os.path.isfile(output):
-            output_file = os.path.basename(output)
-            self._compare_files(output, output_file, expected_dir)
-        elif os.path.isdir(output):
-            for output_file in os.listdir(output):
-                new_output = os.path.join(output, output_file)
-                self._compare_files(new_output, output_file, expected_dir)
-        #except self.failureException as e:
-        #    msg = "discrepancy in command [{}]: {}".format(" ".join(command), e)
-        #    raise self.failureException(msg)
+        try:
+            if os.path.isfile(output):
+                output_file = os.path.basename(output)
+                self._compare_files(output, output_file, expected_dir)
+            elif os.path.isdir(output):
+                for output_file in os.listdir(output):
+                    new_output = os.path.join(output, output_file)
+                    self._compare_files(new_output, output_file, expected_dir)
+        except self.failureException as e:
+            msg = "discrepancy in command [{}]: {}".format(" ".join(command), e)
+            raise self.failureException(msg)
 
     def entab(self, string, old="|"):
         return string.replace(old, "\t")
