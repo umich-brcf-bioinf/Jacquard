@@ -35,12 +35,12 @@ JQ_VARSCAN_TAG = "JQ_VS_"
 VARSCAN_ABBREVIATION = "VS"
 VERSION = "v2.3"
 
-class _GenotypeTag(common_tags.JacquardTag):
+class _GenotypeTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         super(self.__class__,
               self).__init__(VARSCAN_ABBREVIATION,
-                             common_tags.JacquardTag.GENOTYPE_TAG,
+                             common_tags.AbstractJacquardTag.GENOTYPE_TAG,
                              'Jacquard genotype (based on GT)')
 
     def add_tag_values(self, vcf_record):
@@ -52,7 +52,7 @@ class _GenotypeTag(common_tags.JacquardTag):
             vcf_record.add_sample_tag_value(self.tag_id,
                                             sample_values)
 
-class _AlleleFreqTag(common_tags.JacquardTag):
+class _AlleleFreqTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
     @classmethod
     def _standardize_af(cls, value):
@@ -65,7 +65,7 @@ class _AlleleFreqTag(common_tags.JacquardTag):
     def __init__(self):
         super(self.__class__,
               self).__init__(VARSCAN_ABBREVIATION,
-                             common_tags.JacquardTag.ALLELE_FREQ_TAG,
+                             common_tags.AbstractJacquardTag.ALLELE_FREQ_TAG,
                              ('Jacquard allele frequency for VarScan: Decimal '
                               'allele frequency rounded to 2 digits (based on '
                               'FREQ)'))
@@ -78,12 +78,12 @@ class _AlleleFreqTag(common_tags.JacquardTag):
                 sample_values[sample] = _AlleleFreqTag._standardize_af(freq)
             vcf_record.add_sample_tag_value(self.tag_id, sample_values)
 
-class _DepthTag(common_tags.JacquardTag):
+class _DepthTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         super(self.__class__,
               self).__init__(VARSCAN_ABBREVIATION,
-                             common_tags.JacquardTag.DEPTH_TAG,
+                             common_tags.AbstractJacquardTag.DEPTH_TAG,
                              'Jacquard depth for VarScan (based on DP)')
 
     def add_tag_values(self, vcf_record):
@@ -95,7 +95,7 @@ class _DepthTag(common_tags.JacquardTag):
             vcf_record.add_sample_tag_value(self.tag_id, sample_values)
 
 ##TODO (cgates): Make this robust to sample order changes
-class _SomaticTag(common_tags.JacquardTag):
+class _SomaticTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
 
     @staticmethod
@@ -108,7 +108,7 @@ class _SomaticTag(common_tags.JacquardTag):
     def __init__(self):
         super(self.__class__,
               self).__init__(VARSCAN_ABBREVIATION,
-                             common_tags.JacquardTag.SOMATIC_TAG,
+                             common_tags.AbstractJacquardTag.SOMATIC_TAG,
                              ('Jacquard somatic status for VarScan: '
                               '0=non-somatic,1=somatic (based on SOMATIC info '
                               'tag and if sample is TUMOR)'))
@@ -168,6 +168,7 @@ class _HCTag(object):
         return vcf_record
 
 class Varscan(object):
+    #pylint: disable=too-few-public-methods
     """Recognize and transform VarScan VCFs to standard Jacquard format."""
 
     _DEFAULT_REGEX = "Somatic.hc.fpfilter.pass"
@@ -380,7 +381,6 @@ class Varscan(object):
 
         return vcf_readers
 
-#pylint: disable=too-many-locals
     def claim(self, file_readers):
         """Recognizes and claims VarScan VCFs form the set of all input VCFs.
 

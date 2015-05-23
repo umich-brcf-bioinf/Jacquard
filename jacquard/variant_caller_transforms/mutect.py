@@ -12,7 +12,7 @@ JQ_MUTECT_TAG = "JQ_MT_"
 MUTECT_ABBREVIATION = "MT"
 VERSION = "v1.1.4"
 
-class _GenotypeTag(common_tags.JacquardTag):
+class _GenotypeTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
     @classmethod
     def _standardize_gt(cls, value):
@@ -23,7 +23,7 @@ class _GenotypeTag(common_tags.JacquardTag):
     def __init__(self):
         super(self.__class__,
               self).__init__(MUTECT_ABBREVIATION,
-                             common_tags.JacquardTag.GENOTYPE_TAG,
+                             common_tags.AbstractJacquardTag.GENOTYPE_TAG,
                              "Jacquard genotype (based on GT)")
 
     def add_tag_values(self, vcf_record):
@@ -34,16 +34,15 @@ class _GenotypeTag(common_tags.JacquardTag):
                 sample_values[samp] = _GenotypeTag._standardize_gt(genotype)
             vcf_record.add_sample_tag_value(self.tag_id, sample_values)
 
-class _AlleleFreqTag(common_tags.JacquardTag):
+class _AlleleFreqTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         super(self.__class__,
               self).__init__(MUTECT_ABBREVIATION,
-                             common_tags.JacquardTag.ALLELE_FREQ_TAG,
+                             common_tags.AbstractJacquardTag.ALLELE_FREQ_TAG,
                              ('Jacquard allele frequency for MuTect: '
                               'Decimal allele frequency rounded to 2 digits '
                               '(based on FA)'))
-       
 
     def add_tag_values(self, vcf_record):
         if "FA" in vcf_record.format_tags:
@@ -60,12 +59,12 @@ class _AlleleFreqTag(common_tags.JacquardTag):
             new_values.append(utils.round_two_digits(val))
         return ",".join(new_values)
 
-class _DepthTag(common_tags.JacquardTag):
+class _DepthTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         super(self.__class__,
               self).__init__(MUTECT_ABBREVIATION,
-                             common_tags.JacquardTag.DEPTH_TAG,
+                             common_tags.AbstractJacquardTag.DEPTH_TAG,
                              'Jacquard depth for MuTect (based on DP)')
 
     def add_tag_values(self, vcf_record):
@@ -75,15 +74,16 @@ class _DepthTag(common_tags.JacquardTag):
                 sample_values[samp] = vcf_record.sample_tag_values[samp]["DP"]
             vcf_record.add_sample_tag_value(self.tag_id, sample_values)
 
-class _SomaticTag(common_tags.JacquardTag):
+class _SomaticTag(common_tags.AbstractJacquardTag):
+    #pylint: disable=too-few-public-methods
     _DESCRIPTION = (\
-'''Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS 
-FORMAT tag)''').replace("\n","")
+'''Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS
+ FORMAT tag)''').replace("\n","")
     #pylint: disable=too-few-public-methods
     def __init__(self):
         super(self.__class__,
               self).__init__(MUTECT_ABBREVIATION,
-                             common_tags.JacquardTag.SOMATIC_TAG,
+                             common_tags.AbstractJacquardTag.SOMATIC_TAG,
                              self._DESCRIPTION)
 
     def add_tag_values(self, vcf_record):
@@ -105,6 +105,7 @@ FORMAT tag)''').replace("\n","")
             return "0"
 
 class Mutect(object):
+    #pylint: disable=too-few-public-methods
     """Recognize and transform MuTect VCFs to standard Jacquard format.
 
     MuTect VCFs are blessedly compliant and straightforward to translate, with

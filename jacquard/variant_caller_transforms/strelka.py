@@ -25,7 +25,7 @@ JQ_STRELKA_TAG = "JQ_SK_"
 STRELKA_ABBREVIATION = "SK"
 VERSION = "v2.0.15"
 
-class _GenotypeTag(common_tags.JacquardTag):
+class _GenotypeTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
 
     _INDEL_VALUES = ["ref", "hom", "het"]
@@ -33,7 +33,7 @@ class _GenotypeTag(common_tags.JacquardTag):
     def __init__(self):
         super(self.__class__,
               self).__init__(STRELKA_ABBREVIATION,
-                             common_tags.JacquardTag.GENOTYPE_TAG,
+                             common_tags.AbstractJacquardTag.GENOTYPE_TAG,
                              ('Jacquard genotype (based on SGT). Example for '
                               'snv: REF=A, ALT=C, INFO:SGT=AA->AC is translated'
                               ' as normal=0/0, tumor=0/1. Example for indel: '
@@ -86,12 +86,12 @@ class _GenotypeTag(common_tags.JacquardTag):
             vcf_record.add_sample_tag_value(self.tag_id,
                                             sample_values)
 
-class _AlleleFreqTag(common_tags.JacquardTag):
+class _AlleleFreqTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         super(self.__class__,
               self).__init__(STRELKA_ABBREVIATION,
-                             common_tags.JacquardTag.ALLELE_FREQ_TAG,
+                             common_tags.AbstractJacquardTag.ALLELE_FREQ_TAG,
                              ('Jacquard allele frequency for Strelka: Decimal '
                               'allele frequency rounded to 2 digits (based on '
                               'alt_depth/total_depth. Uses (TIR tier 2)/DP2 if '
@@ -163,7 +163,7 @@ class _AlleleFreqTag(common_tags.JacquardTag):
     def _standardize_af(value):
         return utils.round_two_digits(value)
 
-class _DepthTag(common_tags.JacquardTag):
+class _DepthTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
     REQUIRED_TAGS = set(["DP2", "AU"])
     NUCLEOTIDE_DEPTH_TAGS = ["AU", "CU", "TU", "GU"]
@@ -181,7 +181,7 @@ class _DepthTag(common_tags.JacquardTag):
     def __init__(self):
         super(self.__class__,
               self).__init__(STRELKA_ABBREVIATION,
-                             common_tags.JacquardTag.DEPTH_TAG,
+                             common_tags.AbstractJacquardTag.DEPTH_TAG,
                              ('Jacquard depth for Strelka (uses DP2 if '
                               'available, otherwise uses ACGT tier2 depth)'))
 
@@ -196,12 +196,12 @@ class _DepthTag(common_tags.JacquardTag):
 
 
 ##TODO (cgates): Make this robust to sample order changes
-class _SomaticTag(common_tags.JacquardTag):
+class _SomaticTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
     def __init__(self):
         super(self.__class__,
               self).__init__(STRELKA_ABBREVIATION,
-                             common_tags.JacquardTag.SOMATIC_TAG,
+                             common_tags.AbstractJacquardTag.SOMATIC_TAG,
                              ('Jacquard somatic status for Strelka: '
                               '0=non-somatic,1=somatic (based on PASS in FILTER'
                               ' column)'))
@@ -220,6 +220,7 @@ class _SomaticTag(common_tags.JacquardTag):
             return "0"
 
 class Strelka(object):
+    #pylint: disable=too-few-public-methods
     """Recognize and transform Strelka VCFs to standard Jacquard format.
 
     Note that Strelka sometimes reports variants which fail the filter as

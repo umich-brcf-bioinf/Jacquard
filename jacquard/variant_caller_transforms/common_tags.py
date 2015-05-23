@@ -7,13 +7,16 @@ CALLER_REPORTED_TAG = "CALLER_REPORTED"
 CALLER_PASSED_TAG = "CALLER_PASSED"
 
 
-class JacquardTag(object):
+
+class AbstractJacquardTag(object):
+    #pylint: disable=abstract-class-not-used, too-few-public-methods
     __metaclass__ = abc.ABCMeta
 
     FORMAT = ('##FORMAT=<ID={},Number={},'
                          'Type={},Description="{}">')
 
     class _TagType(object):
+        #pylint: disable=too-few-public-methods
         def __init__(self, abbreviation, vcf_type, vcf_number):
             self.abbreviation = abbreviation
             self.vcf_type = vcf_type
@@ -31,10 +34,10 @@ class JacquardTag(object):
                                     description)
         self.tag_id = "JQ_{}_{}".format(variant_caller_abbrev,
                                         tag_type.abbreviation)
-        self.metaheader = JacquardTag.FORMAT.format(self.tag_id,
-                                                    tag_type.vcf_number,
-                                                    tag_type.vcf_type,
-                                                    description)
+        self.metaheader = AbstractJacquardTag.FORMAT.format(self.tag_id,
+                                                            tag_type.vcf_number,
+                                                            tag_type.vcf_type,
+                                                            description)
 
     def add_tag_values(self, vcf_record):
         raise NotImplementedError()

@@ -1,4 +1,6 @@
-#pylint:disable=line-too-long,too-many-public-methods
+#pylint:disable=line-too-long,too-many-public-methods,too-few-public-methods
+#pylint:disable=invalid-name, abstract-method, multiple-statements,
+#pylint:disable=super-init-not-called
 from __future__ import print_function, absolute_import, division
 
 import jacquard.variant_caller_transforms.common_tags as common_tags
@@ -7,33 +9,33 @@ import test.utils.test_case as test_case
 from jacquard.utils.utils import JQException
 
 
-class JacquardTagTestCase(test_case.JacquardBaseTestCase):
+class AbstractJacquardTagTestCase(test_case.JacquardBaseTestCase):
     def test_allele_freq_tag(self):
-        tag = common_tags.JacquardTag.ALLELE_FREQ_TAG
+        tag = common_tags.AbstractJacquardTag.ALLELE_FREQ_TAG
         self.assertEquals("AF", tag.abbreviation)
         self.assertEquals("Float", tag.vcf_type)
         self.assertEquals("A", tag.vcf_number)
 
     def test_depth_tag(self):
-        tag = common_tags.JacquardTag.DEPTH_TAG
+        tag = common_tags.AbstractJacquardTag.DEPTH_TAG
         self.assertEquals("DP", tag.abbreviation)
         self.assertEquals("Integer", tag.vcf_type)
         self.assertEquals("1", tag.vcf_number)
 
     def test_genotype_tag(self):
-        tag = common_tags.JacquardTag.GENOTYPE_TAG
+        tag = common_tags.AbstractJacquardTag.GENOTYPE_TAG
         self.assertEquals("GT", tag.abbreviation)
         self.assertEquals("String", tag.vcf_type)
         self.assertEquals("1", tag.vcf_number)
 
     def test_somatic_tag(self):
-        tag = common_tags.JacquardTag.SOMATIC_TAG
+        tag = common_tags.AbstractJacquardTag.SOMATIC_TAG
         self.assertEquals("HC_SOM", tag.abbreviation)
         self.assertEquals("Integer", tag.vcf_type)
         self.assertEquals("1", tag.vcf_number)
 
     def test_add_tag_values_raisesNotImplementedError(self):
-        class FakeTag(common_tags.JacquardTag):
+        class FakeTag(common_tags.AbstractJacquardTag):
             def __init__(self): pass
         tag = FakeTag()
         self.assertRaises(NotImplementedError,
@@ -42,8 +44,8 @@ class JacquardTagTestCase(test_case.JacquardBaseTestCase):
                           )
 
     def test_metaheader(self):
-        tag_type = common_tags.JacquardTag.GENOTYPE_TAG
-        class MyTag(common_tags.JacquardTag):
+        tag_type = common_tags.AbstractJacquardTag.GENOTYPE_TAG
+        class MyTag(common_tags.AbstractJacquardTag):
             def add_tag_values(self, vcf_record): pass
         actual_tag = MyTag("SK", tag_type, "foo bar baz")
         expected_metaheader = ('##FORMAT=<ID=JQ_SK_GT,Number=1,Type=String,'
@@ -51,8 +53,8 @@ class JacquardTagTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(expected_metaheader, actual_tag.metaheader)
 
     def test_metaheader_raisesExceptionIfEmbeddedQuotesInDescription(self):
-        tag_type = common_tags.JacquardTag.GENOTYPE_TAG
-        class MyTag(common_tags.JacquardTag):
+        tag_type = common_tags.AbstractJacquardTag.GENOTYPE_TAG
+        class MyTag(common_tags.AbstractJacquardTag):
             def add_tag_values(self, vcf_record): pass
         MyTag("SK", tag_type, "Single quotes are 'ok'")
         self.assertRaisesRegexp(JQException,
@@ -63,8 +65,8 @@ class JacquardTagTestCase(test_case.JacquardBaseTestCase):
                                 'Double quotes are "not ok"')
 
     def test_tag_id(self):
-        tag_type = common_tags.JacquardTag.GENOTYPE_TAG
-        class MyTag(common_tags.JacquardTag):
+        tag_type = common_tags.AbstractJacquardTag.GENOTYPE_TAG
+        class MyTag(common_tags.AbstractJacquardTag):
             def add_tag_values(self, vcf_record): pass
         actual_tag = MyTag("SK", tag_type, "foo bar baz")
         self.assertEquals("JQ_SK_GT", actual_tag.tag_id)
