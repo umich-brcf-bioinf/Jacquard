@@ -38,7 +38,10 @@ class ZScoreTagTest(test_case.JacquardBaseTestCase):
                              sample_tag_values={"SA":{"X":"13"}, "SB":{"X":"16"}})
         reader = MockVcfReader(records=[rec1, rec2])
 
-        tag = zscore_caller._ZScoreTag("ZScoreX", "ZScore for X", "X", reader)
+        tag = zscore_caller._ZScoreTag("ZScoreX",
+                                       '##FORMAT=<ID=ZScoreX,Number=1,Type=Float,Description="ZScore for X">',
+                                       "X",
+                                       reader)
 
         self.assertEquals(3, len(tag.metaheaders))
         it = iter(tag.metaheaders)

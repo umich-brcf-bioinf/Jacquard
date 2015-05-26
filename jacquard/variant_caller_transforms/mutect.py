@@ -23,7 +23,7 @@ class _GenotypeTag(common_tags.AbstractJacquardTag):
     def __init__(self):
         super(self.__class__,
               self).__init__(MUTECT_ABBREVIATION,
-                             common_tags.AbstractJacquardTag.GENOTYPE_TAG,
+                             common_tags.GENOTYPE_TAG,
                              "Jacquard genotype (based on GT)")
 
     def add_tag_values(self, vcf_record):
@@ -39,7 +39,7 @@ class _AlleleFreqTag(common_tags.AbstractJacquardTag):
     def __init__(self):
         super(self.__class__,
               self).__init__(MUTECT_ABBREVIATION,
-                             common_tags.AbstractJacquardTag.ALLELE_FREQ_TAG,
+                             common_tags.ALLELE_FREQ_TAG,
                              ('Jacquard allele frequency for MuTect: '
                               'Decimal allele frequency rounded to 2 digits '
                               '(based on FA)'))
@@ -64,7 +64,7 @@ class _DepthTag(common_tags.AbstractJacquardTag):
     def __init__(self):
         super(self.__class__,
               self).__init__(MUTECT_ABBREVIATION,
-                             common_tags.AbstractJacquardTag.DEPTH_TAG,
+                             common_tags.DEPTH_TAG,
                              'Jacquard depth for MuTect (based on DP)')
 
     def add_tag_values(self, vcf_record):
@@ -83,7 +83,7 @@ class _SomaticTag(common_tags.AbstractJacquardTag):
     def __init__(self):
         super(self.__class__,
               self).__init__(MUTECT_ABBREVIATION,
-                             common_tags.AbstractJacquardTag.SOMATIC_TAG,
+                             common_tags.SOMATIC_TAG,
                              self._DESCRIPTION)
 
     def add_tag_values(self, vcf_record):

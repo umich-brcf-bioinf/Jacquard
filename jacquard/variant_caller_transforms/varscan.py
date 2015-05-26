@@ -40,7 +40,7 @@ class _GenotypeTag(common_tags.AbstractJacquardTag):
     def __init__(self):
         super(self.__class__,
               self).__init__(VARSCAN_ABBREVIATION,
-                             common_tags.AbstractJacquardTag.GENOTYPE_TAG,
+                             common_tags.GENOTYPE_TAG,
                              'Jacquard genotype (based on GT)')
 
     def add_tag_values(self, vcf_record):
@@ -65,7 +65,7 @@ class _AlleleFreqTag(common_tags.AbstractJacquardTag):
     def __init__(self):
         super(self.__class__,
               self).__init__(VARSCAN_ABBREVIATION,
-                             common_tags.AbstractJacquardTag.ALLELE_FREQ_TAG,
+                             common_tags.ALLELE_FREQ_TAG,
                              ('Jacquard allele frequency for VarScan: Decimal '
                               'allele frequency rounded to 2 digits (based on '
                               'FREQ)'))
@@ -83,7 +83,7 @@ class _DepthTag(common_tags.AbstractJacquardTag):
     def __init__(self):
         super(self.__class__,
               self).__init__(VARSCAN_ABBREVIATION,
-                             common_tags.AbstractJacquardTag.DEPTH_TAG,
+                             common_tags.DEPTH_TAG,
                              'Jacquard depth for VarScan (based on DP)')
 
     def add_tag_values(self, vcf_record):
@@ -108,7 +108,7 @@ class _SomaticTag(common_tags.AbstractJacquardTag):
     def __init__(self):
         super(self.__class__,
               self).__init__(VARSCAN_ABBREVIATION,
-                             common_tags.AbstractJacquardTag.SOMATIC_TAG,
+                             common_tags.SOMATIC_TAG,
                              ('Jacquard somatic status for VarScan: '
                               '0=non-somatic,1=somatic (based on SOMATIC info '
                               'tag and if sample is TUMOR)'))

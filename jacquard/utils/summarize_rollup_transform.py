@@ -11,15 +11,30 @@ import re
 
 import jacquard.utils.utils as utils
 import jacquard.variant_caller_transforms.common_tags as common_tags
+from  jacquard.variant_caller_transforms.common_tags import TagType as TagType
 
+SUMMARY_TAG = "SUMMARY"
 
 JQ_SUMMARY_TAG = "JQ_SUMMARY_"
 JQ_REPORTED = "CALLERS_REPORTED_COUNT"
-JQ_REPORTED_LIST = "CALLERS_REPORTED_LIST"
 JQ_SAMPLES_REPORTED = "SAMPLES_REPORTED_COUNT"
 JQ_PASSED = "CALLERS_PASSED_COUNT"
-JQ_PASSED_LIST = "CALLERS_PASSED_LIST"
 JQ_SAMPLES_PASSED = "SAMPLES_PASSED_COUNT"
+
+CALLERS_REPORTED_LIST = TagType("CALLERS_REPORTED_LIST", "String", ".")
+CALLERS_PASSED_LIST = TagType("CALLERS_PASSED_LIST", "String", ".")
+CALLERS_REPORTED_COUNT = TagType("CALLERS_REPORTED_COUNT", "Integer", "1")
+CALLERS_PASSED_COUNT = TagType("CALLERS_PASSED_COUNT", "Integer", "1")
+
+SAMPLES_REPORTED = TagType("SAMPLES_REPORTED_COUNT", "Integer", "1", "INFO")
+SAMPLES_PASSED = TagType("SAMPLES_PASSED_COUNT", "Integer", "1", "INFO")
+
+SUMMARY_GENOTYPE = TagType("HC_GT", "String", "1")
+SUMMARY_ALLELE_FREQ_RANGE = TagType("AF_RANGE", "Float", "1")
+SUMMARY_ALLELE_FREQ_AVG = TagType("AF_AVERAGE", "Float", "1")
+SUMMARY_DEPTH_RANGE = TagType("DP_RANGE", "Float", "1")
+SUMMARY_DEPTH_AVG = TagType("DP_AVERAGE", "Float", "1")
+SUMMARY_SOMATIC_COUNT = TagType("SOM_COUNT", "Integer", "1")
 
 def _aggregate_numeric_values(values, function):
     split_values = [x.split(",") for x in values]
@@ -35,11 +50,14 @@ def _aggregate_numeric_values(values, function):
 
     return ",".join(string_values)
 
-def _get_non_null_values(record, sample, tag_name_regex):
+def _get_non_null_values(record, sample, tag_type):
     values = []
     try:
-        for tag, value in list(record.sample_tag_values[sample].items()):
-            if tag_name_regex.match(tag) and value != ".":
+        desired_tags = common_tags.AbstractJacquardTag\
+                       .get_matching_tags(record.sample_tag_values[sample],
+                                          tag_type)
+        for value in list(desired_tags.values()):
+            if value != ".":
                 values.append(value)
     except KeyError:
         raise utils.JQException("Sample [{}] was not recognized".format(sample))
@@ -71,178 +89,142 @@ def _build_new_tags(vcf_record, tags, sample):
 
     return desired_tags
 
-def _add_caller_list_values(pattern, vcf_record, jq_global_variable):
+def _add_caller_list_values(vcf_record, tag_type, tag_id):
     sample_tag = {}
     for sample, tags in vcf_record.sample_tag_values.items():
         sample_tag[sample] = []
-        for tag in tags:
-            pattern_match = pattern.match(tag)
-            if pattern_match and tags[tag] != "0" and tags[tag] != ".":
-                sample_tag[sample].append(pattern_match.group(1))
+        desired_tags = common_tags.AbstractJacquardTag\
+                       .get_matching_caller_abbrevs(tags, tag_type)
+        for tag in desired_tags:
+            if desired_tags[tag] != "0" and desired_tags[tag] != ".":
+                sample_tag[sample].append(tag)
 
     for sample in sample_tag:
         sample_tag[sample] = ",".join(sorted(sample_tag[sample]))
         if not sample_tag[sample]:
             sample_tag[sample] = "."
-    vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + jq_global_variable,
-                                    sample_tag)
+    vcf_record.add_sample_tag_value(tag_id, sample_tag)
 
-def _add_caller_count_values(pattern, vcf_record, jq_global_variable):
+def _add_caller_count_values(vcf_record, tag_type, tag_id):
     sample_tag = {}
     for sample, tags in vcf_record.sample_tag_values.items():
         sample_tag[sample] = 0
-        for tag in tags:
-            if pattern.match(tag) and tags[tag] != "0" and tags[tag] != ".":
-                sample_tag[sample] += int(tags[tag])
-    vcf_record.add_sample_tag_value(JQ_SUMMARY_TAG + jq_global_variable,
-                                    sample_tag)
+        desired_tags = common_tags.AbstractJacquardTag.get_matching_tags(tags,
+                                                                         tag_type)
+        for tag in desired_tags:
+            if desired_tags[tag] != "0" and desired_tags[tag] != ".":
+                sample_tag[sample] += int(desired_tags[tag])
+    vcf_record.add_sample_tag_value(tag_id, sample_tag)
 
 def _add_sample_count_values(vcf_record,
                              jq_callers_global_variable,
-                             jq_samples_global_variable):
+                             tag_id):
     count = 0
     for tags in vcf_record.sample_tag_values.values():
         tag_key = JQ_SUMMARY_TAG + jq_callers_global_variable
         if tag_key in tags and tags[tag_key] != "0" and tags[tag_key] != ".":
             count += 1
 
-    info_key = JQ_SUMMARY_TAG + jq_samples_global_variable
-    vcf_record.add_info_field("=".join([info_key, str(count)]))
+    vcf_record.add_info_field("=".join([tag_id, str(count)]))
 
-class _CallersReportedListTag(object):
+class _CallersReportedListTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
-    def __init__(self):
-        self.metaheader = self._get_metaheader()
-        self.pattern = re.compile(r"JQ_(.*?)_{}"\
-                                  .format(common_tags.CALLER_REPORTED_TAG))
 
-    @staticmethod
-    def _get_metaheader():
-        return ('##FORMAT=<ID={}{},'
-                'Number=.,'
-                'Type=String,'
-                #pylint: disable=line-too-long
-                'Description="Comma-separated list variant callers which listed this variant in the Jacquard tagged VCF">')\
-                .format(JQ_SUMMARY_TAG,
-                        JQ_REPORTED_LIST)
+    def __init__(self):
+        super(self.__class__,
+              self).__init__(SUMMARY_TAG,
+                             CALLERS_REPORTED_LIST,
+                             ('Comma-separated list variant callers '
+                             'which listed this variant in the Jacquard tagged '
+                             'VCF'))
 
     def add_tag_values(self, vcf_record):
-        _add_caller_list_values(self.pattern, vcf_record, JQ_REPORTED_LIST)
+        _add_caller_list_values(vcf_record,
+                                common_tags.CALLER_REPORTED_TAG,
+                                self.tag_id)
 
-class _CallersReportedTag(object):
+class _CallersReportedTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
     def __init__(self):
-        self.metaheader = self._get_metaheader()
-        self.pattern = re.compile(r"JQ_(.*?)_{}"\
-                                  .format(common_tags.CALLER_REPORTED_TAG))
-
-    @staticmethod
-    def _get_metaheader():
-        return ('##FORMAT=<ID={}{},'
-                'Number=1,'
-                'Type=Integer,'
-                #pylint: disable=line-too-long
-                'Description="Count of variant callers which listed this variant in the Jacquard tagged VCF">')\
-                .format(JQ_SUMMARY_TAG,
-                        JQ_REPORTED)
+        super(self.__class__,
+              self).__init__(SUMMARY_TAG,
+                             CALLERS_REPORTED_COUNT,
+                             ('Count of variant callers which listed this '
+                              'variant in the Jacquard tagged VCF'))
 
     def add_tag_values(self, vcf_record):
-        _add_caller_count_values(self.pattern, vcf_record, JQ_REPORTED)
+        _add_caller_count_values(vcf_record,
+                                 common_tags.CALLER_REPORTED_TAG,
+                                 self.tag_id)
 
-class _CallersPassedListTag(object):
+class _CallersPassedListTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
-    def __init__(self):
-        self.metaheader = self._get_metaheader()
-        self.pattern = re.compile(r"JQ_(.*?)_{}"\
-                                  .format(common_tags.CALLER_PASSED_TAG))
 
-    @staticmethod
-    def _get_metaheader():
-        return ('##FORMAT=<ID={}{},'
-                'Number=.,'
-                'Type=String,'
-                #pylint: disable=line-too-long
-                'Description="Comma-separated list of variant caller short-names where FILTER = PASS for this variant in the Jacquard tagged VCF">')\
-                .format(JQ_SUMMARY_TAG,
-                        JQ_PASSED_LIST)
+    def __init__(self):
+        super(self.__class__,
+              self).__init__(SUMMARY_TAG,
+                             CALLERS_PASSED_LIST,
+                             ('Comma-separated list of variant caller short-'
+                              'names where FILTER = PASS for this variant in '
+                              'the Jacquard tagged VCF'))
 
     def add_tag_values(self, vcf_record):
-        _add_caller_list_values(self.pattern, vcf_record, JQ_PASSED_LIST)
+        _add_caller_list_values(vcf_record,
+                                common_tags.CALLER_PASSED_TAG,
+                                self.tag_id)
 
-class _CallersPassedTag(object):
+class _CallersPassedTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
-    def __init__(self):
-        self.metaheader = self._get_metaheader()
-        self.pattern = re.compile(r"JQ_(.*?)_{}"\
-                                  .format(common_tags.CALLER_PASSED_TAG))
 
-    @staticmethod
-    def _get_metaheader():
-        return ('##FORMAT=<ID={}{},'
-                'Number=1,'
-                'Type=Integer,'
-                #pylint: disable=line-too-long
-                'Description="Count of variant callers where FILTER = PASS for this variant in the Jacquard tagged VCF">')\
-                .format(JQ_SUMMARY_TAG,
-                        JQ_PASSED)
+    def __init__(self):
+        super(self.__class__,
+              self).__init__(SUMMARY_TAG,
+                             CALLERS_PASSED_COUNT,
+                             ('Count of variant callers where FILTER = PASS for '
+                              'this variant in the Jacquard tagged VCF'))
 
     def add_tag_values(self, vcf_record):
-        _add_caller_count_values(self.pattern, vcf_record, JQ_PASSED)
+        _add_caller_count_values(vcf_record,
+                                 common_tags.CALLER_PASSED_TAG,
+                                 self.tag_id)
 
-class _SamplesReported(object):
+class _SamplesReported(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
     def __init__(self):
-        self.metaheader = self._get_metaheader()
+        super(self.__class__,
+              self).__init__(SUMMARY_TAG,
+                             SAMPLES_REPORTED,
+                             ('Count of samples where this variant appeared in '
+                              'any of the Jacquard tagged VCFs (regardless of '
+                              'quality/filtering)'))
 
-    @staticmethod
-    def _get_metaheader():
-        return ('##INFO=<ID={}{},'
-                'Number=1,'
-                'Type=Integer,'
-                #pylint: disable=line-too-long
-                'Description="Count of samples where this variant appeared in any of the Jacquard tagged VCFs (regardless of quality/filtering)">')\
-                .format(JQ_SUMMARY_TAG,
-                        JQ_SAMPLES_REPORTED)
+    def add_tag_values(self, vcf_record):
+        _add_sample_count_values(vcf_record, JQ_REPORTED, self.tag_id)
 
-    @staticmethod
-    def add_tag_values(vcf_record):
-        _add_sample_count_values(vcf_record, JQ_REPORTED, JQ_SAMPLES_REPORTED)
-
-class _SamplesPassed(object):
+class _SamplesPassed(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
     def __init__(self):
-        self.metaheader = self._get_metaheader()
+        super(self.__class__,
+              self).__init__(SUMMARY_TAG,
+                             SAMPLES_PASSED,
+                             ('Count of samples where a variant caller passed '
+                              'the filter in any of the Jacquard tagged VCFs'))
 
-    @staticmethod
-    def _get_metaheader():
-        return ('##INFO=<ID={}{},'
-                'Number=1,'
-                'Type=Integer,'
-                #pylint: disable=line-too-long
-                'Description="Count of samples where a variant caller passed the filter in any of the Jacquard tagged VCFs">')\
-                .format(JQ_SUMMARY_TAG,
-                        JQ_SAMPLES_PASSED)
+    def add_tag_values(self, vcf_record):
+        _add_sample_count_values(vcf_record, JQ_PASSED, self.tag_id)
 
-    @staticmethod
-    def add_tag_values(vcf_record):
-        _add_sample_count_values(vcf_record, JQ_PASSED, JQ_SAMPLES_PASSED)
-
-class _HCGenotypeTag(object):
+class _HCGenotypeTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
-    _TAG_ID = "{}HC_GT".format(JQ_SUMMARY_TAG)
-    _PATTERN = re.compile("^JQ_.*_GT$")
 
     def __init__(self):
-        self.metaheader = self._get_metaheader()
-
-    @staticmethod
-    def _get_metaheader():
-        #pylint: disable=line-too-long
-        return ('##FORMAT=<ID={},'
-                'Number=1,'
-                'Type=String,'
-                'Description="High confidence consensus genotype (inferred from JQ_*_GT and JQ_*_CALLER_PASSED). Majority rules; ties go to the least unusual variant (0/1>0/2>1/1). Variants which failed their filter are ignored.">')\
-                .format(_HCGenotypeTag._TAG_ID)
+        super(self.__class__,
+              self).__init__(SUMMARY_TAG,
+                             SUMMARY_GENOTYPE,
+                             ('High confidence consensus genotype (inferred '
+                              'from JQ_*_GT and JQ_*_CALLER_PASSED). Majority '
+                              'rules; ties go to the least unusual variant '
+                              '(0/1>0/2>1/1). Variants which failed their '
+                              'filter are ignored.'))
 
     @staticmethod
     def _prioritize_genotype(values):
@@ -264,47 +246,39 @@ class _HCGenotypeTag(object):
         for sample in vcf_record.sample_tag_values:
             tag_values = _get_non_null_values(vcf_record,
                                               sample,
-                                              _HCGenotypeTag._PATTERN)
+                                              common_tags.GENOTYPE_TAG)
             genotype = "."
             if tag_values:
                 genotype = self._prioritize_genotype(tag_values)
             new_sample_tag_values[sample] = genotype
 
-        vcf_record.add_sample_tag_value(_HCGenotypeTag._TAG_ID,
+        vcf_record.add_sample_tag_value(self.tag_id,
                                         new_sample_tag_values)
 
-class _AlleleFreqRangeTag(object):
+class _AlleleFreqRangeTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
-    _TAG_ID = "{}AF_RANGE".format(JQ_SUMMARY_TAG)
-    _PATTERN = re.compile("^JQ_.*_AF$")
 
     def __init__(self):
-        self.metaheader = self._get_metaheader()
+        super(self.__class__,
+              self).__init__(SUMMARY_TAG,
+                             SUMMARY_ALLELE_FREQ_RANGE,
+                             ('Max(allele frequency) - min (allele frequency) '
+                              'across recognized callers.'))
 
-    @staticmethod
-    def _get_metaheader():
-        return ('##FORMAT=<ID={},'
-                'Number=1,'
-                'Type=Float,'
-                ##pylint: disable=line-too-long
-                'Description="Max(allele frequency) - min (allele frequency) across recognized callers.">')\
-                .format(_AlleleFreqRangeTag._TAG_ID)
-
-    @staticmethod
-    def add_tag_values(record):
+    def add_tag_values(self, record):
         new_sample_tag_values = {}
         for sample in record.sample_tag_values:
             tag_values = _get_non_null_values(record,
                                               sample,
-                                              _AlleleFreqRangeTag._PATTERN)
+                                              common_tags.ALLELE_FREQ_TAG)
 
             aggregated_values = "."
             if tag_values:
                 aggregated_values = _aggregate_numeric_values(tag_values,
                                                               _range)
             if not aggregated_values:
-                #pylint: disable=line-too-long
-                raise utils.JQException("Error summarizing values {} at record [{}:{} {}]",
+                msg = "Error summarizing values {} at record [{}:{} {}]"
+                raise utils.JQException(msg,
                                         list(tag_values),
                                         record.chrom,
                                         record.pos,
@@ -312,41 +286,34 @@ class _AlleleFreqRangeTag(object):
 
             new_sample_tag_values[sample] = aggregated_values
 
-        record.add_sample_tag_value(_AlleleFreqRangeTag._TAG_ID,
+        record.add_sample_tag_value(self.tag_id,
                                     new_sample_tag_values)
 
-class _AlleleFreqAverageTag(object):
+class _AlleleFreqAverageTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
-    _TAG_ID = "{}AF_AVERAGE".format(JQ_SUMMARY_TAG)
-    _PATTERN = re.compile("^JQ_.*_AF$")
 
     def __init__(self):
-        self.metaheader = self._get_metaheader()
+        super(self.__class__,
+              self).__init__(SUMMARY_TAG,
+                             SUMMARY_ALLELE_FREQ_AVG,
+                             ('Average allele frequency across recognized '
+                              'variant callers that reported frequency for '
+                              'this position [average(JQ_*_AF)].'))
 
-    @staticmethod
-    def _get_metaheader():
-        return ('##FORMAT=<ID={0},'
-                'Number=1,'
-                'Type=Float,'
-                ##pylint: disable=line-too-long
-                'Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].">')\
-                .format(_AlleleFreqAverageTag._TAG_ID)
-
-    @staticmethod
-    def add_tag_values(record):
+    def add_tag_values(self, record):
         new_sample_tag_values = {}
         for sample in record.sample_tag_values:
             tag_values = _get_non_null_values(record,
                                               sample,
-                                              _AlleleFreqAverageTag._PATTERN)
+                                              common_tags.ALLELE_FREQ_TAG)
 
             aggregated_values = "."
             if tag_values:
                 aggregated_values = _aggregate_numeric_values(tag_values,
                                                               _average)
             if not aggregated_values:
-                #pylint: disable=line-too-long
-                raise utils.JQException("Error summarizing values {} at record [{}:{} {}]",
+                msg = "Error summarizing values {} at record [{}:{} {}]"
+                raise utils.JQException(msg,
                                         list(tag_values),
                                         record.chrom,
                                         record.pos,
@@ -354,41 +321,33 @@ class _AlleleFreqAverageTag(object):
 
             new_sample_tag_values[sample] = aggregated_values
 
-        record.add_sample_tag_value(_AlleleFreqAverageTag._TAG_ID,
+        record.add_sample_tag_value(self.tag_id,
                                     new_sample_tag_values)
 
-class _DepthRangeTag(object):
+class _DepthRangeTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
-    _TAG_ID = "{}DP_RANGE".format(JQ_SUMMARY_TAG)
-    _PATTERN = re.compile("^JQ_.*_DP$")
 
     def __init__(self):
-        self.metaheader = self._get_metaheader()
+        super(self.__class__,
+              self).__init__(SUMMARY_TAG,
+                             SUMMARY_DEPTH_RANGE,
+                             ('Max(depth) - min (depth) across recognized '
+                              'callers.'))
 
-    @staticmethod
-    def _get_metaheader():
-        return ('##FORMAT=<ID={},'
-                'Number=1,'
-                'Type=Float,'
-                ##pylint: disable=line-too-long
-                'Description="Max(depth) - min (depth) across recognized callers.">'
-                .format(_DepthRangeTag._TAG_ID))
-
-    @staticmethod
-    def add_tag_values(record):
+    def add_tag_values(self, record):
         new_sample_tag_values = {}
         for sample in record.sample_tag_values:
             tag_values = _get_non_null_values(record,
                                               sample,
-                                              _DepthRangeTag._PATTERN)
+                                              common_tags.DEPTH_TAG)
 
             aggregated_values = "."
             if tag_values:
                 aggregated_values = _aggregate_numeric_values(tag_values,
                                                               _range)
             if not aggregated_values:
-                #pylint: disable=line-too-long
-                raise utils.JQException("Error summarizing values {} at record [{}:{} {}]",
+                msg = "Error summarizing values {} at record [{}:{} {}]"
+                raise utils.JQException(msg,
                                         list(tag_values),
                                         record.chrom,
                                         record.pos,
@@ -396,41 +355,35 @@ class _DepthRangeTag(object):
 
             new_sample_tag_values[sample] = aggregated_values
 
-        record.add_sample_tag_value(_DepthRangeTag._TAG_ID,
+        record.add_sample_tag_value(self.tag_id,
                                     new_sample_tag_values)
 
-class _DepthAverageTag(object):
+class _DepthAverageTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
-    _TAG_ID = "{}DP_AVERAGE".format(JQ_SUMMARY_TAG)
-    _PATTERN = re.compile("^JQ_.*_DP$")
 
     def __init__(self):
-        self.metaheader = self._get_metaheader()
+        super(self.__class__,
+              self).__init__(SUMMARY_TAG,
+                             SUMMARY_DEPTH_AVG,
+                             ('Average allele frequency across recognized '
+                              'variant callers that reported frequency for '
+                              'this position; rounded to integer '
+                              '[round(average(JQ_*_DP))].'))
 
-    @staticmethod
-    def _get_metaheader():
-        return ('##FORMAT=<ID={},'
-                'Number=1,'
-                'Type=Float,'
-                ##pylint: disable=line-too-long
-                'Description="Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].">'
-                .format(_DepthAverageTag._TAG_ID))
-
-    @staticmethod
-    def add_tag_values(record):
+    def add_tag_values(self, record):
         new_sample_tag_values = {}
         for sample in record.sample_tag_values:
             tag_values = _get_non_null_values(record,
                                               sample,
-                                              _DepthAverageTag._PATTERN)
+                                              common_tags.DEPTH_TAG)
 
             aggregated_values = "."
             if tag_values:
                 aggregated_values = _aggregate_numeric_values(tag_values,
                                                               _average)
             if not aggregated_values:
-                #pylint: disable=line-too-long
-                raise utils.JQException("Error summarizing values {} at record [{}:{} {}]",
+                msg = "Error summarizing values {} at record [{}:{} {}]"
+                raise utils.JQException(msg,
                                         list(tag_values),
                                         record.chrom,
                                         record.pos,
@@ -438,41 +391,33 @@ class _DepthAverageTag(object):
 
             new_sample_tag_values[sample] = aggregated_values
 
-        record.add_sample_tag_value(_DepthAverageTag._TAG_ID,
+        record.add_sample_tag_value(self.tag_id,
                                     new_sample_tag_values)
 
-class _SomaticTag(object):
+class _SomaticTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
-    _TAG_ID = "{}SOM_COUNT".format(JQ_SUMMARY_TAG)
-    _PATTERN = re.compile("^JQ_.*_HC_SOM$")
 
     def __init__(self):
-        self.metaheader = self._get_metaheader()
+        super(self.__class__,
+              self).__init__(SUMMARY_TAG,
+                             SUMMARY_SOMATIC_COUNT,
+                             ('Count of recognized variant callers that '
+                              'reported confident somatic call for this '
+                              'sample-position.'))
 
-    @staticmethod
-    def _get_metaheader():
-        som_count = ('##FORMAT=<ID={},'
-                     'Number=1,'
-                     'Type=Integer,'
-                     ##pylint: disable=line-too-long
-                     'Description="Count of recognized variant callers that reported confident somatic call for this sample-position.">')\
-                     .format(_SomaticTag._TAG_ID)
-        return som_count
-
-    @staticmethod
-    def add_tag_values(record):
+    def add_tag_values(self, record):
         new_sample_tag_values = {}
         for sample in record.sample_tag_values:
             tag_values = _get_non_null_values(record,
                                               sample,
-                                              _SomaticTag._PATTERN)
+                                              common_tags.SOMATIC_TAG)
             aggregated_values = "."
             if tag_values:
                 aggregated_values = _aggregate_numeric_values(tag_values,
                                                               _count)
             if not aggregated_values:
-                #pylint: disable=line-too-long
-                raise utils.JQException("Error summarizing values {} at record [{}:{} {}]",
+                msg ="Error summarizing values {} at record [{}:{} {}]"
+                raise utils.JQException(msg,
                                         list(tag_values),
                                         record.chrom,
                                         record.pos,
@@ -480,7 +425,7 @@ class _SomaticTag(object):
 
             new_sample_tag_values[sample] = aggregated_values
 
-        record.add_sample_tag_value(_SomaticTag._TAG_ID,
+        record.add_sample_tag_value(self.tag_id,
                                     new_sample_tag_values)
 
 class SummarizeCaller(object):

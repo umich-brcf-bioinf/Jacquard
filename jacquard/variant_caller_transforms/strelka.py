@@ -33,7 +33,7 @@ class _GenotypeTag(common_tags.AbstractJacquardTag):
     def __init__(self):
         super(self.__class__,
               self).__init__(STRELKA_ABBREVIATION,
-                             common_tags.AbstractJacquardTag.GENOTYPE_TAG,
+                             common_tags.GENOTYPE_TAG,
                              ('Jacquard genotype (based on SGT). Example for '
                               'snv: REF=A, ALT=C, INFO:SGT=AA->AC is translated'
                               ' as normal=0/0, tumor=0/1. Example for indel: '
@@ -91,7 +91,7 @@ class _AlleleFreqTag(common_tags.AbstractJacquardTag):
     def __init__(self):
         super(self.__class__,
               self).__init__(STRELKA_ABBREVIATION,
-                             common_tags.AbstractJacquardTag.ALLELE_FREQ_TAG,
+                             common_tags.ALLELE_FREQ_TAG,
                              ('Jacquard allele frequency for Strelka: Decimal '
                               'allele frequency rounded to 2 digits (based on '
                               'alt_depth/total_depth. Uses (TIR tier 2)/DP2 if '
@@ -181,7 +181,7 @@ class _DepthTag(common_tags.AbstractJacquardTag):
     def __init__(self):
         super(self.__class__,
               self).__init__(STRELKA_ABBREVIATION,
-                             common_tags.AbstractJacquardTag.DEPTH_TAG,
+                             common_tags.DEPTH_TAG,
                              ('Jacquard depth for Strelka (uses DP2 if '
                               'available, otherwise uses ACGT tier2 depth)'))
 
@@ -201,7 +201,7 @@ class _SomaticTag(common_tags.AbstractJacquardTag):
     def __init__(self):
         super(self.__class__,
               self).__init__(STRELKA_ABBREVIATION,
-                             common_tags.AbstractJacquardTag.SOMATIC_TAG,
+                             common_tags.SOMATIC_TAG,
                              ('Jacquard somatic status for Strelka: '
                               '0=non-somatic,1=somatic (based on PASS in FILTER'
                               ' column)'))

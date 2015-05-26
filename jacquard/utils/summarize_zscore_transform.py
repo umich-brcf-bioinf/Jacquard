@@ -13,30 +13,37 @@ from __future__ import print_function, absolute_import, division
 
 import math
 
-from jacquard import __version__
 import jacquard.utils.utils as utils
+import jacquard.variant_caller_transforms.common_tags as common_tags
 
 
 _JQ_SUMMARY_TAG = "JQ_SUMMARY_"
+SUMMARY_TAG = "SUMMARY"
+
+SUMMARY_ALLELE_FREQ_ZSCORE = common_tags.TagType("AF_ZSCORE", "Float", "1")
+SUMMARY_DEPTH_ZSCORE = common_tags.TagType("DP_ZSCORE", "Float", "1")
 
 #TODO: (cgates): Define tag ids as public, class-level constants so dependent
 # tags can reference them directly
-class _AlleleFreqZScoreTag(object):
-    TAG_ID = "{0}AF_ZSCORE".format(_JQ_SUMMARY_TAG)
+class _AlleleFreqZScoreTag(common_tags.AbstractJacquardTag):
+    #TODO: (jebene) change the way allelefreqzscore understands the tags
+    #it's dependent on (_range_tag should not be defined here)
     _RANGE_TAG = "{0}AF_RANGE".format(_JQ_SUMMARY_TAG)
-    _METAHEADER_DESCRIPTION = (\
-'''Concordance of reported allele frequencies across callers:
- [(this AF range - mean AF range)/standard dev(all AF ranges)].
- Values with null or missing AF range will be assigned zscore of \'.\';
- for multi-valued ranges, zscore is of largest range.''').replace("\n", "")
 
     def __init__(self, vcf_reader):
-        self.tag_id = self.TAG_ID
-        self.tag = _ZScoreTag(self.TAG_ID,
-                              self._METAHEADER_DESCRIPTION,
+        super(self.__class__,
+              self).__init__(SUMMARY_TAG,
+                             SUMMARY_ALLELE_FREQ_ZSCORE,
+                             ('Concordance of reported allele frequencies '
+                              'across callers: [(this AF range - mean AF range)'
+                              '/standard dev(all AF ranges)]. Values with null '
+                              'or missing AF range will be assigned zscore of '
+                              '\'.\'; for multi-valued ranges, zscore is of '
+                              'largest range.'))
+        self.tag = _ZScoreTag(self.tag_id,
+                              self.metaheader,
                               self._RANGE_TAG,
                               vcf_reader)
-
     @property
     def metaheaders(self):
         return self.tag.metaheaders
@@ -44,19 +51,22 @@ class _AlleleFreqZScoreTag(object):
     def add_tag_values(self, vcf_record):
         self.tag.add_tag_values(vcf_record)
 
-class _DepthZScoreTag(object):
-    TAG_ID = "{0}DP_ZSCORE".format(_JQ_SUMMARY_TAG)
+class _DepthZScoreTag(common_tags.AbstractJacquardTag):
+    #TODO: (jebene) change the way depthzscore understands the tags
+    #it's dependent on (_range_tag should not be defined here)
     _RANGE_TAG = "{0}DP_RANGE".format(_JQ_SUMMARY_TAG)
-    _METAHEADER_DESCRIPTION = ('''
-Concordance of reported depth across callers: 
-[(this DP range - mean DP range)/standard dev(all DP ranges)]. 
-Values with null or missing DP range will be assigned zscore 
-of \'.\'.''').replace("\n", "")
 
     def __init__(self, vcf_reader):
-        self.tag_id = self.TAG_ID
-        self.tag = _ZScoreTag(self.TAG_ID,
-                              self._METAHEADER_DESCRIPTION,
+        super(self.__class__,
+              self).__init__(SUMMARY_TAG,
+                             SUMMARY_DEPTH_ZSCORE,
+                             ('Concordance of reported depth across callers: '
+                              '[(this DP range - mean DP range)/standard '
+                              'dev(all DP ranges)]. Values with null or '
+                              'missing DP range will be assigned zscore '
+                              'of \'.\'.'))
+        self.tag = _ZScoreTag(self.tag_id,
+                              self.metaheader,
                               self._RANGE_TAG,
                               vcf_reader)
 
@@ -74,30 +84,27 @@ class _ZScoreTag(object):
     construction and then adds zscores for each value.
     '''
     _EXECUTION_FORMAT = "##jacquard.summarize.{0}.{1}_{2}={3}"
-    _METAHEADER_FORMAT = ('##FORMAT=<ID={0},'
-                          'Number=1,'
-                          'Type=Float,'
-                          'Description="{1}">')
     _MAX_PRECISION = 13
 
     def __init__(self,
                  tag_id,
-                 metaheader_description,
+                 metaheader,
                  dependent_tag_id,
                  vcf_reader):
+
         self._tag_id = tag_id
         self._dependent_tag_id = dependent_tag_id
         self._mean, self._stdev = self._init_population_stats(vcf_reader,
                                                               dependent_tag_id)
         self._metaheaders = self._init_metaheaders(tag_id,
-                                                   metaheader_description,
+                                                   metaheader,
                                                    dependent_tag_id,
                                                    self._mean,
                                                    self._stdev)
 
     def _init_metaheaders(self,
                           tag_id,
-                          metaheader_description,
+                          metaheader,
                           dependent_tag_id,
                           mean,
                           stdev):
@@ -111,10 +118,7 @@ class _ZScoreTag(object):
                                                          dependent_tag_id,
                                                          "stdev",
                                                          repr(stdev)))
-        tag_metaheader = self._METAHEADER_FORMAT.format(tag_id,
-                                                        metaheader_description,
-                                                        __version__)
-        metaheaders.append(tag_metaheader)
+        metaheaders.append(metaheader)
         return tuple(metaheaders)
 
     @property

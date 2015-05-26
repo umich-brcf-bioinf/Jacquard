@@ -1,47 +1,85 @@
 """Common tags used by several callers."""
 from __future__ import print_function, absolute_import, division
+
 import abc
+import re
+from collections import OrderedDict
+
 import jacquard.utils.utils as utils
 
-CALLER_REPORTED_TAG = "CALLER_REPORTED"
-CALLER_PASSED_TAG = "CALLER_PASSED"
+
+CALLER_REPORTED = "CALLER_REPORTED"
+CALLER_PASSED = "CALLER_PASSED"
+
+class TagType(object):
+    #pylint: disable=too-few-public-methods
+    def __init__(self,
+                 abbreviation,
+                 vcf_type,
+                 vcf_number,
+                 metaheader_type='FORMAT'):
+
+        self.abbreviation = abbreviation
+        self.vcf_type = vcf_type
+        self.vcf_number = vcf_number
+        self.metaheader_type = metaheader_type
+
+DEPTH_TAG = TagType("DP", "Integer", "1")
+GENOTYPE_TAG = TagType("GT", "String", "1")
+ALLELE_FREQ_TAG = TagType("AF", "Float", "A")
+SOMATIC_TAG = TagType("HC_SOM", "Integer", "1")
+
+CALLER_REPORTED_TAG = TagType("CALLER_REPORTED", "Integer", "1")
+CALLER_PASSED_TAG = TagType("CALLER_PASSED", "Integer", "1")
 
 class AbstractJacquardTag(object):
     #pylint: disable=abstract-class-not-used, too-few-public-methods
     __metaclass__ = abc.ABCMeta
 
-    FORMAT = ('##FORMAT=<ID={},Number={},'
+    FORMAT = ('##{}=<ID={},Number={},'
               'Type={},Description="{}">')
 
-    class _TagType(object):
-        #pylint: disable=too-few-public-methods
-        def __init__(self, abbreviation, vcf_type, vcf_number):
-            self.abbreviation = abbreviation
-            self.vcf_type = vcf_type
-            self.vcf_number = vcf_number
-
-    DEPTH_TAG = _TagType("DP", "Integer", "1")
-    GENOTYPE_TAG = _TagType("GT", "String", "1")
-    ALLELE_FREQ_TAG = _TagType("AF", "Float", "A")
-    SOMATIC_TAG = _TagType("HC_SOM", "Integer", "1")
-    CALLER_REPORTED_TAG = _TagType("CALLER_REPORTED", "Integer", "1")
-    CALLER_PASSED_TAG = _TagType("CALLER_PASSED", "Integer", "1")
-
     def __init__(self, variant_caller_abbrev, tag_type, description):
+
         if '"' in description:
             raise utils.JQException(("Metaheader descriptions cannot contain "
                                     "double quotes: [{}]"),
                                     description)
+        self.tag_type = tag_type
         self.tag_id = "JQ_{}_{}".format(variant_caller_abbrev,
                                         tag_type.abbreviation)
-        self.metaheader = AbstractJacquardTag.FORMAT.format(self.tag_id,
-                                                            tag_type.vcf_number,
-                                                            tag_type.vcf_type,
+        self.metaheader = AbstractJacquardTag.FORMAT.format(self.tag_type\
+                                                            .metaheader_type,
+                                                            self.tag_id,
+                                                            self.tag_type\
+                                                            .vcf_number,
+                                                            self.tag_type\
+                                                            .vcf_type,
                                                             description)
 
     def add_tag_values(self, vcf_record):
         raise NotImplementedError()
 
+    @staticmethod
+    def get_matching_tags(format_tags, tag_type):
+        matching_format_tags = OrderedDict()
+        for key, value in list(format_tags.items()):
+            regex = re.compile(r"^JQ.*{}$".format(tag_type.abbreviation))
+            if re.search(regex, key):
+                matching_format_tags[key] = value
+
+        return matching_format_tags
+
+    @staticmethod
+    def get_matching_caller_abbrevs(format_tags, tag_type):
+        matching_format_tags = OrderedDict()
+        for key, value in list(format_tags.items()):
+            regex = re.compile(r"^JQ_(.*)_{}$".format(tag_type.abbreviation))
+            match = re.search(regex, key)
+            if match:
+                matching_format_tags[match.group(1)] = value
+
+        return matching_format_tags
 
 class ReportedTag(AbstractJacquardTag):
     """Tracks whether the caller reported this variant (i.e. it's in the VCF).
@@ -54,7 +92,7 @@ class ReportedTag(AbstractJacquardTag):
     def __init__(self, caller_abbreviation):
         super(self.__class__,
               self).__init__(caller_abbreviation,
-                             AbstractJacquardTag.CALLER_REPORTED_TAG,
+                             CALLER_REPORTED_TAG,
                              '1 = variant present in original VCF')
 
     def add_tag_values(self, vcf_record):
@@ -76,7 +114,7 @@ class PassedTag(AbstractJacquardTag):
     def __init__(self, caller_abbreviation):
         super(self.__class__,
               self).__init__(caller_abbreviation,
-                             AbstractJacquardTag.CALLER_PASSED_TAG,
+                             CALLER_PASSED_TAG,
                              '1 = variant FILTER is PASS in original VCF')
 
     def add_tag_values(self, vcf_record):
