@@ -86,9 +86,9 @@ def add_subparser(subparser):
                                   help="Accepts a Jacquard-merged VCF file and creates a new file, adding summary fields.")
     parser.add_argument("input", help="Jacquard-merged VCF file (or any VCF with Jacquard tags; e.g. JQ_SOM_MT)")
     parser.add_argument("output", help="VCF file")
-    parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
     parser.add_argument("--log_file", help="Log file destination")
+    parser.add_argument("-v", "--verbose", action='store_true')
 
 def report_prediction(args):
     return set([os.path.basename(args.output)])

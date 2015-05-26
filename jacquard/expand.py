@@ -146,11 +146,11 @@ def add_subparser(subparser):
                                   help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
     parser.add_argument("input", help="VCF file. Other file types ignored")
     parser.add_argument("output", help="TXT file")
-    parser.add_argument("-v", "--verbose", action='store_true')
     parser.add_argument("-s", "--selected_columns_file",
                         help="File containing an ordered list of column names to be included in the output file; column names can include regular expressions.")
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
     parser.add_argument("--log_file", help="Log file destination")
+    parser.add_argument("-v", "--verbose", action='store_true')
 
 def _predict_output(args):
     return set([os.path.basename(args.output)])

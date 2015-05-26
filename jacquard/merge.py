@@ -687,10 +687,6 @@ def add_subparser(subparser):
                                   help="Accepts a directory of VCFs and returns a single merged VCF file.")
     parser.add_argument("input", help="Directory containing VCF files. Other file types ignored")
     parser.add_argument("output", help="VCF file")
-    parser.add_argument("-v", "--verbose", action='store_true')
-    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
-    parser.add_argument("--include_format_tags", dest='tags', help="Comma-separated user-defined list of regular expressions for format tags to be included in output", metavar="")
-    parser.add_argument("--log_file", help="Log file destination", metavar="")
     parser.add_argument("--include_cells",
                         choices=["all", "valid", "passed", "somatic"],
                         default="valid",
@@ -702,13 +698,17 @@ def add_subparser(subparser):
     parser.add_argument("--include_rows",
                         choices=["all", "at_least_one_passed", "all_passed", "at_least_one_somatic", "all_somatic"],
                         default="at_least_one_somatic",
-                        help=("at_least_one_somatic: Include all variants at loci where at least one variant was somatic\n"
-                              "all_somatic: Include all variants at loci where all variants were somatic\n"
+                        help=("all: Include all variants at loci\n"
                               "at_least_one_passed: Include all variants at loci where at least one variant passed\n"
+                              "at_least_one_somatic: Include all variants at loci where at least one variant was somatic\n"
                               "all_passed: Include all variants at loci where all variants passed\n"
-                              "all: Include all variants at loci\n"),
+                              "all_somatic: Include all variants at loci where all variants were somatic\n"),
                         metavar="")
-
+    parser.add_argument("--include_format_tags", dest='tags', help="Comma-separated user-defined list of regular expressions for format tags to be included in output", metavar="")
+    parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
+    parser.add_argument("--log_file", help="Log file destination", metavar="")
+    parser.add_argument("-v", "--verbose", action='store_true')
+    
 def _predict_output(args):
     desired_output_files = set([os.path.basename(args.output)])
 
