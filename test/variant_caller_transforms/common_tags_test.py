@@ -91,7 +91,7 @@ class AbstractJacquardTagTestCase(test_case.JacquardBaseTestCase):
 
         expected_tags = OrderedDict(sorted({"JQ_MT_GT": "0/1", "JQ_VS_GT": "0/0"}.items()))
         self.assertEquals(expected_tags, actual_tags)
-        self.assertEquals(["JQ_MT_GT", "JQ_VS_GT"], actual_tags.keys())
+        self.assertEquals(["JQ_MT_GT", "JQ_VS_GT"], list(actual_tags.keys()))
 
     def test_get_matching_tags_regexSuffix(self):
         format_tags = OrderedDict(sorted({"JQ_MT_DP": "32", "JQ_GT_FOO": "bar", "JQ_MT_GT": "0/1", "JQ_VS_GT": "0/0"}.items()))
@@ -101,7 +101,7 @@ class AbstractJacquardTagTestCase(test_case.JacquardBaseTestCase):
 
         expected_tags = OrderedDict(sorted({"JQ_MT_GT": "0/1", "JQ_VS_GT": "0/0"}.items()))
         self.assertEquals(expected_tags, actual_tags)
-        self.assertEquals(["JQ_MT_GT", "JQ_VS_GT"], actual_tags.keys())
+        self.assertEquals(["JQ_MT_GT", "JQ_VS_GT"], list(actual_tags.keys()))
 
     def test_get_matching_tags_regexOnlyJacquard(self):
         format_tags = OrderedDict(sorted({"JQ_SK_GT": "0/1", "GT": "0/1"}.items()))
