@@ -421,8 +421,8 @@ class _VarscanVcfReader(object):
         self._vcf_reader = vcf_reader
         self._som_hc_file_reader = som_hc_file_reader
         self._caller = Varscan()
-        self.tags = [common_tags.ReportedTag(JQ_VARSCAN_TAG),
-                     common_tags.PassedTag(JQ_VARSCAN_TAG),
+        self.tags = [common_tags.ReportedTag(VARSCAN_ABBREVIATION),
+                     common_tags.PassedTag(VARSCAN_ABBREVIATION),
                      _AlleleFreqTag(),
                      _DepthTag(),
                      _SomaticTag(),

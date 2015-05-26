@@ -207,8 +207,8 @@ class _MutectVcfReader(object):
     def __init__(self, vcf_reader):
         self._vcf_reader = vcf_reader
         self._caller = Mutect()
-        self.tags = [common_tags.ReportedTag(JQ_MUTECT_TAG),
-                     common_tags.PassedTag(JQ_MUTECT_TAG),
+        self.tags = [common_tags.ReportedTag(MUTECT_ABBREVIATION),
+                     common_tags.PassedTag(MUTECT_ABBREVIATION),
                      _AlleleFreqTag(),
                      _DepthTag(),
                      _SomaticTag(),

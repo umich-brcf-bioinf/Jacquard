@@ -325,8 +325,8 @@ class _StrelkaVcfReader(object):
     def __init__(self, vcf_reader):
         self._vcf_reader = vcf_reader
         self._caller = Strelka()
-        self.tags = [common_tags.ReportedTag(JQ_STRELKA_TAG),
-                     common_tags.PassedTag(JQ_STRELKA_TAG),
+        self.tags = [common_tags.ReportedTag(STRELKA_ABBREVIATION),
+                     common_tags.PassedTag(STRELKA_ABBREVIATION),
                      _AlleleFreqTag(),
                      _DepthTag(),
                      _SomaticTag(),
