@@ -459,7 +459,7 @@ def _sort_vcf(reader, sorted_dir):
         writer.write(vcf_record.text())
 
     writer.close()
-    reader = vcf.VcfReader(vcf.FileReader(writer.output_filepath))
+    reader = MergeVcfReader(vcf.FileReader(writer.output_filepath))
     return reader
 
 def _get_unsorted_readers(vcf_readers):
@@ -491,7 +491,8 @@ def _sort_readers(vcf_readers, output_path):
     unsorted_count = 0
     if unsorted_readers:
         sorted_dir = os.path.join(os.path.dirname(output_path), "tmp")
-        os.makedirs(sorted_dir)
+        if not os.path.isdir(sorted_dir):
+            os.makedirs(sorted_dir)
 
     for reader in vcf_readers:
         if reader in unsorted_readers:

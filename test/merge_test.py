@@ -1359,7 +1359,6 @@ chr2|1|.|A|C|.|.|INFO|JQ_Foo:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
                                    '##FORMAT=<ID=JQ_Foo,Number=1,Type=Float,Description="foo">\n',
                                    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tP1|SampleA\tP1|SampleB\n"]
 
-        print(actual_output_lines[0:len(expected_output_headers)])
         self.assertEquals(expected_output_headers, actual_output_lines[0:len(expected_output_headers)])
 
     def test_sort_readers_orderedVcfsPassThrough(self):
@@ -1374,7 +1373,22 @@ chr2|1|.|A|C|.|.|INFO|JQ_Foo:JQ_Bar1|A_3_1:A_3_2|B_3_1:B_3_2
             actual_readers = merge._sort_readers(list(input_readers),
                                                  temp_dir.path)
 
-        self.assertEquals(actual_readers, input_readers)
+            self.assertEquals(actual_readers, input_readers)
+
+    def test_sort_readers_unsortedReturnsMergeVcfReader(self):
+        record1 = vcf.VcfRecord("chr1", "42", "A", "C")
+        record2 = vcf.VcfRecord("chr3", "42", "A", "C")
+        record3 = vcf.VcfRecord("chr2", "42", "A", "C")
+        vcf_readerA = MockVcfReader(records=[record1, record2, record3])
+        vcf_readerB = MockVcfReader(records=[record1, record2, record3])
+
+        input_readers = [vcf_readerA, vcf_readerB]
+        with TempDirectory() as temp_dir:
+            actual_readers = merge._sort_readers(list(input_readers),
+                                                 temp_dir.path)
+
+            self.assertEquals("MergeVcfReader", type(actual_readers[0]).__name__)
+            self.assertEquals("MergeVcfReader", type(actual_readers[1]).__name__)
 
     def test_sort_readers_vcfsResortedAsNecessary(self):
         #pylint: disable=too-many-locals
@@ -1430,6 +1444,19 @@ class MergeFunctionalTestCase(test_case.JacquardBaseTestCase):
             test_dir = os.path.dirname(os.path.realpath(__file__))
 
             module_testdir = os.path.join(test_dir, "functional_tests", "02_merge")
+            input_file = os.path.join(module_testdir, "input")
+            output_file = os.path.join(output_dir.path, "merged.vcf")
+
+            command = ["merge", input_file, output_file, "--force"]
+            expected_dir = os.path.join(module_testdir, "benchmark")
+
+            self.assertCommand(command, expected_dir)
+
+    def test_merge_unsorted(self):
+        with TempDirectory() as output_dir:
+            test_dir = os.path.dirname(os.path.realpath(__file__))
+
+            module_testdir = os.path.join(test_dir, "functional_tests", "02_merge_unsorted")
             input_file = os.path.join(module_testdir, "input")
             output_file = os.path.join(output_dir.path, "merged.vcf")
 
