@@ -172,9 +172,21 @@ class _Filter(object):
                              "at_least_one_somatic": _Filter.\
                                                     _include_row_if_any_somatic}
         self._args = args
-        self._cell_filter_strategy = self._cell_filters[args.include_cells]
-        self._row_filter_strategy = self._row_filters[args.include_rows]
+        if args.include_all and (args.include_cells or args.include_rows):
+            msg = ('Unable to process command-line arguments. Neither '
+                   '--include_cells nor --include_rows can be specified if '
+                   '--include_all is specified.')
+            raise utils.UsageError(msg)
 
+        if args.include_all:
+            cell_filter_strategy = self._cell_filters["all"]
+            row_filter_strategy = self._row_filters["all"]
+        else:
+            cell_filter_strategy = self._cell_filters[args.include_cells]
+            row_filter_strategy = self._row_filters[args.include_rows]
+
+        self._cell_filter_strategy = cell_filter_strategy
+        self._row_filter_strategy = row_filter_strategy
         self.row_count = 0
         self.rows_excluded = 0
         self.cell_count = 0
@@ -675,6 +687,21 @@ def _merge_records(vcf_readers,
     logger.info("Merge complete: {} rows processed (100%)", row_count)
     filter_strategy.log_statistics()
 
+def _get_format_tag_regex(args):
+    if args.tags and args.include_all:
+        msg =("Unable to process command-line arguments. --include_tags cannot "
+              "be specified if --include_all is specified.")
+        raise utils.UsageError(msg)
+
+    if args.include_all:
+        format_tag_regex = ['.*']
+    elif args.tags:
+        format_tag_regex = args.tags.split(",")
+    else:
+        format_tag_regex = _DEFAULT_INCLUDED_FORMAT_TAGS
+
+    return format_tag_regex
+
 def add_subparser(subparser):
     #pylint: disable=line-too-long
 
@@ -687,6 +714,7 @@ def add_subparser(subparser):
                                   help="Accepts a directory of VCFs and returns a single merged VCF file.")
     parser.add_argument("input", help="Directory containing VCF files. Other file types ignored")
     parser.add_argument("output", help="VCF file")
+    parser.add_argument("--include_all", action="store_true", help="Useful when merging untranslated VCFs which have already been filtered to passing variants. Equivalent to --include_tags='.*' --include_cells=all --include_rows=all")
     parser.add_argument("--include_cells",
                         choices=["all", "valid", "passed", "somatic"],
                         default="valid",
@@ -728,10 +756,7 @@ def execute(args, execution_context):
     input_path = os.path.abspath(args.input)
     output_path = os.path.abspath(args.output)
     filter_strategy = _Filter(args)
-    if args.tags:
-        format_tag_regex = args.tags.split(",")
-    else:
-        format_tag_regex = _DEFAULT_INCLUDED_FORMAT_TAGS
+    format_tag_regex = _get_format_tag_regex(args)
 
     input_files = sorted(glob.glob(os.path.join(input_path, "*.vcf")))
     file_readers = [vcf.FileReader(i) for i in input_files]
