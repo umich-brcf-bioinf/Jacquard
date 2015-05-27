@@ -463,6 +463,53 @@ class MergeTestCase(test_case.JacquardBaseTestCase):
                                  "Some samples appear to be missing VCF(s)"]
         self.assertEquals(expected_log_warnings, actual_log_warnings)
 
+    def test_validate_consistent_input_allTranslatedOkay(self):
+        metaheaders1 = ["##metaheader1", "##metaheader2", "##jacquard.translate.caller"]
+        vcf_reader1 = MockVcfReader(metaheaders=metaheaders1)
+
+        metaheaders2 = ["##metaheader3", "##jacquard.translate.caller", "##metaheader4"]
+        vcf_reader2 = MockVcfReader(metaheaders=metaheaders2)
+
+        merge._validate_consistent_input([vcf_reader1, vcf_reader2], False)
+        actual_log_errors = test.utils.mock_logger.messages["ERROR"]
+        self.assertEquals([], actual_log_errors)
+
+    def test_validate_consistent_input_allUntranslatedOkay(self):
+        metaheaders1 = ["##metaheader1", "##metaheader2"]
+        vcf_reader1 = MockVcfReader(metaheaders=metaheaders1)
+
+        metaheaders2 = ["##metaheader3", "##metaheader4"]
+        vcf_reader2 = MockVcfReader(metaheaders=metaheaders2)
+
+        merge._validate_consistent_input([vcf_reader1, vcf_reader2], False)
+        actual_log_errors = test.utils.mock_logger.messages["ERROR"]
+        self.assertEquals([], actual_log_errors)
+
+    def test_validate_consistent_input_errorIfMixed(self):
+        metaheaders1 = ["##metaheader1", "##metaheader2", "##jacquard.translate.caller"]
+        vcf_reader1 = MockVcfReader(metaheaders=metaheaders1)
+
+        metaheaders2 = ["##metaheader3", "##metaheader4"]
+        vcf_reader2 = MockVcfReader(metaheaders=metaheaders2)
+
+        self.assertRaisesRegexp(utils.UsageError,
+                                r"Some input VCFs \[.*\] were not translated by Jacquard. Review input and/or use --included_all flag",
+                                merge._validate_consistent_input,
+                                [vcf_reader1, vcf_reader2],
+                                False)
+
+    def test_validate_consistent_input_okayIfIncludeAll(self):
+        metaheaders1 = ["##metaheader1", "##metaheader2", "##jacquard.translate.caller"]
+        vcf_reader1 = MockVcfReader(metaheaders=metaheaders1)
+
+        metaheaders2 = ["##metaheader3", "##metaheader4"]
+        vcf_reader2 = MockVcfReader(metaheaders=metaheaders2)
+
+        merge._validate_consistent_input([vcf_reader1, vcf_reader2], True)
+        actual_log_errors = test.utils.mock_logger.messages["ERROR"]
+        self.assertEquals([], actual_log_errors)
+
+
     def test_predict_output(self):
         with TempDirectory() as input_dir, TempDirectory() as output_dir:
             input_dir.write("A.normalized.jacquardTags.HCsomatic.vcf", b"##source=strelka\n#colHeader")

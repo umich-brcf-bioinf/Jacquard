@@ -653,6 +653,26 @@ def _validate_consistent_samples(file_readers):
         msg = "Some samples appear to be missing VCF(s)"
         logger.warning(msg)
 
+def _validate_consistent_input(vcf_readers, include_all):
+    if not include_all:
+        untranslated_readers = []
+        translated = False
+        untranslated = False
+    
+        for vcf_reader in vcf_readers:
+            if '##jacquard.translate.caller' in vcf_reader.metaheaders:
+                translated = True
+            else:
+                untranslated = True
+                untranslated_readers.append(vcf_reader)
+    
+        if translated and untranslated:
+            msg = ("Some input VCFs [{}] were not translated by Jacquard. Review "
+                   "input and/or use --included_all flag")\
+                   .format(untranslated_readers)
+            raise utils.UsageError(msg)
+
+
 def _merge_records(vcf_readers,
                    coordinates,
                    filter_strategy,
@@ -771,6 +791,7 @@ def execute(args, execution_context):
 #signatures of these methods more similar or even combine some methods to
 #reduce excess iterations over the coordinates/vcf_readers
         merge_vcf_readers = _create_vcf_readers(file_readers)
+        _validate_consistent_input(merge_vcf_readers, args.include_all)
         merge_vcf_readers = _sort_readers(merge_vcf_readers, output_path)
         format_tags = _get_format_tags(merge_vcf_readers)
         _disambiguate_format_tags(merge_vcf_readers, format_tags)
