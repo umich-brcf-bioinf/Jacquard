@@ -658,17 +658,17 @@ def _validate_consistent_input(vcf_readers, include_all):
         untranslated_readers = []
         translated = False
         untranslated = False
-    
+
         for vcf_reader in vcf_readers:
             if '##jacquard.translate.caller' in vcf_reader.metaheaders:
                 translated = True
             else:
                 untranslated = True
                 untranslated_readers.append(vcf_reader)
-    
+
         if translated and untranslated:
-            msg = ("Some input VCFs [{}] were not translated by Jacquard. Review "
-                   "input and/or use --included_all flag")\
+            msg = ("Some input VCFs [{}] were not translated by Jacquard. "
+                    "Review input and/or use --included_all flag")\
                    .format(untranslated_readers)
             raise utils.UsageError(msg)
 
@@ -738,25 +738,25 @@ def add_subparser(subparser):
     parser.add_argument("--include_cells",
                         choices=["all", "valid", "passed", "somatic"],
                         default="valid",
-                        help=("valid: Only include valid variants\n"
-                              "all: Include all variants\n"
-                              "passed: Only include variants which passed their respective filter\n"
-                              "somatic: Only include somatic variants"),
+                        help=("all: Include all variants\n"
+                              "valid: Only include valid variants (invalid variants become '.')\n"
+                              "passed: Only include variants which passed their respective filter (failed variants become '.')\n"
+                              "somatic: Only include somatic variants (non-somatic variants become '.')"),
                         metavar="")
     parser.add_argument("--include_rows",
                         choices=["all", "at_least_one_passed", "all_passed", "at_least_one_somatic", "all_somatic"],
                         default="at_least_one_somatic",
-                        help=("all: Include all variants at loci\n"
-                              "at_least_one_passed: Include all variants at loci where at least one variant passed\n"
-                              "at_least_one_somatic: Include all variants at loci where at least one variant was somatic\n"
-                              "all_passed: Include all variants at loci where all variants passed\n"
-                              "all_somatic: Include all variants at loci where all variants were somatic\n"),
+                        help=("all: Include all loci\n"
+                              "at_least_one_passed: Include loci where at least one variant passed\n"
+                              "at_least_one_somatic: Include loci where at least one variant was somatic\n"
+                              "all_passed: Include loci where all variants passed\n"
+                              "all_somatic: Include loci where all variants were somatic\n"),
                         metavar="")
     parser.add_argument("--include_format_tags", dest='tags', help="Comma-separated user-defined list of regular expressions for format tags to be included in output", metavar="")
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
     parser.add_argument("--log_file", help="Log file destination", metavar="")
     parser.add_argument("-v", "--verbose", action='store_true')
-    
+
 def _predict_output(args):
     desired_output_files = set([os.path.basename(args.output)])
 

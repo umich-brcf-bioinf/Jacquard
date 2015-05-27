@@ -144,8 +144,8 @@ def add_subparser(subparser):
                                                'Arguments in the [] are DEFAULT\n'
                                                '\n'),
                                   help="Pivots annotated VCF file so that given sample specific information is fielded out into separate columns. Returns an Excel file containing concatenation of all input files.")
-    parser.add_argument("input", help="VCF file. Other file types ignored")
-    parser.add_argument("output", help="TXT file")
+    parser.add_argument("input", help="VCF file")
+    parser.add_argument("output", help="Tab-separated text file")
     parser.add_argument("-s", "--selected_columns_file",
                         help="File containing an ordered list of column names to be included in the output file; column names can include regular expressions.")
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")

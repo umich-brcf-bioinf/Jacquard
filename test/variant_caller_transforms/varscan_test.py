@@ -357,7 +357,7 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         caller = varscan.Varscan()
         caller.hc_file_pattern = re.compile("foo.bar$")
         self.assertRaisesRegexp(utils.UsageError,
-                                r"The VarScan high-confidence filename regex \[foo\.bar\$\] didn't match any files in the input directory. The beginning of the high-confidence filename must exactly match a VCF filename up to the .vcf extention. Review inputs/command options and try again.",
+                                r"The VarScan high-confidence filename regex \[foo\.bar\$\] didn't match any files in the input directory. The beginning of the high-confidence filename must exactly match a VCF filename up to the .vcf extension. Review inputs/command options and try again.",
                                 caller.claim,
                                 file_readers)
 
