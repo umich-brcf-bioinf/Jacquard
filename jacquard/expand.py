@@ -168,8 +168,21 @@ def validate_args(args):
                                     "not be read. Review inputs/usage and "
                                     "try again."),
                                     args.selected_columns_file)
+        columns = None
+        try:
+            columns = _read_col_spec(args.selected_columns_file)
+        except:
+            pass
+        if not columns:
+            raise utils.UsageError("The selected_columns_file .* has no rows. Review inputs/usage and try again")
 
-        _read_col_spec(args.selected_columns_file)
+    try:
+        vcf.VcfReader(vcf.FileReader(args.input))
+    except:
+        raise utils.UsageError(("The expand command requires a VCF file as an "
+                               "input, but the specified input [{}] contains no VCF "
+                               "metaheaders. Review inputs and try again.").format(args.input))
+
 
 def _get_actual_columns(vcf_reader, col_spec):
     columns  = _create_potential_column_list(vcf_reader)
