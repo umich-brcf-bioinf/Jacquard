@@ -35,6 +35,7 @@ import os
 import re
 
 import natsort
+import textwrap
 
 import jacquard.utils.logger as logger
 import jacquard.utils.utils as utils
@@ -172,11 +173,11 @@ class _Filter(object):
                              "at_least_one_somatic": _Filter.\
                                                     _include_row_if_any_somatic}
         self._args = args
-        if args.include_all and (args.include_cells or args.include_rows):
-            msg = ('Unable to process command-line arguments. Neither '
-                   '--include_cells nor --include_rows can be specified if '
-                   '--include_all is specified.')
-            raise utils.UsageError(msg)
+#         if args.include_all and (args.include_cells or args.include_rows):
+#             msg = ('Unable to process command-line arguments. Neither '
+#                    '--include_cells nor --include_rows can be specified if '
+#                    '--include_all is specified.')
+#             raise utils.UsageError(msg)
 
         if args.include_all:
             cell_filter_strategy = self._cell_filters["all"]
@@ -709,7 +710,7 @@ def _merge_records(vcf_readers,
 
 def _get_format_tag_regex(args):
     if args.tags and args.include_all:
-        msg =("Unable to process command-line arguments. --include_tags cannot "
+        msg =("Unable to process command-line arguments. --include_format_tags cannot "
               "be specified if --include_all is specified.")
         raise utils.UsageError(msg)
 
@@ -727,14 +728,13 @@ def add_subparser(subparser):
 
     parser = subparser.add_parser("merge",
                                   formatter_class=utils._JacquardHelpFormatter,
-                                  usage=["[--include_format_tags=JQ_.*] [--include_cells=valid] [--include_rows=at_least_one_somatic]"],
-                                  description=('\n\n'
-                                               'Arguments in the [] are DEFAULT\n'
-                                               '\n'),
+                                  usage=[" [--include_format_tags=JQ_.*]\n"
+                                         "\t\t\t\t\t[--include_cells=valid]\n"
+                                         "\t\t\t\t\t[--include_rows=at_least_one_somatic]"],
                                   help="Accepts a directory of VCFs and returns a single merged VCF file.")
     parser.add_argument("input", help="Directory containing VCF files. Other file types ignored")
     parser.add_argument("output", help="VCF file")
-    parser.add_argument("--include_all", action="store_true", help="Useful when merging untranslated VCFs which have already been filtered to passing variants. Equivalent to --include_tags='.*' --include_cells=all --include_rows=all")
+    parser.add_argument("--include_all", action="store_true", help=textwrap.fill("Useful when merging untranslated VCFs which have already been filtered to passing variants. Equivalent to --include_format_tags='.*' --include_cells=all --include_rows=all"))
     parser.add_argument("--include_cells",
                         choices=["all", "valid", "passed", "somatic"],
                         default="valid",
@@ -752,7 +752,7 @@ def add_subparser(subparser):
                               "all_passed: Include loci where all variants passed\n"
                               "all_somatic: Include loci where all variants were somatic\n"),
                         metavar="")
-    parser.add_argument("--include_format_tags", dest='tags', help="Comma-separated user-defined list of regular expressions for format tags to be included in output", metavar="")
+    parser.add_argument("--include_format_tags", dest='tags', help=textwrap.fill("Comma-separated user-defined list of regular expressions for format tags to be included in output"), metavar="")
     parser.add_argument("--force", action='store_true', help="Overwrite contents of output directory")
     parser.add_argument("--log_file", help="Log file destination", metavar="")
     parser.add_argument("-v", "--verbose", action='store_true')
