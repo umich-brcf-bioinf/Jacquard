@@ -238,28 +238,28 @@ class Varscan(object):
                                 omitted_files)
 
     @staticmethod
-    def _validate_file_pairing(unpaired_hc_files, unpaired_vcf_files):
-        if unpaired_hc_files:
-            for unpaired_hc_file in unpaired_hc_files[:5]:
-                msg = ("The VarScan high-confidence file [{}] has no matching "
-                       "VCF file.")
-                logger.error(msg, unpaired_hc_file.file_name)
-
-            msg = ("[{}] VarScan high-confidence file(s) did not have a "
-                   "matching VCF file. See log for more details. Review inputs "
-                   "and try again.")
-            raise utils.JQException(msg, len(unpaired_hc_files))
-
-        if unpaired_vcf_files:
-            for unpaired_vcf_file in unpaired_vcf_files[:5]:
-                msg = ("The VarScan VCF file [{}] has no matching "
-                       "high-confidence file.")
-                logger.error(msg, unpaired_vcf_file.file_name)
-
-            msg = ("[{}] VarScan VCF file(s) did not have a matching "
-                   "high-confidence file. See log for more details. Review "
-                   "inputs and try again.")
-            raise utils.JQException(msg, len(unpaired_vcf_files))
+    def _raise_error_for_unpaired_files(unpaired_files, found_orphan, missing_counterpart):
+        _SINGLETON_ERROR_MSG = ("The VarScan {0} [{{}}] has no "
+                                "matching {1}.").format(found_orphan,
+                                                        missing_counterpart)
+        _MULTIPLE_ERROR_MSG = ("[{{1}}] VarScan {0}s [{{}}] did "
+                               "not have a matching {1}. See log for more "
+                               "details. Review inputs and try "
+                               "again.").format(found_orphan, 
+                                                missing_counterpart)
+        total_unpaired_files = len(unpaired_files)
+        msg = None
+        if total_unpaired_files == 1:
+            msg = _SINGLETON_ERROR_MSG.format(unpaired_files[0])
+        else:
+            cutoff = 5
+            unpaired_hc_files_list = ", ".join(unpaired_files[0:min(cutoff, total_unpaired_files)])
+            if total_unpaired_files > cutoff:
+                omitted = total_unpaired_files - cutoff
+                unpaired_hc_files_list += ", ...({} file(s) omitted)".format(omitted)
+            msg = _MULTIPLE_ERROR_MSG.format(total_unpaired_files,
+                                             unpaired_hc_files_list)
+        raise utils.UsageError(msg)
 
     def _find_varscan_files(self, file_readers):
         unclaimed_set = set()
@@ -354,19 +354,28 @@ class Varscan(object):
 
         return self._dictionaries_to_tuples(vcf_dict, filter_dict)
 
-    def _validate_file_pairs(self, tuples):
+    def _validate_vcf_hc_pairs(self, vcf_hc_pairs):
+        hc_files = [i[1] for i in vcf_hc_pairs if i[1]]
+        if not hc_files:
+            return 
+
         unpaired_vcf_files = []
         unpaired_hc_files = []
 
-        hc_values = set([i[1] for i in tuples])
-        if len(hc_values) != 1:
-            for vcf_file_reader, hc_file_reader in tuples:
-                if vcf_file_reader and not hc_file_reader:
-                    unpaired_vcf_files.append(vcf_file_reader)
-                if hc_file_reader and not vcf_file_reader:
-                    unpaired_hc_files.append(hc_file_reader)
+        for vcf_file_reader, hc_file_reader in vcf_hc_pairs:
+            if vcf_file_reader and not hc_file_reader:
+                unpaired_vcf_files.append(vcf_file_reader.file_name)
+            if hc_file_reader and not vcf_file_reader:
+                unpaired_hc_files.append(hc_file_reader.file_name)
 
-        self._validate_file_pairing(unpaired_hc_files, unpaired_vcf_files)
+        if unpaired_hc_files:
+            self._raise_error_for_unpaired_files(unpaired_hc_files,
+                                                "high-confidence file",
+                                                "VCF file")
+        elif unpaired_vcf_files:
+            self._raise_error_for_unpaired_files(unpaired_vcf_files,
+                                                "VCF file",
+                                                "high-confidence file")
 
     @staticmethod
     def _create_vcf_readers(pair_tuples):
@@ -402,9 +411,9 @@ class Varscan(object):
 
         prefix_by_patients = self._split_prefix_by_patient(prefix_to_readers)
         self._validate_vcf_readers(prefix_by_patients)
-        vcf_filter_tuples = self._pair_files(prefix_to_readers, filter_files)
-        self._validate_file_pairs(vcf_filter_tuples)
-        vcf_readers = self._create_vcf_readers(vcf_filter_tuples)
+        vcf_hc_pairs = self._pair_files(prefix_to_readers, filter_files)
+        self._validate_vcf_hc_pairs(vcf_hc_pairs)
+        vcf_readers = self._create_vcf_readers(vcf_hc_pairs)
 
         return list(unclaimed_set), vcf_readers
 

@@ -177,7 +177,11 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         super(VarscanTestCase, self).tearDown()
 
     @staticmethod
-    def append_hc_files(readers, file1="snp.somatic.hc.fpfilter.pass", file2="indel.somatic.hc.fpfilter.pass", content1=None, content2=None):
+    def append_hc_files(readers,
+                        file1="snp.somatic.hc.fpfilter.pass",
+                        file2="indel.somatic.hc.fpfilter.pass",
+                        content1=None,
+                        content2=None):
         if not content1:
             content1 = []
         if not content2:
@@ -188,6 +192,33 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
     @staticmethod
     def _get_tag_class_names(vcf_reader):
         return [tag.__class__.__name__ for tag in vcf_reader.tags]
+
+    def test_validate_vcf_hc_pairs(self):
+        self.caller._validate_vcf_hc_pairs([(MockFileReader("A.vcf"), MockFileReader("A.hc")),
+                                            (MockFileReader("B.vcf"), MockFileReader("B.hc"))])
+        self.ok()
+
+    def test_validate_vcf_hc_pairs_okIfNoHcFiles(self):
+        self.caller._validate_vcf_hc_pairs([(MockFileReader("A.vcf"), None),
+                                            (MockFileReader("B.vcf"), None)])
+        self.ok()
+
+    def test_validate_vcf_hc_pairs_raisesIfMissingHcFiles(self):
+        vcf_hc_pairs = [(MockFileReader("A.vcf"), MockFileReader("A.hc")),
+                        (MockFileReader("B.vcf"), None)]
+        self.assertRaisesRegexp(utils.UsageError,
+                                "The VarScan VCF file \[B.vcf\] has no matching high-confidence file.", 
+                                self.caller._validate_vcf_hc_pairs,
+                                vcf_hc_pairs)
+
+    def test_validate_vcf_hc_pairs_raisesIfNoMissingVcfFiles(self):
+        vcf_hc_pairs = [(MockFileReader("A.vcf"), MockFileReader("A.hc")),
+                        (None, MockFileReader("B.hc"))]
+        self.assertRaisesRegexp(utils.UsageError,
+                                "The VarScan high-confidence file \[B.hc\] has no matching VCF file.", 
+                                self.caller._validate_vcf_hc_pairs,
+                                vcf_hc_pairs)
+
 
     def test_get_hc_file_pattern(self):
         args = Namespace(varscan_hc_filter_file_regex="foo.*")
@@ -373,7 +404,7 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
 
         caller = varscan.Varscan()
         self.assertRaisesRegexp(utils.JQException,
-                                r"\[1\] VarScan high-confidence file\(s\) did not have a matching VCF file. See log for more details. Review inputs and try again.",
+                                r"The VarScan high-confidence file \[patientB.snp.Somatic.hc.fpfilter.pass\] has no matching VCF file.",
                                 caller.claim,
                                 file_readers)
 
@@ -388,8 +419,8 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         file_readers = [reader1, reader2, reader3]
 
         caller = varscan.Varscan()
-        self.assertRaisesRegexp(utils.JQException,
-                                r"\[1\] VarScan VCF file\(s\) did not have a matching high-confidence file. See log for more details. Review inputs and try again.",
+        self.assertRaisesRegexp(utils.UsageError,
+                                r"The VarScan VCF file \[patientA.vcf\] has no matching high-confidence file.",
                                 caller.claim,
                                 file_readers)
 
