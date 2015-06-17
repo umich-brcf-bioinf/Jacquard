@@ -23,7 +23,7 @@ import jacquard.utils.vcf as vcf
 
 JQ_STRELKA_TAG = "JQ_SK_"
 STRELKA_ABBREVIATION = "SK"
-VERSION = "v2.0.15"
+VERSION = "v1.0.14"
 
 class _GenotypeTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
