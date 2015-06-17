@@ -5,8 +5,8 @@
 ##jacquard.summarize.JQ_SUMMARY_AF_ZSCORE.JQ_SUMMARY_AF_RANGE_stdev=0.01
 ##jacquard.summarize.JQ_SUMMARY_DP_ZSCORE.JQ_SUMMARY_DP_RANGE_mean=2.0
 ##jacquard.summarize.JQ_SUMMARY_DP_ZSCORE.JQ_SUMMARY_DP_RANGE_stdev=1.0
-##jacquard=<Timestamp="2015-05-19 14:38:10",Command="<module 'jacquard.summarize' from 'C:\Users\dkriti\workspace\Jacquard\jacquard\summarize.pyc'>",Cwd="c:\Users\dkriti\workspace">
-##jacquard=<Timestamp="2015-05-15 14:47:54",Command="<module 'jacquard.merge' from 'C:\Users\jebene\git\Jacquard\jacquard\merge.pyc'>",Cwd="C:\Users\jebene\git">
+##jacquard=<timestamp="2015-05-19 14:38:10",command="<module 'jacquard.summarize' from 'C:\Users\dkriti\workspace\Jacquard\jacquard\summarize.pyc'>",cwd="c:\Users\dkriti\workspace">
+##jacquard=<timestamp="2015-05-15 14:47:54",command="<module 'jacquard.merge' from 'C:\Users\jebene\git\Jacquard\jacquard\merge.pyc'>",cwd="C:\Users\jebene\git">
 ##contig=<ID=chr1,length=249250621>
 ##INFO=<ID=JQ_MULT_ALT_LOCUS,Number=0,Type=Flag,Description="More than one alt allele was seen at this locus.">
 ##INFO=<ID=JQ_SUMMARY_SAMPLES_PASSED_COUNT,Number=1,Type=Integer,Description="Count of samples where a variant caller passed the filter in any of the Jacquard tagged VCFs">

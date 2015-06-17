@@ -60,7 +60,7 @@ class JacquardTestCase(test_case.JacquardBaseTestCase):
     def test_get_execution_context(self):
         command = "foo input_dir output_dir"
         actual = jacquard._get_execution_context(command)
-        expected = r'##jacquard=<Timestamp=".*",Command="foo input_dir output_dir",Cwd=".*">'
+        expected = r'##jacquard=<timestamp=".*",command="foo input_dir output_dir",cwd=".*",source="Jacquard",version=".*">'
         self.assertRegexpMatches(actual[0], expected)
 
     def test_set_interrupt_handler(self):

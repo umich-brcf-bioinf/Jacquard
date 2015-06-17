@@ -6,7 +6,7 @@
 ##jacquard.summarize.JQ_SUMMARY_AF_ZSCORE.JQ_SUMMARY_AF_RANGE_stdev=None
 ##jacquard.summarize.JQ_SUMMARY_DP_ZSCORE.JQ_SUMMARY_DP_RANGE_mean=None
 ##jacquard.summarize.JQ_SUMMARY_DP_ZSCORE.JQ_SUMMARY_DP_RANGE_stdev=None
-##jacquard=<Timestamp="2015-05-19 14:34:18",Command="<module 'jacquard.summarize' from 'C:\Users\dkriti\workspace\Jacquard\jacquard\summarize.pyc'>",Cwd="c:\Users\dkriti\workspace">
+##jacquard=<timestamp="2015-05-19 14:34:18",command="<module 'jacquard.summarize' from 'C:\Users\dkriti\workspace\Jacquard\jacquard\summarize.pyc'>",cwd="c:\Users\dkriti\workspace">
 ##INFO=<ID=JQ_SUMMARY_SAMPLES_PASSED_COUNT,Number=1,Type=Integer,Description="Count of samples where a variant caller passed the filter in any of the Jacquard tagged VCFs">
 ##INFO=<ID=JQ_SUMMARY_SAMPLES_REPORTED_COUNT,Number=1,Type=Integer,Description="Count of samples where this variant appeared in any of the Jacquard tagged VCFs (regardless of quality/filtering)">
 ##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)">

@@ -63,8 +63,8 @@ class JacquardBaseTestCase(unittest.TestCase):
                           len(actual))
 
         for i in range(len(expected)):
-            if expected[i].startswith("##jacquard=<Timestamp="):
-                self.assertStartsWith(actual[i], "##jacquard=<Timestamp=")
+            if expected[i].startswith("##jacquard=<timestamp="):
+                self.assertStartsWith(actual[i], "##jacquard=<timestamp=")
             else:
                 self.assertEquals(expected[i].rstrip(),
                                   actual[i].rstrip())

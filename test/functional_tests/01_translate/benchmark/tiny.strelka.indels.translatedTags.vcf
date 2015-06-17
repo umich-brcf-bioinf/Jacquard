@@ -3,7 +3,7 @@
 ##fileDate=20140709
 ##germlineIndelTheta=0.0001
 ##jacquard.translate.caller=Strelka
-##jacquard=<Timestamp="2015-05-15 14:42:14",Command="<module 'jacquard.translate' from 'C:\Users\jebene\git\Jacquard\jacquard\translate.pyc'>",Cwd="C:\Users\jebene\git">
+##jacquard=<timestamp="2015-05-15 14:42:14",command="<module 'jacquard.translate' from 'C:\Users\jebene\git\Jacquard\jacquard\translate.pyc'>",cwd="C:\Users\jebene\git">
 ##priorSomaticIndelRate=1e-06
 ##reference=file:ucsc.hg19.fasta
 ##source=strelka
