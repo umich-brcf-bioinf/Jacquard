@@ -207,7 +207,7 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         vcf_hc_pairs = [(MockFileReader("A.vcf"), MockFileReader("A.hc")),
                         (MockFileReader("B.vcf"), None)]
         self.assertRaisesRegexp(utils.UsageError,
-                                "The VarScan VCF file \[B.vcf\] has no matching high-confidence file.",
+                                r"The VarScan VCF file \[B.vcf\] has no matching high-confidence file.",
                                 self.caller._validate_vcf_hc_pairs,
                                 vcf_hc_pairs)
 
@@ -215,7 +215,7 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         vcf_hc_pairs = [(MockFileReader("A.vcf"), MockFileReader("A.hc")),
                         (None, MockFileReader("B.hc"))]
         self.assertRaisesRegexp(utils.UsageError,
-                                "The VarScan high-confidence file \[B.hc\] has no matching VCF file.",
+                                r"The VarScan high-confidence file \[B.hc\] has no matching VCF file.",
                                 self.caller._validate_vcf_hc_pairs,
                                 vcf_hc_pairs)
 

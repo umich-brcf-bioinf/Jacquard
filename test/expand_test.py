@@ -297,7 +297,7 @@ class ExpandTestCase(test_case.JacquardBaseTestCase):
             self.assertRaisesRegexp(utils.UsageError,
                                     ("The expand command requires a VCF file "
                                      "as an input, but the specified input "
-                                     "\[.*input.vcf\] contains no VCF "
+                                     r"\[.*input.vcf\] contains no VCF "
                                      "metaheaders. Review inputs and try "
                                      "again."),
                                     expand.validate_args,

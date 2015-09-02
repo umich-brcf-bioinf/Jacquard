@@ -35,6 +35,9 @@ JQ_VARSCAN_TAG = "JQ_VS_"
 VARSCAN_ABBREVIATION = "VS"
 VERSION = "v2.3"
 
+def _varscan_hc_fileheader(line):
+    return line.startswith("chrom\tposition")
+
 class _GenotypeTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
     def __init__(self):
@@ -143,22 +146,13 @@ class _HCTag(object):
 
     @staticmethod
     def _parse_file_reader(file_reader):
-        column_header = None
         hc_loci = set()
         file_reader.open()
         for line in file_reader.read_lines():
-            if line.startswith("chrom\tposition"):
-                column_header = line
-            else:
+            if not _varscan_hc_fileheader(line):
                 split_line = line.split("\t")
                 hc_loci.add((split_line[0], split_line[1]))
         file_reader.close()
-
-        #TODO : (cgates): Please test this
-        if not column_header:
-            raise utils.JQException("Error. The hc file {} is in an incorrect"
-                                    "format. Review inputs and try"
-                                    "again.".format(file_reader.file_name))
 
         return hc_loci
 
@@ -199,18 +193,19 @@ class Varscan(object):
 
     @staticmethod
     def _validate_filter_file(file_reader):
-        column_header = 0
-        file_reader.open()
+        header_is_valid = False
         file_is_empty = True
+        file_reader.open()
         for line in file_reader.read_lines():
             file_is_empty = False
-            if line.startswith("chrom\tposition"):
-                column_header = line
+            if _varscan_hc_fileheader(line):
+                header_is_valid = True
                 break
         file_reader.close()
 
-        if column_header or file_is_empty:
+        if file_is_empty or header_is_valid:
             return file_reader
+        return None
 
     @staticmethod
     def _is_varscan_vcf(file_reader):
@@ -219,8 +214,7 @@ class Varscan(object):
             return "##source=VarScan2" in vcf_reader.metaheaders
         return False
 
-#TODO: (cgates) Add check of header line - extract constant from HCTag?
-    def _is_varscan_hc_file(self, file_reader):
+    def _is_varscan_hc_filename(self, file_reader):
         return self.hc_file_pattern.search(file_reader.file_name)
 
     @staticmethod
@@ -240,26 +234,30 @@ class Varscan(object):
                                 omitted_files)
 
     @staticmethod
-    def _raise_error_for_unpaired_files(unpaired_files, found_orphan, missing_counterpart):
-        _SINGLETON_ERROR_MSG = ("The VarScan {0} [{{}}] has no "
-                                "matching {1}.").format(found_orphan,
-                                                        missing_counterpart)
-        _MULTIPLE_ERROR_MSG = ("[{{1}}] VarScan {0}s [{{}}] did "
-                               "not have a matching {1}. See log for more "
-                               "details. Review inputs and try "
-                               "again.").format(found_orphan, 
-                                                missing_counterpart)
+    def _raise_error_for_unpaired_files(unpaired_files,
+                                        found_orphan,
+                                        missing_counterpart):
+        singleton_error_msg = ("The VarScan {0} [{{}}] has no "
+                               "matching {1}.").format(found_orphan,
+                                                       missing_counterpart)
+        multiple_error_msg = ("[{{1}}] VarScan {0}s [{{}}] did "
+                              "not have a matching {1}. See log for more "
+                              "details. Review inputs and try "
+                              "again.").format(found_orphan,
+                                               missing_counterpart)
         total_unpaired_files = len(unpaired_files)
         msg = None
         if total_unpaired_files == 1:
-            msg = _SINGLETON_ERROR_MSG.format(unpaired_files[0])
+            msg = singleton_error_msg.format(unpaired_files[0])
         else:
             cutoff = 5
-            unpaired_hc_files_list = ", ".join(unpaired_files[0:min(cutoff, total_unpaired_files)])
+            files = unpaired_files[0:min(cutoff, total_unpaired_files)]
+            unpaired_hc_files_list = ", ".join(files)
             if total_unpaired_files > cutoff:
                 omitted = total_unpaired_files - cutoff
-                unpaired_hc_files_list += ", ...({} file(s) omitted)".format(omitted)
-            msg = _MULTIPLE_ERROR_MSG.format(total_unpaired_files,
+                unpaired_hc_files_list += ", ...({} file(s) omitted)".\
+                        format(omitted)
+            msg = multiple_error_msg.format(total_unpaired_files,
                                              unpaired_hc_files_list)
         raise utils.UsageError(msg)
 
@@ -272,7 +270,7 @@ class Varscan(object):
             if self._is_varscan_vcf(file_reader):
                 prefix, _ = os.path.splitext(file_reader.file_name)
                 prefix_file_readers[prefix] = file_reader
-            elif self._is_varscan_hc_file(file_reader):
+            elif self._is_varscan_hc_filename(file_reader):
                 filter_files.add(file_reader)
             else:
                 unclaimed_set.add(file_reader)
@@ -359,7 +357,7 @@ class Varscan(object):
     def _validate_vcf_hc_pairs(self, vcf_hc_pairs):
         hc_files = [i[1] for i in vcf_hc_pairs if i[1]]
         if not hc_files:
-            return 
+            return
 
         unpaired_vcf_files = []
         unpaired_hc_files = []
