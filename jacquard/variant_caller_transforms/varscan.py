@@ -201,13 +201,15 @@ class Varscan(object):
     def _validate_filter_file(file_reader):
         column_header = 0
         file_reader.open()
+        file_is_empty = True
         for line in file_reader.read_lines():
+            file_is_empty = False
             if line.startswith("chrom\tposition"):
                 column_header = line
                 break
         file_reader.close()
 
-        if column_header:
+        if column_header or file_is_empty:
             return file_reader
 
     @staticmethod

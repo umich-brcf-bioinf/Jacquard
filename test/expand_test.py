@@ -255,7 +255,7 @@ class ExpandTestCase(test_case.JacquardBaseTestCase):
             input_file = os.path.join(input_dir.path, "input.vcf")
             input_dir.write("col_spec.txt", b"chrom\npos\ninfo")
             col_spec_file = os.path.join(input_dir.path, "col_spec.txt")
- 
+
             args = Namespace(input=input_file,
                              output="expanded.txt",
                              selected_columns_file=col_spec_file)
@@ -286,7 +286,7 @@ class ExpandTestCase(test_case.JacquardBaseTestCase):
                                     "The selected_columns_file .* has no rows. Review inputs/usage and try again",
                                     expand.validate_args,
                                     args)
-    
+
     def test_validate_args_checkInputIfVCF(self):
         with TempDirectory() as input_dir:
             input_dir.write("input.vcf", b"123")

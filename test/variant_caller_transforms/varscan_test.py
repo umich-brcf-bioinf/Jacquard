@@ -207,7 +207,7 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         vcf_hc_pairs = [(MockFileReader("A.vcf"), MockFileReader("A.hc")),
                         (MockFileReader("B.vcf"), None)]
         self.assertRaisesRegexp(utils.UsageError,
-                                "The VarScan VCF file \[B.vcf\] has no matching high-confidence file.", 
+                                "The VarScan VCF file \[B.vcf\] has no matching high-confidence file.",
                                 self.caller._validate_vcf_hc_pairs,
                                 vcf_hc_pairs)
 
@@ -215,7 +215,7 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
         vcf_hc_pairs = [(MockFileReader("A.vcf"), MockFileReader("A.hc")),
                         (None, MockFileReader("B.hc"))]
         self.assertRaisesRegexp(utils.UsageError,
-                                "The VarScan high-confidence file \[B.hc\] has no matching VCF file.", 
+                                "The VarScan high-confidence file \[B.hc\] has no matching VCF file.",
                                 self.caller._validate_vcf_hc_pairs,
                                 vcf_hc_pairs)
 
@@ -231,6 +231,12 @@ class VarscanTestCase(test_case.JacquardBaseTestCase):
                                 r"The specified regex \[\*foo\] could not be compiled. Review inputs and try again",
                                 varscan.Varscan._get_hc_file_pattern,
                                 args)
+
+    def test_validate_filter_file_emptyFile(self):
+        file_reader = MockFileReader("p1.hc.fpfilter.pass", [])
+        caller = varscan.Varscan()
+        valid_reader = caller._validate_filter_file(file_reader)
+        self.assertEquals("p1.hc.fpfilter.pass", valid_reader.file_name)
 
     def test_validate_filter_file_validFile(self):
         file_reader = MockFileReader("p1.hc.fpfilter.pass", ["chrom\tposition"])

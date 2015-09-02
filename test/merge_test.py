@@ -160,13 +160,13 @@ class FilterTestCase(test_case.JacquardBaseTestCase):
 #                                 "Unable to process command-line arguments. Neither --include_cells nor --include_rows can be specified if --include_all is specified.",
 #                                  merge._Filter,
 #                                  args)
-# 
+#
 #         args = Namespace(include_all=True, include_cells=False, include_rows=True)
 #         self.assertRaisesRegexp(utils.UsageError,
 #                                 "Unable to process command-line arguments. Neither --include_cells nor --include_rows can be specified if --include_all is specified.",
 #                                  merge._Filter,
 #                                  args)
-# 
+#
 #         args = Namespace(include_all=True, include_cells=True, include_rows=False)
 #         self.assertRaisesRegexp(utils.UsageError,
 #                                 "Unable to process command-line arguments. Neither --include_cells nor --include_rows can be specified if --include_all is specified.",
