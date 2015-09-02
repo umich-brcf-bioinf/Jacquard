@@ -54,17 +54,17 @@ class _GenotypeTag(common_tags.AbstractJacquardTag):
         alleles = [ref]
         alleles.extend(alt.split(","))
 
-        numerator = None
-        denominator = None
+        chrom_a = None
+        chrom_b = None
 
         for i, allele in enumerate(alleles):
             if sample_allele1 == allele:
-                numerator = str(i)
+                chrom_a = str(i)
             if sample_allele2 == allele:
-                denominator = str(i)
+                chrom_b = str(i)
 
-        if numerator and denominator:
-            return numerator+"/"+denominator
+        if chrom_a and chrom_b:
+            return "/".join(sorted([chrom_a, chrom_b]))
         else:
             raise utils.JQException("Unable to determine Genotype")
 

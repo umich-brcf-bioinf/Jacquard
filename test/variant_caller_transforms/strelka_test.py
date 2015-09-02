@@ -26,6 +26,9 @@ class GenotypeTagTestCase(test_case.JacquardBaseTestCase):
         genotype = tag._get_snv_genotype("AG", "A", "G")
         self.assertEquals("0/1", genotype)
 
+        genotype = tag._get_snv_genotype("AG", "G", "A")
+        self.assertEquals("0/1", genotype)
+
         genotype = tag._get_snv_genotype("GG", "A", "G")
         self.assertEquals("1/1", genotype)
 
