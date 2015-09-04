@@ -309,7 +309,7 @@ class AlleleFreqRangeTagTestCase(test_case.JacquardBaseTestCase):
                            sample_tag_values=sample_tag_values)
         tag.add_tag_values(record)
 
-        self.assertEquals("0.67", record.sample_tag_values["SA"][AlleleFreqRangeTagTestCase._TAG_ID])
+        self.assertEquals("0.6667", record.sample_tag_values["SA"][AlleleFreqRangeTagTestCase._TAG_ID])
 
     def test_add_tag_values_inconsistentMultAlt(self):
         tag = summarize_caller._AlleleFreqRangeTag()
@@ -393,7 +393,7 @@ class AlleleFreqAverageTagTestCase(test_case.JacquardBaseTestCase):
                            sample_tag_values=sample_tag_values)
         tag.add_tag_values(record)
 
-        self.assertEquals("0.33", record.sample_tag_values["SA"][AlleleFreqAverageTagTestCase._TAG_ID])
+        self.assertEquals("0.3333", record.sample_tag_values["SA"][AlleleFreqAverageTagTestCase._TAG_ID])
 
     def test_add_tag_values_inconsistentMultAlt(self):
         tag = summarize_caller._AlleleFreqAverageTag()
@@ -484,7 +484,7 @@ class DepthRangeTagTestCase(test_case.JacquardBaseTestCase):
                            sample_tag_values=sample_tag_values)
         tag.add_tag_values(record)
 
-        self.assertEquals("42.67", record.sample_tag_values["SA"][DepthRangeTagTestCase._TAG_ID])
+        self.assertEquals("42.6667", record.sample_tag_values["SA"][DepthRangeTagTestCase._TAG_ID])
 
     def test_add_tag_values_inconsistentMultAlt(self):
         tag = summarize_caller._DepthRangeTag()

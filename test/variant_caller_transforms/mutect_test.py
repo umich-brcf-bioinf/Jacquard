@@ -70,8 +70,8 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
 
     def test_format_presentAFTag(self):
         tag = mutect._AlleleFreqTag()
-        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3|0.567:SA.2:SA.3|0.834:SB.2:SB.3\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3:{0}AF|0.567:SA.2:SA.3:0.57|0.834:SB.2:SB.3:0.83\n".format(mutect.JQ_MUTECT_TAG))
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3|0.34567:SA.2:SA.3|0.76543:SB.2:SB.3\n")
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3:{0}AF|0.34567:SA.2:SA.3:0.3457|0.76543:SB.2:SB.3:0.7654\n".format(mutect.JQ_MUTECT_TAG))
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.text())

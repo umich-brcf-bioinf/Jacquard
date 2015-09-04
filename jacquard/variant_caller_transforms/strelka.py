@@ -161,7 +161,7 @@ class _AlleleFreqTag(common_tags.AbstractJacquardTag):
 
     @staticmethod
     def _standardize_af(value):
-        return utils.round_two_digits(value)
+        return utils.round_digits(value)
 
 class _DepthTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods

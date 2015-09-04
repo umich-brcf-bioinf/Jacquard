@@ -66,12 +66,12 @@ def _get_non_null_values(record, sample, tag_type):
 
 def _average(numeric_values):
     average = str(sum(numeric_values)/Decimal(len(numeric_values)))
-    return utils.round_two_digits(average)
+    return utils.round_digits(average)
 
 def _range(numeric_values):
     if len(numeric_values) > 1:
         value_range = str(max(numeric_values) - min(numeric_values))
-        return utils.round_two_digits(value_range)
+        return utils.round_digits(value_range)
     return "."
 
 def _count(numeric_values):

@@ -62,7 +62,7 @@ class _AlleleFreqTag(common_tags.AbstractJacquardTag):
         new_values = []
         for val in value:
             new_val = str(float(val.strip("%")) / 100)
-            new_values.append(utils.round_two_digits(new_val))
+            new_values.append(utils.round_digits(new_val))
         return ",".join(new_values)
 
     def __init__(self):

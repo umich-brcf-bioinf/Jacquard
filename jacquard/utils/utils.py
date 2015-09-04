@@ -10,10 +10,10 @@ import natsort
 
 
 #TODO (cgates): Why does this need a string? Seems like it should take a number?
-def round_two_digits(val):
+def round_digits(val):
     try:
-        if len(val.split(".")[1]) > 2:
-            return "{0:.2f}".format(float(val))
+        if len(val.split(".")[1]) > 4:
+            return "{0:.4f}".format(float(val))
     except IndexError:
         return val
     return val

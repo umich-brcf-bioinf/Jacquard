@@ -135,7 +135,7 @@ class _ZScoreTag(object):
         if zscore == ".":
             return zscore
         else:
-            return utils.round_two_digits(repr(zscore))
+            return utils.round_digits(repr(zscore))
 
     def add_tag_values(self, vcf_record):
         if not self._ok_to_add_tag_values(vcf_record):

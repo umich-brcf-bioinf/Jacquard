@@ -198,9 +198,9 @@ class ZScoreTagTest(test_case.JacquardBaseTestCase):
 
         tag.add_tag_values(rec1)
         sampleA_tag_values = rec1.sample_tag_values["SA"]
-        self.assertEquals("-1.26", sampleA_tag_values["ZScoreX"])
+        self.assertEquals("-1.2649", sampleA_tag_values["ZScoreX"])
         sampleB_tag_values = rec1.sample_tag_values["SB"]
-        self.assertEquals("-0.63", sampleB_tag_values["ZScoreX"])
+        self.assertEquals("-0.6325", sampleB_tag_values["ZScoreX"])
 
     def test_add_tag_nullInputsProduceNullZScores(self):
         rec1 = vcf.VcfRecord("1", "42", "A", "C",
@@ -226,9 +226,9 @@ class ZScoreTagTest(test_case.JacquardBaseTestCase):
 
         tag.add_tag_values(rec1)
         sampleA_tag_values = rec1.sample_tag_values["SA"]
-        self.assertEquals("0.30", sampleA_tag_values["ZScoreX"])
+        self.assertEquals("0.3015", sampleA_tag_values["ZScoreX"])
         sampleB_tag_values = rec1.sample_tag_values["SB"]
-        self.assertEquals("-0.90", sampleB_tag_values["ZScoreX"])
+        self.assertEquals("-0.9045", sampleB_tag_values["ZScoreX"])
 
     def test_add_tag_doesNothingIfNoStdev(self):
         rec1 = vcf.VcfRecord("1", "42", "A", "C",
@@ -274,9 +274,9 @@ class AlleleFreqZScoreTagTest(test_case.JacquardBaseTestCase):
 
         tag.add_tag_values(rec1)
         sampleA_tag_values = rec1.sample_tag_values["SA"]
-        self.assertEquals("-1.26", sampleA_tag_values["JQ_SUMMARY_AF_ZSCORE"])
+        self.assertEquals("-1.2649", sampleA_tag_values["JQ_SUMMARY_AF_ZSCORE"])
         sampleB_tag_values = rec1.sample_tag_values["SB"]
-        self.assertEquals("-0.63", sampleB_tag_values["JQ_SUMMARY_AF_ZSCORE"])
+        self.assertEquals("-0.6325", sampleB_tag_values["JQ_SUMMARY_AF_ZSCORE"])
 
 class DepthZScoreTagTest(test_case.JacquardBaseTestCase):
     def test_init_metaheaders(self):
@@ -308,9 +308,9 @@ class DepthZScoreTagTest(test_case.JacquardBaseTestCase):
 
         tag.add_tag_values(rec1)
         sampleA_tag_values = rec1.sample_tag_values["SA"]
-        self.assertEquals("-1.26", sampleA_tag_values["JQ_SUMMARY_DP_ZSCORE"])
+        self.assertEquals("-1.2649", sampleA_tag_values["JQ_SUMMARY_DP_ZSCORE"])
         sampleB_tag_values = rec1.sample_tag_values["SB"]
-        self.assertEquals("-0.63", sampleB_tag_values["JQ_SUMMARY_DP_ZSCORE"])
+        self.assertEquals("-0.6325", sampleB_tag_values["JQ_SUMMARY_DP_ZSCORE"])
 
 
 class ZScoreCallerTest(test_case.JacquardBaseTestCase):

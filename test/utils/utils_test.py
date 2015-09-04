@@ -9,27 +9,27 @@ import jacquard.utils.utils as utils
 import test.utils.test_case as test_case
 
 
-class RoundTwoDigitsTestCase(test_case.JacquardBaseTestCase):
-    def test_round_two_digits_noRounding(self):
-        val = "1.01"
-        expected = "1.01"
-        actual = utils.round_two_digits(val)
+class RoundDigitsTestCase(test_case.JacquardBaseTestCase):
+    def test_round_digits_noRounding(self):
+        val = "1.0001"
+        expected = "1.0001"
+        actual = utils.round_digits(val)
         self.assertEquals(expected, actual)
 
-        val = "1.1"
-        expected = "1.1"
-        actual = utils.round_two_digits(val)
+        val = "1.001"
+        expected = "1.001"
+        actual = utils.round_digits(val)
         self.assertEquals(expected, actual)
 
-    def test_round_two_digits_rounding(self):
-        val = "1.011"
-        expected = "1.01"
-        actual = utils.round_two_digits(val)
+    def test_round_digits_rounding(self):
+        val = "1.00011"
+        expected = "1.0001"
+        actual = utils.round_digits(val)
         self.assertEquals(expected, actual)
 
-        val = "1.016"
-        expected = "1.02"
-        actual = utils.round_two_digits(val)
+        val = "1.00016"
+        expected = "1.0002"
+        actual = utils.round_digits(val)
         self.assertEquals(expected, actual)
 
 class JaquardHelpFormatterTestCase(test_case.JacquardBaseTestCase):

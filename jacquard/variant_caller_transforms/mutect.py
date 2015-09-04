@@ -56,7 +56,7 @@ class _AlleleFreqTag(common_tags.AbstractJacquardTag):
     def _standardize_af(value):
         new_values = []
         for val in value:
-            new_values.append(utils.round_two_digits(val))
+            new_values.append(utils.round_digits(val))
         return ",".join(new_values)
 
 class _DepthTag(common_tags.AbstractJacquardTag):
