@@ -58,7 +58,7 @@ class GenotypeTagTestCase(test_case.JacquardBaseTestCase):
 
 class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}AF,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 2 digits (based on FA)">'.format(mutect.JQ_MUTECT_TAG), mutect._AlleleFreqTag().metaheader)
+        self.assertEqual('##FORMAT=<ID={0}AF,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 4 digits (based on FA)">'.format(mutect.JQ_MUTECT_TAG), mutect._AlleleFreqTag().metaheader)
 
     def test_format_missingAFTag(self):
         tag = mutect._AlleleFreqTag()

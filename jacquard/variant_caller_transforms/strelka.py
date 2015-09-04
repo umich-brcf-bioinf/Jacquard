@@ -93,7 +93,7 @@ class _AlleleFreqTag(common_tags.AbstractJacquardTag):
               self).__init__(STRELKA_ABBREVIATION,
                              common_tags.ALLELE_FREQ_TAG,
                              ('Jacquard allele frequency for Strelka: Decimal '
-                              'allele frequency rounded to 2 digits (based on '
+                              'allele frequency rounded to 4 digits (based on '
                               'alt_depth/total_depth. Uses (TIR tier 2)/DP2 if '
                               'available, otherwise uses (ACGT tier2 depth) / '
                               'DP2)'))

@@ -61,7 +61,7 @@ class _AlleleFreqTag(common_tags.AbstractJacquardTag):
     def _standardize_af(cls, value):
         new_values = []
         for val in value:
-            new_val = str(float(val.strip("%")) / 100)
+            new_val = str(round(float(val.strip("%")) / 100, 6))
             new_values.append(utils.round_digits(new_val))
         return ",".join(new_values)
 
@@ -70,7 +70,7 @@ class _AlleleFreqTag(common_tags.AbstractJacquardTag):
               self).__init__(VARSCAN_ABBREVIATION,
                              common_tags.ALLELE_FREQ_TAG,
                              ('Jacquard allele frequency for VarScan: Decimal '
-                              'allele frequency rounded to 2 digits (based on '
+                              'allele frequency rounded to 4 digits (based on '
                               'FREQ)'))
 
     def add_tag_values(self, vcf_record):

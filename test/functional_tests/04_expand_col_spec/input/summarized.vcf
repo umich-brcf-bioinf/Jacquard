@@ -178,7 +178,7 @@
 ##FORMAT=<ID=JQ_SUMMARY_DP,Number=1,Type=Integer,Description="Jacquard summarized depth = average(*DP*)">
 ##FORMAT=<ID=JQ_SUMMARY_DP_RANGE_ZSCORE,Number=A,Type=Integer,Description="Jacquard measure of consistency of depth among callers = (sample DP range - population mean DP range)/standard dev(population DP range)">
 ##FORMAT=<ID=JQ_SUMMARY_SOM_SUM,Number=1,Type=Integer,Description="Jacquard summarized somatic call = sum(*HC_SOM*)">
-##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 2 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)",Source=Jacquard,Version=0.3>
+##FORMAT=<ID=JQ_SK_AF,Number=A,Type=Float,Description="Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 4 digits (based on alt_depth/total_depth. Uses TAR if available, otherwise uses uses DP2 if available, otherwise uses ACGT tier2 depth)",Source=Jacquard,Version=0.3>
 ##FORMAT=<ID=JQ_SK_DP,Number=1,Type=Integer,Description="Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)",Source=Jacquard,Version=0.3>
 ##FORMAT=<ID=JQ_SK_HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)",Source=Jacquard,Version=0.3>
 ##FORMAT=<ID=PL,Number=.,Type=Integer,Description="List of Phred-scaled genotype likelihoods, number of values is (#ALT+1)*(#ALT+2)/2">

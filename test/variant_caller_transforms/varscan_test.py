@@ -69,7 +69,7 @@ class GenotypeTagTestCase(test_case.JacquardBaseTestCase):
 
 class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}AF,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 2 digits (based on FREQ)">'.format(varscan.JQ_VARSCAN_TAG),
+        self.assertEqual('##FORMAT=<ID={0}AF,Number=A,Type=Float,Description="Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 4 digits (based on FREQ)">'.format(varscan.JQ_VARSCAN_TAG),
                          varscan._AlleleFreqTag().metaheader)
 
     def test_format_missingAFTag(self):
@@ -82,16 +82,30 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
 
     def test_format_presentAFTag(self):
         tag = varscan._AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FREQ:F2:F3|56.7%:SA.2:SA.3|83.4%:SB.2:SB.3\n".replace('|', "\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FREQ:F2:F3:{0}AF|56.7%:SA.2:SA.3:0.567|83.4%:SB.2:SB.3:0.834\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|"
+                          "FREQ:F2:F3|"
+                          "56.7%:SA.2:SA.3|"
+                          "83.4%:SB.2:SB.3\n")
+        expected = self.entab(("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|"
+                               "FREQ:F2:F3:{0}AF|"
+                               "56.7%:SA.2:SA.3:0.567|"
+                               "83.4%:SB.2:SB.3:0.834\n")
+                              ).format(varscan.JQ_VARSCAN_TAG)
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.text())
 
     def test_format_multAlt(self):
         tag = varscan._AlleleFreqTag()
-        line = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FREQ:F2:F3|56.7%,41%:SA.2:SA.3|83.4%,23%:SB.2:SB.3\n".replace('|', "\t")
-        expected = "CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FREQ:F2:F3:{0}AF|56.7%,41%:SA.2:SA.3:0.567,0.41|83.4%,23%:SB.2:SB.3:0.834,0.23\n".format(varscan.JQ_VARSCAN_TAG).replace('|', "\t")
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|"
+                          "FREQ:F2:F3|"
+                          "56.7%,41%:SA.2:SA.3|"
+                          "83.4%,23%:SB.2:SB.3\n")
+        expected = self.entab(("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|"
+                              "FREQ:F2:F3:{0}AF|"
+                              "56.7%,41%:SA.2:SA.3:0.567,0.41|"
+                              "83.4%,23%:SB.2:SB.3:0.834,0.23\n")
+                              ).format(varscan.JQ_VARSCAN_TAG)
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.text())

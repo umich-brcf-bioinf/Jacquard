@@ -41,7 +41,7 @@ class _AlleleFreqTag(common_tags.AbstractJacquardTag):
               self).__init__(MUTECT_ABBREVIATION,
                              common_tags.ALLELE_FREQ_TAG,
                              ('Jacquard allele frequency for MuTect: '
-                              'Decimal allele frequency rounded to 2 digits '
+                              'Decimal allele frequency rounded to 4 digits '
                               '(based on FA)'))
 
     def add_tag_values(self, vcf_record):
