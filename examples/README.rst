@@ -10,24 +10,24 @@ Usage
 To use Jacquard with the example data, run the following commands. Note that
 examples/vcfs is the input directory for translate.
 
-*translate*
-
+**translate**
 |
+
 ``$jacquard translate examples/vcfs <output_dir>/translated [options]``
 
-*merge*
-
+**merge**
 |
+
 ``$jacquard merge <output_dir>/translated <output_dir>/merged.vcf [options]``
 
-*summarize*
-
+**summarize**
 |
+
 ``$jacquard summarize <output_dir>/merged.vcf <output_dir>/summarized.vcf [options]``
 
-*expand*
-
+**expand**
 |
+
 ``$jacquard expand <output_dir>/summarized.vcf <output_dir>/expanded.txt [options]``
 
 |
