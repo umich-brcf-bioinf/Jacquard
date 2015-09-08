@@ -1,4 +1,0 @@
-chrom	position	ref	var	normal_reads1	normal_reads2	normal_var_freq	normal_gt	tumor_reads1	tumor_reads2	tumor_var_freq	tumor_gt	somatic_status	variant_p_value	somatic_p_value	tumor_reads1_plus	tumor_reads1_minus	tumor_reads2_plus	tumor_reads2_minus	normal_reads1_plus	normal_reads1_minus	normal_reads2_plus	normal_reads2_minus
-chr1	15783122	A	+AAAATT	52	0	0%	A	30	20	40%	*/+AAAATT	Somatic	1.0	5.669127063523543E-8	15	15	16	4	32	20	0	0
-chr2	38119436	T	-CTCTTGG	47	0	0%	T	39	10	20.41%	*/-CTCTTGG	Somatic	1.0	7.285351165699345E-4	26	13	4	6	32	15	0	0
-chr10	64003072	T	-A	79	0	0%	T	34	24	41.38%	*/-A	Somatic	1.0	3.5436923154701215E-11	6	28	2	22	26	53	0	0
