@@ -404,14 +404,29 @@ class ExcludeMissingAltTestCase(test_case.JacquardBaseTestCase):
 
 class TranslateFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_translate(self):
-        with TempDirectory() as output_file:
+        with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
             module_testdir = os.path.join(test_dir,
                                           "functional_tests",
                                           "01_translate")
-            input_file = os.path.join(module_testdir, "input")
+            input_dir = os.path.join(module_testdir, "input")
 
-            command = ["translate", input_file, output_file.path, "--force"]
+            command = ["translate", input_dir, output_dir.path, "--force"]
             expected_dir = os.path.join(module_testdir, "benchmark")
+
+            self.assertCommand(command, expected_dir)
+
+    def test_translate_example(self):
+        with TempDirectory() as output_dir:
+            test_dir = os.path.dirname(os.path.realpath(__file__))
+            module_test_dir =  os.path.join(test_dir,
+                                            "functional_tests",
+                                            "example_test",
+                                            "01_translate")
+
+            input_dir = os.path.join(module_test_dir, "input")
+
+            command = ["translate", input_dir, output_dir.path, "--force"]
+            expected_dir = os.path.join(module_test_dir, "benchmark")
 
             self.assertCommand(command, expected_dir)

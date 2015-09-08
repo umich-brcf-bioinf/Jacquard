@@ -1,0 +1,34 @@
+FIELD_NAME	TYPE	DESCRIPTION
+JQ_MT_AF	FORMAT	Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 4 digits (based on FA)
+JQ_MT_CALLER_PASSED	FORMAT	1 = variant FILTER is PASS in original VCF
+JQ_MT_CALLER_REPORTED	FORMAT	1 = variant present in original VCF
+JQ_MT_DP	FORMAT	Jacquard depth for MuTect (based on DP)
+JQ_MT_GT	FORMAT	Jacquard genotype (based on GT)
+JQ_MT_HC_SOM	FORMAT	Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)
+JQ_MULT_ALT_LOCUS	INFO	More than one alt allele was seen at this locus.
+JQ_SK_AF	FORMAT	Jacquard allele frequency for Strelka: Decimal allele frequency rounded to 4 digits (based on alt_depth/total_depth. Uses (TIR tier 2)/DP2 if available, otherwise uses (ACGT tier2 depth) / DP2)
+JQ_SK_CALLER_PASSED	FORMAT	1 = variant FILTER is PASS in original VCF
+JQ_SK_CALLER_REPORTED	FORMAT	1 = variant present in original VCF
+JQ_SK_DP	FORMAT	Jacquard depth for Strelka (uses DP2 if available, otherwise uses ACGT tier2 depth)
+JQ_SK_GT	FORMAT	Jacquard genotype (based on SGT). Example for snv: REF=A, ALT=C, INFO:SGT=AA->AC is translated as normal=0/0, tumor=0/1. Example for indel: INFO:SGT=ref->het is translated as normal=0/0, tumor=0/1.
+JQ_SK_HC_SOM	FORMAT	Jacquard somatic status for Strelka: 0=non-somatic,1=somatic (based on PASS in FILTER column)
+JQ_SUMMARY_AF_AVERAGE	FORMAT	Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].
+JQ_SUMMARY_AF_RANGE	FORMAT	Max(allele frequency) - min (allele frequency) across recognized callers.
+JQ_SUMMARY_AF_ZSCORE	FORMAT	Concordance of reported allele frequencies across callers: [(this AF range - mean AF range)/standard dev(all AF ranges)]. Values with null or missing AF range will be assigned zscore of '.'; for multi-valued ranges, zscore is of largest range.
+JQ_SUMMARY_CALLERS_PASSED_COUNT	FORMAT	Count of variant callers where FILTER = PASS for this variant in the Jacquard tagged VCF
+JQ_SUMMARY_CALLERS_PASSED_LIST	FORMAT	Comma-separated list of variant caller short-names where FILTER = PASS for this variant in the Jacquard tagged VCF
+JQ_SUMMARY_CALLERS_REPORTED_COUNT	FORMAT	Count of variant callers which listed this variant in the Jacquard tagged VCF
+JQ_SUMMARY_CALLERS_REPORTED_LIST	FORMAT	Comma-separated list variant callers which listed this variant in the Jacquard tagged VCF
+JQ_SUMMARY_DP_AVERAGE	FORMAT	Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].
+JQ_SUMMARY_DP_RANGE	FORMAT	Max(depth) - min (depth) across recognized callers.
+JQ_SUMMARY_DP_ZSCORE	FORMAT	Concordance of reported depth across callers: [(this DP range - mean DP range)/standard dev(all DP ranges)]. Values with null or missing DP range will be assigned zscore of '.'.
+JQ_SUMMARY_HC_GT	FORMAT	High confidence consensus genotype (inferred from JQ_*_GT and JQ_*_CALLER_PASSED). Majority rules; ties go to the least unusual variant (0/1>0/2>1/1). Variants which failed their filter are ignored.
+JQ_SUMMARY_SAMPLES_PASSED_COUNT	INFO	Count of samples where a variant caller passed the filter in any of the Jacquard tagged VCFs
+JQ_SUMMARY_SAMPLES_REPORTED_COUNT	INFO	Count of samples where this variant appeared in any of the Jacquard tagged VCFs (regardless of quality/filtering)
+JQ_SUMMARY_SOM_COUNT	FORMAT	Count of recognized variant callers that reported confident somatic call for this sample-position.
+JQ_VS_AF	FORMAT	Jacquard allele frequency for VarScan: Decimal allele frequency rounded to 4 digits (based on FREQ)
+JQ_VS_CALLER_PASSED	FORMAT	1 = variant FILTER is PASS in original VCF
+JQ_VS_CALLER_REPORTED	FORMAT	1 = variant present in original VCF
+JQ_VS_DP	FORMAT	Jacquard depth for VarScan (based on DP)
+JQ_VS_GT	FORMAT	Jacquard genotype (based on GT)
+JQ_VS_HC_SOM	FORMAT	Jacquard somatic status for VarScan: 0=non-somatic,1=somatic (based on SOMATIC info tag and if sample is TUMOR)

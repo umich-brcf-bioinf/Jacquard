@@ -391,3 +391,20 @@ class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):
             expected_dir = os.path.join(module_testdir, "benchmark")
 
             self.assertCommand(command, expected_dir)
+
+    def test_expand_example(self):
+        with TempDirectory() as output_dir:
+            test_dir = os.path.dirname(os.path.realpath(__file__))
+            module_test_dir =  os.path.join(test_dir,
+                                            "functional_tests",
+                                            "example_test",
+                                            "04_expand")
+
+            input_dir = os.path.join(module_test_dir, "input", "summarized.vcf")
+            output_file = os.path.join(output_dir.path, "expanded.txt")
+
+            command = ["expand", input_dir, output_file, "--force"]
+            expected_file = os.path.join(module_test_dir,
+                                         "benchmark")
+
+            self.assertCommand(command, expected_file)

@@ -227,18 +227,23 @@ class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
                                           "functional_tests",
                                           "jacquard_test")
 
-            initial_input = os.path.join(module_testdir, "input")
+            initial_input = os.path.join(module_testdir, "00_input")
 
-            translate_output = os.path.join(output_dir.path, "translate")
-            merge_output = os.path.join(output_dir.path, "merge", "merged.vcf")
-            summarize_output = os.path.join(output_dir.path, "summarize", "summarized.vcf")
-            expanded_output = os.path.join(output_dir.path, "expand", "expanded.tsv")
+            translate_output = os.path.join(output_dir.path, "01_translate")
+            merge_output = os.path.join(output_dir.path, "02_merge", "merged.vcf")
+            summarize_output = os.path.join(output_dir.path, "03_summarize", "summarized.vcf")
+            expanded_output = os.path.join(output_dir.path, "04_expand", "expanded.tsv")
 
             commands = [["translate", initial_input, translate_output, "--force"],
                         ["merge", translate_output, merge_output, "--force"],
                         ["summarize", merge_output, summarize_output, "--force"],
                         ["expand", summarize_output, expanded_output, "--force"]]
 
+            prefixes = ["01_", "02_", "03_", "04_"]
+            count = 0
             for command in commands:
-                expected_dir = os.path.join(module_testdir, command[0], "benchmark")
+                command_name = prefixes[count] + command[0]
+                expected_dir = os.path.join(module_testdir, command_name, "benchmark")
                 self.assertCommand(command, expected_dir)
+
+                count += 1
