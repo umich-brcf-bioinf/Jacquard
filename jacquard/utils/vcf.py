@@ -181,7 +181,7 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
         Returns:
             A mutable VcfRecord.
         """
-        vcf_fields = vcf_line.rstrip("\n").split("\t")
+        vcf_fields = vcf_line.rstrip("\r\n").split("\t")
         chrom, pos, rid, ref, alt, qual, rfilter, info \
                 = vcf_fields[0:8]
         sample_fields = []

@@ -23,7 +23,7 @@ class ExamplesFunctionalTest(test_case.JacquardBaseTestCase):
                                         "00-input_vcfs")
             outputs = {"translate": "01-translated",
                        "merge": "02-merged.vcf",
-                       "summarize": "03-summarize.vcf",
+                       "summarize": "03-summarized.vcf",
                        "expand": "04-expanded.tsv"}
 
             translate_out = os.path.join(output_dir.path, outputs["translate"])
