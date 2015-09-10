@@ -337,6 +337,20 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals("FILTER", record.filter)
         self.assertEquals("INFO", record.info)
 
+    def test_parse_record_removesNewlines(self):
+        sample_names = ["SampleA"]
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FOO:BAR|SB_foo:SB_bar\n")
+        record = VcfRecord.parse_record(input_line, sample_names)
+        self.assertEquals("SB_bar", record.sample_tag_values["SampleA"]["BAR"])
+
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FOO:BAR|SB_foo:SB_bar\r")
+        record = VcfRecord.parse_record(input_line, sample_names)
+        self.assertEquals("SB_bar", record.sample_tag_values["SampleA"]["BAR"])
+
+        input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FOO:BAR|SB_foo:SB_bar\r\n")
+        record = VcfRecord.parse_record(input_line, sample_names)
+        self.assertEquals("SB_bar", record.sample_tag_values["SampleA"]["BAR"])
+
     def test_format_tags(self):
         sample_names = ["SampleA", "SampleB"]
         input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
