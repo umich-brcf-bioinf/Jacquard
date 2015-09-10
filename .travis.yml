@@ -15,6 +15,7 @@ before_script:
 
 script: 
     - nosetests --with-coverage --verbose --cover-package=jacquard
+    - nosetests examples
 
 after_success:
     - coveralls

@@ -12,6 +12,7 @@ Contents:
    :maxdepth: 2
 
    Overview <overview>
+   Quick Start <include_quickstart>
    Installation <include_install>
    Workflows & Supported Variant Callers <workflows>
    General Usage <general_usage>

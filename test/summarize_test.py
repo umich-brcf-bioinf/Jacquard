@@ -71,28 +71,18 @@ class SummarizeFunctionalTestCase(test_case.JacquardBaseTestCase):
     def test_summarize(self):
         with TempDirectory() as output_dir:
             test_dir = os.path.dirname(os.path.realpath(__file__))
-            module_testdir = os.path.join(test_dir, "functional_tests", "03_summarize")
-            input_dir = os.path.join(module_testdir, "input", "tiny_strelka.merged.vcf")
+            module_testdir = os.path.join(test_dir,
+                                          "functional_tests",
+                                          "03_summarize")
+            input_dir = os.path.join(module_testdir,
+                                     "input",
+                                     "tiny_strelka.merged.vcf")
             output_file = os.path.join(output_dir.path, "summarized.vcf")
 
             command = ["summarize", input_dir, output_file, "--force"]
-            expected_dir = os.path.join(module_testdir, "benchmark")
-
-            self.assertCommand(command, expected_dir)
-
-    def test_summarize_example(self):
-        with TempDirectory() as output_dir:
-            test_dir = os.path.dirname(os.path.realpath(__file__))
-            module_test_dir =  os.path.join(test_dir,
-                                            "functional_tests",
-                                            "example_test",
-                                            "03_summarize")
-
-            input_dir = os.path.join(module_test_dir, "input", "merged.vcf")
-            output_file = os.path.join(output_dir.path, "summarized.vcf")
-
-            command = ["summarize", input_dir, output_file, "--force"]
-            expected_file = os.path.join(module_test_dir,
-                                         "benchmark")
+            expected_file = os.path.join(module_testdir,
+                                         "benchmark",
+                                         "summarized.vcf")
 
             self.assertCommand(command, expected_file)
+

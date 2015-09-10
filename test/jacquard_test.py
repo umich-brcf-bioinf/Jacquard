@@ -228,22 +228,29 @@ class JacquardFunctionalTestCase(test_case.JacquardBaseTestCase):
                                           "jacquard_test")
 
             initial_input = os.path.join(module_testdir, "00_input")
+            outputs = {"01_translate": "translated",
+                       "02_merge": "merged.vcf",
+                       "03_summarize": "summarized.vcf",
+                       "04_expand": "expanded.tsv"}
 
-            translate_output = os.path.join(output_dir.path, "01_translate")
-            merge_output = os.path.join(output_dir.path, "02_merge", "merged.vcf")
-            summarize_output = os.path.join(output_dir.path, "03_summarize", "summarized.vcf")
-            expanded_output = os.path.join(output_dir.path, "04_expand", "expanded.tsv")
+            translate_out = os.path.join(output_dir.path, outputs["01_translate"])
+            merge_out = os.path.join(output_dir.path, outputs["02_merge"])
+            summarize_out = os.path.join(output_dir.path, outputs["03_summarize"])
+            expanded_out = os.path.join(output_dir.path, outputs["04_expand"])
 
-            commands = [["translate", initial_input, translate_output, "--force"],
-                        ["merge", translate_output, merge_output, "--force"],
-                        ["summarize", merge_output, summarize_output, "--force"],
-                        ["expand", summarize_output, expanded_output, "--force"]]
+            commands = [["translate", initial_input, translate_out, "--force"],
+                        ["merge", translate_out, merge_out, "--force"],
+                        ["summarize", merge_out, summarize_out, "--force"],
+                        ["expand", summarize_out, expanded_out, "--force"]]
 
             prefixes = ["01_", "02_", "03_", "04_"]
             count = 0
             for command in commands:
                 command_name = prefixes[count] + command[0]
-                expected_dir = os.path.join(module_testdir, command_name, "benchmark")
+                expected_dir = os.path.join(module_testdir,
+                                            command_name,
+                                            "benchmark",
+                                            outputs[command_name])
                 self.assertCommand(command, expected_dir)
 
                 count += 1

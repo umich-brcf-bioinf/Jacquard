@@ -1,8 +1,8 @@
 Overview
 ========
 
-Jacquard, a suite of Python command line tools, provides a practical approach to
-integrating complex somatic variant data sets. It is an open source tool for
+Jacquard, a suite of Python command line tools, provides a practical approach
+to integrating complex somatic variant data sets. It is an open source tool for
 expediting variant analysis across multiple patient samples and multiple
 variant callers.
 
@@ -22,8 +22,8 @@ and tags [iii]_ [v]_ [vii]_.
 
 Each variant caller follows its own algorithms, thus producing a distinct
 output. Because of this, it is valuable to run data through multiple variant
-callers and compare the outputs [iii]_ [v]_ [vii]_. However, since each caller has
-its own dialect, direct comparisons are difficult to make.
+callers and compare the outputs [iii]_ [v]_ [vii]_. However, since each caller
+has its own dialect, direct comparisons are difficult to make.
 
 
 Jacquard transforms the dialects of different variant callers into a

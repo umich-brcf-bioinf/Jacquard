@@ -47,14 +47,13 @@ class JacquardBaseTestCase(unittest.TestCase):
                 shutil.move(os.path.join(source_dir, output_file),
                             dest_dir)
 
-    def _compare_files(self, output, output_file, expected_dir):
-        actual_file = vcf.FileReader(output)
+    def _compare_files(self, actual_output_path, expected_output_path):
+        actual_file = vcf.FileReader(actual_output_path)
         actual_file.open()
         actual = [line for line in actual_file.read_lines()]
         actual_file.close()
 
-        expected_file = vcf.FileReader(os.path.join(expected_dir,
-                                                    output_file))
+        expected_file = vcf.FileReader(expected_output_path)
         expected_file.open()
         expected = [line for line in expected_file.read_lines()]
         expected_file.close()
@@ -69,19 +68,22 @@ class JacquardBaseTestCase(unittest.TestCase):
                 self.assertEquals(expected[i].rstrip(),
                                   actual[i].rstrip())
 
-    def assertCommand(self, command, expected_dir):
+    def assertCommand(self, command, expected_output_path):
         jacquard._dispatch(jacquard._SUBCOMMANDS, command)
 
-        output = command[2]
+        actual_output_path = command[2]
 
         try:
-            if os.path.isfile(output):
-                output_file = os.path.basename(output)
-                self._compare_files(output, output_file, expected_dir)
-            elif os.path.isdir(output):
-                for output_file in os.listdir(output):
-                    new_output = os.path.join(output, output_file)
-                    self._compare_files(new_output, output_file, expected_dir)
+            if os.path.isfile(actual_output_path):
+                self._compare_files(actual_output_path, expected_output_path)
+            elif os.path.isdir(actual_output_path):
+                for output_filename in os.listdir(actual_output_path):
+                    actual_output_file = os.path.join(actual_output_path,
+                                                      output_filename)
+                    expected_output_file = os.path.join(expected_output_path,
+                                                        output_filename)
+                    self._compare_files(actual_output_file,
+                                        expected_output_file)
         except self.failureException as e:
             msg = "discrepancy in command [{}]: {}".format(" ".join(command), e)
             raise self.failureException(msg)
