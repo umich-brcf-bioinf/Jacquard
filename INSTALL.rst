@@ -4,10 +4,12 @@ Jacquard has been tested with Python 2.7 and 3.4 on Windows7, OSX, and \*nix.
 
 Prerequisites
 -------------
+.. note:: Pip installs all required libraries; see [Installing] below.
+
+
 * natsort (3.5.2)  
 * nosetests, testfixtures (3.0.2), and numpy (>=1.7.1) are required for running
   automated tests
-* Note that pip installs all required libraries; see [Installing] below.
 
 Installing
 ----------

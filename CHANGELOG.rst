@@ -3,6 +3,9 @@ Changelog
 
 0.42 (X/X/XXXX)
 ---------------
+- Improved workflow documentation with example data
+- Merge will now disambiguate tag collisions from multiple VCs
+- Translate/summarize now support GT tags
 
 
 0.41 (5/7/2015)

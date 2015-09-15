@@ -1,69 +1,62 @@
 Overview
 ========
 
-Jacquard, a suite of Python command line tools, provides a practical approach
-to integrating complex somatic variant data sets. It is an open source tool for
-expediting variant analysis across multiple patient samples and multiple
-variant callers.
+Jacquard is an open source suite of Python command line tools that provides a
+practical approach to integrating multiple patient samples and multiple
+variant callers. Jacquard is designed to be used by bioinformatic analysts; the
+output is intended to be useful to analysts and biological researchers.
 
+Why would I use Jacquard?
+-------------------------
 
-The tools are designed to be used by bioinformatic analysts (whoever ran the
-variant callers); the output is intended to be useful to analysts and
-biological researchers.
+Jacquard makes it easier to analyze multi-patient tumor-normal datasets
+especially when using multiple vairant callers.
 
 
 Most variant callers have embraced the Variant Call Format (VCF) standard
-[ii]_, which clearly and succinctly describes variants from a single
+[r2]_, which clearly and succinctly describes variants from a single
 tumor-normal pair. However, while many callers follow the standard, they often
 adopt different ways to partition results (e.g. somatic file vs. germline file,
 or SNP vs. indel); likewise, each caller creates its own dialect of VCF fields
-and tags [iii]_ [v]_ [vii]_.
+and tags [r3]_ [r5]_ [r7]_.
 
 
-Each variant caller follows its own algorithms, thus producing a distinct
-output. Because of this, it is valuable to run data through multiple variant
-callers and compare the outputs [iii]_ [v]_ [vii]_. However, since each caller
-has its own dialect, direct comparisons are difficult to make.
+Moreover, each variant caller follows its own algorithms, and produces different
+results for the same inputs. Because of this, it is valuable to run data through
+multiple variant callers and compare the outputs [r3]_ [r5]_ [r7]_. However, since
+each caller has its own dialect, direct comparisons are difficult.
 
 
 Jacquard transforms the dialects of different variant callers into a
 controlled vocabulary of tags with a consistent representation of values.
 Furthermore, it intelligently merges VCFs from different patients and callers
-to create a single, unified VCF across your dataset.
+to create a single, unified VCF across your dataset. The consistent tag names
+and represntations expedite downstream analysis; the intgrated VCF highlights
+both the prevelance of specific variants and the overall mutation loads across
+samples.
+
+.. figure:: images/translate_vcf_dialects.png
+   :figwidth: 80%
+
+   **Jacquard normalized VCF dialects:** Each variant caller records depth or
+   alt frequency with a different tag name and representation. Jacquard
+   translates format tags from different callers into a uniform set of tags.
 
 
-The consistent tag names and represntations expedite downstream analysis, and
-the ingerated VCF highlights both the prevelance of specific variants and the
-overall mutation loads across samples.
+Jacquard is focused on translating depth, alt frequency, somatic status, and
+genotype tags. Jacquard can translate and summarize results from several 
+somatic variant callers:
 
-|
-.. figure:: images/overview_Diagram.jpg
+* MuTect [r1]_
+* VarScan [r4]_
+* Strelka [r6]_
 
-   **Overview of Jacquard Workflow :** *Jacquard transforms different caller 
-   dialects into a uniform VCF format.*
-
-At this time, the Jacquard-supported variant callers are:
-
-* MuTect [i]_
-* VarScan [iv]_
-* Strelka [vi]_
-
-A subset of the Jacquard commands support VCFs from other variant
-callers.
+.. note:: Results from any variant caller can be merged or expanded.
 
 
-**Most Recent Version:** Jacquard-0.41
-
-**Application Size:** jacquard-0.41.tar.gz (md5) : 37KB
-
-**Technology Stack:** Python 2.7, 3.x; natsort 3.5.2; numpy 1.7.1;
-testfixtures 3.0.2
-
-|
-|
 Contact Us
 ----------
-
 Email bfx-jacquard@umich.edu for support and questions.
 
-**UM BRCF Bioinformatics Core**
+
+UM BRCF Bioinformatics Core
