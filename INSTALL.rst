@@ -1,3 +1,5 @@
+.. _installing-jacquard:
+
 Installing Jaquard
 ==================
 Jacquard has been tested with Python 2.7 and 3.4 on Windows7, OSX, and \*nix.

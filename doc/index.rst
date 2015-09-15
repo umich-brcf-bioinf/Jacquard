@@ -5,15 +5,15 @@ Jacquard
    :maxdepth: 2
 
    Overview <overview>
-   Installation <include_install>
-   Quick Start <include_quickstart>
-   Command Details <workflows>
+   Installation <installation>
+   Quick Start <quickstart>
+   Command Details <command_details>
    FAQ <faq>
    Changelog <include_changelog>
-   Future Directions <include_todo>
-   Implementation Details <architecture>
+   Future Directions <future_directions>
+   Implementation Details <implementation_details>
 
-   References <citations>
+   References <references>
    License <license>
 
 

@@ -1,4 +1,4 @@
-Command details
+Command Details
 ===============
 
 Jacquard is a suite of tools that can be either run in succession or
@@ -54,7 +54,7 @@ preserve all metaheaders in the source VCF.
 For a specific source VCF, Jacquard automatically determines the tumor and
 normal samples based on the column header and the metaheaders.
 
-
+.. _translate-command:
 
 Translate
 ---------
@@ -140,6 +140,7 @@ output                                 Directory containing VCF files. Will
    Note that optional high-confidence files are not VCF files.
 
 
+.. _merge-command:
 
 Merge
 -----
@@ -225,6 +226,7 @@ output                        VCF file
                             all:  Include all variants at loci
 ========================    ===================================================
 
+.. _summarize-command:
 
 Summarize
 ---------
@@ -255,6 +257,8 @@ input                   Jacquard-merged VCF file (or any VCF with Jacquard
                         tags; e.g. JQ_SOM_MT)
 output                  VCF file
 =====================   =======================================================
+
+.. _expand-command:
 
 Expand
 ------
