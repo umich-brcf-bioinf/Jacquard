@@ -9,7 +9,7 @@ Jacquard
    Quick Start <quickstart>
    Command Details <command_details>
    FAQ <faq>
-   Changelog <include_changelog>
+   Changelog <changelog>
    Future Directions <future_directions>
    Implementation Details <implementation_details>
 
