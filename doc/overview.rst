@@ -6,7 +6,10 @@ Overview
 Jacquard is an open source suite of Python command line tools that provides a
 practical approach to integrating multiple patient samples and multiple
 variant callers. Jacquard is designed to be used by bioinformatic analysts; the
-output is intended to be useful to analysts and biological researchers.
+output is intended to be useful to analysts and biological researchers. Both
+Jacquard and its documentation assume that users know about variant callers and
+VCF files. For more information about VCF files, see the
+`1000 Genomes documentation <http://www.1000genomes.org/node/101>`_.
 
 Why would I use Jacquard?
 -------------------------
@@ -40,9 +43,9 @@ samples.
 .. figure:: images/translate_vcf_dialects.png
    :figwidth: 80%
 
-   **Jacquard normalized VCF dialects:** Each variant caller records depth or
+   **Jacquard normalized VCF dialects:** *Each variant caller records depth or
    alt frequency with a different tag name and representation. Jacquard
-   translates format tags from different callers into a uniform set of tags.
+   translates format tags from different callers into a uniform set of tags.*
 
 
 Jacquard is focused on translating depth, alt frequency, somatic status, and
