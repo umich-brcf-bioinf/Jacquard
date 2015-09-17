@@ -58,7 +58,7 @@ normal samples based on the column header and the metaheaders.
 .. _translate-command:
 
 Translate
----------
+=========
 The translate command creates new VCFs adding a controlled vocabulary of new
 FORMAT tags. It will only work with VCF files from the supported variant
 callers.
@@ -70,53 +70,51 @@ callers.
    Jacquard-specific FORMAT tags.*
 
 Usage
-^^^^^
+-----
 
 ``jacquard translate <input_dir> <output_dir> [OPTIONS]``
 
 
 *positional arguments:*
 
-+--------+---------------------------------------------------------------------+
-| input  | | Directory containing VCF files (and VarScan high confidence       |
-|        |   files).                                                           |
-|        | | Other file types ignored                                          |
-+--------+---------------------------------------------------------------------+
-| output | | Directory containing VCF files. Will create if doesn't exist and  |
-|        |   will overwrite files in                                           |
-|        | | output directory as necessary                                     |
-+--------+---------------------------------------------------------------------+
++--------+-------------------------+------------------------------------------------------------------+
+| input  |                         | Directory containing VCF files (and VarScan high confidence      |
+|        | files).                 |                                                                  |
+|        |                         | Other file types ignored                                         |
++--------+-------------------------+------------------------------------------------------------------+
+| output |                         | Directory containing VCF files. Will create if doesn't exist and |
+|        | will overwrite files in |                                                                  |
+|        |                         | output directory as necessary                                    |
++--------+-------------------------+------------------------------------------------------------------+
 
 
 *optional arguments:*
 
-+--------------------------------------+---------------------------------------+
-| --allow_inconsistent_sample_sets     | | Set this flag if not every patient  |
-|                                      |   is represented by the same          |
-|                                      | | set of caller-VCFs.                 |
-+--------------------------------------+---------------------------------------+
-| --varscan_hc_filter_file_regex REGEX | | Regex pattern that identifies       |
-|                                      |   optional VarScan                    |
-|                                      | | high-confidence filter files.       |
-|                                      |   The VCF, high-confidence file       |
-|                                      | | pairs should share the same prefix. |
-|                                      |   For example, given                  |
-|                                      | | patientA.snp.vcf,                   |
-|                                      |   patientA.indel.vcf,                 |
-|                                      | | patientA.snp.fpfilter.pass, and     |
-|                                      |   patientA.indel.fpfilter.pass,       |
-|                                      | | you could enable this option as     |
-|                                      | | varscan_hc_filter_file_regex=       |
-|                                      |   '.fpfilter.pass$'                   |
-+--------------------------------------+---------------------------------------+
++--------------------------------------+-------------------------------+-------------------------------------+
+| --allow_inconsistent_sample_sets     |                               | Set this flag if not every patient  |
+|                                      | is represented by the same    |                                     |
+|                                      |                               | set of caller-VCFs.                 |
++--------------------------------------+-------------------------------+-------------------------------------+
+| --varscan_hc_filter_file_regex REGEX |                               | Regex pattern that identifies       |
+|                                      | optional VarScan              |                                     |
+|                                      |                               | high-confidence filter files.       |
+|                                      | The VCF, high-confidence file |                                     |
+|                                      |                               | pairs should share the same prefix. |
+|                                      | For example, given            |                                     |
+|                                      |                               | patientA.snp.vcf,                   |
+|                                      | patientA.indel.vcf,           |                                     |
+|                                      |                               | patientA.snp.fpfilter.pass, and     |
+|                                      | patientA.indel.fpfilter.pass, |                                     |
+|                                      |                               | you could enable this option as     |
+|                                      |                               | varscan_hc_filter_file_regex=       |
+|                                      | '.fpfilter.pass$'             |                                     |
++--------------------------------------+-------------------------------+-------------------------------------+
 
 Description
-^^^^^^^^^^^
+-----------
 The translate command accepts a directory of VCF files and creates a new
 directory of "translated" VCF files, which include several Jacquard-specific
-FORMAT tags and their corresponding metaheaders. Were a variant in the source
-VCF to be malformed, the translated VCF file would label it as such in the
-FILTER column.
+FORMAT tags and their corresponding metaheaders.
 
 
 You can gather all input VCFs into a single directory and run translate once, or
@@ -125,35 +123,74 @@ run translate once for each input directory. When partitioning into separate
 input directories, all file names must be unique.
 
 
-The translated FORMAT tags contain a caller specific prefix; example: 'JQ_SK'
-for Strelka, 'JQ_VS' for VarScan and 'JQ_MT' for MuTect.
-
 Currently, Translate adds Jacquard-specific FORMAT tags for:
    * Allele Frequency
    * Depth
    * Genotype
    * Somatic Status
+   * Passed: Indicates whether the variant record as a whole passed the VC
+     filters; this tag is used later on when merging translated VCFs
+   * Reported: This tag is used when merging translated VCFs.
 
-.. note:: VarScan tips
+See VCF metaheader excepts below for more details on how values are derived:
+
+VarScan details
+---------------
+
+Jacquard-VarScan translated tags
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++--------------+--------------------------------------------------------+
+| Tag name     | Description                                            |
++--------------+--------------------------------------------------------+
+| JQ_VS_AF     | Jacquard allele frequency for VarScan: Decimal allele  |
+|              | frequency rounded to 4 digits (based on FREQ)          |
++--------------+--------------------------------------------------------+
+| JQ_VS_DP     | Jacquard depth for VarScan (based on DP)               |
++--------------+--------------------------------------------------------+
+| JQ_VS_GT     | Jacquard genotype (based on GT)                        |
++--------------+--------------------------------------------------------+
+| JQ_VS_HC_SOM | Jacquard somatic status for VarScan: 0=non-somatic,    |
+|              | 1=somatic  (based on SOMATIC info tag and if sample is |
+|              | TUMOR)                                                 |
++--------------+--------------------------------------------------------+
 
 
-   To translate VarScan calls, Jacquard requires the VarScan VCF files (snp
-   and/or indel). Jacquard can additionally accept VarScan somatic high-
-   confidence files; the translate command supresses VCF variant records that
-   are absent in the high-confidence files. Somatic high-confidence files
-   should be placed alongside corresponding VarScan VCFs and must have the same
-   prefix as their corresponding VCF file. The suffix should be specified using
-   the command line argument.
+Jacquard can incorporate VarScan high-confidence files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-   Note that optional high-confidence files are not VCF files.
+To translate VarScan calls, Jacquard requires the VarScan VCF files (snp
+and/or indel). For each VarScan VCF, Jacquard can optionally accept VarScan
+somatic high-confidence files; these are supplemental non-VCF files that list
+variant records which passed a more stringent set of VarScan filters.
+
+
+When high-confidence files are present, the translate command adds a FILTER
+field value for low-confidence variant records (i.e. records which may have
+initially passed filters, but are absent in the high-confidence files).
+
+
+To use VarScan's somatic high-confidence files, they must be placed alongside
+corresponding VarScan VCFs and must have the same file name prefix as their
+corresponding VCF file. The high-confidence filename suffix can be
+specified using the command line argument.
+
+
+Example VarScan files:
+   case_A.varscan.indel.vcf
+   case_A.varscan.indel.Somatic.hc.filter.pass
+   case_A.varscan.snp.vcf
+   case_A.varscan.snp.Somatic.hc.filter.pass
+   case_B.varscan.indel.vcf
+   case_B.varscan.indel.Somatic.hc.filter.pass
+   ...
 
 
 .. _merge-command:
 
 Merge
------
-The merge command integrates a directory of VCFs into a single VCF. It is not
-caller-dependent and can be used on any set of VCF files.
+=====
+The merge command integrates a directory of VCFs into a single VCF. It is 
+caller-agnostic and can be used on any set of VCF files.
 
 .. figure:: images/merge_join_step.jpg
 
@@ -161,50 +198,96 @@ caller-dependent and can be used on any set of VCF files.
    each patient.*
 
 Usage
-^^^^^
+-----
 ``usage: jacquard merge <input_dir> <output_file> [OPTIONS]``
 
 
 *positional arguments:*
 
-+--------+---------------------------------------------------------------------+
-| input  | | Directory containing VCF files. Other file types ignored          |
-+--------+---------------------------------------------------------------------+
-| output | | A single VCF file                                                 |
-+--------+---------------------------------------------------------------------+
++--------+-+----------------------------------------------------------+
+| input  | | Directory containing VCF files. Other file types ignored |
++--------+-+----------------------------------------------------------+
+| output | | A single VCF file                                        |
++--------+-+----------------------------------------------------------+
 
 
 *optional arguments:*
 
-+-----------------------+------------------------------------------------------+
-| --include_format_tags | | Comma-separated user-defined list of regular       |
-|                       |   expressions for format tags                        |
-|                       | | to be included in output.                          |
-+-----------------------+------------------------------------------------------+
-| --include_cells       | | valid:  Only include valid variants                |
-|                       | | all:  Include all variants                         |
-|                       | | passed:  Only include variants which passed their  |
-|                       |            respective filter                         |
-|                       | | somatic:  Only include somatic variants            |
-+-----------------------+------------------------------------------------------+
-| --include_rows        | | at_least_one_somatic:  Include all variants at     |
-|                       |                          loci where at least one     |
-|                       |                          variant                     |
-|                       | |                        was somatic                 |
-|                       | | all_somatic:  Include all variants at loci where   |
-|                       |                 all variants were somatic            |
-|                       | | at_least_one_passed:  Include all variants at loci |
-|                       |                         where at least one variant   |
-|                       | |                       passed                       |
-|                       | | all_passed:  Include all variants at loci where    |
-|                       |                all variants passed                   |
-|                       | | all:  Include all variants at loci                 |
-+-----------------------+------------------------------------------------------+
++-----------------------+-----------------------------+----------------------------------------------------+
+| --include_format_tags |                             | Comma-separated user-defined list of regular       |
+|                       | expressions for format tags |                                                    |
+|                       |                             | to be included in output.                          |
++-----------------------+-----------------------------+----------------------------------------------------+
+| --include_cells       |                             | valid:  Only include valid variants                |
+|                       |                             | all:  Include all variants                         |
+|                       |                             | passed:  Only include variants which passed their  |
+|                       | respective filter           |                                                    |
+|                       |                             | somatic:  Only include somatic variants            |
++-----------------------+-----------------------------+----------------------------------------------------+
+| --include_rows        |                             | at_least_one_somatic:  Include all variants at     |
+|                       | loci where at least one     |                                                    |
+|                       | variant                     |                                                    |
+|                       |                             | was somatic                                        |
+|                       |                             | all_somatic:  Include all variants at loci where   |
+|                       | all variants were somatic   |                                                    |
+|                       |                             | at_least_one_passed:  Include all variants at loci |
+|                       | where at least one variant  |                                                    |
+|                       |                             | passed                                             |
+|                       |                             | all_passed:  Include all variants at loci where    |
+|                       | all variants passed         |                                                    |
+|                       |                             | all:  Include all variants at loci                 |
++-----------------------+-----------------------------+----------------------------------------------------+
 
 Description
-^^^^^^^^^^^
-The merge command takes an input directory of VCFs and filters both the
-variants and format tags based on your specifications.
+-----------
+Conceptually, merging VCFs has four basic steps, each described in detail below:
+# Merging matching loci from different VCFs into common rows
+# Merging matching samples from different VCFs into common columns
+# Optionally filtering tag values and rows
+# Assembling the subset of FORMAT tags to be included in the final VCF
+
+
+Merging matching loci
+^^^^^^^^^^^^^^^^^^^^^
+Jacquard first develops the superset of all loci (CHROM, POS, REF, and ALT) 
+across the set of all input VCFs. For each locus, the input VCF FORMAT tags and
+values are merged into a single row. Input variant record-level fields (such as
+FILTER, INFO, etc.) are ignored.
+
+MERGE_LOCI_IMAGE_HERE
+
+Merging matching samples
+^^^^^^^^^^^^^^^^^^^^^^^^
+In the input files, a individual sample could be called by more than one variant
+caller. When merging, Jacquard will combine results for the same sample into a
+single column. Merged sample names are constructed by concatenating filename
+prefix and VCF column header.
+
++--------------------+-----------------------------------+---------------------+
+| Filename           | VCF Column header                 | Merged sample names |
++--------------------+-----------------------------------+---------------------+
+| case_A.strelka.vcf | #CHROM ... FORMAT SAMPLE1 SAMPLE2 | case_A:SAMPLE1      |
+|                    |                                   | case_A:SAMPLE2      |
++--------------------+-----------------------------------+---------------------+
+| case_A.mutect.vcf  | #CHROM ... FORMAT SAMPLE1 SAMPLE2 | case_A:SAMPLE1      |
+|                    |                                   | case_A:SAMPLE2      |
++--------------------+-----------------------------------+---------------------+
+| case_B.strelka.vcf | #CHROM ... FORMAT SAMPLE3 SAMPLE4 | case_B:SAMPLE3      |
+|                    |                                   | case_A:SAMPLE4      |
++--------------------+-----------------------------------+---------------------+
+| case_B.mutect.vcf  | #CHROM ... FORMAT SAMPLE3 SAMPLE4 | case_B:SAMPLE3      |
+|                    |                                   | case_A:SAMPLE4      |
++--------------------+-----------------------------------+---------------------+
+
+Given the input VCFs above, the resulting merged VCF will have four sample
+columns: case_A|SAMPLE1, case_A|SAMPLE2, case_B|SAMPLE1, case_B|SAMPLE2.
+
+
+
+Filtering tag values and rows
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
 
 
 By default, merge contains only Jacquard-translated format tags (JQ\_\.*) and
@@ -261,12 +344,12 @@ Usage
 
 *positional arguments:*
 
-+--------+---------------------------------------------------------------------+
-| input  | | Jacquard-merged VCF file (or any VCF with Jacquard tags; e.g.     |
-|        |   JQ_SOM_MT)                                                        |
-+--------+---------------------------------------------------------------------+
-| output | | A single VCF file                                                 |
-+--------+---------------------------------------------------------------------+
++--------+------------+---------------------------------------------------------------+
+| input  |            | Jacquard-merged VCF file (or any VCF with Jacquard tags; e.g. |
+|        | JQ_SOM_MT) |                                                               |
++--------+------------+---------------------------------------------------------------+
+| output |            | A single VCF file                                             |
++--------+------------+---------------------------------------------------------------+
 
 Description
 ^^^^^^^^^^^
@@ -296,21 +379,21 @@ Usage
 
 *positional arguments:*
 
-+--------+---------------------------------------------------------------------+
-| input  | | A VCF file. Other file types ignored                              |
-+--------+---------------------------------------------------------------------+
-| output | | A TXT file                                                        |
-+--------+---------------------------------------------------------------------+
++--------+-+--------------------------------------+
+| input  | | A VCF file. Other file types ignored |
++--------+-+--------------------------------------+
+| output | | A TXT file                           |
++--------+-+--------------------------------------+
 
 
 *optional arguments:*
 
-+----------------------------------+-------------------------------------------+
-| -s, --selected_columns_file FILE | | File containing an ordered list of      |
-|                                  |   column names to be included             |
-|                                  | | in the output file; column names can    |
-|                                  |   include regular expressions             |
-+----------------------------------+-------------------------------------------+
++----------------------------------+-----------------------------+--------------------------------------+
+| -s, --selected_columns_file FILE |                             | File containing an ordered list of   |
+|                                  | column names to be included |                                      |
+|                                  |                             | in the output file; column names can |
+|                                  | include regular expressions |                                      |
++----------------------------------+-----------------------------+--------------------------------------+
 
 Description
 ^^^^^^^^^^^
