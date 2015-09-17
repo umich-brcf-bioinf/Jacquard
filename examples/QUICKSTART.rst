@@ -26,7 +26,7 @@ This is a simple tutorial on how to use the four Jacquard commands.
 
 #. translate
 
-   The :ref:`translate <translate-command>` command creates new VCFs adding a
+   The :ref:`translate <translate-command>` command creates new VCFs, adding a
    controlled vocabulary of new FORMAT tags.
 
    ``$jacquard translate examples/00-input_vcfs/ <output_dir>``

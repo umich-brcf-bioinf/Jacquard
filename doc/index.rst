@@ -7,7 +7,9 @@ Jacquard
    Overview <overview>
    Installation <installation>
    Quick Start <quickstart>
+
    Command Details <command_details>
+
    FAQ <faq>
    Changelog <changelog>
    Future Directions <future_directions>
