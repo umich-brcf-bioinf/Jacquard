@@ -12,7 +12,7 @@ This is a simple tutorial on how to use the four Jacquard commands.
 
    The examples directory contains sample input VCFs from five patients run
    with three variant callers. The input VCFs are based on a subset of actual
-   variant calls from clinical data; the samples were deidentified and VCF
+   variant calls from clinical data; the samples were de-identified and VCF
    positions have been randomized to prevent downstream identification. As a
    result of randomization, the sample VCF reference calls at a specific
    position don't always match the base calls from a reference sequence.

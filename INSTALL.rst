@@ -28,3 +28,7 @@ If you don't have root permissions, you can install locally:
 
 ``$ pip install --user jacquard``
 
+(You may need to modify your path to include the Python install dir (e.g. 
+/Users/<username>/.local/bin)
+
+

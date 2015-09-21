@@ -9,8 +9,7 @@ translated.
 .. figure:: images/summarize.jpg
 
    **Summarizing Format Tags :** *The Jacquard-translated format tags from
-   each caller are aggregated and processed together to create consensus format
-   tags.* 
+   each caller are aggregated to create summary format tags.* 
 
 Usage
 -----
@@ -34,3 +33,28 @@ summary fields, such as averages, helps you to easily determine which are the
 true variants.
 
 The summarized format tags contain the prefix 'JQ_SUMMARY'.
+
+Example summary FORMAT tags
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
++-----------------------+------------------------------------------------------+
+| Tag name              | Description                                          |
++=======================+======================================================+
+| JQ_SUMMARY_AF_AVERAGE | | Average allele frequency across recognized variant |
+|                       | | callers that reported frequency for this position  |
+|                       | | [average(JQ_*_AF)].                                |
++-----------------------+------------------------------------------------------+
+| JQ_SUMMARY_AF_RANGE   | | Max(allele frequency) - min (allele frequency)     |
+|                       | | across recognized callers.                         |
++-----------------------+------------------------------------------------------+
+| JQ_SUMMARY_HC_GT      | | High confidence consensus genotype (inferred from  |
+|                       | | JQ_*_GT and JQ_*_CALLER_PASSED). Majority rules;   |
+|                       | | ties go to the least unusual variant (0/1>0/2>1/1).|
+|                       | | Variants which failed their filter are ignored.    |
++-----------------------+------------------------------------------------------+
+| JQ_SUMMARY_SOM_COUNT  | | Count of recognized variant callers that reported  |
+|                       | | confident somatic call for this sample-position.   |
++-----------------------+------------------------------------------------------+
+
+See summary VCF metaheaders for full list of summary tags and descriptions.
+

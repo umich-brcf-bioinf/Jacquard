@@ -27,29 +27,41 @@ Test Conventions
  - Every command should have a functional test
  - Prefer unit tests to functional tests
  - Prefer tests on public methods, but note that it is sometimes easier to test
-   a private method.
- - Attempt PEP8 compliance
- - Make tests independent.
+   a private method. Use good judgement.
+ - Attempt PEP8 compliance.
+ - Make unit tests independent.
 
 
 General Architecture:
 ---------------------
-Modules are typically:
+Modules are typically one of these:
  - commands (like *translate*): these modules are invoked from the command line; 
    they follow a simple command pattern.
  - variant caller transforms (like *mutect*): these modules contain classes that 
    add Jacquard annotations to a native VCF record.
  - utilities  (like *vcf* or *logger*): these modules provide a common method or
    class used by other modules.
+
+
+Note that translate is the only command that should understand variant caller
+dialects; other commands should be caller agnostic.
+
+
 Extending and adapting existing patterns will ensure commands/transforms stay
 consistent. Here are some guidelines on how to extend functionality:
+
 
 How to add a new format tag:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 For all variant callers that support the new tag, you will need to extend each
 variant caller transform to:
- * define the new tag (set the metaheader and how the new value is derived)
+
+
+ * define the new tag (set the metaheader and how the new value is derived); by
+   convention, tags ID values are JQ_<caller_abbreviation>_<tag_name>
  * add the new tag to the variant caller's reader
+
+
 .. note:: If the new tag can be summarized, you will also need to add a
           corresponding tag to *summarize_rollup_transform*.
 
@@ -63,9 +75,11 @@ How to add a new variant caller:
  * Add a new class named for the variant caller; define a claim method to
    recognize and claim VCF files.
  * Add the new variant caller class to *variant_caller_factory*.
-.. note:: The variant caller should have no dependencies on other packages
-          (except utils and vcf) and classes should only refer to variant
-          callers through *variant_caller_factory* (except tests).
+
+
+..note:: The variant caller should have no dependencies on other packages
+         (except utils and vcf) and classes should only refer to variant
+         callers through *variant_caller_factory* (except tests).
 
 How to add a new command:
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -77,6 +91,8 @@ How to add a new command:
    * validate_args(args).
    * report_prediction
    * execute(args, execution_context).
+
+
 .. note:: Commands are independent and should not refer to other commands.
 
 |

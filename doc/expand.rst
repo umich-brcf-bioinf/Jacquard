@@ -18,9 +18,9 @@ Usage
 *positional arguments:*
 
 +--------+---------------------------------------------------------------------+
-| input  | | A VCF file. Other file types ignored                              |
+| input  | | A VCF file.                                                       |
 +--------+---------------------------------------------------------------------+
-| output | | A TXT file                                                        |
+| output | | A tab separated text file.                                        |
 +--------+---------------------------------------------------------------------+
 
 
@@ -39,22 +39,29 @@ The expand command converts a VCF file into a tab-delimited file in a tabular
 format. This format is more suitable than a VCF for analysis and visualization
 in R, Pandas, Excel, or another third-party application.
 
+
 .. figure:: images/expand_tabular.jpg
 
-   **Tabular Format of Jacquard Output :** *Jacquard transforms the dense VCF
-   format into a tabular format.*
+   **Tabular format of Jacquard output:** *Jacquard transforms the dense VCF format
+   into a tabular format.*
 
-The 'fixed' fields (i.e. CHROM, POS, ID, REF, ALT, QUAL, FILTER) are directly
-copied from the input VCF file. Based on the metaheaders, each field in the
-INFO column is expanded into a separate column named after its tag ID. Also,
-based on the metaheaders, each FORMAT tag is expanded into a set of columns,
-one for each sample, named as <FORMAT tag ID>|<sample column name>. By default,
-all INFO fields and FORMAT tags are expanded; specific INFO fields and FORMAT
-tags can be selected using a flag.
 
-This command also emits a tab-delimited glossary file, created based on the
-metaheaders in the input VCF file. FORMAT and INFO tag IDs are listed in the
-glossary and are defined by their metaheader description.
+Note
+-----
+ * The 'fixed' fields (i.e. CHROM, POS, ID, REF, ALT, QUAL, FILTER) are directly
+   copied from the input VCF file.
+ * Based on the metaheaders, each field in the INFO column is expanded into a
+   separate column named after its tag ID.
+ * Each FORMAT tag is expanded into a set of columns, one for each sample, named
+   as <FORMAT tag ID>|<sample column name>. 
+ * By default, all INFO fields and FORMAT tags are expanded; specific INFO
+   fields and FORMAT tags can be selected using the --selected_columns_file
+   option.
+ * Expand also emits a tab-delimited glossary file, based on the metaheaders
+   in the input VCF file. FORMAT and INFO tag IDs are listed in the
+   glossary and are defined by their metaheader description.
+
+
 
 .. figure:: images/expand_excel.jpg
 
