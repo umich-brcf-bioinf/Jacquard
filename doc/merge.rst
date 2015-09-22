@@ -5,10 +5,6 @@ Merge
 The merge command integrates a directory of VCFs into a single VCF. It is
 caller-agnostic and can be used on any set of VCF files.
 
-.. figure:: images/merge_join_step.jpg
-
-   **The Merging Process :** *Sample-specific information is grouped together
-   for each patient.*
 
 Usage
 -----
@@ -57,8 +53,7 @@ Usage
 |                        | |    --include_format_tags='.*'                     |
 |                        | |    --include_cells=all                            |
 |                        | |    --include_rows=all                             |
-|                        | | Useful when merging untranslated VCFs which have  |
-|                        | | already been filtered to passing variants.        |
+|                        | | Useful when merging untranslated VCFs.            |
 +------------------------+-----------------------------------------------------+
 
 
@@ -78,7 +73,10 @@ across the set of all input VCFs. For each locus, the input VCF FORMAT tags and
 values are merged into a single row. Input variant record-level fields (such as
 FILTER, INFO, etc.) are ignored.
 
-MERGE_LOCI_IMAGE_HERE
+.. figure:: images/merge_loci.jpg
+
+   **Matching loci :** *Variant records from separate files that share the same
+   CHROM, POS, REF, ALT are merged into a single variant record.*
 
 
 Combine matching samples
@@ -91,62 +89,60 @@ filename prefix and the VCF column header.
 +--------------------+-----------------------------------+---------------------+
 | Filename           | VCF Column header                 | Merged sample names |
 +--------------------+-----------------------------------+---------------------+
-| case_A.strelka.vcf | #CHROM ... FORMAT SAMPLE1 SAMPLE2 | | case_A:SAMPLE1    |
-|                    |                                   | | case_A:SAMPLE2    |
+| case_A.strelka.vcf | #CHROM ... FORMAT SAMPLE1 SAMPLE2 | | case_A|SAMPLE1    |
+|                    |                                   | | case_A|SAMPLE2    |
 +--------------------+-----------------------------------+---------------------+
-| case_A.mutect.vcf  | #CHROM ... FORMAT SAMPLE1 SAMPLE2 | | case_A:SAMPLE1    |
-|                    |                                   | | case_A:SAMPLE2    |
+| case_A.mutect.vcf  | #CHROM ... FORMAT SAMPLE1 SAMPLE2 | | case_A|SAMPLE1    |
+|                    |                                   | | case_A|SAMPLE2    |
 +--------------------+-----------------------------------+---------------------+
-| case_B.strelka.vcf | #CHROM ... FORMAT SAMPLE3 SAMPLE4 | | case_B:SAMPLE3    |
-|                    |                                   | | case_A:SAMPLE4    |
+| case_B.strelka.vcf | #CHROM ... FORMAT SAMPLE3 SAMPLE4 | | case_B|SAMPLE3    |
+|                    |                                   | | case_A|SAMPLE4    |
 +--------------------+-----------------------------------+---------------------+
-| case_B.mutect.vcf  | #CHROM ... FORMAT SAMPLE3 SAMPLE4 | | case_B:SAMPLE3    |
-|                    |                                   | | case_A:SAMPLE4    |
+| case_B.mutect.vcf  | #CHROM ... FORMAT SAMPLE3 SAMPLE4 | | case_B|SAMPLE3    |
+|                    |                                   | | case_A|SAMPLE4    |
 +--------------------+-----------------------------------+---------------------+
 
 Given the input VCFs above, the resulting merged VCF will have four sample
 columns:
 case_A|SAMPLE1,  case_A|SAMPLE2,  case_B|SAMPLE1,  case_B|SAMPLE2.
 
+.. figure:: images/merge_join_step.jpg
 
-Filter tag values and rows
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-By default, merge contains only Jacquard-translated format tags (JQ\_\.*) and
-includes all variants with valid syntax at loci where at least one variant was
-somatic. The resulting filtered files contain fewer rows, yet higher quality
-data than the input files.
-
-Though most variant callers have their own distinct set of format tags, some
-tag names are common across multiple callers. If there are any format tag name
-collisions, merge will add a prefix (e.g. JQ1_<original_tag>) in order to
-disambiguate the format tags.
+   **Combine matching samples :** *Case-specific information reported in 
+   different files is combined into a single case|sample column.*
 
 
-.. figure:: images/merge_filter_step.jpg
+Filter cell values and rows
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-   **The Filtering Process :** *Rows and specific cells in the VCF files are 
-   filtered based on the command-line options.*
+Merge filters variant records and loci to highlight the high-confidence somatic
+variants.
 
-After filtering, the merge command combines all of the input VCFs into a single,
-merged VCF that includes all necessary information for continuing your analysis.
+For VCFs from supported callers, merge filters the result to include only valid 
+variants records where at least one variant at that loci was somatic. The filter
+stringency can be set with flags described above. Since these filters operate on
+Jacquard tags, merge cannot filter VCFs from unsupported callers; use
+--include_all for untranslated VCF files.
 
-The resulting VCF files contain the distinct set of all coordinates (CHROM, POS,
-REF, and ALT) and samples from the input files, provided they pass the filters.
-Each coordinate from the input VCF files is added to the output file, which
-increases the file length. Additionally, sample columns are merged for each
-patient, adding sample specific information and leading to increased column and
-file width.
 
-.. note:: Importantly, rather than giving caller-wise sample columns in the
-          output VCF file, merge emits patient-wise sample columns. For each
-          patient, the merge command joins the set of corresponding sample
-          columns into a single column. The grouping of sample-specific
-          information for each patient helps to easily analyze the data.
+.. figure:: images/merge_filter.jpg
+
+   **Filter cell values and rows :** *(A) Beginning with the matrix of with all
+   variant records, (B) the --include_cells flag transforms excluded cells 
+   (sample-records) from their original to "not-observed". (C) Finally, the 
+   --include_row flag eliminates entire loci.*
 
 
 Assemble the subset of FORMAT tags
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-TODO
+Merge constructs a new set of INFO tags and reports a subset of incoming FORMAT
+tags. By default, Jacquard only carries forward tags that begin with 'JQ', i.e.
+Jacquard translated tags. When working with VCFs from unsupported callers, use
+--include_format_tags or --include_all to merge unstranslated VCFs.
+
+Note that while most variant callers have their own distinct set of format tags,
+some tag names are common across multiple callers. If there are any format tag
+name collisions, merge will add a prefix (e.g. JQ1_<original_tag>) in order to
+disambiguate the format tags.
 
