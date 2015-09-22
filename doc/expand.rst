@@ -12,16 +12,18 @@ caller-dependent and will work with any VCF file.
 
 Usage
 -----
-``usage: jacquard expand <input_file> <output_file> [OPTIONS]``
+::
+
+   jacquard expand <input_file> <output_file> [OPTIONS]
 
 
 *positional arguments:*
 
-+--------+---------------------------------------------------------------------+
-| input  | | A VCF file.                                                       |
-+--------+---------------------------------------------------------------------+
-| output | | A tab separated text file.                                        |
-+--------+---------------------------------------------------------------------+
++-------------+----------------------------------------------------------------+
+| input_file  | | A VCF file.                                                  |
++-------------+----------------------------------------------------------------+
+| output_file | | A tab separated text file.                                   |
++-------------+----------------------------------------------------------------+
 
 
 *optional arguments:*

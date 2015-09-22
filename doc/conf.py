@@ -1,3 +1,4 @@
+#pylint: disable=invalid-name,redefined-builtin
 # -*- coding: utf-8 -*-
 #
 # Jacquard documentation build configuration file, created by
@@ -12,9 +13,9 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys
-import os
-import shlex
+#import sys
+#import os
+#import shlex
 import sphinx_rtd_theme
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -236,7 +237,8 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
   (master_doc, 'Jacquard.tex', u'Jacquard Documentation',
-   u'Jessica Bene, Ashwini Bhasi, Chris Gates, Divya Kriti, Kevin Meng, Peter Ulintz', 'manual'),
+   u'Jessica Bene, Ashwini Bhasi, Chris Gates, Divya Kriti, Kevin Meng,'
+   u'Peter Ulintz', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

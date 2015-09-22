@@ -12,44 +12,56 @@ caller-agnostic and can be used on any set of VCF files.
 
 Usage
 -----
-``usage: jacquard merge <input_dir> <output_file> [OPTIONS]``
+::
+
+   jacquard merge <input_dir> <output_file>
+                  [--include_format_tags=JQ_.*]
+                  [--include_cells=valid]
+                  [--include_rows=at_least_one_somatic]
 
 
 *positional arguments:*
 
-+--------+---------------------------------------------------------------------+
-| input  | | Directory containing VCF files. Other file types ignored          |
-+--------+---------------------------------------------------------------------+
-| output | | A single VCF file                                                 |
-+--------+---------------------------------------------------------------------+
++-------------+----------------------------------------------------------------+
+| input_dir   | | Directory containing input VCF files ti be merged            |
++-------------+----------------------------------------------------------------+
+| output_file | | An integrated VCF file                                       |
++-------------+----------------------------------------------------------------+
 
 
 *optional arguments:*
 
-+-----------------------+------------------------------------------------------+
-| --include_format_tags | | Comma-separated user-defined list of regular       |
-|                       |   expressions for format tags                        |
-|                       | | to be included in output.                          |
-+-----------------------+------------------------------------------------------+
-| --include_cells       | | valid:  Only include valid variants                |
-|                       | | all:  Include all variants                         |
-|                       | | passed:  Only include variants which passed their  |
-|                       |            respective filter                         |
-|                       | | somatic:  Only include somatic variants            |
-+-----------------------+------------------------------------------------------+
-| --include_rows        | | at_least_one_somatic:  Include all variants at     |
-|                       |                          loci where at least one     |
-|                       |                          variant                     |
-|                       | |                        was somatic                 |
-|                       | | all_somatic:  Include all variants at loci where   |
-|                       |                all variants were somatic             |
-|                       | | at_least_one_passed:  Include all variants at loci |
-|                       |                         where at least one variant   |
-|                       | |                       passed                       |
-|                       | | all_passed:  Include all variants at loci where    |
-|                       |                all variants passed                   |
-|                       | | all:  Include all variants at loci                 |
-+-----------------------+------------------------------------------------------+
++------------------------+-----------------------------------------------------+
+| --include_format_tags= | | Comma-separated user-defined list of regular      |
+|                        | | expressions for format tags to be included in     |
+|                        | | output; (defaults to **'JQ_.*'**)                 |
++------------------------+-----------------------------------------------------+
+| --include_cells=       | | all:  Include all variants                        |
+|                        | | **valid**:  Only include valid variants           |
+|                        | | passed:  Only include variants which passed their |
+|                        | |          respective filter                        |
+|                        | | somatic:  Only include somatic variants           |
++------------------------+-----------------------------------------------------+
+| --include_rows=        | | all:  Include all variants at loci                |
+|                        | | at_least_one_passed:  Include all variants at loci|
+|                        | |    where at least one variant passed              |
+|                        | | all_passed:  Include all variants at loci where   |
+|                        | |    all variants passed                            |
+|                        | | **at_least_one_somatic**:  Include all variants at|
+|                        | |    loci where at least one variant was high-      |
+|                        | |    confidence somatic                             |
+|                        | | all_somatic:  Include all variants at loci where  |
+|                        | |    all variants were high-confidence somatic      |
++------------------------+-----------------------------------------------------+
+| --include_all          | | Equivalent to:                                    |
+|                        | |    --include_format_tags='.*'                     |
+|                        | |    --include_cells=all                            |
+|                        | |    --include_rows=all                             |
+|                        | | Useful when merging untranslated VCFs which have  |
+|                        | | already been filtered to passing variants.        |
++------------------------+-----------------------------------------------------+
+
+
 
 Description
 -----------

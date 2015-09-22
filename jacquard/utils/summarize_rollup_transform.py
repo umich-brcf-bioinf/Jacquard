@@ -7,7 +7,6 @@ from __future__ import print_function, absolute_import, division
 
 from collections import defaultdict
 from decimal import Decimal
-import re
 
 import jacquard.utils.utils as utils
 import jacquard.variant_caller_transforms.common_tags as common_tags
@@ -107,13 +106,13 @@ def _add_caller_list_values(vcf_record, tag_type, tag_id):
 
 def _add_caller_count_values(vcf_record, tag_type, tag_id):
     sample_tag = {}
-    for sample, tags in vcf_record.sample_tag_values.items():
+    for sample, all_tags in vcf_record.sample_tag_values.items():
         sample_tag[sample] = 0
-        desired_tags = common_tags.AbstractJacquardTag.get_matching_tags(tags,
-                                                                         tag_type)
-        for tag in desired_tags:
-            if desired_tags[tag] != "0" and desired_tags[tag] != ".":
-                sample_tag[sample] += int(desired_tags[tag])
+        tags = common_tags.AbstractJacquardTag.get_matching_tags(all_tags,
+                                                                 tag_type)
+        for tag in tags:
+            if tags[tag] != "0" and tags[tag] != ".":
+                sample_tag[sample] += int(tags[tag])
     vcf_record.add_sample_tag_value(tag_id, sample_tag)
 
 def _add_sample_count_values(vcf_record,
@@ -180,8 +179,8 @@ class _CallersPassedTag(common_tags.AbstractJacquardTag):
         super(self.__class__,
               self).__init__(SUMMARY_TAG,
                              CALLERS_PASSED_COUNT,
-                             ('Count of variant callers where FILTER = PASS for '
-                              'this variant in the Jacquard tagged VCF'))
+                             ('Count of variant callers where FILTER = PASS'
+                              ' for this variant in the Jacquard tagged VCF'))
 
     def add_tag_values(self, vcf_record):
         _add_caller_count_values(vcf_record,

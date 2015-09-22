@@ -47,7 +47,6 @@ import shutil
 import signal
 import sys
 import traceback
-import string
 
 from jacquard import __version__
 import jacquard.utils.command_validator as command_validator
@@ -152,10 +151,11 @@ def _get_execution_context(command):
     cwd = os.path.dirname(os.getcwd())
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-    return ['##jacquard=<timestamp="{}",command="{}",cwd="{}",source="Jacquard",version="{}">'.format(now,
-                                                                       command,
-                                                                       cwd,
-                                                                       __version__)]
+    return [('##jacquard=<timestamp="{}",command="{}",cwd="{}",'
+             'source="Jacquard",version="{}">').format(now,
+                                                       command,
+                                                       cwd,
+                                                       __version__)]
 
 def _dispatch(modules, arguments):
     try:

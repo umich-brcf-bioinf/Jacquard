@@ -6,8 +6,9 @@ Changelog
 - Added docs on readthedocs.
 - Improved workflow documentation with example data
 - Merge will now disambiguate tag collisions from multiple VCs
-- Translate/summarize now support GT tags
+- Translate/summarize now supports GT tags
 - Extended precision to 4 decimal places to support analysis of gene-panels.
+- Adjusted translate to handle empty high-confidence VarScan files.
 
 0.41 (5/7/2015)
 ---------------

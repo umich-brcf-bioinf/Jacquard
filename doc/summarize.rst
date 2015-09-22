@@ -13,17 +13,19 @@ translated.
 
 Usage
 -----
-``usage: jacquard summarize <input_file> <output_file>``
+::
+
+   jacquard summarize <input_file> <output_file>
 
 
 *positional arguments:*
 
-+--------+---------------------------------------------------------------------+
-| input  | | Jacquard-merged VCF file (or any VCF with Jacquard tags; e.g.     |
-|        |   JQ_SOM_MT)                                                        |
-+--------+---------------------------------------------------------------------+
-| output | | A single VCF file                                                 |
-+--------+---------------------------------------------------------------------+
++-------------+----------------------------------------------------------------+
+| input_file  | | Jacquard-merged VCF file (or any VCF with Jacquard tags; e.g.|
+|             |   JQ_SOM_MT)                                                   |
++-------------+----------------------------------------------------------------+
+| output_file | | A single VCF file                                            |
++-------------+----------------------------------------------------------------+
 
 Description
 -----------

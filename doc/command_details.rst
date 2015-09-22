@@ -2,8 +2,7 @@ Command Details
 ===============
 
 Jacquard is a suite of tools that can be either run in succession or
-individually: translate, merge, summarize, and expand. Each of these tools is
-discussed in detail in subsequent pages:
+individually; the typical workflow is to run:
 
 .. toctree::
    :titlesonly:
@@ -13,28 +12,10 @@ discussed in detail in subsequent pages:
    summarize
    expand
 
-The typical workflow for Jacquard is to run VCF files through translate, merge,
-summarize, and expand. However, any of the below workflows may be implemented
-to obtain meaningful results.
 
-.. figure:: images/general_workflows1.jpg
-   
-   **Multiple Jacquard Workflows :** *There are 8 different possible workflows
-   in Jacquard. The first workflow represented in the above diagram is the 
-   signature workflow of Jacquard.*
-
-
-The Jacquard-produced output VCFs are fully compliant VCF files that can be
-easily loaded into an external program, such as an annotation tool.
-
-
-Jacquard first writes output files to a temporary directory and only copies the
-files upon successful completion of each command.
-
-
-Error, warning, and info messages are written to console and log file. Debug
-messages are only written to the log file unless logger is initialized as
-verbose (in which case debug is also echoed to console). 
+Translate and summarize are useful only for supported callers; merge and expand
+work for any VCFs. Each of these commands is described in detail in the
+following pages.
 
 
 General usage
@@ -74,4 +55,5 @@ Input File Conventions
 
 * For a specific source VCF, Jacquard automatically determines the tumor and
   normal samples based on the column header and the metaheaders.
+
 

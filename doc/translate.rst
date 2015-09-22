@@ -6,51 +6,52 @@ The translate command creates new VCFs, adding a controlled vocabulary of new
 FORMAT tags. It will only work with VCF files from the supported variant
 callers.
 
-.. figure:: images/translate_pic.jpg
+.. figure:: images/translate.jpg
 
-   **Addition of the Jacquard-Specific FORMAT Tags :** *The translated VCF
-   files contain the original FORMAT tags from the input files as well as the 
-   Jacquard-specific FORMAT tags.*
+   **Translate adds new FORMAT Tags :** *(A) Jacquard reads input VCF
+   files (B) deriving new tags based on information in each variant record and 
+   (C) writes new VCFs appending the new tags to the original record.*
 
 Usage
 -----
+::
 
-``jacquard translate <input_dir> <output_dir> [OPTIONS]``
+   jacquard translate <input_dir> <output_dir> [OPTIONS]
 
 
 *positional arguments:*
 
-+--------+-------------------------+-------------------------------------------+
-| input  | | Directory containing VCF files (and VarScan high confidence       |
-|        |   files. Other file types ignored                                   |
-+--------+-------------------------+-------------------------------------------+
-| output | | Directory containing VCF files. Will create if doesn't exist and  |
-|        |   will overwrite files in                                           |
-|        | | output directory as necessary                                     |
-+--------+-------------------------+-------------------------------------------+
++------------+-----------------------------------------------------------------+
+| input_dir  | | Directory containing VCF files (and VarScan high confidence   |
+|            |   files)                                                        |
++------------+-----------------------------------------------------------------+
+| output_dir | | Directory containing VCF files. Will create if doesn't exist  |
+|            | | and will overwrite files in output directory if --force       |
++------------+-----------------------------------------------------------------+
 
 
 *optional arguments:*
 
-+--------------------------------------+---------------------------------------+
-| --allow_inconsistent_sample_sets     | | Set this flag if not every patient  |
-|                                      |   is represented by the same          |
-|                                      | | set of caller-VCFs.                 |
-+--------------------------------------+---------------------------------------+
-| --varscan_hc_filter_file_regex REGEX | | Regex pattern that identifies       |
-|                                      |   optional VarScan                    |
-|                                      | | high-confidence filter files.       |
-|                                      |   The VCF, high-confidence file       |
-|                                      | | pairs should share the same prefix. |
-|                                      |   For example, given                  |
-|                                      | | patientA.snp.vcf,                   |
-|                                      |   patientA.indel.vcf,                 |
-|                                      | | patientA.snp.fpfilter.pass, and     |
-|                                      | | patientA.indel.fpfilter.pass,       |
-|                                      | | you could enable this option as     |
-|                                      | | varscan_hc_filter_file_regex=       |
-|                                      |   '.fpfilter.pass$'                   |
-+--------------------------------------+---------------------------------------+
++----------------------------------+-------------------------------------------+
+| --allow_inconsistent_sample_sets | | Set this flag if not every patient is   |
+|                                  | | represented by the same set of          |
+|                                  | | caller-VCFs. (For example if you ran    |
+|                                  | | VarScan on only a subset of cases.)     |
++----------------------------------+-------------------------------------------+
+| --varscan_hc_filter_file_regex=  | | Regex pattern that identifies optional  |
+|                                  | | optional VarScan high-confidence filter |
+|                                  | | files.                                  |
+|                                  | | The VCF, high-confidence file pairs     |
+|                                  | | should share the same prefix. For       |
+|                                  | | example, given files:                   |
+|                                  | |    patientA.snp.vcf                     |
+|                                  | |    patientA.indel.vcf                   |
+|                                  | |    patientA.snp.fpfilter.pass           |
+|                                  | |    patientA.indel.fpfilter.pass         |
+|                                  | | you could enable this option as         |
+|                                  | | varscan_hc_filter_file_regex=           |
+|                                  | |    '.fpfilter.pass$'                    |
++----------------------------------+-------------------------------------------+
 
 Description
 -----------
@@ -76,11 +77,54 @@ Currently, Translate adds Jacquard-specific FORMAT tags for:
 
 See VCF metaheader excepts below for more details on how values are derived:
 
-VarScan Details
----------------
 
-Jacquard-VarScan translated tags
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Strelka Translated Tags
+-----------------------
+
++--------------+---------------------------------------------------------------+
+| Tag name     | | Description                                                 |
++--------------+---------------------------------------------------------------+
+| JQ_SK_AF     | | Jacquard allele frequency for Strelka: Decimal allele       |
+|              | | frequency rounded to 4 digits (based on                     |
+|              | | alt_depth/total_depth. Uses [TIR tier 2]/DP2 if available,  |
+|              | | otherwise uses (ACGT tier2 depth) / DP2)                    |
++--------------+---------------------------------------------------------------+
+| JQ_SK_DP     | | (uses DP2 if available, otherwise uses ACGT tier2 depth)    |
++--------------+---------------------------------------------------------------+
+| JQ_VS_GT     | | Jacquard genotype (based on SGT).                           |
+|              | | Example for snv: ALT=C, INFO:SGT=AA->AC is translated as    |
+|              | | normal=0/0, tumor=0/1.                                      |
+|              | | Example for indel: INFO:SGT=ref->het is translated as       |
+|              | | normal=0/0, tumor=0/1.                                      |
++--------------+---------------------------------------------------------------+
+| JQ_VS_HC_SOM | | Jacquard somatic status for Strelka:                        |
+|              | | 0=non-somatic,1=somatic (based on PASS in FILTER column)    |
++--------------+---------------------------------------------------------------+
+
+
+
+MuTect Translated Tags
+----------------------
+
++--------------+---------------------------------------------------------------+
+| Tag name     | | Description                                                 |
++--------------+---------------------------------------------------------------+
+| JQ_SK_AF     | | Jacquard allele frequency for MuTect: Decimal allele        |
+|              | | frequency rounded to 4 digits (based on FA).                |
++--------------+---------------------------------------------------------------+
+| JQ_SK_DP     | | Jacquard depth for MuTect (based on DP)                     |
++--------------+---------------------------------------------------------------+
+| JQ_MT_GT     | | Jacquard genotype (based on GT)                             |
++--------------+---------------------------------------------------------------+
+| JQ_MT_HC_SOM | | MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)    |
++--------------+---------------------------------------------------------------+
+
+
+
+VarScan Translated Tags
+-----------------------
+
 +--------------+---------------------------------------------------------------+
 | Tag name     | | Description                                                 |
 +--------------+---------------------------------------------------------------+
@@ -93,7 +137,8 @@ Jacquard-VarScan translated tags
 | JQ_VS_GT     | | Jacquard genotype (based on GT)                             |
 +--------------+---------------------------------------------------------------+
 | JQ_VS_HC_SOM | | Jacquard somatic status for VarScan: 0=non-somatic,         |
-|              | | 1=somatic (based on SOMATIC info tag and if sample is TUMOR |
+|              | | 1=somatic (based on SOMATIC info tag where sample column is |
+|              | | TUMOR and variant record passed VarScan filter).            |
 +--------------+---------------------------------------------------------------+
 
 
@@ -125,3 +170,4 @@ Example VarScan files:
  | case_B.varscan.indel.vcf
  | case_B.varscan.indel.Somatic.hc.filter.pass
  | ...
+
