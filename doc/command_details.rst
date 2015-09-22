@@ -7,26 +7,28 @@ individually; the typical workflow is to run:
 .. toctree::
    :titlesonly:
 
-   translate
-   merge
-   summarize
-   expand
+   translate <translate>
+   merge <merge>
+   summarize <summarize>
+   expand <expand>
 
 
-Translate and summarize are useful only for supported callers; merge and expand
+*Translate* and *summarize* commands are useful only for supported callers; *merge* and *expand*
 work for any VCFs. Each of these commands is described in detail in the
 following pages.
 
 
 **General usage**
+
 ::
 
-   jacquard <SUBCOMMAND> [ARGUMENTS] [OPTIONS]
+   $ jacquard <SUBCOMMAND> [ARGUMENTS] [OPTIONS]
 
 For help on a specific command:
+
 ::
 
-   jacquard <SUBCOMMAND> --help
+   $ jacquard <SUBCOMMAND> --help
 
 
 * Jacquard first writes output files to a temporary directory and only copies

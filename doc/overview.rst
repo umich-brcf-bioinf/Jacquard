@@ -9,7 +9,7 @@ variant callers. Jacquard is designed to be used by bioinformatic analysts; the
 output is intended to be useful to analysts and biological researchers. Both
 Jacquard and its documentation assume that users the basics of variant callers
 and VCF files. For more information about VCF files, see the
-`1000 Genomes documentation <http://www.1000genomes.org/node/101>`_.
+`Hts-specs <http://samtools.github.io/hts-specs/>`_.
 
 Why would I use Jacquard?
 -------------------------
@@ -48,7 +48,7 @@ samples.
    translates format tags from different callers into a uniform set of tags.*
 
 
-Jacquard can merge or exapnd VCFs from any variant caller. Jacquard can 
+Jacquard can merge or expand VCFs from any variant caller. Jacquard can 
 translate depth, alt frequency, somatic status, and genotype tags from several 
 somatic variant callers:
 

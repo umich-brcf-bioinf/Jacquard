@@ -28,36 +28,33 @@ The official repository is at:
 
 https://github.com/umich-brcf-bioinf/Jacquard
 
-Files
-=====
-- jacquard-runner.py : Convenience wrapper for running Jacquard directly from source tree.
-- jacquard : Python libraries
-- spikes : Unsupported prototypes and other experiments
-- test : Automated unit tests
-
 Usage
 =====
-``$jacquard <subcommand> [options] [arguments]``
+
+::
+
+   $jacquard <subcommand> [options] [arguments]
 
 *Subcommands*
 
 :translate:
-   Accepts a directory of VCF results (including VarScan high confidence 
-   files). Creates a new directory of VCFs, adding Jacquard-specific FORMAT 
-   tags for each VCF record.
+   Creates new VCFs, adding a controlled vocabulary of new FORMAT tags.
 :merge:
-   Accepts a directory of VCFs and returns a single merged VCF file.
-   Optionally filters to a subset of variants/loci.
+   Integrates a directory of VCFs into a single VCF.
 :summarize:
-   Accepts a Jacquard-merged VCF file and creates a new VCF file, adding 
-   summary fields/tags.
+   Adds new INFO fields and FORMAT tags that combine variant data from the
+   merged VCF.
 :expand:
-   Transforms VCF file into tab-separated text file expanding INFO fields and 
-   FORMAT tags into discrete columns.
+   Explodes a VCF file into a tab-delimited file.
 
 For help on a specific subcommand:
 
-``jacquard <subcommand> --help``
+::
+
+   jacquard <subcommand> --help
+
+
+See `ReadTheDocs <http://jacquard.readthedocs.org/>`_ for full documentation.
 
 ====
 

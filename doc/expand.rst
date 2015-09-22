@@ -2,7 +2,7 @@
 
 Expand
 ======
-The expand command explodes a VCF file into a tab-separated file. It is not
+The *expand* command explodes a VCF file into a tab-separated file. It is not
 caller-dependent and will work with any VCF file.
 
 .. figure:: images/expand_columns.jpg
@@ -14,15 +14,15 @@ Usage
 -----
 ::
 
-   jacquard expand <input_file> <output_file> [OPTIONS]
+   $ jacquard expand <input_file> <output_file> [OPTIONS]
 
 
 *positional arguments:*
 
 +-------------+----------------------------------------------------------------+
-| input_file  | | A VCF file.                                                  |
+| input_file  | | A VCF file                                                   |
 +-------------+----------------------------------------------------------------+
-| output_file | | A tab separated text file.                                   |
+| output_file | | A tab separated text file                                    |
 +-------------+----------------------------------------------------------------+
 
 
@@ -37,19 +37,19 @@ Usage
 
 Description
 -----------
-The expand command converts a VCF file into a tab-delimited file in a tabular
-format. This format is more suitable than a VCF for analysis and visualization
-in R, Pandas, Excel, or another third-party application.
+*Expand* command converts a VCF file into a tab-delimited file. This format is
+more suitable than a VCF for analysis and visualization in R, Pandas, Excel, or
+another third-party application.
 
 
 .. figure:: images/expand_tabular.jpg
 
-   **Tabular format of Jacquard output:** *Jacquard transforms the dense VCF format
+   **Tabular format of expand output:** *Expand transforms the dense VCF format
    into a tabular format.*
 
 
 Note
------
+----
  * The 'fixed' fields (i.e. CHROM, POS, ID, REF, ALT, QUAL, FILTER) are directly
    copied from the input VCF file.
  * Based on the metaheaders, each field in the INFO column is expanded into a
@@ -59,7 +59,7 @@ Note
  * By default, all INFO fields and FORMAT tags are expanded; specific INFO
    fields and FORMAT tags can be selected using the --selected_columns_file
    option.
- * Expand also emits a tab-delimited glossary file, based on the metaheaders
+ * *Expand* also emits a tab-delimited glossary file, based on the metaheaders
    in the input VCF file. FORMAT and INFO tag IDs are listed in the
    glossary and are defined by their metaheader description.
 

@@ -2,9 +2,9 @@
 
 Summarize
 =========
-The summarize command adds new INFO fields and FORMAT tags that combine variant
-data from the merged VCF. It will only work with VCF files that have been
-translated.
+The *summarize* command adds new INFO fields and FORMAT tags that combine
+variant data from the merged VCF. It will only work with VCF files that have
+been translated.
 
 .. figure:: images/summarize.jpg
 
@@ -15,7 +15,7 @@ Usage
 -----
 ::
 
-   jacquard summarize <input_file> <output_file>
+   $ jacquard summarize <input_file> <output_file>
 
 
 *positional arguments:*
@@ -29,10 +29,9 @@ Usage
 
 Description
 -----------
-The summarize command uses the Jacquard-specific tags to aggregate caller
-information from the file, providing a summary-level view. The inclusion of
-summary fields, such as averages, helps you to easily determine which are the
-true variants.
+The *summarize* command uses the Jacquard-specific tags to aggregate caller
+information from the file, providing a summary-level view. Summary fields
+(e.g. average allele frequency) can highlight interesting variants.
 
 The summarized format tags contain the prefix 'JQ_SUMMARY'.
 
@@ -58,5 +57,6 @@ Example summary FORMAT tags
 |                       | | confident somatic call for this sample-position.   |
 +-----------------------+------------------------------------------------------+
 
-See summary VCF metaheaders for full list of summary tags and descriptions.
+Refer to the summary VCF metaheaders for a full list of summary tags and
+descriptions.
 

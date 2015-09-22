@@ -2,7 +2,7 @@
 
 Translate
 =========
-The translate command creates new VCFs, adding a controlled vocabulary of new
+The *translate* command creates new VCFs, adding a controlled vocabulary of new
 FORMAT tags. It will only work with VCF files from the supported variant
 callers.
 
@@ -14,9 +14,10 @@ callers.
 
 Usage
 -----
+
 ::
 
-   jacquard translate <input_dir> <output_dir> [OPTIONS]
+   $ jacquard translate <input_dir> <output_dir> [OPTIONS]
 
 
 *positional arguments:*
@@ -55,18 +56,18 @@ Usage
 
 Description
 -----------
-The translate command accepts a directory of VCF files and creates a new
+The *translate* command accepts a directory of VCF files and creates a new
 directory of "translated" VCF files, which include several Jacquard-specific
 FORMAT tags and their corresponding metaheaders.
 
 
-You can either gather all input VCFs into a single directory and run translate
+You can either gather all input VCFs into a single directory and run *translate*
 once or partition VCFs into separate directories (for example, by variant
-caller) and run translate once for each input directory. When partitioning into
-separate input directories, all file names must be unique.
+caller) and run *translate* once for each input directory. When partitioning
+into separate input directories, all file names must be unique.
 
 
-Currently, Translate adds Jacquard-specific FORMAT tags for:
+Currently, *translate* adds Jacquard-specific FORMAT tags for:
    * Allele Frequency
    * Depth
    * Genotype
@@ -90,12 +91,13 @@ Strelka Translated Tags
 |              | | alt_depth/total_depth. Uses [TIR tier 2]/DP2 if available,  |
 |              | | otherwise uses (ACGT tier2 depth) / DP2)                    |
 +--------------+---------------------------------------------------------------+
-| JQ_SK_DP     | | (uses DP2 if available, otherwise uses ACGT tier2 depth)    |
+| JQ_SK_DP     | | Jacquard depth for Strelka (uses DP2 if available, otherwise|
+|              | | uses ACGT tier2 depth)                                      |
 +--------------+---------------------------------------------------------------+
 | JQ_VS_GT     | | Jacquard genotype (based on SGT).                           |
-|              | | Example for snv: ALT=C, INFO:SGT=AA->AC is translated as    |
+|              | | Example for snv: ALT=C, INFO SGT=AA->AC is translated as    |
 |              | | normal=0/0, tumor=0/1.                                      |
-|              | | Example for indel: INFO:SGT=ref->het is translated as       |
+|              | | Example for indel: INFO SGT=ref->het is translated as       |
 |              | | normal=0/0, tumor=0/1.                                      |
 +--------------+---------------------------------------------------------------+
 | JQ_VS_HC_SOM | | Jacquard somatic status for Strelka:                        |
@@ -117,7 +119,8 @@ MuTect Translated Tags
 +--------------+---------------------------------------------------------------+
 | JQ_MT_GT     | | Jacquard genotype (based on GT)                             |
 +--------------+---------------------------------------------------------------+
-| JQ_MT_HC_SOM | | MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)    |
+| JQ_MT_HC_SOM | | Jacquard somatic status for MuTect:                         |
+|              | | 0=non-somatic,1=somatic (based on SS FORMAT tag)            |
 +--------------+---------------------------------------------------------------+
 
 
@@ -145,13 +148,13 @@ VarScan Translated Tags
 Jacquard can incorporate VarScan high-confidence files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To translate VarScan calls, Jacquard requires the VarScan VCF files (snp
-and/or indel). For each VarScan VCF, Jacquard can optionally accept VarScan
+To run *translate* with VarScan calls, Jacquard requires the VarScan VCF files
+(snp and/or indel). For each VarScan VCF, Jacquard can optionally accept VarScan
 somatic high-confidence files; these are supplemental non-VCF files that list
 variant records which passed a more stringent set of VarScan filters.
 
 
-When high-confidence files are present, the translate command adds a FILTER
+When high-confidence files are present, the *translate* command adds a FILTER
 field value for low-confidence variant records (i.e. records which may have
 initially passed filters, but are absent in the high-confidence files).
 

@@ -23,7 +23,11 @@ Test Conventions
  - Every code path should have a unit test; prefer single assert per test.
    A test method name should reflect the method and code path as 
    {test_method_name}_{conditionUnderTest}; e.g.
-   ``def test_my_method_returnsZeroIfMissingInput(self):``
+
+   ::
+
+      def test_my_method_returnsZeroIfMissingInput(self):
+
  - Every command should have a functional test
  - Prefer unit tests to functional tests
  - Prefer tests on public methods, but note that it is sometimes easier to test

@@ -15,20 +15,27 @@ Prerequisites
 
 Installing
 ----------
-The easiest way to install Jacquard is through PyPI. Get pip if it's 
+The easiest way to install Jacquard is through PyPI. Get pip if it's
 not available in your system:
 
-``$ pip install jacquard``
+::
+
+   $ pip install jacquard
+
 
 You can install from source from github:
 
-``$ pip install git+https://github.com/umich-brcf-bioinf/Jacquard``
+::
+
+   $ pip install git+https://github.com/umich-brcf-bioinf/Jacquard
+
 
 If you don't have root permissions, you can install locally:
 
-``$ pip install --user jacquard``
+::
 
-(You may need to modify your path to include the Python install dir (e.g. 
-/Users/<username>/.local/bin)
+   $ pip install --user jacquard
 
+.. note:: You may need to modify your path to include the Python install dir
+         (e.g. /Users/<username>/.local/bin)
 
