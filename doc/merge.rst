@@ -74,6 +74,7 @@ values are merged into a single row. Input variant record-level fields (such as
 FILTER, INFO, etc.) are ignored.
 
 .. figure:: images/merge_loci.jpg
+   :scale: 100%
 
    **Matching loci :** *Variant records from separate files that share the same
    CHROM, POS, REF, ALT are merged into a single variant record.*

@@ -18,15 +18,15 @@ work for any VCFs. Each of these commands is described in detail in the
 following pages.
 
 
-General usage
-^^^^^^^^^^^^^
-``usage: jacquard <SUBCOMMAND> [ARGUMENTS] [OPTIONS]``
+**General usage**
+::
 
+   jacquard <SUBCOMMAND> [ARGUMENTS] [OPTIONS]
 
 For help on a specific command:
+::
 
-
-``jacquard <SUBCOMMAND> --help``
+   jacquard <SUBCOMMAND> --help
 
 
 * Jacquard first writes output files to a temporary directory and only copies
@@ -35,8 +35,8 @@ For help on a specific command:
   messages are only written to the log file (unless --verbose specified).
 
 
-Input File Conventions
-^^^^^^^^^^^^^^^^^^^^^^
+**Input File Conventions**
+
 * Jacquard assumes that the first element of the filename (up to the first dot)
   is a patient identifier. For example:
 
