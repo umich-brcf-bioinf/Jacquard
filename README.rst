@@ -33,7 +33,7 @@ Usage
 
 ::
 
-   $jacquard <subcommand> [options] [arguments]
+   $ jacquard <subcommand> [options] [arguments]
 
 *Subcommands*
 
@@ -51,7 +51,7 @@ For help on a specific subcommand:
 
 ::
 
-   jacquard <subcommand> --help
+   $ jacquard <subcommand> --help
 
 
 See `ReadTheDocs <http://jacquard.readthedocs.org/>`_ for full documentation.
