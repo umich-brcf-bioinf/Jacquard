@@ -1,8 +1,12 @@
 Changelog
 =========
 
-0.42 (X/X/XXXX)
----------------
+0.43 (XX/XX/XXXX)
+-----------------
+- Removed obsolete spikes directory
+
+0.42 (9/22/2015)
+----------------
 - Added docs on readthedocs.
 - Improved workflow documentation with example data
 - *Merge* will now disambiguate tag collisions from multiple VCs
