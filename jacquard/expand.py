@@ -60,10 +60,12 @@ def _create_row_dict(column_list, vcf_record):
         for format_key, format_value in format_key_values.items():
             row_dict[format_key + "|" + sample_name] = format_value
 
-    new_dict = row_dict.copy()
-    new_dict.update(vcf_record.info_dict)
+    for (name, value) in vcf_record.info_dict.items():
+        if name in row_dict:
+            name = "INFO_" + name
+        row_dict[name] = value
 
-    return new_dict
+    return row_dict
 
 def _filter_column_list(column_spec_list,
                         potential_col_list,

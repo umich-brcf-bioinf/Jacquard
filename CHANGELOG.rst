@@ -1,9 +1,11 @@
 Changelog
 =========
 
-0.43 (XX/XX/XXXX)
+0.43 (6/5/2018)
 -----------------
 - Removed obsolete spikes directory
+- Fixed bug in *expand* which could overwrite fixed VCF fields (e.g. REF, ALT,
+  etc) if identically named fields in INFO.
 
 0.42 (9/22/2015)
 ----------------
@@ -22,7 +24,7 @@ Changelog
  - Improved checks for consistent VCF file sets
  - Fixed bug in *merge* that caused error if any VCFs were unsorted
  - Fixed bug in *summarize* that caused error if variant was called by subset
-   of callers 
+   of callers
 
 0.31 (3/17/2015)
 ----------------
@@ -30,7 +32,7 @@ Changelog
  - Fixed a bug that omitted CALLERS_REPORTED_LIST summary tag
  - Simplified summary tags; removed dependency on numpy
  - Adjusted VarScan translation to accept a file pattern to identify
-   high-confidence files 
+   high-confidence files
 
 
 0.3 (3/9/2015)
@@ -39,7 +41,7 @@ Changelog
    on incoming data.
  - Renamed *consensus* to *summarize*
  - More consistent behavior in *expand*
- - Significantly improved *merge* performance 
+ - Significantly improved *merge* performance
  - Added new summary tags:
    - CALLERS_REPORTED_COUNT
    - CALLERS_REPORTED_LIST
@@ -49,12 +51,10 @@ Changelog
    - SAMPLES_PASSED_COUNT
  - Fixed bug in how Strelka calculated AF on indels
  - Improved command validation and error handling
- - Added project/code documentation 
+ - Added project/code documentation
  - Removed dependencies on pandas
-  
-  
+
+
 0.21 (10/2014)
 --------------
  - Initial public release
-
-
