@@ -5,11 +5,12 @@ Changelog
 -----------------
 -
 
-0.43 (6/5/2018)
+1.0.0 (6/5/2018)
 -----------------
 - Removed obsolete spikes directory
 - Fixed bug in *expand* which could overwrite fixed VCF fields (e.g. REF, ALT,
-  etc) if identically named fields in INFO.
+  etc.) if identically named fields in INFO.
+- Switched to semantic versioning
 
 0.42 (9/22/2015)
 ----------------
