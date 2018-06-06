@@ -62,6 +62,33 @@ class ExpandTestCase(test_case.JacquardBaseTestCase):
                          "AF|SAMPLE_A|TUMOR": "0.3"}
         self.assertEquals(expected_dict, actual_dict)
 
+    def test_create_row_dict_fieldNamesMangledToAvoidCollision(self):
+        column_list = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER",
+                       "INFO" ] #, "FORMAT", "SAMPLE_A|NORMAL", "SAMPLE_A|TUMOR"]
+        # sample_tag_values = {"SAMPLE_A|NORMAL":{"DP":"50", "AF":"0.2"},
+        #                      "SAMPLE_A|TUMOR":{"DP":"87", "AF":"0.3"}}
+        vcf_record = vcf.VcfRecord("1", "42", "A", "AT",
+                                   vcf_id="rs32", qual="30", vcf_filter="PASS",
+                                   info="SNP;REF;ALT=Yep"
+                                   )#sample_tag_values=sample_tag_values)
+        actual_dict = expand._create_row_dict(column_list, vcf_record)
+
+        expected_dict = {"CHROM": "1",
+                         "POS": "42",
+                         "ID": "rs32",
+                         "REF": "A",
+                         "ALT": "AT",
+                         "QUAL": "30",
+                         "FILTER": "PASS",
+                         "SNP": "SNP",
+                         "INFO_REF": "REF",
+                         "INFO_ALT": "Yep"}
+                         # "DP|SAMPLE_A|NORMAL": "50",
+                         # "DP|SAMPLE_A|TUMOR": "87",
+                         # "AF|SAMPLE_A|NORMAL": "0.2",
+                         # "AF|SAMPLE_A|TUMOR": "0.3"}
+        self.assertEquals(expected_dict, actual_dict)
+
     def test_filter_column_list(self):
         potential_col_list = OrderedDict([("CHROM", None),
                                           ("POS", None),
@@ -397,4 +424,3 @@ class ExpandFunctionalTestCase(test_case.JacquardBaseTestCase):
                                         "expanded.txt")
 
             self.assertCommand(command, expected_file)
-
