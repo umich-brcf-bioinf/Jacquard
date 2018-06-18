@@ -1,7 +1,7 @@
 ========
 Jacquard
 ========
-Suite of command-line tools to expedite analysis of exome variant data from 
+Suite of command-line tools to expedite analysis of exome variant data from
 multiple patients and multiple variant callers.
 
 .. image:: https://travis-ci.org/umich-brcf-bioinf/Jacquard.svg?branch=develop
@@ -20,9 +20,6 @@ multiple patients and multiple variant callers.
    :target: https://pypi.python.org/pypi/jacquard/
    :alt: Latest PyPI version
 
-.. image:: https://img.shields.io/pypi/dm/Jacquard.svg
-   :target: https://pypi.python.org/pypi/jacquard/
-    :alt: Downloads Counter
 
 The official repository is at:
 
@@ -61,4 +58,3 @@ See `ReadTheDocs <http://jacquard.readthedocs.org/>`_ for full documentation.
 Email bfx-jacquard@umich.edu for support and questions.
 
 UM BRCF Bioinformatics Core
-

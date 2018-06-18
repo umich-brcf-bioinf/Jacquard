@@ -297,7 +297,7 @@ class _AlleleFreqAverageTag(common_tags.AbstractJacquardTag):
                              SUMMARY_ALLELE_FREQ_AVG,
                              ('Average allele frequency across recognized '
                               'variant callers that reported frequency for '
-                              'this position [average(JQ_*_AF)].'))
+                              'this sample-locus [average(JQ_*_AF)].'))
 
     def add_tag_values(self, record):
         new_sample_tag_values = {}
@@ -364,9 +364,9 @@ class _DepthAverageTag(common_tags.AbstractJacquardTag):
         super(self.__class__,
               self).__init__(SUMMARY_TAG,
                              SUMMARY_DEPTH_AVG,
-                             ('Average allele frequency across recognized '
-                              'variant callers that reported frequency for '
-                              'this position; rounded to integer '
+                             ('Average depth across recognized '
+                              'variant callers that reported depth for '
+                              'this sample-locus; rounded to integer '
                               '[round(average(JQ_*_DP))].'))
 
     def add_tag_values(self, record):
@@ -402,7 +402,7 @@ class _SomaticTag(common_tags.AbstractJacquardTag):
                              SUMMARY_SOMATIC_COUNT,
                              ('Count of recognized variant callers that '
                               'reported confident somatic call for this '
-                              'sample-position.'))
+                              'sample-locus.'))
 
     def add_tag_values(self, record):
         new_sample_tag_values = {}

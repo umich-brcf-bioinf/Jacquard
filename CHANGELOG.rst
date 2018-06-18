@@ -4,6 +4,8 @@ Changelog
 1.1.0 (6/18/2018)
 -----------------
 - Adjusted *translate* to correctly parse newer versions of Mutect
+- Updated supported versions for Mutect, Strelka, Varscan
+- Fixed error in JQ_SUMMARY_DP_AVERAGE tag description 
 
 1.0.0 (6/5/2018)
 -----------------

@@ -326,7 +326,7 @@ class AlleleFreqAverageTagTestCase(test_case.JacquardBaseTestCase):
 
     def test_metaheader(self):
         split_meta_header = summarize_caller._AlleleFreqAverageTag().metaheader.split("\n")
-        self.assertEqual('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position [average(JQ_*_AF)].">'.format(summarize_caller.JQ_SUMMARY_TAG),
+        self.assertEqual('##FORMAT=<ID={0}AF_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this sample-locus [average(JQ_*_AF)].">'.format(summarize_caller.JQ_SUMMARY_TAG),
                          split_meta_header[0])
 
     def test_add_tag_values(self):
@@ -501,7 +501,7 @@ class DepthAverageTagTestCase(test_case.JacquardBaseTestCase):
 
     def test_metaheader(self):
         split_meta_header = summarize_caller._DepthAverageTag().metaheader.split("\n")
-        self.assertEquals('##FORMAT=<ID={}DP_AVERAGE,Number=1,Type=Float,Description="Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].">'.format(summarize_caller.JQ_SUMMARY_TAG),
+        self.assertEquals('##FORMAT=<ID={}DP_AVERAGE,Number=1,Type=Float,Description="Average depth across recognized variant callers that reported depth for this sample-locus; rounded to integer [round(average(JQ_*_DP))].">'.format(summarize_caller.JQ_SUMMARY_TAG),
                           split_meta_header[0])
 
     def test_add_tag_values(self):
@@ -595,7 +595,7 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         self.assertEqual('##FORMAT=<ID={0}SOM_COUNT,Number=1,Type=Integer,' \
                       'Description="Count of recognized variant callers ' \
                       'that reported confident somatic call for this '\
-                      'sample-position.">'\
+                      'sample-locus.">'\
                       .format(summarize_caller.JQ_SUMMARY_TAG), split_meta_header[0])
 
     def test_add_tag_values(self):
@@ -786,4 +786,3 @@ class SummarizeCallerTestCase(test_case.JacquardBaseTestCase):
         self.assertEqual(expected, first_meta_header)
         self.assertEqual(12, len(actual))
         self.assertEqual(1, len(split_actual))
-

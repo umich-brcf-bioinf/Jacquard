@@ -14,7 +14,7 @@ import jacquard.utils.vcf as vcf
 
 JQ_MUTECT_TAG = "JQ_MT_"
 MUTECT_ABBREVIATION = "MT"
-VERSION = "v1.1.4"
+VERSION = "v1.1-4.0"
 
 class _GenotypeTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods

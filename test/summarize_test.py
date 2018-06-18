@@ -12,7 +12,6 @@ import jacquard.utils.vcf as vcf
 import test.utils.test_case as test_case
 from test.utils.vcf_test import MockFileWriter, MockVcfReader
 
-
 #TODO (cgates): The module summarize is not adequately unit-tested
 class MockSummarizeCaller(object):
     def __init__(self, metaheaders_list=None):
@@ -85,4 +84,3 @@ class SummarizeFunctionalTestCase(test_case.JacquardBaseTestCase):
                                          "summarized.vcf")
 
             self.assertCommand(command, expected_file)
-
