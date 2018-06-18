@@ -1,6 +1,11 @@
 Changelog
 =========
 
+x.x.x (mm/dd/yyyy)
+------------------
+- 
+
+
 1.1.0 (6/18/2018)
 -----------------
 - Adjusted *translate* to correctly parse newer versions of Mutect
