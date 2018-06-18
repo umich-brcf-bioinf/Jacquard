@@ -8,12 +8,14 @@ import shutil
 import sys
 import unittest
 
-import jacquard.utils.logger as logger
-
 try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
+
+import jacquard.utils.logger as logger
+
+from testfixtures import TempDirectory
 
 
 class LoggerTestCase(unittest.TestCase):
@@ -42,9 +44,9 @@ class LoggerTestCase(unittest.TestCase):
         self.assertEquals("jacquard.log", os.path.basename(logger.log_filename))
 
     def test_initialize_logger_suppliedFilename(self):
-        try:
+        with TempDirectory() as base_dir:
             tool = "foo"
-            log_filename = "tmp/log.foo"
+            log_filename = os.path.join(base_dir.path, "tmp", "log.foo")
             args = Namespace(subparser_name=tool,
                              log_file=log_filename,
                              verbose=None)
@@ -53,20 +55,15 @@ class LoggerTestCase(unittest.TestCase):
                               sorted(logger._logging_dict.keys()))
             self.assertEquals(log_filename, logger.log_filename)
 
-        finally:
-            shutil.rmtree(os.path.dirname(log_filename))
-
     def test_initialize_logger_createsParentDirs(self):
-        try:
+        with TempDirectory() as base_dir:
             tool = "foo"
-            log_filename = "tmp/log.foo"
+            log_filename = os.path.join(base_dir.path, "tmp", "log.foo")
             args = Namespace(subparser_name=tool,
                              log_file=log_filename,
                          verbose=None)
             logger.initialize_logger(args)
             self.assertTrue(os.path.isdir(os.path.dirname(log_filename)))
-        finally:
-            shutil.rmtree(os.path.dirname(log_filename))
 
     def test_initialize_logger_verbose(self):
         tool = "foo"

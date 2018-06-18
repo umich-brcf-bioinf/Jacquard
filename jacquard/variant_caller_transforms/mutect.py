@@ -4,13 +4,17 @@ MuTect VCFs are assumed to have a ".vcf" extension and have a valid
 "##MuTect=..." metaheader.
 """
 from __future__ import print_function, absolute_import, division
+
+import argparse
+import re
+
 import jacquard.utils.utils as utils
 import jacquard.variant_caller_transforms.common_tags as common_tags
 import jacquard.utils.vcf as vcf
 
 JQ_MUTECT_TAG = "JQ_MT_"
 MUTECT_ABBREVIATION = "MT"
-VERSION = "v1.1.4"
+VERSION = "v1.1-4.0"
 
 class _GenotypeTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
@@ -104,6 +108,78 @@ class _SomaticTag(common_tags.AbstractJacquardTag):
         else:
             return "0"
 
+
+class _Mutect1Parser(object):
+    _MUTECT1_METAHEADER_REGEX = re.compile('^##MuTect=')
+    _MUTECT1_METAHEADER_DICT = re.compile('^##MuTect="(.*)"')
+    _MUTECT1_DICT_KEY_NORMAL = 'normal_sample_name'
+    _MUTECT1_DICT_KEY_TUMOR = 'tumor_sample_name'
+
+
+    @staticmethod
+    def is_mutect_metaheader(metaheader):
+        return _Mutect1Parser._MUTECT1_METAHEADER_REGEX.search(metaheader)
+
+    @staticmethod
+    def build_mutect_dict(metaheaders, normal_key, tumor_key):
+        def get_mutect_header(metaheaders):
+            for metaheader in metaheaders:
+                match = _Mutect1Parser._MUTECT1_METAHEADER_DICT.search(metaheader)
+                if match:
+                    return match.group(1)
+            return None
+
+        mutect_dict = {}
+        header = get_mutect_header(metaheaders)
+        for token in header.split():
+            try:
+                key, value = token.split("=")
+                if key == _Mutect1Parser._MUTECT1_DICT_KEY_NORMAL:
+                    mutect_dict[normal_key] = value
+                elif key == _Mutect1Parser._MUTECT1_DICT_KEY_TUMOR:
+                    mutect_dict[tumor_key] = value
+            except ValueError:
+                pass
+        return mutect_dict
+
+class _Mutect2Parser(object):
+    _MUTECT2_METAHEADER_REGEX = re.compile('^##GATKCommandLine=<.*ID=Mutect2')
+    _MUTECT2_METAHEADER_DICT = re.compile('##GATKCommandLine=<ID=Mutect2.*CommandLine="(.*?)"')
+
+    @staticmethod
+    def is_mutect_metaheader(metaheader):
+        return _Mutect2Parser._MUTECT2_METAHEADER_REGEX.search(metaheader)
+
+    @staticmethod
+    def build_mutect_dict(metaheaders, normal_key, tumor_key):
+        def get_mutect_header(metaheaders):
+            for metaheader in metaheaders:
+                match = _Mutect2Parser._MUTECT2_METAHEADER_DICT.search(metaheader)
+                if match:
+                    return match.group(1)
+            return None
+
+        command_line_args = get_mutect_header(metaheaders).split()
+        header_parser = argparse.ArgumentParser(add_help=False)
+        header_parser.add_argument("--normal-sample")
+        header_parser.add_argument("--tumor-sample")
+        args, _ = header_parser.parse_known_args(command_line_args)
+        mutect_dict = {}
+        if args.normal_sample:
+            mutect_dict[normal_key] = args.normal_sample
+        if args.tumor_sample:
+            mutect_dict[tumor_key] = args.tumor_sample
+        return mutect_dict
+
+
+def _get_mutect_parser(metaheaders):
+    for metaheader in metaheaders:
+        if _Mutect1Parser.is_mutect_metaheader(metaheader):
+            return _Mutect1Parser
+        elif _Mutect2Parser.is_mutect_metaheader(metaheader):
+            return _Mutect2Parser
+    return None
+
 class Mutect(object):
     #pylint: disable=too-few-public-methods
     """Recognize and transform MuTect VCFs to standard Jacquard format.
@@ -113,7 +189,6 @@ class Mutect(object):
     (derived from the input alignments). To play well with other callers like
     Strelka and VarScan, the sample headers are replaced with Normal and Tumor.
     """
-    _MUTECT_METAHEADER_PREFIX = "##MuTect"
     _NORMAL_SAMPLE_KEY = "normal_sample_name"
     _TUMOR_SAMPLE_KEY = "tumor_sample_name"
 
@@ -123,12 +198,10 @@ class Mutect(object):
 
     @staticmethod
     def _is_mutect_vcf(file_reader):
-        if file_reader.file_name.lower().endswith(".vcf"):
-            vcf_reader = vcf.VcfReader(file_reader)
-            for metaheader in vcf_reader.metaheaders:
-                if metaheader.startswith(Mutect._MUTECT_METAHEADER_PREFIX):
-                    return True
-        return False
+        if not file_reader.file_name.lower().endswith(".vcf"):
+            return False
+        vcf_reader = vcf.VcfReader(file_reader)
+        return _get_mutect_parser(vcf_reader.metaheaders) != None
 
     def claim(self, file_readers):
         """Recognizes and claims MuTect VCFs form the set of all input VCFs.
@@ -154,18 +227,10 @@ class Mutect(object):
 
     @staticmethod
     def _build_mutect_dict(metaheaders):
-        mutect_dict = {}
-        for metaheader in metaheaders:
-            if metaheader.startswith(Mutect._MUTECT_METAHEADER_PREFIX):
-                split_line = metaheader.strip('"').split(" ")
-                for item in split_line:
-                    split_item = item.split("=")
-                    try:
-                        mutect_dict[split_item[0]] = split_item[1]
-                    except IndexError:
-                        pass
-
-        return mutect_dict
+        mutect_parser = _get_mutect_parser(metaheaders)
+        return mutect_parser.build_mutect_dict(metaheaders,
+                                               Mutect._NORMAL_SAMPLE_KEY,
+                                               Mutect._TUMOR_SAMPLE_KEY)
 
     def _get_new_column_header(self, vcf_reader):
         """Returns a standardized column header.
@@ -261,4 +326,3 @@ class _MutectVcfReader(object):
         for tag in self.tags:
             tag.add_tag_values(vcf_record)
         return vcf_record
-

@@ -171,6 +171,20 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(0, len(unrecognized_readers))
         self.assertEquals(1, len(vcf_readers))
 
+    def test_claim_metaheaderRecognizesOldAndNewVersionsOfMutect(self):
+        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
+        content1 = ["##foo", "##MuTect=2.1", "#chrom", record1]
+        reader1 = MockFileReader("fileA.vcf", content1)
+        content2 = ["##foo", '##GATKCommandLine=<ID=Mutect2,CommandLine="Mutect2 ...">', "#chrom", record1]
+        reader2 = MockFileReader("fileB.vcf", content2)
+        file_readers = [reader1, reader2]
+
+        caller = mutect.Mutect()
+        unrecognized_readers, vcf_readers = caller.claim(file_readers)
+
+        self.assertEquals(0, len(unrecognized_readers))
+        self.assertEquals(2, len(vcf_readers))
+
 class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
     def test_metaheaders(self):
         vcf_reader = MockVcfReader(metaheaders=["##foo", "##MuTect=123"])
@@ -226,7 +240,7 @@ class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
         self.assertTrue(mutect_vcf_reader.open)
         self.assertTrue(mutect_vcf_reader.close)
 
-    def test_column_header_mangleSampleName(self):
+    def test_column_header_mangleSampleNameMutect1(self):
         column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|25714|25715")
         meta_header = '##MuTect="123 tumor_sample_name=25715 normal_sample_name=25714"'
         vcf_reader = MockVcfReader(metaheaders=[meta_header],
@@ -237,3 +251,24 @@ class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEquals(expected_column_header, mutect_vcf_reader.column_header)
 
+    def test_column_header_mangleSampleNameMutect2(self):
+        column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|25714|25715")
+        meta_header = '##GATKCommandLine=<ID=Mutect2,CommandLine="Mutect2  --tumor-sample 25715 --normal-sample 25714",Date="recent">'
+        vcf_reader = MockVcfReader(metaheaders=[meta_header],
+                                   column_header=column_header)
+        mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
+
+        expected_column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR")
+
+        self.assertEquals(expected_column_header, mutect_vcf_reader.column_header)
+
+    def test_column_header_mangleSampleNameMutect2IgnoresHelpFlag(self):
+        column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|25714|25715")
+        meta_header = '##GATKCommandLine=<ID=Mutect2,CommandLine="Mutect2  --tumor-sample 25715 --normal-sample 25714 --help false",Date="recent">'
+        vcf_reader = MockVcfReader(metaheaders=[meta_header],
+                                   column_header=column_header)
+        mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
+
+        expected_column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR")
+
+        self.assertEquals(expected_column_header, mutect_vcf_reader.column_header)
