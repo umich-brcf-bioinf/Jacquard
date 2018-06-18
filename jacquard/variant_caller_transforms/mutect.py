@@ -124,9 +124,10 @@ class _Mutect1Parser(object):
     def build_mutect_dict(metaheaders, normal_key, tumor_key):
         def get_mutect_header(metaheaders):
             for metaheader in metaheaders:
-                groups = _Mutect1Parser._MUTECT1_METAHEADER_DICT.search(metaheader)
-                if groups:
-                    return groups[1]
+                match = _Mutect1Parser._MUTECT1_METAHEADER_DICT.search(metaheader)
+                if match:
+                    return match.group(1)
+            return None
 
         mutect_dict = {}
         header = get_mutect_header(metaheaders)
@@ -153,9 +154,10 @@ class _Mutect2Parser(object):
     def build_mutect_dict(metaheaders, normal_key, tumor_key):
         def get_mutect_header(metaheaders):
             for metaheader in metaheaders:
-                groups = _Mutect2Parser._MUTECT2_METAHEADER_DICT.search(metaheader)
-                if groups:
-                    return groups[1]
+                match = _Mutect2Parser._MUTECT2_METAHEADER_DICT.search(metaheader)
+                if match:
+                    return match.group(1)
+            return None
 
         command_line_args = get_mutect_header(metaheaders).split()
         header_parser = argparse.ArgumentParser(add_help=False)
