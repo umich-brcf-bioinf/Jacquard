@@ -33,7 +33,7 @@ _VARSCAN_SOMATIC_HEADER = ("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|"
                            "NORMAL|TUMOR").replace("|", "\t")
 JQ_VARSCAN_TAG = "JQ_VS_"
 VARSCAN_ABBREVIATION = "VS"
-VERSION = "v2.3-2.4"
+VERSION = "v2.3 - v2.4"
 
 def _varscan_hc_fileheader(line):
     return line.startswith("chrom\tposition")

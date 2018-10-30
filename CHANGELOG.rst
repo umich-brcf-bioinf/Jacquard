@@ -1,16 +1,18 @@
 Changelog
 =========
 
-x.x.x (mm/dd/yyyy)
-------------------
-- 
+1.1.1 (10/30/2018)
+-----------------
+- Adjusted Mutect translators to:
 
+  - parse normal and tumor designations from SAMPLE metaheaders if available
+  - recognize more variations of Mutect metaheader formats
 
 1.1.0 (6/18/2018)
 -----------------
 - Adjusted *translate* to correctly parse newer versions of Mutect
 - Updated supported versions for Mutect, Strelka, Varscan
-- Fixed error in JQ_SUMMARY_DP_AVERAGE tag description 
+- Fixed error in JQ_SUMMARY_DP_AVERAGE tag description
 
 1.0.0 (6/5/2018)
 -----------------
@@ -55,12 +57,14 @@ x.x.x (mm/dd/yyyy)
  - More consistent behavior in *expand*
  - Significantly improved *merge* performance
  - Added new summary tags:
+
    - CALLERS_REPORTED_COUNT
    - CALLERS_REPORTED_LIST
    - SAMPLES_REPORTED_COUNT
    - CALLERS_PASSED_COUNT
    - CALLERS_PASSED_LIST
    - SAMPLES_PASSED_COUNT
+
  - Fixed bug in how Strelka calculated AF on indels
  - Improved command validation and error handling
  - Added project/code documentation
