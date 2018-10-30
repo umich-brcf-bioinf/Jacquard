@@ -171,19 +171,41 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(0, len(unrecognized_readers))
         self.assertEquals(1, len(vcf_readers))
 
-    def test_claim_metaheaderRecognizesOldAndNewVersionsOfMutect(self):
+    def test_claim_metaheaderRecognizesMutectV2x(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
         content1 = ["##foo", "##MuTect=2.1", "#chrom", record1]
         reader1 = MockFileReader("fileA.vcf", content1)
-        content2 = ["##foo", '##GATKCommandLine=<ID=Mutect2,CommandLine="Mutect2 ...">', "#chrom", record1]
-        reader2 = MockFileReader("fileB.vcf", content2)
-        file_readers = [reader1, reader2]
+        file_readers = [reader1]
 
         caller = mutect.Mutect()
         unrecognized_readers, vcf_readers = caller.claim(file_readers)
 
         self.assertEquals(0, len(unrecognized_readers))
-        self.assertEquals(2, len(vcf_readers))
+        self.assertEquals(1, len(vcf_readers))
+
+    def test_claim_metaheaderRecognizesMutectV3x(self):
+        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
+        content1 = ["##foo", '##GATKCommandLine.MuTect2=<ID=MuTect2,CommandLineOptions="MuTect2 ...">', "#chrom", record1]
+        reader1 = MockFileReader("fileB.vcf", content1)
+        file_readers = [reader1]
+
+        caller = mutect.Mutect()
+        unrecognized_readers, vcf_readers = caller.claim(file_readers)
+
+        self.assertEquals(0, len(unrecognized_readers))
+        self.assertEquals(1, len(vcf_readers))
+
+    def test_claim_metaheaderRecognizesMutectV4x(self):
+        record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
+        content1 = ["##foo", '##GATKCommandLine=<ID=Mutect2,CommandLine="Mutect2 ...">', "#chrom", record1]
+        reader1 = MockFileReader("fileB.vcf", content1)
+        file_readers = [reader1]
+
+        caller = mutect.Mutect()
+        unrecognized_readers, vcf_readers = caller.claim(file_readers)
+
+        self.assertEquals(0, len(unrecognized_readers))
+        self.assertEquals(1, len(vcf_readers))
 
 class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
     def test_metaheaders(self):
@@ -251,7 +273,24 @@ class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEquals(expected_column_header, mutect_vcf_reader.column_header)
 
-    def test_column_header_mangleSampleNameMutect2(self):
+    def test_column_header_mangleSampleNameMutect2UsesSampleMetalinesIfAvailable(self):
+        column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|25714|25715")
+        meta_header = '''
+##GATKCommandLine=<ID=Mutect2,CommandLine="Mutect2  --tumor-sample A --normal-sample B",Date="recent">'
+##foo=42
+##SAMPLE=<ID=NORMAL,SampleName=25714,File=foo.bam>
+##SAMPLE=<ID=TUMOR,SampleName=25715,File=bar.bam>
+##baz=42
+'''
+        vcf_reader = MockVcfReader(metaheaders=meta_header.strip().split('\n'),
+                                   column_header=column_header)
+        mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
+
+        expected_column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR")
+
+        self.assertEquals(expected_column_header, mutect_vcf_reader.column_header)
+
+    def test_column_header_mangleSampleNameMutect2UsesCommandLineIfNoSampleMetalines(self):
         column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|25714|25715")
         meta_header = '##GATKCommandLine=<ID=Mutect2,CommandLine="Mutect2  --tumor-sample 25715 --normal-sample 25714",Date="recent">'
         vcf_reader = MockVcfReader(metaheaders=[meta_header],
@@ -261,6 +300,7 @@ class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
         expected_column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR")
 
         self.assertEquals(expected_column_header, mutect_vcf_reader.column_header)
+
 
     def test_column_header_mangleSampleNameMutect2IgnoresHelpFlag(self):
         column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|25714|25715")
