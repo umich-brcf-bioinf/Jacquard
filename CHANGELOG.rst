@@ -1,6 +1,10 @@
 Changelog
 =========
 
+x.y.z (mm/dd/yyyy)
+-----------------
+- tbd
+
 1.1.1 (10/30/2018)
 -----------------
 - Adjusted Mutect translators to:
