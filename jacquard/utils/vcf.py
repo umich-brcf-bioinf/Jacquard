@@ -332,23 +332,37 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
                          ref=self.ref,
                          alt=self.alt)
 
-    def _format_field(self):
-        """Returns string representation of format field."""
+    def _format_tag_fields(self):
+        """Returns list of format tag names."""
+        tag_names = []
         format_field = "."
         if self.sample_tag_values:
             first_sample = list(self.sample_tag_values.keys())[0]
             tag_names = self.sample_tag_values[first_sample].keys()
             if tag_names:
                 format_field = ":".join(tag_names)
-        return format_field
+        return tag_names
 
-    def _sample_field(self, sample):
-        """Returns string representation of sample-format values.
+    def _sample_field(self, tag_names, sample):
+        """Returns string representation of sample-format values ordered by tag_names.
+        Tag_names must be superset of sample_tag_values.
+        Missing sample_tag_values padded as '.'.
+        If tag_names empty, returns '.'.
 
         Raises:
             KeyError: if requested sample is not defined.
+            ValueError if sample_tag_values has more keys than tag_names.
         """
-        tag_values = self.sample_tag_values[sample].values()
+        sample_tag_values = self.sample_tag_values[sample]
+        missing_tag_names = set(sample_tag_values) - set(tag_names)
+        if missing_tag_names:
+            msg = ('sample format tags are not consistent: '
+                  '{}:{}:{}:{}').format(self.chrom,
+                                        self.pos,
+                                        self.ref,
+                                        self.alt)
+            raise ValueError(msg)
+        tag_values = [sample_tag_values.get(t, '.') for t in tag_names]
         if tag_values:
             return ":".join(tag_values)
         else:
@@ -356,12 +370,15 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
 
     def text(self):
         "Returns tab-delimited, newline terminated string of VcfRecord."
+        tag_names = self._format_tag_fields()
+        format_field = '.' if not tag_names else ':'.join(tag_names)
+
         stringifier = [self.chrom, self.pos, self.vcf_id, self.ref, self.alt,
                        self.qual, self.filter, self.info,
-                       self._format_field()]
+                       format_field]
 
         for sample in self.sample_tag_values:
-            stringifier.append(self._sample_field(sample))
+            stringifier.append(self._sample_field(tag_names, sample))
 
         return "\t".join(stringifier) + "\n"
 
@@ -398,6 +415,8 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
             self.filter = ";".join([self.filter,
                                     new_filter])
 
+    #TODO: cgates: This is not a good equals method. Please adjust this to
+    # consider the full set of instance variables.
     def __eq__(self, other):
         return isinstance(other, VcfRecord) and self._key == other._key
 
@@ -469,4 +488,3 @@ class FileReader(object):
     def __lt__(self, other):
         key = natsort.natsort_keygen()
         return key(self.file_name) < key(other.file_name)
-

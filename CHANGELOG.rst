@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.1.2 (5/25/2019)
+-----------------
+- Adjusted VCF handling to correctly pad optional trailing FORMAT fields
+
 1.1.1 (10/30/2018)
 -----------------
 - Adjusted Mutect translators to:

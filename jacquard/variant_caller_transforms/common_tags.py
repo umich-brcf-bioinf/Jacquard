@@ -88,7 +88,7 @@ class ReportedTag(AbstractJacquardTag):
     it explicitly simplifies how summary tags are generated.
     """
     #pylint: disable=too-few-public-methods
-    
+
     def __init__(self, caller_abbreviation):
         super(self.__class__,
               self).__init__(caller_abbreviation,

@@ -159,14 +159,14 @@ class ReportedTagTestCase(test_case.JacquardBaseTestCase):
                           reported_tag.metaheader)
 
     def test_reported_tag_format(self):
-        reported_tag = common_tags.ReportedTag("foo_")
+        reported_tag = common_tags.ReportedTag("foo")
         actual_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2|SA.1:SA.2|SB.1:SB.2\n")
         actual_vcf_record = VcfRecord.parse_record(actual_line, ["SA", "SB"])
-        expected_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:foo_CALLER_REPORTED"
-                                   "|SA.1:SA.2:1|SB.1:SB.2\n")
+        expected_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:JQ_foo_CALLER_REPORTED"
+                                   "|SA.1:SA.2:1|SB.1:SB.2:1\n")
         expected_vcf_record = VcfRecord.parse_record(expected_line, ["SA", "SB"])
         reported_tag.add_tag_values(actual_vcf_record)
-        self.assertEquals(expected_vcf_record, actual_vcf_record)
+        self.assertEquals(expected_vcf_record.text(), actual_vcf_record.text())
 
     def test_passed_tag_metaheader(self):
         passed_tag = common_tags.PassedTag("foo")
@@ -176,12 +176,22 @@ class ReportedTagTestCase(test_case.JacquardBaseTestCase):
                            'original VCF">').format("JQ_foo_CALLER_PASSED"),
                           passed_tag.metaheader)
 
-    def test_passed_tag_format(self):
+    def test_passed_tag_format_noPass(self):
         passed_tag = common_tags.PassedTag("foo")
         actual_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2|SA.1:SA.2|SB.1:SB.2\n")
         actual_vcf_record = VcfRecord.parse_record(actual_line, ["SA", "SB"])
-        expected_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:foo_CALLER_REPORTED"
-                                   "|SA.1:SA.2:1|SB.1:SB.2\n")
+        expected_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:JQ_foo_CALLER_PASSED"
+                                   "|SA.1:SA.2:0|SB.1:SB.2:0\n")
         expected_vcf_record = VcfRecord.parse_record(expected_line, ["SA", "SB"])
         passed_tag.add_tag_values(actual_vcf_record)
-        self.assertEquals(expected_vcf_record, actual_vcf_record)
+        self.assertEquals(expected_vcf_record.text(), actual_vcf_record.text())
+
+    def test_passed_tag_format_noPass(self):
+        passed_tag = common_tags.PassedTag("foo")
+        actual_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|PASS|INFO|F1:F2|SA.1:SA.2|SB.1:SB.2\n")
+        actual_vcf_record = VcfRecord.parse_record(actual_line, ["SA", "SB"])
+        expected_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|PASS|INFO|F1:F2:JQ_foo_CALLER_PASSED"
+                                   "|SA.1:SA.2:1|SB.1:SB.2:1\n")
+        expected_vcf_record = VcfRecord.parse_record(expected_line, ["SA", "SB"])
+        passed_tag.add_tag_values(actual_vcf_record)
+        self.assertEquals(expected_vcf_record.text(), actual_vcf_record.text())
