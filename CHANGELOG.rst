@@ -8,7 +8,7 @@ Changelog
   present in metaheaders.
 
 1.1.1 (10/30/2018)
------------------
+------------------
 - Adjusted Mutect translators to:
 
   - parse normal and tumor designations from SAMPLE metaheaders if available
