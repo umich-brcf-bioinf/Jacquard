@@ -3,8 +3,11 @@
 from __future__ import print_function, absolute_import, division
 
 from collections import OrderedDict
+
 import jacquard.variant_caller_transforms.mutect as mutect
+import jacquard.utils.utils as utils
 import jacquard.utils.vcf as vcf
+
 import test.utils.test_case as test_case
 from test.utils.vcf_test import MockFileReader, MockVcfReader, MockVcfRecord
 
@@ -104,12 +107,12 @@ class DepthTagTestCase(test_case.JacquardBaseTestCase):
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.text())
 
-class SomaticTagTestCase(test_case.JacquardBaseTestCase):
+class SomaticTagSSTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)">'.format(mutect.JQ_MUTECT_TAG), mutect._SomaticTag().metaheader)
+        self.assertEqual('##FORMAT=<ID={0}HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS FORMAT tag)">'.format(mutect.JQ_MUTECT_TAG), mutect._SomaticTagSS().metaheader)
 
     def test_format_missingSSTag(self):
-        tag = mutect._SomaticTag()
+        tag = mutect._SomaticTagSS()
         line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3:{0}HC_SOM|SA.1:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n").format(mutect.JQ_MUTECT_TAG)
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
@@ -117,12 +120,78 @@ class SomaticTagTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(expected, processedVcfRecord.text())
 
     def test_format_presentSSTag(self):
-        tag = mutect._SomaticTag()
+        tag = mutect._SomaticTagSS()
         line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|SS:F2:F3|2:SA.2:SA.3|5:SB.2:SB.3\n")
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|SS:F2:F3:{0}HC_SOM|2:SA.2:SA.3:1|5:SB.2:SB.3:0\n").format(mutect.JQ_MUTECT_TAG)
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.text())
+
+class SomaticTagFilterMutectCallsTestCase(test_case.JacquardBaseTestCase):
+    def test_metaheader(self):
+        self.assertEqual(\
+'''##FORMAT=<ID={0}HC_SOM,Number=1,Type=Integer,Description="Jacquard somatic
+ status for MuTect: 0=non-somatic,1=somatic (based on FilterMutectCalls setting
+ filter to PASS)">'''.replace('\n', '').format(mutect.JQ_MUTECT_TAG),
+            mutect._SomaticTagFilterMutectCalls().metaheader)
+
+    def test_filterFailNotSomatic(self):
+        tag = mutect._SomaticTagFilterMutectCalls()
+        line = self.entab(\
+'CHROM|POS|ID|REF|ALT|QUAL|filter_failed|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n')
+        expected = self.entab(\
+'CHROM|POS|ID|REF|ALT|QUAL|filter_failed|INFO|F1:F2:F3:{0}HC_SOM|SA.1:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n'\
+            ).format(mutect.JQ_MUTECT_TAG)
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
+        tag.add_tag_values(processedVcfRecord)
+        self.assertEquals(expected, processedVcfRecord.text())
+
+    def test_filterNullNotSomatic(self):
+        tag = mutect._SomaticTagFilterMutectCalls()
+        line = self.entab(\
+'CHROM|POS|ID|REF|ALT|QUAL|.|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n')
+        expected = self.entab(\
+'CHROM|POS|ID|REF|ALT|QUAL|.|INFO|F1:F2:F3:{0}HC_SOM|SA.1:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n'\
+            ).format(mutect.JQ_MUTECT_TAG)
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
+        tag.add_tag_values(processedVcfRecord)
+        self.assertEquals(expected, processedVcfRecord.text())
+
+    def test_filterPassMissingGenotype(self):
+        tag = mutect._SomaticTagFilterMutectCalls()
+        line = self.entab(\
+'chrQ|42|ID|A|G|QUAL|PASS|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n')
+        expected = self.entab(\
+'chrQ|42|ID|A|G|QUAL|PASS|INFO|F1:F2:F3:{0}HC_SOM|SA.1:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n'\
+            ).format(mutect.JQ_MUTECT_TAG)
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
+        self.assertRaisesRegex(utils.JQException,
+                              r'Cannot assign somatic status using FilterMutectCalls.*chrQ:42:A:G',
+                              tag.add_tag_values,
+                              processedVcfRecord)
+
+    def test_filterPassBothSamplesVariants(self):
+        tag = mutect._SomaticTagFilterMutectCalls()
+        line = self.entab(\
+'CHROM|POS|ID|REF|ALT|QUAL|PASS|INFO|F1:F2:F3:GT|SA.1:SA.2:SA.3:0/1|SB.1:SB.2:SB.3:0/2\n')
+        expected = self.entab(\
+'CHROM|POS|ID|REF|ALT|QUAL|PASS|INFO|F1:F2:F3:GT:{0}HC_SOM|SA.1:SA.2:SA.3:0/1:1|SB.1:SB.2:SB.3:0/2:1\n'\
+            ).format(mutect.JQ_MUTECT_TAG)
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
+        tag.add_tag_values(processedVcfRecord)
+        self.assertEquals(expected, processedVcfRecord.text())
+
+    def test_filterPassSomeSamplesVariants(self):
+        tag = mutect._SomaticTagFilterMutectCalls()
+        line = self.entab(\
+'CHROM|POS|ID|REF|ALT|QUAL|PASS|INFO|F1:F2:F3:GT|SA.1:SA.2:SA.3:0/0|SB.1:SB.2:SB.3:0/1\n')
+        expected = self.entab(\
+'CHROM|POS|ID|REF|ALT|QUAL|PASS|INFO|F1:F2:F3:GT:{0}HC_SOM|SA.1:SA.2:SA.3:0/0:0|SB.1:SB.2:SB.3:0/1:1\n'\
+            ).format(mutect.JQ_MUTECT_TAG)
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
+        tag.add_tag_values(processedVcfRecord)
+        self.assertEquals(expected, processedVcfRecord.text())
+
 
 class MutectTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):
@@ -208,17 +277,31 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(1, len(vcf_readers))
 
 class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
-    def test_metaheaders(self):
+    def test_common_metaheaders(self):
         vcf_reader = MockVcfReader(metaheaders=["##foo", "##MuTect=123"])
         mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
         metaheaders = mutect_vcf_reader.metaheaders
 
         self.assertIn(mutect._AlleleFreqTag().metaheader, metaheaders)
         self.assertIn(mutect._DepthTag().metaheader, metaheaders)
-        self.assertIn(mutect._SomaticTag().metaheader, metaheaders)
         self.assertIn("##foo", metaheaders)
         self.assertIn("##MuTect=123", metaheaders)
         self.assertIn("##jacquard.translate.caller=MuTect", metaheaders)
+
+    def test_SomaticTagSS_metaheaders(self):
+        vcf_reader = MockVcfReader(metaheaders=["##foo", "##MuTect=123"])
+        mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
+        metaheaders = mutect_vcf_reader.metaheaders
+
+        self.assertIn(mutect._SomaticTagSS().metaheader, metaheaders)
+
+    def test_SomaticTagFilterMutectCalls_metaheaders(self):
+        vcf_reader = MockVcfReader(metaheaders=["##foo", "##MuTect=123", "##source=FilterMutectCalls"])
+        mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
+        metaheaders = mutect_vcf_reader.metaheaders
+
+        self.assertIn(mutect._SomaticTagFilterMutectCalls().metaheader, metaheaders)
+
 
     def test_vcf_records_newTagsPresent(self):
         record1 = vcf.VcfRecord(chrom="chr1",
