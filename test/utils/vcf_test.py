@@ -550,7 +550,7 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
     def testHash(self):
         sample_names = ["sampleA"]
         base = VcfRecord.parse_record(self.entab("A|B|ID|C|D|QUAL|FILTER|INFO|F|S\n"), sample_names)
-        base_equivalent = VcfRecord.parse_record(self.entab("A|B|ID|C|D|QUAL|FILTER||foo|S\n"), sample_names)
+        base_equivalent = VcfRecord.parse_record(self.entab("A|B|ID|C|D|QUAL|FILTER||F|S\n"), sample_names)
         self.assertEquals(base.__hash__(), base_equivalent.__hash__())
         record_set = set()
         record_set.add(base)
