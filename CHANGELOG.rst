@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.1.2x (MM/DD/YYYY)
+-----------------
+- 
+
 1.1.2 (7/11/2019)
 -----------------
 - Adjusted VCF handling to correctly pad optional trailing FORMAT fields
