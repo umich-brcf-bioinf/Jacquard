@@ -335,12 +335,9 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
     def _format_tag_fields(self):
         """Returns list of format tag names."""
         tag_names = []
-        format_field = "."
         if self.sample_tag_values:
             first_sample = list(self.sample_tag_values.keys())[0]
-            tag_names = self.sample_tag_values[first_sample].keys()
-            if tag_names:
-                format_field = ":".join(tag_names)
+            tag_names = list(self.sample_tag_values[first_sample].keys())
         return tag_names
 
     def _sample_field(self, tag_names, sample):
@@ -373,14 +370,14 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
         tag_names = self._format_tag_fields()
         format_field = '.' if not tag_names else ':'.join(tag_names)
 
-        stringifier = [self.chrom, self.pos, self.vcf_id, self.ref, self.alt,
-                       self.qual, self.filter, self.info,
-                       format_field]
+        fields = [self.chrom, self.pos, self.vcf_id, self.ref, self.alt,
+                  self.qual, self.filter, self.info,
+                  format_field]
 
         for sample in self.sample_tag_values:
-            stringifier.append(self._sample_field(tag_names, sample))
+            fields.append(self._sample_field(tag_names, sample))
 
-        return "\t".join(stringifier) + "\n"
+        return "\t".join(fields) + "\n"
 
     def _samples_match(self, new_sample_values):
         return set(new_sample_values.keys()) == \
