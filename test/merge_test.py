@@ -154,25 +154,6 @@ class FilterTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(merge._Filter._include_row_if_all,
                           record_filter._row_filter_strategy)
 
-#     def test_init_includeAllFlag_raisesError(self):
-#         args = Namespace(include_all=True, include_cells=True, include_rows=True)
-#         self.assertRaisesRegexp(utils.UsageError,
-#                                 "Unable to process command-line arguments. Neither --include_cells nor --include_rows can be specified if --include_all is specified.",
-#                                  merge._Filter,
-#                                  args)
-#
-#         args = Namespace(include_all=True, include_cells=False, include_rows=True)
-#         self.assertRaisesRegexp(utils.UsageError,
-#                                 "Unable to process command-line arguments. Neither --include_cells nor --include_rows can be specified if --include_all is specified.",
-#                                  merge._Filter,
-#                                  args)
-#
-#         args = Namespace(include_all=True, include_cells=True, include_rows=False)
-#         self.assertRaisesRegexp(utils.UsageError,
-#                                 "Unable to process command-line arguments. Neither --include_cells nor --include_rows can be specified if --include_all is specified.",
-#                                  merge._Filter,
-#                                  args)
-
     def test_init_includeValidAnysomaticByDefault(self):
         args = Namespace(include_all=False, include_cells="valid", include_rows="at_least_one_somatic")
         record_filter = merge._Filter(args)

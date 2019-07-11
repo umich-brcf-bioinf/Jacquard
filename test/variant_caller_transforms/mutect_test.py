@@ -165,10 +165,10 @@ class SomaticTagFilterMutectCallsTestCase(test_case.JacquardBaseTestCase):
 'chrQ|42|ID|A|G|QUAL|PASS|INFO|F1:F2:F3:{0}HC_SOM|SA.1:SA.2:SA.3:0|SB.1:SB.2:SB.3:0\n'\
             ).format(mutect.JQ_MUTECT_TAG)
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
-        self.assertRaisesRegex(utils.JQException,
-                              r'Cannot assign somatic status using FilterMutectCalls.*chrQ:42:A:G',
-                              tag.add_tag_values,
-                              processedVcfRecord)
+        self.assertRaisesRegexp(utils.JQException,
+                               r'Cannot assign somatic status using FilterMutectCalls.*chrQ:42:A:G',
+                               tag.add_tag_values,
+                               processedVcfRecord)
 
     def test_filterPassBothSamplesVariants(self):
         tag = mutect._SomaticTagFilterMutectCalls()
