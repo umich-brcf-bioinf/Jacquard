@@ -353,11 +353,18 @@ class VcfRecord(object): #pylint: disable=too-many-instance-attributes
         sample_tag_values = self.sample_tag_values[sample]
         missing_tag_names = set(sample_tag_values) - set(tag_names)
         if missing_tag_names:
-            msg = ('sample format tags are not consistent: '
-                  '{}:{}:{}:{}').format(self.chrom,
-                                        self.pos,
-                                        self.ref,
-                                        self.alt)
+            msg = ('{}:{}:{}:{}|sample format tags are not consistent: '
+                   'requested tags [{}] but sample {} has has tags [{}] '
+                   'leaving behind [{}]')\
+                 .format(self.chrom,
+                         self.pos,
+                         self.ref,
+                         self.alt,
+                         ', '.join(tag_names),
+                         sample,
+                         ', '.join(['{}={}'.format(k,v) for k,v in sample_tag_values.items()]),
+                         ', '.join(missing_tag_names)
+                         )
             raise ValueError(msg)
         tag_values = [sample_tag_values.get(t, '.') for t in tag_names]
         if tag_values:

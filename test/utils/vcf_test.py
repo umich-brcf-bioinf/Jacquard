@@ -525,12 +525,25 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(expected, record.text())
 
     def test_asTextExpandsEmptyTrailingFormatField(self):
-        sampleA = OrderedDict({'a':'1', 'b':'2'})
-        sampleB = OrderedDict({'a':'10'})
-        sample_tag_values = OrderedDict({"SampleA":sampleA, "SampleB":sampleB})
+        sampleA = OrderedDict([('a','1'), ('b','2')])
+        sampleB = OrderedDict([('a','10')])
+        sample_tag_values = OrderedDict([("SampleA", sampleA), ("SampleB", sampleB)])
         record = VcfRecord("CHROM", "POS", "REF", "ALT", "ID", "QUAL", "FILTER", "INFO", sample_tag_values)
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|a:b|1:2|10:.\n")
         self.assertEquals(expected, record.text())
+
+    def test_sample_field_whenInconsistentTags(self):
+        # FYI this should never happen in the wild, but I wanted to test the exception formatting.
+        sampleA = OrderedDict([('a','1'), ('b','2')])
+        sampleB = OrderedDict([('a','10')])
+        sample_tag_values = OrderedDict([("SampleA", sampleA), ("SampleB", sampleB)])
+        record = VcfRecord("CHROM", "POS", "REF", "ALT", "ID", "QUAL", "FILTER", "INFO", sample_tag_values)
+
+        self.assertRaisesRegexp(ValueError,
+            r'CHROM:POS:REF:ALT|sample format tags are not consistent: requested tags \[a\] but sample has has tags \[a=1, b=2\] leaving behind \[b\]',
+            record._sample_field,
+            ['a'],
+            'SampleA')
 
 
     def test_equals(self):
@@ -550,7 +563,7 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
     def testHash(self):
         sample_names = ["sampleA"]
         base = VcfRecord.parse_record(self.entab("A|B|ID|C|D|QUAL|FILTER|INFO|F|S\n"), sample_names)
-        base_equivalent = VcfRecord.parse_record(self.entab("A|B|ID|C|D|QUAL|FILTER||F|S\n"), sample_names)
+        base_equivalent = VcfRecord.parse_record(self.entab("A|B|ID|C|D|QUAL|FILTER||foo|S\n"), sample_names)
         self.assertEquals(base.__hash__(), base_equivalent.__hash__())
         record_set = set()
         record_set.add(base)
