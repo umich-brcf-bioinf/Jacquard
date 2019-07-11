@@ -35,6 +35,7 @@ setup(name='jacquard',
                         read('INSTALL.rst') + '\n\n' +
                         read('CHANGELOG.rst') + '\n\n' +
                         read('AUTHORS.rst')),
+      long_description_content_type='text/x-rst',
       url='https://github.com/umich-brcf-bioinf/Jacquard',
       author='University of Michigan Bioinformatics Core',
       author_email='bfx-jacquard@umich.edu',
