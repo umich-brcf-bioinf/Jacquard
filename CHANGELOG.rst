@@ -1,9 +1,11 @@
 Changelog
 =========
 
-x.y.z (mm/dd/yyyy)
+1.1.2 (5/29/2019)
 -----------------
-- tbd
+- Adjusted VCF handling to correctly pad optional trailing FORMAT fields
+- Adjusted Mutect translation to regard PASS as somatic when FilterMutectCalls
+  present in metaheaders.
 
 1.1.1 (10/30/2018)
 -----------------

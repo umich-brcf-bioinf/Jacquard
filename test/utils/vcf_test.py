@@ -367,12 +367,12 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         sample_names = ["SA", "SB"]
         input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F3:F1:F2|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
         record = VcfRecord.parse_record(input_line, sample_names)
-        self.assertEquals("F3:F1:F2", record._format_field())
+        self.assertEquals(["F3", "F1", "F2"], list(record._format_tag_fields()))
 
     def test_format_field_emptyWhenNoSamples(self):
         input_line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO\n")
         record = VcfRecord.parse_record(input_line, [])
-        self.assertEquals(".", record._format_field())
+        self.assertEquals([], record._format_tag_fields())
 
     def test_format_field_preservesOrderWhenAddingNewTags(self):
         sample_names = ["SA", "SB"]
@@ -380,7 +380,7 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         record = VcfRecord.parse_record(input_line, sample_names)
         record.add_sample_tag_value("Z4", {"SA" : "SA.4", "SB" : "SB.4"})
         record.add_sample_tag_value("A5", {"SA"  :"SA.A5", "SB" : "SB.A5"})
-        self.assertEquals("F3:F1:F2:Z4:A5", record._format_field())
+        self.assertEquals(["F3", "F1", "F2", "Z4", "A5"], list(record._format_tag_fields()))
 
     def test_parse_record_sample_dict(self):
         sample_names = ["SampleA", "SampleB"]
@@ -523,6 +523,28 @@ class VcfRecordTestCase(test_case.JacquardBaseTestCase):
         record = VcfRecord("CHROM", "POS", "REF", "ALT", "ID", "QUAL", "FILTER", "INFO", sample_tag_values)
         expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|.|.|.\n")
         self.assertEquals(expected, record.text())
+
+    def test_asTextExpandsEmptyTrailingFormatField(self):
+        sampleA = OrderedDict([('a','1'), ('b','2')])
+        sampleB = OrderedDict([('a','10')])
+        sample_tag_values = OrderedDict([("SampleA", sampleA), ("SampleB", sampleB)])
+        record = VcfRecord("CHROM", "POS", "REF", "ALT", "ID", "QUAL", "FILTER", "INFO", sample_tag_values)
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|a:b|1:2|10:.\n")
+        self.assertEquals(expected, record.text())
+
+    def test_sample_field_whenInconsistentTags(self):
+        # FYI this should never happen in the wild, but I wanted to test the exception formatting.
+        sampleA = OrderedDict([('a','1'), ('b','2')])
+        sampleB = OrderedDict([('a','10')])
+        sample_tag_values = OrderedDict([("SampleA", sampleA), ("SampleB", sampleB)])
+        record = VcfRecord("CHROM", "POS", "REF", "ALT", "ID", "QUAL", "FILTER", "INFO", sample_tag_values)
+
+        self.assertRaisesRegexp(ValueError,
+            r'CHROM:POS:REF:ALT|sample format tags are not consistent: requested tags \[a\] but sample has has tags \[a=1, b=2\] leaving behind \[b\]',
+            record._sample_field,
+            ['a'],
+            'SampleA')
+
 
     def test_equals(self):
         sample_names = ["sampleA"]

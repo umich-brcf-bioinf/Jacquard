@@ -78,7 +78,7 @@ class _DepthTag(common_tags.AbstractJacquardTag):
                 sample_values[samp] = vcf_record.sample_tag_values[samp]["DP"]
             vcf_record.add_sample_tag_value(self.tag_id, sample_values)
 
-class _SomaticTag(common_tags.AbstractJacquardTag):
+class _SomaticTagSS(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
     _DESCRIPTION = (\
 '''Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on SS
@@ -108,6 +108,53 @@ class _SomaticTag(common_tags.AbstractJacquardTag):
         else:
             return "0"
 
+class _SomaticTagFilterMutectCalls(common_tags.AbstractJacquardTag):
+    #pylint: disable=too-few-public-methods
+    _DESCRIPTION = (\
+'''Jacquard somatic status for MuTect: 0=non-somatic,1=somatic (based on
+ FilterMutectCalls setting filter to PASS)''').replace("\n","")
+    #pylint: disable=too-few-public-methods
+    def __init__(self):
+        super(self.__class__,
+              self).__init__(MUTECT_ABBREVIATION,
+                             common_tags.SOMATIC_TAG,
+                             self._DESCRIPTION)
+
+    def add_tag_values(self, vcf_record):
+        sample_values = {}
+        if vcf_record.filter == "PASS":
+            for sample in vcf_record.sample_tag_values:
+                sample_values[sample] = self._somatic_status(vcf_record, sample)
+        else:
+            for sample in vcf_record.sample_tag_values:
+                sample_values[sample] = "0"
+        vcf_record.add_sample_tag_value(self.tag_id, sample_values)
+
+    @staticmethod
+    def _somatic_status(vcf_record, sample):
+        tag_values = vcf_record.sample_tag_values[sample]
+        try:
+            gt = tag_values["GT"]
+        except KeyError:
+            msg_fmt = ('Cannot assign somatic status using FilterMutectCalls '
+                       'when sample GT absent: '
+                       '(CHROM:POS:REF:ALT={}:{}:{}:{})')
+            msg = msg_fmt.format(vcf_record.chrom,
+                                 vcf_record.pos,
+                                 vcf_record.ref,
+                                 vcf_record.alt)
+            raise utils.JQException(msg)
+
+        if gt == "0/0":
+            return "0"
+        else:
+            return "1"
+
+def _build_somatic_tag(metaheaders):
+    if "##source=FilterMutectCalls" in metaheaders:
+        return _SomaticTagFilterMutectCalls()
+    else:
+        return _SomaticTagSS()
 
 class _Mutect1Parser(object):
     _MUTECT1_METAHEADER_REGEX = re.compile('^##MuTect=')
@@ -294,7 +341,7 @@ class _MutectVcfReader(object):
                      common_tags.PassedTag(MUTECT_ABBREVIATION),
                      _AlleleFreqTag(),
                      _DepthTag(),
-                     _SomaticTag(),
+                     _build_somatic_tag(vcf_reader.metaheaders),
                      _GenotypeTag()]
 
     def _get_new_metaheaders(self):
