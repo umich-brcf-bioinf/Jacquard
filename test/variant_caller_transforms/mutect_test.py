@@ -61,10 +61,27 @@ class GenotypeTagTestCase(test_case.JacquardBaseTestCase):
 
 class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
     def test_metaheader(self):
-        self.assertEqual('##FORMAT=<ID={0}AF,Number=A,Type=Float,Description="Jacquard allele frequency for MuTect: Decimal allele frequency rounded to 4 digits (based on FA)">'.format(mutect.JQ_MUTECT_TAG), mutect._AlleleFreqTag().metaheader)
+        expected = ('##FORMAT=<ID={0}AF,Number=A,Type=Float,'
+                    'Description="Jacquard allele frequency for MuTect: '
+                    'Decimal allele frequency rounded to 4 digits')\
+                    .format(mutect.JQ_MUTECT_TAG)
+        old_style_metaheaders = ['##FORMAT=<ID=FA,...>']
+        self.assertEqual(expected + ' (based on FA)">',
+                         mutect._AlleleFreqTag(old_style_metaheaders).metaheader)
+        new_style_metaheaders = ['##FORMAT=<ID=AF,...>']
+        self.assertEqual(expected + ' (based on AF)">',
+                         mutect._AlleleFreqTag(new_style_metaheaders).metaheader)
+
+    def test_missingAlleleFreqTagInInputMetaheader(self):
+        inconclusive_metaheaders = []
+        self.assertRaisesRegexp(utils.JQException,
+                               r'could not determine the correct allele frequency FORMAT tag',
+                               mutect._AlleleFreqTag,
+                               inconclusive_metaheaders)
 
     def test_format_missingAFTag(self):
-        tag = mutect._AlleleFreqTag()
+        new_style_metaheaders = ['##FORMAT=<ID=AF,...>']
+        tag = mutect._AlleleFreqTag(new_style_metaheaders)
         line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|F1:F2:F3|SA.1:SA.2:SA.3|SB.1:SB.2:SB.3\n")
         originalVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
@@ -72,17 +89,19 @@ class AlleleFreqTagTestCase(test_case.JacquardBaseTestCase):
         self.assertEquals(originalVcfRecord.text(), processedVcfRecord.text())
 
     def test_format_presentAFTag(self):
-        tag = mutect._AlleleFreqTag()
-        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3|0.34567:SA.2:SA.3|0.76543:SB.2:SB.3\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3:{0}AF|0.34567:SA.2:SA.3:0.3457|0.76543:SB.2:SB.3:0.7654\n".format(mutect.JQ_MUTECT_TAG))
+        new_style_metaheaders = ['##FORMAT=<ID=AF,...>']
+        tag = mutect._AlleleFreqTag(new_style_metaheaders)
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|AF:F2:F3|0.34567:SA.2:SA.3|0.76543:SB.2:SB.3\n")
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|AF:F2:F3:{0}AF|0.34567:SA.2:SA.3:0.3457|0.76543:SB.2:SB.3:0.7654\n".format(mutect.JQ_MUTECT_TAG))
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.text())
 
     def test_format_multAlt(self):
-        tag = mutect._AlleleFreqTag()
-        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3|0.5,0.8:SA.2:SA.3|0.7,0.6:SB.2:SB.3\n")
-        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FA:F2:F3:{0}AF|0.5,0.8:SA.2:SA.3:0.5,0.8|0.7,0.6:SB.2:SB.3:0.7,0.6\n".format(mutect.JQ_MUTECT_TAG))
+        new_style_metaheaders = ['##FORMAT=<ID=AF,...>']
+        tag = mutect._AlleleFreqTag(new_style_metaheaders)
+        line = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|AF:F2:F3|0.5,0.8:SA.2:SA.3|0.7,0.6:SB.2:SB.3\n")
+        expected = self.entab("CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|AF:F2:F3:{0}AF|0.5,0.8:SA.2:SA.3:0.5,0.8|0.7,0.6:SB.2:SB.3:0.7,0.6\n".format(mutect.JQ_MUTECT_TAG))
         processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.text())
@@ -201,7 +220,7 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
     def test_claim(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
         content1 = ["##foo", "##source=strelka", "#chrom", record1]
-        content2 = ["##foo", "##MuTect=123", "#chrom", record1]
+        content2 = ["##foo", "##MuTect=123", "##FORMAT=<ID=AF,...>", "#chrom", record1]
         reader1 = MockFileReader("fileA.vcf", content1)
         reader2 = MockFileReader("fileB.vcf", content2)
         file_readers = [reader1, reader2]
@@ -230,7 +249,7 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
 
     def test_claim_vcfExtensionCaseInsensitive(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
-        content1 = ["##foo", "##MuTect=123", "#chrom", record1]
+        content1 = ["##foo", "##MuTect=123", "##FORMAT=<ID=AF,...>", "#chrom", record1]
         reader1 = MockFileReader("fileA.VcF", content1)
         file_readers = [reader1]
 
@@ -242,7 +261,11 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
 
     def test_claim_metaheaderRecognizesMutectV2x(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
-        content1 = ["##foo", "##MuTect=2.1", "#chrom", record1]
+        content1 = ["##foo",
+                    "##MuTect=2.1",
+                    "##FORMAT=<ID=FA,...>",
+                    "#chrom",
+                    record1]
         reader1 = MockFileReader("fileA.vcf", content1)
         file_readers = [reader1]
 
@@ -254,7 +277,11 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
 
     def test_claim_metaheaderRecognizesMutectV3x(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
-        content1 = ["##foo", '##GATKCommandLine.MuTect2=<ID=MuTect2,CommandLineOptions="MuTect2 ...">', "#chrom", record1]
+        content1 = ["##foo",
+                    '##GATKCommandLine.MuTect2=<ID=MuTect2,CommandLineOptions="MuTect2 ...">',
+                    "##FORMAT=<ID=AF,...>",
+                    "#chrom",
+                    record1]
         reader1 = MockFileReader("fileB.vcf", content1)
         file_readers = [reader1]
 
@@ -266,7 +293,11 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
 
     def test_claim_metaheaderRecognizesMutectV4x(self):
         record1 = "chr1\t.\t.\t.\t.\t.\t.\t.\t."
-        content1 = ["##foo", '##GATKCommandLine=<ID=Mutect2,CommandLine="Mutect2 ...">', "#chrom", record1]
+        content1 = ["##foo",
+                    '##GATKCommandLine=<ID=Mutect2,CommandLine="Mutect2 ...">',
+                    "##FORMAT=<ID=AF,...>",
+                    "#chrom",
+                    record1]
         reader1 = MockFileReader("fileB.vcf", content1)
         file_readers = [reader1]
 
@@ -278,25 +309,32 @@ class MutectTestCase(test_case.JacquardBaseTestCase):
 
 class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
     def test_common_metaheaders(self):
-        vcf_reader = MockVcfReader(metaheaders=["##foo", "##MuTect=123"])
+        vcf_reader = MockVcfReader(metaheaders=["##foo",
+                                                "##MuTect=123",
+                                                '##FORMAT=<ID=FA,...>'])
         mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
         metaheaders = mutect_vcf_reader.metaheaders
 
-        self.assertIn(mutect._AlleleFreqTag().metaheader, metaheaders)
+        self.assertIn(mutect._AlleleFreqTag(vcf_reader.metaheaders).metaheader, metaheaders)
         self.assertIn(mutect._DepthTag().metaheader, metaheaders)
         self.assertIn("##foo", metaheaders)
         self.assertIn("##MuTect=123", metaheaders)
         self.assertIn("##jacquard.translate.caller=MuTect", metaheaders)
 
     def test_SomaticTagSS_metaheaders(self):
-        vcf_reader = MockVcfReader(metaheaders=["##foo", "##MuTect=123"])
+        vcf_reader = MockVcfReader(metaheaders=["##foo",
+                                                "##MuTect=123",
+                                                '##FORMAT=<ID=FA,...>'])
         mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
         metaheaders = mutect_vcf_reader.metaheaders
 
         self.assertIn(mutect._SomaticTagSS().metaheader, metaheaders)
 
     def test_SomaticTagFilterMutectCalls_metaheaders(self):
-        vcf_reader = MockVcfReader(metaheaders=["##foo", "##MuTect=123", "##source=FilterMutectCalls"])
+        vcf_reader = MockVcfReader(metaheaders=["##foo",
+                                                "##MuTect=123",
+                                                '##FORMAT=<ID=FA,...>',
+                                                "##source=FilterMutectCalls"])
         mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
         metaheaders = mutect_vcf_reader.metaheaders
 
@@ -316,7 +354,8 @@ class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
                                 alt="G",
                                 sample_tag_values={"sampleA": {"FA": "0.54"},
                                                    "sampleB": {"FA": "0.76"}})
-        vcf_reader = MockVcfReader(records=[record1, record2])
+        vcf_reader = MockVcfReader(metaheaders=['##FORMAT=<ID=FA,...>'],
+                                   records=[record1, record2])
 
         mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
         vcf_records = [record for record in mutect_vcf_reader.vcf_records()]
@@ -337,7 +376,9 @@ class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
 
 
     def test_open_and_close(self):
-        vcf_reader = MockVcfReader(metaheaders=["##foo", "##MuTect=123"])
+        vcf_reader = MockVcfReader(metaheaders=["##foo",
+                                                "##MuTect=123",
+                                                '##FORMAT=<ID=FA,...>'])
         mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
         mutect_vcf_reader.open()
         mutect_vcf_reader.close()
@@ -347,9 +388,11 @@ class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
 
     def test_column_header_mangleSampleNameMutect1(self):
         column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|25714|25715")
-        meta_header = '##MuTect="123 tumor_sample_name=25715 normal_sample_name=25714"'
-        vcf_reader = MockVcfReader(metaheaders=[meta_header],
+        metaheaders = ['##MuTect="123 tumor_sample_name=25715 normal_sample_name=25714"',
+                       '##FORMAT=<ID=FA,...>',]
+        vcf_reader = MockVcfReader(metaheaders=metaheaders,
                                    column_header=column_header)
+
         mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
 
         expected_column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR")
@@ -360,6 +403,7 @@ class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
         column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|25714|25715")
         meta_header = '''
 ##GATKCommandLine=<ID=Mutect2,CommandLine="Mutect2  --tumor-sample A --normal-sample B",Date="recent">'
+##FORMAT=<ID=FA,...>
 ##foo=42
 ##SAMPLE=<ID=NORMAL,SampleName=25714,File=foo.bam>
 ##SAMPLE=<ID=TUMOR,SampleName=25715,File=bar.bam>
@@ -375,8 +419,9 @@ class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
 
     def test_column_header_mangleSampleNameMutect2UsesCommandLineIfNoSampleMetalines(self):
         column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|25714|25715")
-        meta_header = '##GATKCommandLine=<ID=Mutect2,CommandLine="Mutect2  --tumor-sample 25715 --normal-sample 25714",Date="recent">'
-        vcf_reader = MockVcfReader(metaheaders=[meta_header],
+        metaheaders = ['##GATKCommandLine=<ID=Mutect2,CommandLine="Mutect2  --tumor-sample 25715 --normal-sample 25714",Date="recent">',
+                       '##FORMAT=<ID=FA,...>',]
+        vcf_reader = MockVcfReader(metaheaders=metaheaders,
                                    column_header=column_header)
         mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
 
@@ -387,9 +432,11 @@ class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
 
     def test_column_header_mangleSampleNameMutect2IgnoresHelpFlag(self):
         column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|25714|25715")
-        meta_header = '##GATKCommandLine=<ID=Mutect2,CommandLine="Mutect2  --tumor-sample 25715 --normal-sample 25714 --help false",Date="recent">'
-        vcf_reader = MockVcfReader(metaheaders=[meta_header],
+        metaheaders = ['##GATKCommandLine=<ID=Mutect2,CommandLine="Mutect2  --tumor-sample 25715 --normal-sample 25714 --help false",Date="recent">',
+                       '##FORMAT=<ID=FA,...>',]
+        vcf_reader = MockVcfReader(metaheaders=metaheaders,
                                    column_header=column_header)
+
         mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
 
         expected_column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR")

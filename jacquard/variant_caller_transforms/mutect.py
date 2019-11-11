@@ -40,19 +40,31 @@ class _GenotypeTag(common_tags.AbstractJacquardTag):
 
 class _AlleleFreqTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
-    def __init__(self):
+    def __init__(self, metaheaders):
+        self.source_tag = self._determine_source_tag(metaheaders)
         super(self.__class__,
               self).__init__(MUTECT_ABBREVIATION,
                              common_tags.ALLELE_FREQ_TAG,
                              ('Jacquard allele frequency for MuTect: '
                               'Decimal allele frequency rounded to 4 digits '
-                              '(based on FA)'))
+                              '(based on {})').format(self.source_tag))
+
+    @staticmethod
+    def _determine_source_tag(metaheaders):
+        for header in metaheaders:
+            if header.startswith('##FORMAT=<ID=AF,'):
+                return 'AF'
+            if header.startswith('##FORMAT=<ID=FA,'):
+                return 'FA'
+        msg = ('could not determine the correct allele frequency '
+               'FORMAT tag in the source MuTect file')
+        raise utils.JQException(msg)
 
     def add_tag_values(self, vcf_record):
-        if "FA" in vcf_record.format_tags:
+        if self.source_tag in vcf_record.format_tags:
             sample_values = {}
             for sample in vcf_record.sample_tag_values:
-                freq = vcf_record.sample_tag_values[sample]["FA"].split(",")
+                freq = vcf_record.sample_tag_values[sample][self.source_tag].split(",")
                 sample_values[sample] = self._standardize_af(freq)
             vcf_record.add_sample_tag_value(self.tag_id, sample_values)
 
@@ -339,7 +351,7 @@ class _MutectVcfReader(object):
         self._caller = Mutect()
         self.tags = [common_tags.ReportedTag(MUTECT_ABBREVIATION),
                      common_tags.PassedTag(MUTECT_ABBREVIATION),
-                     _AlleleFreqTag(),
+                     _AlleleFreqTag(vcf_reader.metaheaders),
                      _DepthTag(),
                      _build_somatic_tag(vcf_reader.metaheaders),
                      _GenotypeTag()]
