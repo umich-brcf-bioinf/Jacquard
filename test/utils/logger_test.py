@@ -187,7 +187,10 @@ class LoggerTestCase(unittest.TestCase):
         logger.info("bar {}/{}/{}", "1", "2")
 
         root_logger = logger.logging.getLogger()
-        self.assertEquals(["root: INFO: Malformed log message (IndexError: tuple index out of range)|bar {}/{}/{}|['1', '2']"], root_logger.handlers[0].buffer)
+        errmsg = root_logger.handlers[0].buffer[0]
+        self.assertRegexpMatches(
+            r"root: INFO: Malformed log message .*\|bar {}/{}/{}\|['1', '2']",
+            errmsg)
 
 class LoggerTestCaseDebugOnly(unittest.TestCase):
     def setUp(self):
