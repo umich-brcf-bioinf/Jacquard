@@ -1,9 +1,9 @@
 Changelog
 =========
 
-1.1.2x (MM/DD/YYYY)
+1.1.3 (9/24/2020)
 -----------------
-- Adjusted Mutect handling to accommodate either older FA or newer AF 
+- Adjusted Mutect handling to accommodate either older FA or newer AF
   allele frequency tags.
 
 1.1.2 (7/11/2019)
