@@ -223,22 +223,30 @@ class _HCGenotypeTag(common_tags.AbstractJacquardTag):
                               'from JQ_*_GT and JQ_*_CALLER_PASSED). Majority '
                               'rules; ties go to the least unusual variant '
                               '(0/1>0/2>1/1). Variants which failed their '
-                              'filter are ignored.'))
+                              'filter are ignored. Phasing is removed.'))
 
     @staticmethod
-    def _prioritize_genotype(values):
+    def _prioritize_genotype(gts):
+
+        def _dephase(gt):
+            result = gt
+            if '|' in gt:
+                result = '/'.join(sorted(gt.split('|')))
+            return result
+
         def _break_ties(value):
             if value == "0/0":
                 return "99"
             return value
 
+        dephased_gts = list(map(_dephase, gts))
         count = defaultdict(int)
-        for value in values:
-            count[value] += 1
+        for gt in dephased_gts:
+            count[gt] += 1
 
-        sorted_values = sorted(values,
-                               key=lambda x: (-count[x], _break_ties(x)))
-        return sorted_values[0]
+        sorted_gts = sorted(dephased_gts,
+                            key=lambda x: (-count[x], _break_ties(x)))
+        return sorted_gts[0]
 
     def add_tag_values(self, vcf_record):
         new_sample_tag_values = {}

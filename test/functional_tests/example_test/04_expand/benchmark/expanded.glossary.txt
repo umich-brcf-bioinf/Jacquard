@@ -22,7 +22,7 @@ JQ_SUMMARY_CALLERS_REPORTED_LIST	FORMAT	Comma-separated list variant callers whi
 JQ_SUMMARY_DP_AVERAGE	FORMAT	Average allele frequency across recognized variant callers that reported frequency for this position; rounded to integer [round(average(JQ_*_DP))].
 JQ_SUMMARY_DP_RANGE	FORMAT	Max(depth) - min (depth) across recognized callers.
 JQ_SUMMARY_DP_ZSCORE	FORMAT	Concordance of reported depth across callers: [(this DP range - mean DP range)/standard dev(all DP ranges)]. Values with null or missing DP range will be assigned zscore of '.'.
-JQ_SUMMARY_HC_GT	FORMAT	High confidence consensus genotype (inferred from JQ_*_GT and JQ_*_CALLER_PASSED). Majority rules; ties go to the least unusual variant (0/1>0/2>1/1). Variants which failed their filter are ignored.
+JQ_SUMMARY_HC_GT	FORMAT	High confidence consensus genotype (inferred from JQ_*_GT and JQ_*_CALLER_PASSED). Majority rules; ties go to the least unusual variant (0/1>0/2>1/1). Variants which failed their filter are ignored. Phasing is removed.
 JQ_SUMMARY_SAMPLES_PASSED_COUNT	INFO	Count of samples where a variant caller passed the filter in any of the Jacquard tagged VCFs
 JQ_SUMMARY_SAMPLES_REPORTED_COUNT	INFO	Count of samples where this variant appeared in any of the Jacquard tagged VCFs (regardless of quality/filtering)
 JQ_SUMMARY_SOM_COUNT	FORMAT	Count of recognized variant callers that reported confident somatic call for this sample-position.

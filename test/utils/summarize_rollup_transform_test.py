@@ -181,7 +181,7 @@ class HCGenotypeTagTestCase(test_case.JacquardBaseTestCase):
     _TAG_ID = "{}HC_GT".format(summarize_caller.JQ_SUMMARY_TAG)
 
     def test_metaheader(self):
-        self.assertEquals('##FORMAT=<ID={}HC_GT,Number=1,Type=String,Description="High confidence consensus genotype (inferred from JQ_*_GT and JQ_*_CALLER_PASSED). Majority rules; ties go to the least unusual variant (0/1>0/2>1/1). Variants which failed their filter are ignored.">'.format(summarize_caller.JQ_SUMMARY_TAG),
+        self.assertEquals('##FORMAT=<ID={}HC_GT,Number=1,Type=String,Description="High confidence consensus genotype (inferred from JQ_*_GT and JQ_*_CALLER_PASSED). Majority rules; ties go to the least unusual variant (0/1>0/2>1/1). Variants which failed their filter are ignored. Phasing is removed.">'.format(summarize_caller.JQ_SUMMARY_TAG),
                           summarize_caller._HCGenotypeTag().metaheader)
 
     def test_add_tag_values(self):
@@ -225,10 +225,23 @@ class HCGenotypeTagTestCase(test_case.JacquardBaseTestCase):
         tag = summarize_caller._HCGenotypeTag()
         self.assertEquals("0/1", tag._prioritize_genotype(["0/1"]))
         self.assertEquals("0/1", tag._prioritize_genotype(["0/0", "0/1"]))
-        self.assertEquals("1/1", tag._prioritize_genotype(["0/0", "1/1"]))
+        self.assertEquals("0/0", tag._prioritize_genotype(["0/0", "0/0", "1/1"]))
         self.assertEquals("1/1", tag._prioritize_genotype(["1/1", "1/1", "0/1"]))
         self.assertEquals("0/1", tag._prioritize_genotype(["1/1", "0/1", "0/1"]))
-        self.assertEquals("0/1", tag._prioritize_genotype(["0/1", "0/2"]))
+        self.assertEquals("0/1", tag._prioritize_genotype(["0/1", "0/2", "1/1", "1/2", "2/2"]))
+
+    def test_prioritize_genotype_dephases(self):
+        tag = summarize_caller._HCGenotypeTag()
+        self.assertEquals("0/1", tag._prioritize_genotype(["0|1"]))
+        self.assertEquals("0/1", tag._prioritize_genotype(["1|0"]))
+        self.assertEquals("1/3", tag._prioritize_genotype(["3|1"]))
+        self.assertEquals("0/0", tag._prioritize_genotype(["0|0", "0/0"]))
+        self.assertEquals("0/1", tag._prioritize_genotype(["0|0", "0|1", "1|0"]))
+        self.assertEquals("1/1", tag._prioritize_genotype(["0|0", "1|1"]))
+        self.assertEquals("1/1", tag._prioritize_genotype(["1|1", "1|1", "0|1"]))
+        self.assertEquals("0/1", tag._prioritize_genotype(["1|1", "0|1", "1|0"]))
+        self.assertEquals("0/1", tag._prioritize_genotype(["0|1", "0|2"]))
+
 
 class AlleleFreqRangeTagTestCase(test_case.JacquardBaseTestCase):
     _TAG_ID = "{}AF_RANGE".format(summarize_caller.JQ_SUMMARY_TAG)

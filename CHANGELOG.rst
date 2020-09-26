@@ -1,6 +1,12 @@
 Changelog
 =========
 
+x.y.z (MM/DD/YYYY)
+-----------------
+- Adjusted Mutect handling to correctly marked phased normal (0|0)
+  as non-somatic.
+- Adjusted summarize to ignore phasing when creating consensus GT
+
 1.1.3 (9/24/2020)
 -----------------
 - Adjusted Mutect handling to accommodate either older FA or newer AF

@@ -211,6 +211,17 @@ class SomaticTagFilterMutectCallsTestCase(test_case.JacquardBaseTestCase):
         tag.add_tag_values(processedVcfRecord)
         self.assertEquals(expected, processedVcfRecord.text())
 
+    def test_filterPassSomeSamplesPhasedVariants(self):
+        tag = mutect._SomaticTagFilterMutectCalls()
+        line = 'CHROM^POS^ID^REF^ALT^QUAL^PASS^INFO^F1:F2:F3:GT^SA.1:SA.2:SA.3:0|0^SB.1:SB.2:SB.3:0|1\n'.replace('^', '\t')
+        expected = 'CHROM^POS^ID^REF^ALT^QUAL^PASS^INFO^F1:F2:F3:GT:{0}HC_SOM^SA.1:SA.2:SA.3:0|0:0^SB.1:SB.2:SB.3:0|1:1\n'\
+            .replace('^', '\t')\
+            .format(mutect.JQ_MUTECT_TAG)
+        processedVcfRecord = vcf.VcfRecord.parse_record(line, ["SA", "SB"])
+        tag.add_tag_values(processedVcfRecord)
+        self.assertEquals(expected, processedVcfRecord.text())
+
+
 
 class MutectTestCase(test_case.JacquardBaseTestCase):
     def setUp(self):

@@ -157,7 +157,7 @@ class _SomaticTagFilterMutectCalls(common_tags.AbstractJacquardTag):
                                  vcf_record.alt)
             raise utils.JQException(msg)
 
-        if gt == "0/0":
+        if gt == "0/0" or gt == '0|0':
             return "0"
         else:
             return "1"
