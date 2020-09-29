@@ -138,8 +138,6 @@ class _HCTag(object):
     def __init__(self, file_reader):
         #pylint: disable=line-too-long
         self.metaheader = ('##FILTER=<ID={},'
-                           'Number=1,'
-                           'Type=Flag,'
                            'Description="Jacquard high-confidence somatic flag for VarScan. Based on intersection with filtered VarScan variants">')\
                            .format(self._TAG_ID)
         self._hc_loci = self._parse_file_reader(file_reader)

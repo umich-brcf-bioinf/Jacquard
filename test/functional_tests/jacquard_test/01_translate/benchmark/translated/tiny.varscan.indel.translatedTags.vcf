@@ -5,7 +5,7 @@
 ##FILTER=<ID=JQ_EXCLUDE_MALFORMED_ALT,Description="The the format of the alternate allele value for this variant record does not comply with VCF standard.">
 ##FILTER=<ID=JQ_EXCLUDE_MALFORMED_REF,Description="The format of the reference value for this variant record does not comply with VCF standard.">
 ##FILTER=<ID=JQ_EXCLUDE_MISSING_ALT,Description="The alternate allele is missing for this variant record.">
-##FILTER=<ID=JQ_VS_LOW_CONFIDENCE,Number=1,Type=Flag,Description="Jacquard high-confidence somatic flag for VarScan. Based on intersection with filtered VarScan variants">
+##FILTER=<ID=JQ_VS_LOW_CONFIDENCE,Description="Jacquard high-confidence somatic flag for VarScan. Based on intersection with filtered VarScan variants">
 ##FILTER=<ID=indelError,Description="Likely artifact due to indel reads at this position">
 ##FILTER=<ID=str10,Description="Less than 10% or more than 90% of variant supporting reads on one strand">
 ##INFO=<ID=DP,Number=1,Type=Integer,Description="Total depth of quality bases">

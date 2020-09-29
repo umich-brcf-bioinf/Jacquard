@@ -3,9 +3,10 @@ Changelog
 
 x.y.z (MM/DD/YYYY)
 -----------------
+- Adjusted summarize to ignore phasing when creating consensus GT
 - Adjusted Mutect handling to correctly marked phased normal (0|0)
   as non-somatic.
-- Adjusted summarize to ignore phasing when creating consensus GT
+- Removed extraneous fields from JQ_VS_LOW_CONFIDENCE filter metaheader.
 
 1.1.3 (9/24/2020)
 -----------------
