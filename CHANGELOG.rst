@@ -1,6 +1,11 @@
 Changelog
 =========
 
+x.x.x (MM/DD/YYYY)
+-----------------
+-
+
+
 1.1.4 (9/29/2020)
 -----------------
 - Adjusted summarize to ignore phasing when creating consensus GT.
