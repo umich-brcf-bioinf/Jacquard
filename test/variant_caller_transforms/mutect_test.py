@@ -410,7 +410,29 @@ class MutectVcfReaderTestCase(test_case.JacquardBaseTestCase):
 
         self.assertEquals(expected_column_header, mutect_vcf_reader.column_header)
 
-    def test_column_header_mangleSampleNameMutect2UsesSampleMetalinesIfAvailable(self):
+    def test_column_header_mangleSampleNameMutect2UsesNewSampleMetalinesIfAvailable(self):
+        column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NormalC|TumorC")
+        meta_header = '''
+##GATKCommandLine=<ID=Mutect2,CommandLine="Mutect2  --tumor-sample decoyTumorA --normal-sample decoyNormalA",Date="recent">'
+##FORMAT=<ID=FA,...>
+##foo=42
+##SAMPLE=<ID=NORMAL,SampleName=decoyNormalB,File=foo.bam>
+##SAMPLE=<ID=TUMOR,SampleName=decoyTumorB,File=bar.bam>
+##normal_sample=NormalC
+##tumor_sample=TumorC
+##baz=42
+'''
+        vcf_reader = MockVcfReader(metaheaders=meta_header.strip().split('\n'),
+                                   column_header=column_header)
+        mutect_vcf_reader = mutect._MutectVcfReader(vcf_reader)
+
+        expected_column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|NORMAL|TUMOR")
+
+        self.assertEquals(expected_column_header, mutect_vcf_reader.column_header)
+
+
+
+    def test_column_header_mangleSampleNameMutect2UsesOldSampleMetalinesIfAvailable(self):
         column_header = self.entab("#CHROM|POS|ID|REF|ALT|QUAL|FILTER|INFO|FORMAT|25714|25715")
         meta_header = '''
 ##GATKCommandLine=<ID=Mutect2,CommandLine="Mutect2  --tumor-sample A --normal-sample B",Date="recent">'

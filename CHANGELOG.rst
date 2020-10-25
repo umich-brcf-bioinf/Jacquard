@@ -3,7 +3,7 @@ Changelog
 
 x.x.x (MM/DD/YYYY)
 -----------------
--
+- Adjusted Mutect translate to handle new style tumor/normal sample metaheaders
 
 
 1.1.4 (9/29/2020)

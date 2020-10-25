@@ -14,7 +14,7 @@ import jacquard.utils.vcf as vcf
 
 JQ_MUTECT_TAG = "JQ_MT_"
 MUTECT_ABBREVIATION = "MT"
-VERSION = "v1.1 - v4.0"
+VERSION = "v1.1 - v2.2"
 
 class _GenotypeTag(common_tags.AbstractJacquardTag):
     #pylint: disable=too-few-public-methods
@@ -176,8 +176,11 @@ class _Mutect1Parser(object):
 
 
     @staticmethod
-    def is_mutect_metaheader(metaheader):
-        return _Mutect1Parser._MUTECT1_METAHEADER_REGEX.search(metaheader)
+    def is_mutect_metaheader(metaheaders):
+        for metaheader in metaheaders:
+            if _Mutect1Parser._MUTECT1_METAHEADER_REGEX.search(metaheader):
+                return True
+        return False
 
     @staticmethod
     def build_mutect_dict(metaheaders, normal_key, tumor_key):
@@ -203,19 +206,39 @@ class _Mutect1Parser(object):
 
 class _Mutect2Parser(object):
     _MUTECT2_METAHEADER_REGEX = re.compile('^##GATKCommandLine.*?=<.*ID=Mu[tT]ect2')
-    _MUTECT2_METAHEADER_SAMPLE_REGEX = re.compile('^##SAMPLE=<ID=(.*?),SampleName=(.*?),.*')
     _MUTECT2_METAHEADER_COMMAND_REGEX = re.compile('^##GATKCommandLine.*?=<.*ID=Mu[tT]ect2.*CommandLine.*?="(.*?)"')
+    _MUTECT2_METAHEADER_OLD_SAMPLE_REGEX = re.compile('^##SAMPLE=<ID=(.*?),SampleName=(.*?),.*')
+    _MUTECT2_DICT_KEY_NORMAL = 'normal_sample'
+    _MUTECT2_DICT_KEY_TUMOR = 'tumor_sample'
+    _MUTECT2_METAHEADER_NEW_SAMPLE_REGEX = re.compile(
+        '^##(' + _MUTECT2_DICT_KEY_NORMAL + '|' + _MUTECT2_DICT_KEY_TUMOR + ')=(.*)')
+
 
     @staticmethod
-    def is_mutect_metaheader(metaheader):
-        return _Mutect2Parser._MUTECT2_METAHEADER_REGEX.search(metaheader)
+    def is_mutect_metaheader(metaheaders):
+        for metaheader in metaheaders:
+            if _Mutect2Parser._MUTECT2_METAHEADER_REGEX.search(metaheader):
+                return True
+        return False
 
     @staticmethod
-    def _mutect_dict_from_sample_metalines(metaheaders, normal_key, tumor_key):
+    def _mutect_dict_from_new_sample_metalines(metaheaders, normal_key, tumor_key):
+        mutect_keys = {_Mutect2Parser._MUTECT2_DICT_KEY_NORMAL: normal_key,
+                       _Mutect2Parser._MUTECT2_DICT_KEY_TUMOR: tumor_key}
+        mutect_dict = {}
+        for metaheader in metaheaders:
+            match = _Mutect2Parser._MUTECT2_METAHEADER_NEW_SAMPLE_REGEX.search(metaheader)
+            if match:
+                key = mutect_keys[match.group(1)]
+                mutect_dict[key] = match.group(2)
+        return mutect_dict
+
+    @staticmethod
+    def _mutect_dict_from_old_sample_metalines(metaheaders, normal_key, tumor_key):
         mutect_keys = {'NORMAL': normal_key, 'TUMOR': tumor_key}
         mutect_dict = {}
         for metaheader in metaheaders:
-            match = _Mutect2Parser._MUTECT2_METAHEADER_SAMPLE_REGEX.search(metaheader)
+            match = _Mutect2Parser._MUTECT2_METAHEADER_OLD_SAMPLE_REGEX.search(metaheader)
             if match and match.group(1) in mutect_keys:
                 key = mutect_keys[match.group(1)]
                 mutect_dict[key] = match.group(2)
@@ -244,17 +267,28 @@ class _Mutect2Parser(object):
 
     @staticmethod
     def build_mutect_dict(metaheaders, normal_key, tumor_key):
-        mutect_dict = _Mutect2Parser._mutect_dict_from_sample_metalines(metaheaders, normal_key, tumor_key)
-        if not mutect_dict:
-            mutect_dict = _Mutect2Parser._mutect_dict_from_command_line(metaheaders, normal_key, tumor_key)
-        return mutect_dict
+        normal_tumor_strategies = [
+                _Mutect2Parser._mutect_dict_from_new_sample_metalines,
+                _Mutect2Parser._mutect_dict_from_old_sample_metalines,
+                _Mutect2Parser._mutect_dict_from_command_line,
+                ]
+        for strategy in normal_tumor_strategies:
+            mutect_dict = strategy(metaheaders, normal_key, tumor_key)
+            if mutect_dict:
+                return mutect_dict
+        #
+        # mutect_dict = _Mutect2Parser._mutect_dict_from_new_sample_metalines(metaheaders, normal_key, tumor_key)
+        # if not mutect_dict:
+        #     mutect_dict = _Mutect2Parser._mutect_dict_from_old_sample_metalines(metaheaders, normal_key, tumor_key)
+        # if not mutect_dict:
+        #     mutect_dict = _Mutect2Parser._mutect_dict_from_command_line(metaheaders, normal_key, tumor_key)
+        # return mutect_dict
 
 def _get_mutect_parser(metaheaders):
-    for metaheader in metaheaders:
-        if _Mutect1Parser.is_mutect_metaheader(metaheader):
-            return _Mutect1Parser
-        elif _Mutect2Parser.is_mutect_metaheader(metaheader):
-            return _Mutect2Parser
+    if _Mutect1Parser.is_mutect_metaheader(metaheaders):
+        return _Mutect1Parser
+    elif _Mutect2Parser.is_mutect_metaheader(metaheaders):
+        return _Mutect2Parser
     return None
 
 class Mutect(object):
