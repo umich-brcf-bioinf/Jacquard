@@ -2,7 +2,7 @@ Changelog
 =========
 
 1.1.5 (10/26/2020)
------------------
+------------------
 - Adjusted Mutect translate to handle new style tumor/normal sample metaheaders.
 - Adjusted Mutect translate to clarify supported versions of Mutect.
 
